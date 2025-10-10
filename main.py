@@ -11,8 +11,10 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from ta.volatility import AverageTrueRange
-from ta.momentum import ROCIndicator
+from ta.volatility import AverageTrueRange, BollingerBands
+from ta.momentum import ROCIndicator, RSIIndicator, StochasticOscillator
+from ta.trend import MACD, ADXIndicator
+from ta.volume import VolumeWeightedAveragePrice
 from sklearn.preprocessing import StandardScaler
 from hmmlearn.hmm import GaussianHMM
 from tqdm import tqdm
@@ -30,23 +32,54 @@ logging.basicConfig(
 ###############################################################################
 def add_features(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Adds log-returns, ATR, and ROC to the dataframe.
+    Adds comprehensive financial features to the dataframe for HMM analysis.
     Returns a *new* dataframe with NaNs removed.
     """
     df = df.copy()
 
-    # 1. Log returns
+    # 1. Log returns (needs 1 row for calculation)
     df["log_ret"] = np.log(df["Close"]).diff()
 
-    # 2. ATR (window 14)
+    # 2. ATR (volatility, window 3 - smallest possible for ATR calculation)
     atr = AverageTrueRange(
-        high=df["High"], low=df["Low"], close=df["Close"], window=14
+        high=df["High"], low=df["Low"], close=df["Close"], window=3
     )
     df["atr"] = atr.average_true_range()
 
-    # 3. Rate-of-change (momentum, window 5)
-    roc = ROCIndicator(close=df["Close"], window=5)
+    # 3. Rate-of-change (momentum, window 3 - smallest for meaningful momentum)
+    roc = ROCIndicator(close=df["Close"], window=3)
     df["roc"] = roc.roc()
+
+    # 4. RSI (momentum, window 3 - smallest for RSI calculation)
+    rsi = RSIIndicator(close=df["Close"], window=3)
+    df["rsi"] = rsi.rsi()
+
+    # 5. Bollinger Bands (volatility, window 3 - smallest possible)
+    bollinger = BollingerBands(close=df["Close"], window=3, window_dev=2)
+    df["bb_mavg"] = bollinger.bollinger_mavg()
+    df["bb_high"] = bollinger.bollinger_hband()
+    df["bb_low"] = bollinger.bollinger_lband()
+    df["bb_width"] = bollinger.bollinger_wband()  # Band width as volatility measure
+    df["bb_position"] = (df["Close"] - df["bb_low"]) / (df["bb_high"] - df["bb_low"] + 1e-10)  # Position within bands
+
+    # 6. ADX (trend strength, window 3 - smallest for ADX calculation)
+    adx = ADXIndicator(high=df["High"], low=df["Low"], close=df["Close"], window=3)
+    df["adx"] = adx.adx()
+
+    # 7. Stochastic oscillator (momentum, window 3 - smallest possible)
+    stoch = StochasticOscillator(high=df["High"], low=df["Low"], close=df["Close"], window=3, smooth_window=3)
+    df["stoch"] = stoch.stoch()
+    df["stoch_signal"] = stoch.stoch_signal()
+
+    # 8. Simple moving average ratio (trend) - 5 period SMA vs current price
+    df["sma_5_ratio"] = df["Close"] / df["Close"].rolling(window=5).mean()
+
+    # 9. Price position relative to high/low (trend)
+    df["hl_ratio"] = (df["Close"] - df["Low"]) / (df["High"] - df["Low"] + 1e-10)  # Adding small value to avoid division by zero
+
+    # 10. Volume features (volume ratio to short-term average)
+    df["volume_sma"] = df["Volume"].rolling(window=3).mean()
+    df["volume_ratio"] = df["Volume"] / (df["volume_sma"] + 1e-10)  # Adding small value to avoid division by zero
 
     # Drop NA rows caused by indicators
     df = df.dropna().reset_index(drop=True)
@@ -88,7 +121,7 @@ def main(args):
     if len(feat_df) < args.n_states:
         raise ValueError(f"Insufficient data ({len(feat_df)} rows) for {args.n_states} states")
 
-    feature_cols = ["log_ret", "atr", "roc"]
+    feature_cols = ["log_ret", "atr", "roc", "rsi", "bb_width", "bb_position", "adx", "stoch", "sma_5_ratio", "hl_ratio", "volume_ratio"]
     X = feat_df[feature_cols].values
 
     ###########################################################################
@@ -221,14 +254,15 @@ def simple_backtest(df: pd.DataFrame, states: np.ndarray) -> pd.Series:
     position[states == 2] = -1   # short high-vol down
     # vectorized pnl (log return * signed position)
     df = df.copy()
-    df['next_ret'] = np.log(df['Close']).diff().shift(-1)
+    df['next_ret'] = df['log_ret'].shift(-1)
     pnl = df['next_ret'] * position
     cum_pnl = pnl.dropna().cumsum()
     return cum_pnl
 
 def perf_metrics(series: pd.Series):
     """Annualized Sharpe & max drawdown assuming intraday data."""
-    sharpe = series.diff().mean() / series.diff().std() * np.sqrt(252 * 78)
+    returns = series.diff().dropna()
+    sharpe = returns.mean() / returns.std() * np.sqrt(252 * 78)
     drawdown = (series - series.cummax()).min()
     return sharpe, drawdown
 
@@ -247,23 +281,59 @@ def stream_features(
     # Validate CSV has required columns
     try:
         first_chunk = pd.read_csv(csv_path, nrows=1)
-        required_cols = ["DateTime", "Open", "High", "Low", "Close", "Volume"]
-        missing_cols = [col for col in required_cols if col not in first_chunk.columns]
-        if missing_cols:
-            raise ValueError(f"Missing required columns in CSV: {missing_cols}")
+        # Strip whitespace from column names
+        first_chunk.columns = first_chunk.columns.str.strip()
+        
+        # Check for both possible column formats
+        required_cols_v1 = ["DateTime", "Open", "High", "Low", "Close", "Volume"]
+        required_cols_v2 = ["Date", "Time", "Open", "High", "Low", "Last", "Volume"]
+        
+        missing_cols_v1 = [col for col in required_cols_v1 if col not in first_chunk.columns]
+        missing_cols_v2 = [col for col in required_cols_v2 if col not in first_chunk.columns]
+        
+        if missing_cols_v1 and missing_cols_v2:
+            raise ValueError(f"Missing required columns in CSV. Tried both formats. V1 missing: {missing_cols_v1}, V2 missing: {missing_cols_v2}")
     except Exception as e:
         logging.error("Failed to validate CSV format: %s", str(e))
         raise
     
+    # Determine which column format we have
+    use_datetime_format = "DateTime" in first_chunk.columns
+    
+    # For both formats, we'll read without parse_dates first and handle datetime parsing after
     reader = pd.read_csv(
         csv_path,
-        parse_dates=["DateTime"],
-        index_col="DateTime",
         chunksize=chunksize,
     )
+    
     frames = []
     for chunk in tqdm(reader, desc="Processing chunks"):
         try:
+            # Strip whitespace from column names
+            chunk.columns = chunk.columns.str.strip()
+            
+            # Handle datetime parsing based on the column format
+            if use_datetime_format:
+                # Parse single DateTime column
+                chunk["DateTime"] = pd.to_datetime(chunk["DateTime"])
+                chunk = chunk.set_index("DateTime")
+            else:
+                # Parse separate Date and Time columns
+                chunk["DateTime"] = pd.to_datetime(chunk["Date"] + " " + chunk["Time"])
+                chunk = chunk.set_index("DateTime").drop(["Date", "Time"], axis=1)
+            
+            # Rename 'Last' to 'Close' if needed
+            if "Last" in chunk.columns and "Close" not in chunk.columns:
+                chunk = chunk.rename(columns={"Last": "Close"})
+            
+            # Rename columns with leading spaces if needed (fallback)
+            rename_dict = {}
+            for col in ["Open", "High", "Low", "Close", "Volume"]:
+                if f" {col}" in chunk.columns and col not in chunk.columns:
+                    rename_dict[f" {col}"] = col
+            if rename_dict:
+                chunk = chunk.rename(columns=rename_dict)
+            
             # Downcast dtypes for memory efficiency
             chunk = chunk.astype({
                 "Open": np.float32,

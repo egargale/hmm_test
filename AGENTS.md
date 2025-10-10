@@ -32,15 +32,25 @@ This is a Hidden Markov Model (HMM) futures trading analysis project with three 
 # Install dependencies (uses uv package manager)
 uv sync
 
-# Run basic HMM (pandas streaming)
+# Run tests
+python run_all_tests.py                    # Run all tests
+python test_main.py                        # Run unit tests only
+python test_cli.py                         # Run CLI tests only
+python test_lookahead.py                   # Run lookahead bias tests only
+
+# Run HMM implementations
 python main.py data.csv --n_states 3 --plot
-
-# Run Dask version (memory efficient)
 python hmm_futures_script.py data.csv --symbol ES --model-out model.pkl
-
-# Run Daft version (lazy evaluation)
 python hmm_futures_daft.py data.csv --states 3 --model-out bundle.pkl
 ```
+
+## Code Style
+- **Imports**: Standard library first, then third-party, then local imports
+- **Type hints**: Use `pd.DataFrame`, `np.ndarray`, `str | None` (Python 3.13+ syntax)
+- **Naming**: snake_case for functions/variables, UPPER_CASE for constants
+- **Error handling**: Use try/except blocks with specific exceptions, log errors
+- **Testing**: Use unittest framework, create test data with pandas/numpy
+- **Documentation**: Docstrings for all functions using triple quotes
 
 ## Dependencies
 - Python 3.13+ required (specified in [.python-version](.python-version:1))
