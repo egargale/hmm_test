@@ -1,0 +1,486 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Setup Core Utilities Module",
+        "description": "Establish the foundational `utils` module for shared data types, configuration management, and logging, essential for all other modules.",
+        "details": "This task involves setting up the `utils` directory and implementing its core components:\n\n1.  **data_types.py**: Define common data structures and type hints using Python's `dataclasses` (e.g., `FuturesData`, `HMMState`, `BacktestResult`, `PerformanceMetrics`). Leverage `numpy` and `pandas` for array and series types. Example: `@dataclass class FuturesData: timestamp: datetime; open: float; high: float; low: float; close: float; volume: float`.\n2.  **config.py**: Implement a robust configuration management system using Python's `dataclasses` for structured configuration objects (`HMMConfig`, `ProcessingConfig`). Utilize `pydantic` (version 2.5.3+) for schema validation of configuration files (e.g., YAML/JSON) to ensure type safety and sensible defaults. This enhances `validate_config` functionality. Example:\n    ```python\n    from pydantic import BaseModel, Field\n    from typing import Dict, Any\n\n    class HMMConfig(BaseModel):\n        n_states: int = Field(3, ge=1, le=10) # Example validation\n        covariance_type: str = 'diag'\n        max_iter: int = 100\n        random_state: int = 42\n        tol: float = 1e-3\n\n    def load_config(config_path: str) -> HMMConfig:\n        # Load YAML/JSON and validate with HMMConfig.parse_obj()\n        pass\n    ```\n3.  **logging_config.py**: Configure a structured logging system using Python's `logging` module. Implement `setup_logging` to handle different log levels (DEBUG, INFO, WARNING, ERROR) and output formats (console, file). Consider using `loguru` (version 0.7.2+) for more developer-friendly logging with automatic rotation and colorization, or `structlog` for truly structured JSON logging if deeper integration with monitoring systems is planned.\n\n**Recommended Libraries & Versions:**\n*   `python`: 3.10+\n*   `dataclasses`: Built-in\n*   `pydantic`: 2.5.3+\n*   `loguru`: 0.7.2+ (or built-in `logging` module)\n*   `numpy`: 1.26.2+\n*   `pandas`: 2.1.3+\n\n**Environment Setup:** Initialize the project using `Poetry` (version 1.7.0+) for dependency management and virtual environment setup. Create `pyproject.toml` and add initial dependencies.",
+        "testStrategy": "Unit tests for each utility function (e.g., `test_load_config_valid`, `test_load_config_invalid`, `test_setup_logging_output`). Ensure type hints are correctly applied and validated by `mypy`. Achieve >90% line coverage for the `utils` module. Critical scenarios: Configuration loading with missing or invalid fields, logging output at different levels.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Initialize Project and Setup Core Dependencies",
+            "description": "Set up the project structure using Poetry, create the `pyproject.toml` file, and add essential libraries like `pydantic`, `numpy`, and `pandas` as specified, including creating the `utils` directory.",
+            "dependencies": [],
+            "details": "Use `Poetry new project_name` to initialize the project (if not already done). Configure `pyproject.toml` to specify Python 3.10+. Add `pydantic` (version 2.5.3+), `numpy` (version 1.26.2+), and `pandas` (version 2.1.3+) to `[tool.poetry.dependencies]`. Run `poetry install`. Create the `src/utils` directory structure within the project.",
+            "status": "pending",
+            "testStrategy": "Verify `poetry env info` shows the correct Python version. Run `poetry install` and ensure all dependencies are resolved without errors. Check for the existence of `pyproject.toml` and the `src/utils` directory. Confirm that `pydantic`, `numpy`, and `pandas` are listed in `poetry show` output."
+          },
+          {
+            "id": 2,
+            "title": "Develop Data Types and Configuration Management Modules",
+            "description": "Create `data_types.py` to define core data structures using Python's `dataclasses` and `config.py` to implement a Pydantic-validated configuration system for loading and managing application settings.",
+            "dependencies": [
+              1
+            ],
+            "details": "In `src/utils/data_types.py`, define `dataclasses` like `FuturesData` (timestamp: datetime, open: float, high: float, low: float, close: float, volume: float), `HMMState`, `BacktestResult`, and `PerformanceMetrics`. Leverage `numpy` and `pandas` for appropriate array/series types where applicable. In `src/utils/config.py`, implement `HMMConfig` and `ProcessingConfig` using `pydantic.BaseModel` with `Field` validation (e.g., `n_states: int = Field(3, ge=1, le=10)`). Add a `load_config(config_path: str) -> HMMConfig` (or similar for ProcessingConfig) function to load YAML/JSON files and validate them using `Pydantic`'s parsing capabilities.",
+            "status": "pending",
+            "testStrategy": "Unit tests for `config.py`: `test_load_config_valid_yaml`, `test_load_config_invalid_schema`, `test_default_config_values`. Ensure `mypy` passes for type checking across `data_types.py` and `config.py`. Manually inspect `dataclasses` and `pydantic` models for correct field definitions, types, and default values. Create example config files (valid/invalid) to test loading logic."
+          },
+          {
+            "id": 3,
+            "title": "Implement Structured Logging Configuration",
+            "description": "Establish a robust and structured logging system for the `utils` module and the overall project, handling different log levels, output formats, and optional advanced features.",
+            "dependencies": [
+              1
+            ],
+            "details": "Create `src/utils/logging_config.py`. Implement a `setup_logging()` function that configures Python's built-in `logging` module. This function should handle different log levels (DEBUG, INFO, WARNING, ERROR) and output formats for both console and a file. Consider integrating `loguru` (version 0.7.2+) for more developer-friendly logging features like automatic rotation and colorization, or `structlog` for structured JSON output if deeper integration with monitoring systems is planned.",
+            "status": "pending",
+            "testStrategy": "Unit tests for `logging_config.py`: `test_setup_logging_console_output`, `test_setup_logging_file_output`, `test_log_levels_filtering`. Verify that log messages appear in the correct format and destination (console, log file) for different severity levels. Check for log file creation and rotation if those features are implemented."
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Implement Data Processing & Feature Engineering Module",
+        "description": "Develop the `data_processing` module to transform raw futures OHLCV data into clean, feature-rich datasets, handling multi-format CSVs, technical indicator calculation, and data validation/cleaning.",
+        "details": "This task focuses on implementing the core data processing capabilities:\n\n1.  **csv_parser.py**: Create `process_csv` function to parse multi-format CSVs. Use `pandas.read_csv` with `chunksize` for memory efficiency. Implement logic to detect date/time column formats (e.g., 'YYYY-MM-DD HH:MM:SS' vs 'YYYY-MM-DD' and 'HH:MM:SS' separately) using `pd.to_datetime` with `infer_datetime_format=True`. Handle column renaming to a standardized OHLCV format, strip whitespace, and downcast numerical dtypes to `float32` (or `float16` if precision allows) using `df.astype()` to minimize memory footprint. Implement optional symbol filtering.\n2.  **feature_engineering.py**: Implement `add_features` to compute 11+ technical indicators using `pandas_ta` (version 0.3.14b0+). This includes log returns, ATR, ROC, RSI, Bollinger Bands, ADX, Stochastic, SMA ratios, and volume metrics. Ensure rolling window calculations handle `min_periods` correctly and avoid NaNs propagating unnecessarily. Leverage vectorized `pandas` operations for performance. The `indicator_config` from `utils.config` will specify which indicators to compute and their parameters.\n3.  **data_validation.py**: Implement `validate_data` function for data quality checks. This includes verifying required OHLCV columns, validating data types (e.g., numerical for prices, datetime for index), identifying and handling missing values (e.g., forward-fill or drop, depending on context), and detecting/logging outliers (e.g., using IQR or Z-score methods). Output a data quality report.\n\n**Pseudo-code for `add_features`:**\n```python\nimport pandas_ta as ta\nimport pandas as pd\n\ndef add_features(df: pd.DataFrame, indicator_config: dict) -> pd.DataFrame:\n    # Ensure datetime index\n    df.index = pd.to_datetime(df.index)\n    # Calculate log returns\n    df['log_ret'] = ta.log_return(df['close'], append=False)\n    # Calculate various indicators based on config\n    for indicator, params in indicator_config.items():\n        if hasattr(ta, indicator.lower()):\n            indicator_func = getattr(ta, indicator.lower())\n            df = pd.concat([df, indicator_func(df['high'], df['low'], df['close'], **params)], axis=1)\n    \n    # Downcast features to float32 after calculation\n    for col in df.columns:\n        if df[col].dtype == 'float64':\n            df[col] = df[col].astype('float32')\n    return df\n```\n\n**Recommended Libraries & Versions:**\n*   `pandas`: 2.1.3+\n*   `numpy`: 1.26.2+\n*   `pandas_ta`: 0.3.14b0+\n*   `scikit-learn`: 1.3.2+ (for preprocessing utilities like `StandardScaler` later, but also for `preprocessing.RobustScaler` or `isolationForest` for outlier detection if needed here).",
+        "testStrategy": "Unit tests for `csv_parser.py` with various CSV formats (different delimiters, column names, missing data) and symbol filters. Property-based tests (using `hypothesis` 6.94.0+) for `feature_engineering.py` to validate indicator calculations across wide ranges of synthetic price data. Integration tests for `data_validation.py` to ensure robust handling of corrupted data and correct error reporting. Critical scenarios: Parsing multi-GB files with low memory, accurate indicator calculation at boundaries (e.g., `min_periods`), graceful handling of missing required columns.",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement `csv_parser.py` for multi-format CSV loading",
+            "description": "Develop the `process_csv` function to efficiently parse multi-format OHLCV CSV files, detect and standardize datetime columns, rename columns, strip whitespace, downcast numerical data types for memory efficiency, and optionally filter by symbol.",
+            "dependencies": [],
+            "details": "Create `csv_parser.py` and implement `process_csv`. Utilize `pandas.read_csv` with `chunksize` for memory-efficient loading. Implement logic to detect and convert various date/time column formats (e.g., 'YYYY-MM-DD HH:MM:SS' vs 'YYYY-MM-DD' and 'HH:MM:SS' separately) using `pd.to_datetime(..., infer_datetime_format=True)`. Rename columns to a standardized OHLCV format (e.g., 'date', 'open', 'high', 'low', 'close', 'volume'). Strip leading/trailing whitespace from column names and string data. Downcast numerical columns to `float32` (or `float16` if suitable) and integer columns to `int32`/`int16` using `df.astype()` to minimize memory footprint. Add a parameter for optional symbol filtering.",
+            "status": "pending",
+            "testStrategy": "Unit tests for `process_csv` with various CSV formats (e.g., different delimiters like comma/semicolon, different date/time column arrangements, missing date/time components, varying column names like 'open_price', 'Close', 'Date Time'), including tests for symbol filtering, data type downcasting, and memory usage profiling with large files."
+          },
+          {
+            "id": 2,
+            "title": "Develop `feature_engineering.py` for technical indicator generation",
+            "description": "Create the `add_features` function to calculate and append 11+ technical indicators to the OHLCV dataframe using `pandas_ta`. This includes log returns, ATR, ROC, RSI, Bollinger Bands, ADX, Stochastic, SMA ratios, and volume metrics, based on a configurable dictionary.",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement `feature_engineering.py` and define `add_features(df: pd.DataFrame, indicator_config: dict) -> pd.DataFrame`. Ensure the input DataFrame has a datetime index. Calculate log returns using `ta.log_return`. Dynamically calculate other indicators specified in `indicator_config` using `pandas_ta` (e.g., ATR, ROC, RSI, BBANDS, ADX, STOCH, SMA ratios, volume indicators). Handle `min_periods` for rolling window calculations to avoid excessive NaNs propagating unnecessarily. Leverage vectorized `pandas` operations for performance. Downcast new feature columns to `float32` after calculation, as shown in the provided pseudo-code, to minimize memory footprint.",
+            "status": "pending",
+            "testStrategy": "Property-based tests using `hypothesis` (e.g., `hypothesis.extra.pandas`) to validate indicator calculations across wide ranges of synthetic price data (random walks, trends, volatility changes). Unit tests for specific indicators to ensure correct output against known examples. Verify that `indicator_config` correctly applies and parameterizes indicators. Test NaN handling and downcasting of generated features."
+          },
+          {
+            "id": 3,
+            "title": "Create `data_validation.py` for data quality checks and reporting",
+            "description": "Develop the `validate_data` function to perform comprehensive data quality checks on processed OHLCV and feature data. This includes verifying required columns, validating data types, handling missing values, detecting outliers, and generating a data quality report.",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Implement `data_validation.py` and define `validate_data(df: pd.DataFrame) -> (pd.DataFrame, dict)`. Verify the presence of all required OHLCV columns (e.g., 'open', 'high', 'low', 'close', 'volume') and the datetime index. Validate data types for all columns (e.g., numerical for prices/features, datetime for index). Identify and handle missing values, applying strategies like forward-fill or dropping rows/columns depending on context. Implement outlier detection using methods such as IQR or Z-score for relevant columns. Log detected issues and generate a data quality report (e.g., dictionary summarizing issues, counts, and proposed actions). Return the cleaned DataFrame and the report.",
+            "status": "pending",
+            "testStrategy": "Unit tests for `validate_data` with dataframes containing various data quality issues: missing OHLCV columns, incorrect data types (e.g., string in 'close'), missing values (NaNs in price, volume), and clearly defined outliers. Verify that the function correctly identifies issues, applies specified handling (fill/drop), and generates an accurate quality report. Test different outlier detection thresholds and reporting formats."
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Develop Multi-Engine Processing Framework",
+        "description": "Implement a flexible `processing_engines` module supporting streaming (Pandas), Dask, and Daft for efficient and scalable processing of various dataset sizes, from medium to very large out-of-core data.",
+        "details": "This task involves creating the different processing engines and a factory to select them:\n\n1.  **streaming_engine.py**: Implement `process_streaming` using `pandas.read_csv` with the `chunksize` parameter. Within each chunk, apply `data_processing.add_features` and `data_processing.validate_data`. Aggregate processed chunks into a final `pandas DataFrame`. Focus on minimizing memory usage by explicitly deleting chunks after processing and using `gc.collect()`.\n2.  **dask_engine.py**: Implement `process_dask` using `dask.dataframe` (version 2023.11.0+). Use `dd.read_csv()` to create a lazy Dask DataFrame. Map `data_processing` functions (feature engineering, validation) across partitions using `dask.dataframe.map_partitions` or `apply`. Ensure proper handling of Dask's lazy evaluation and trigger computation with `.compute()`. Configure Dask's scheduler (local or distributed) via `dask.distributed.Client`.\n3.  **daft_engine.py**: Implement `process_daft` leveraging `daft` (version 0.1.2+). Daft is built on Apache Arrow for efficient out-of-core processing. Use `daft.read_csv()` to load data, then apply feature engineering and validation steps using Daft's expression API or `map_batches` for custom Python functions. Emphasize predicate pushdown and columnar operations for performance.\n4.  **index.py (ProcessingEngineFactory)**: Create a factory function (`ProcessingEngineFactory.get_engine`) that selects the appropriate processing engine based on `ProcessingConfig.engine_type` (e.g., 'streaming', 'dask', 'daft') and dataset characteristics (e.g., file size, available RAM).\n\n**Pseudo-code for Engine Selection:**\n```python\nfrom src.utils.config import ProcessingConfig\n\nclass ProcessingEngineFactory:\n    @staticmethod\n    def get_engine(engine_type: str):\n        if engine_type == 'streaming':\n            from .streaming_engine import process_streaming\n            return process_streaming\n        elif engine_type == 'dask':\n            from .dask_engine import process_dask\n            return process_dask\n        elif engine_type == 'daft':\n            from .daft_engine import process_daft\n            return process_daft\n        else:\n            raise ValueError(f'Unknown engine type: {engine_type}')\n\ndef process_with_engine(csv_path: str, config: ProcessingConfig):\n    engine = ProcessingEngineFactory.get_engine(config.engine_type)\n    return engine(csv_path, config)\n```\n\n**Recommended Libraries & Versions:**\n*   `pandas`: 2.1.3+\n*   `dask`: 2023.11.0+ (specifically `dask.dataframe`)\n*   `daft`: 0.1.2+\n*   `pyarrow`: 14.0.1+ (Daft dependency)\n*   `tqdm`: 4.66.1+ (for progress bars in streaming and Dask/Daft workflows)",
+        "testStrategy": "Integration tests comparing outputs of all three engines (`streaming_engine`, `dask_engine`, `daft_engine`) for a given input CSV, ensuring identical results. Performance benchmarks for each engine across varying dataset sizes (100MB, 1GB, 10GB+) to validate memory usage and processing time against the 'Process 1GB+ CSV files with <8GB RAM usage' success metric. Unit tests for `ProcessingEngineFactory` to ensure correct engine selection. Critical scenarios: Processing very large files that exceed RAM (triggering Daft or Dask out-of-core mechanisms), memory monitoring within <8GB limit, consistent output formats across engines.",
+        "priority": "high",
+        "dependencies": [
+          1,
+          2
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Pandas Streaming Engine (`streaming_engine.py`)",
+            "description": "Develop the `process_streaming` function in `streaming_engine.py` using `pandas.read_csv` with `chunksize` for memory-efficient processing. Apply `data_processing.add_features` and `data_processing.validate_data` to each chunk, aggregate results into a final DataFrame, and manage memory effectively.",
+            "dependencies": [],
+            "details": "Create `src/processing_engines/streaming_engine.py`. Implement `process_streaming(csv_path: str, config: ProcessingConfig)` function. Use `pandas.read_csv(chunksize=...)` to iterate through data. Within each chunk, apply `data_processing.add_features` and `data_processing.validate_data`. Concatenate processed chunks into a final `pandas.DataFrame`. Implement explicit memory cleanup (e.g., `del chunk`, `gc.collect()`) after each chunk to minimize memory usage. Ensure `pandas` version 2.1.3+ is used.",
+            "status": "pending",
+            "testStrategy": "Unit tests for `process_streaming` with small and medium-sized CSVs (e.g., 10MB, 100MB) to verify correct chunk processing, feature addition, data validation, and aggregation. Monitor memory usage during tests to confirm efficient memory management, especially with `chunksize`."
+          },
+          {
+            "id": 2,
+            "title": "Implement Dask Processing Engine (`dask_engine.py`)",
+            "description": "Develop the `process_dask` function in `dask_engine.py` to leverage Dask DataFrames for lazy, scalable processing of large datasets. Map `data_processing` functions across partitions and manage Dask's computation lifecycle, including scheduler configuration.",
+            "dependencies": [],
+            "details": "Create `src/processing_engines/dask_engine.py`. Implement `process_dask(csv_path: str, config: ProcessingConfig)` function. Use `dask.dataframe.read_csv()` to create a lazy Dask DataFrame. Apply `data_processing.add_features` and `data_processing.validate_data` using `dask.dataframe.map_partitions` or `apply`. Trigger the computation with `.compute()` to get the final `pandas.DataFrame`. Configure Dask's scheduler (local or distributed) via `dask.distributed.Client` as needed. Ensure `dask` version 2023.11.0+ is used.",
+            "status": "pending",
+            "testStrategy": "Unit tests for `process_dask` with various CSV sizes to verify lazy computation setup, correct mapping of `data_processing` functions across partitions, and accurate final results after `.compute()`. Test with a local Dask client and validate distributed processing logic if applicable."
+          },
+          {
+            "id": 3,
+            "title": "Implement Daft Engine (`daft_engine.py`) and Processing Engine Factory (`index.py`)",
+            "description": "Develop the `process_daft` function using Daft for Arrow-native, efficient out-of-core processing. Concurrently, create the `ProcessingEngineFactory` in `index.py` to dynamically select the appropriate processing engine (streaming, Dask, or Daft) based on `ProcessingConfig.engine_type`.",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "1. Create `src/processing_engines/daft_engine.py`. Implement `process_daft(csv_path: str, config: ProcessingConfig)` function. Use `daft.read_csv()` to load data and apply `data_processing.add_features` and `data_processing.validate_data` steps using Daft's expression API or `map_batches`. Emphasize predicate pushdown and columnar operations for performance. Ensure `daft` version 0.1.2+ and `pyarrow` 14.0.1+ are used. \n2. Create `src/processing_engines/index.py`. Implement `ProcessingEngineFactory` with a static method `get_engine(engine_type: str)` that imports and returns the respective processing function (`process_streaming`, `process_dask`, `process_daft`) based on `engine_type`. Implement `process_with_engine` as the module's entry point.",
+            "status": "pending",
+            "testStrategy": "Unit tests for `process_daft` validating correct data loading, feature engineering, and validation using Daft's API. Compare Daft's output for small/medium datasets against Pandas/Dask outputs. Unit tests for `ProcessingEngineFactory.get_engine` to ensure it correctly returns the expected engine function for 'streaming', 'dask', and 'daft' types. Integration tests for `process_with_engine` using all three engine types to process a sample CSV, verifying correct engine dispatch and end-to-end data processing."
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Build HMM Model Training Pipeline",
+        "description": "Implement the core HMM model training engine within `model_training` using `hmmlearn`, including configurable parameters, convergence monitoring, and numerical stability handling.",
+        "details": "This task focuses on the `hmm_trainer.py` component of the `model_training` module:\n\n1.  **HMM Model Training (`train_model`)**: Implement the function to train `hmmlearn.hmm.GaussianHMM` (version 0.2.8+). It should accept a feature matrix (from `data_processing`), number of states (`n_components`), covariance type (`covariance_type='diag'` as per PRD), maximum iterations (`n_iter`), and `random_state`. Crucially, before training the HMM, apply feature scaling using `sklearn.preprocessing.StandardScaler` or `MinMaxScaler` to normalize input data, which significantly improves HMM convergence and numerical stability. Store the fitted scaler along with the model.\n2.  **Convergence Monitoring**: Configure `hmmlearn` to monitor log-likelihood convergence. Implement logic for multiple restarts (e.g., re-initialize and retrain the model several times with different `random_state`s and pick the one with the highest log-likelihood) to mitigate local optima issues, as HMM training is sensitive to initialization.\n3.  **Numerical Stability**: Implement checks for potential numerical issues (e.g., singular covariance matrices, zero-variance features) and provide warnings or suggest fallbacks (e.g., adding a small epsilon to diagonal of covariance matrix, using `covariance_type='full'` if `diag` fails, or removing problematic features). Validate model parameters (e.g., `n_states` >= 1).\n\n**Pseudo-code for `train_model`:**\n```python\nimport numpy as np\nfrom hmmlearn import hmm\nfrom sklearn.preprocessing import StandardScaler\nfrom src.utils.config import HMMConfig\n\ndef train_model(features: np.ndarray, config: HMMConfig) -> tuple:\n    scaler = StandardScaler()\n    scaled_features = scaler.fit_transform(features)\n\n    best_model = None\n    best_score = -np.inf\n\n    for i in range(config.num_restarts): # Assuming num_restarts in config\n        model = hmm.GaussianHMM(n_components=config.n_states,\n                                covariance_type=config.covariance_type,\n                                n_iter=config.max_iter,\n                                tol=config.tol,\n                                random_state=config.random_state + i, # Vary random state\n                                init_params='stmc', # init startprob, transmat, emissionprob\n                                params='stmc') # update startprob, transmat, emissionprob\n        try:\n            model.fit(scaled_features)\n            score = model.score(scaled_features)\n            if score > best_score:\n                best_score = score\n                best_model = model\n        except Exception as e:\n            print(f\"Warning: HMM training failed for restart {i} with error: {e}\")\n            # Log error, potentially retry or handle numerically unstable cases\n\n    if best_model is None:\n        raise RuntimeError(\"HMM failed to converge after multiple restarts.\")\n\n    return best_model, scaler, best_score\n```\n\n**Recommended Libraries & Versions:**\n*   `hmmlearn`: 0.2.8+\n*   `scikit-learn`: 1.3.2+\n*   `numpy`: 1.26.2+\n*   `scipy`: 1.11.4+ (for statistical functions if needed in numerical stability checks)",
+        "testStrategy": "Unit tests for `hmm_trainer.py` to ensure Gaussian HMM trains reliably with different `n_states` (2-5) and `covariance_type`. Test convergence monitoring by verifying log-likelihood increases across iterations. Parameter sensitivity tests by varying `max_iter` and `tol`. Test numerical stability handling with synthetic datasets containing zero-variance features or highly correlated features. Integration tests to ensure features from `data_processing` can be successfully used as input. Critical scenarios: Model failing to converge (should trigger restarts or fallbacks), large number of states, highly volatile input features.",
+        "priority": "high",
+        "dependencies": [
+          1,
+          2
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Core HMM Training with Feature Scaling",
+            "description": "Develop the `train_model` function in `hmm_trainer.py` to instantiate and train `hmmlearn.hmm.GaussianHMM`. Crucially, integrate `sklearn.preprocessing.StandardScaler` to normalize input features before HMM training and ensure the fitted scaler is stored along with the model.",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Create `src/model_training/hmm_trainer.py`. Implement `train_model` function accepting `features: np.ndarray` and `config: HMMConfig` (from utils). Inside, initialize `StandardScaler`, call `fit_transform` on features. Pass scaled features to `hmm.GaussianHMM` using parameters like `n_components`, `covariance_type='diag'`, `n_iter`, and `random_state` from `config`. The function should return the fitted HMM model and the fitted scaler.",
+            "status": "pending",
+            "testStrategy": "Unit tests for `train_model` ensuring correct HMM instantiation and feature scaling application. Verify that the output includes both the trained model and the fitted scaler. Test with simple synthetic data to confirm basic functionality."
+          },
+          {
+            "id": 2,
+            "title": "Enhance HMM Training with Multiple Restarts and Best Model Selection",
+            "description": "Extend the HMM training process within `train_model` to include multiple restarts with varying `random_state`s. This is crucial for mitigating local optima issues in HMM training. Implement logic to monitor log-likelihood convergence and select the model instance with the highest log-likelihood across all restarts.",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Modify the `train_model` function to include a loop for `config.num_restarts`. Inside the loop, vary `random_state` for each `hmm.GaussianHMM` initialization (e.g., `config.random_state + i`). After each `model.fit()`, calculate `model.score(scaled_features)` to get the log-likelihood. Keep track of `best_model` and `best_score` and update them if a higher score is achieved. Handle cases where no model converges successfully across any restart.",
+            "status": "pending",
+            "testStrategy": "Unit tests to verify that `train_model` performs multiple restarts as specified by `config.num_restarts`. Ensure the function correctly identifies and returns the model with the highest log-likelihood. Test with synthetic data known to potentially have multiple local optima to validate best model selection."
+          },
+          {
+            "id": 3,
+            "title": "Implement Numerical Stability Checks and Parameter Validation for HMM",
+            "description": "Add robust error handling and input validation to the HMM training pipeline. This includes checks for potential numerical issues (e.g., singular covariance matrices, zero-variance features) and providing warnings or fallbacks. Also, validate critical input parameters like `n_states` before model initialization.",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Before initializing `hmm.GaussianHMM`, validate `config.n_states` (e.g., `n_states >= 1`). Within the training loop (especially around `model.fit()`), add comprehensive `try-except` blocks to catch `ValueError`, `RuntimeError`, or `ConvergenceWarning` from `hmmlearn`. Log informative warnings for issues like singular covariance matrices or zero-variance features. Provide a `RuntimeError` if HMM fails to converge after all restarts. Consider adding a small epsilon to the diagonal of covariance matrices if such customization is necessary for robustness.",
+            "status": "pending",
+            "testStrategy": "Unit tests for parameter validation (e.g., `n_states < 1`). Test with synthetic data designed to cause numerical instability (e.g., constant features leading to zero variance) to ensure warnings or error handling mechanisms are triggered correctly. Verify that the function gracefully handles exceptions from `hmmlearn` during training without crashing."
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Develop State Inference and Model Persistence",
+        "description": "Implement the HMM state inference engine using the Viterbi algorithm and a robust model persistence system for saving and loading trained HMMs and their associated preprocessing parameters.",
+        "details": "This task completes the `model_training` module:\n\n1.  **State Inference Engine (`predict_states`)**: Implement the `predict_states` function in `inference_engine.py`. This function will take a trained `hmmlearn.hmm.GaussianHMM` model, a feature matrix, and a fitted `StandardScaler` (obtained during training). It should first scale the input features using the *trained* scaler, then apply `model.predict(scaled_features)` to obtain the hidden state sequence (using the Viterbi algorithm). Also extract state probabilities using `model.predict_proba()`.\n2.  **Lookahead Bias Prevention**: The PRD explicitly mentions 'implement position shifting for realistic inference'. For batch prediction (e.g., on a historical dataset for backtesting), direct use of `model.predict` on all data at once might introduce lookahead bias if the state at `t` is used to make a decision at `t`. The most robust approach for backtesting is to use a lag, meaning a decision at time `t` is based on the inferred state at `t-N` (e.g., `N=1` for a single-period lag). This logic will be primarily handled in the `backtesting` module, but the `inference_engine` should provide the raw states and potentially a helper for lagged states.\n3.  **Model Persistence (`save_model`, `load_model`)**: Implement `save_model` and `load_model` functions in `model_persistence.py`. As per the PRD, use `pickle` (built-in module) for serialization. Store a dictionary containing the trained HMM model, the feature scaler, and any relevant `HMMConfig` or metadata (e.g., `model_version`, `training_date`, `feature_names`). This ensures all necessary components are saved and loaded consistently. Add integrity validation on load (e.g., check if expected keys exist in the loaded dictionary, perform a basic prediction test).\n\n**Security Note on Pickle:** While `pickle` is convenient for Python objects, it is not secure against maliciously constructed data. Never unpickle data received from an untrusted or unauthenticated source, as it can execute arbitrary code. For this project, assuming internal use or trusted data sources, it adheres to the PRD requirement. If external sharing were a goal, `joblib` or ONNX would be alternatives.\n\n**Pseudo-code for `save_model`:**\n```python\nimport pickle\nimport os\nfrom hmmlearn import hmm\nfrom sklearn.preprocessing import StandardScaler\nfrom src.utils.config import HMMConfig\n\ndef save_model(model: hmm.GaussianHMM, scaler: StandardScaler, config: HMMConfig, path: str):\n    model_data = {\n        'hmm_model': model,\n        'scaler': scaler,\n        'config': config.dict(), # Convert Pydantic config to dict for pickling\n        'version': '1.0',\n        'timestamp': pd.Timestamp.now().isoformat()\n    }\n    with open(path, 'wb') as f:\n        pickle.dump(model_data, f)\n\ndef load_model(path: str) -> tuple:\n    if not os.path.exists(path):\n        raise FileNotFoundError(f\"Model file not found at {path}\")\n    with open(path, 'rb') as f:\n        model_data = pickle.load(f)\n    \n    # Basic integrity validation\n    if not all(k in model_data for k in ['hmm_model', 'scaler', 'config']):\n        raise ValueError(\"Corrupted model file: missing essential components.\")\n    \n    # Reconstruct Pydantic config after loading\n    config = HMMConfig(**model_data['config'])\n    return model_data['hmm_model'], model_data['scaler'], config\n```\n\n**Recommended Libraries & Versions:**\n*   `hmmlearn`: 0.2.8+\n*   `scikit-learn`: 1.3.2+\n*   `numpy`: 1.26.2+\n*   `pandas`: 2.1.3+ (for Timestamp)",
+        "testStrategy": "Unit tests for `inference_engine.py` to verify accurate state prediction against known HMM sequences and correct application of feature scaling. Test `predict_proba` for probability distribution correctness. Unit tests for `model_persistence.py` to ensure successful save/load operations for various model configurations and sizes. Test integrity validation (e.g., loading a tampered file). Integration tests to ensure a trained model can be saved, reloaded, and then used for inference, yielding identical results. Critical scenarios: Model loaded from disk predicts correctly, handling of large models during serialization, validation of integrity on load.",
+        "priority": "medium",
+        "dependencies": [
+          1,
+          4
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement HMM State Inference Engine Core Functionality",
+            "description": "Develop the `predict_states` function in `inference_engine.py`. This includes scaling input features using a provided `StandardScaler` and then applying the trained `hmmlearn.hmm.GaussianHMM` model to predict hidden state sequences and their probabilities.",
+            "dependencies": [],
+            "details": "Implement `predict_states(model, scaler, features)` which first `scaler.transform(features)` then `model.predict(scaled_features)` for the state sequence. Additionally, obtain state probabilities using `model.predict_proba(scaled_features)`. Ensure the function returns both the inferred state sequence and the probability matrix. Leverage `hmmlearn.hmm.GaussianHMM` and `sklearn.preprocessing.StandardScaler` for the implementation.",
+            "status": "pending",
+            "testStrategy": "Unit tests for `inference_engine.py` to verify accurate state prediction against known HMM sequences and correct application of feature scaling. Test `predict_proba` for probability distribution correctness (e.g., rows sum to 1)."
+          },
+          {
+            "id": 2,
+            "title": "Develop HMM Model Persistence and Loading with Integrity Validation",
+            "description": "Create `save_model` and `load_model` functions in `model_persistence.py` using Python's `pickle` module. These functions will serialize and deserialize trained HMM models, their associated feature scalers, and HMM configuration, including robust integrity validation upon loading.",
+            "dependencies": [],
+            "details": "Implement `save_model(model, scaler, config, path)` and `load_model(path)` as per the provided pseudo-code. The `save_model` function must store a dictionary containing `'hmm_model'`, `'scaler'`, `'config'` (converted to dict), `'version'`, and `'timestamp'`. The `load_model` function must include checks for existence of expected keys (`'hmm_model'`, `'scaler'`, `'config'`) in the loaded dictionary to validate integrity and raise `ValueError` for corrupted files. Reconstruct `HMMConfig` from the loaded dictionary.",
+            "status": "pending",
+            "testStrategy": "Unit tests for `model_persistence.py` to ensure successful save/load operations for various valid combinations of HMMs, scalers, and configs. Test error handling for non-existent files and corrupted (missing key) model files. Perform a basic prediction test after loading to ensure functional integrity of the loaded components."
+          },
+          {
+            "id": 3,
+            "title": "Integrate Lagged State Retrieval Support in Inference Engine",
+            "description": "Enhance the `inference_engine.py` to explicitly support the retrieval of lagged hidden states. This is crucial for preventing lookahead bias in backtesting by ensuring decisions are based on past information. This might involve a helper function or modification of the `predict_states` output for easy consumption by a lagging mechanism.",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement a helper function like `get_lagged_states(raw_states, lag_periods)` within `inference_engine.py`. This function should take the raw state sequence generated by `predict_states` and return a new sequence where each state at time `t` corresponds to the inferred state at `t-N` (e.g., `N=1` for a single-period lag). Ensure proper handling of initial periods where a lag cannot be applied (e.g., by padding with a designated 'no-state' value or a default state).",
+            "status": "pending",
+            "testStrategy": "Unit tests for the new `get_lagged_states` helper function in `inference_engine.py`, verifying correct state shifts and handling of `lag_periods`. Test with different lag values and edge cases (e.g., `lag_periods = 0`, `lag_periods >= data_length`)."
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Create Regime-Based Backtesting Engine",
+        "description": "Develop the core `backtesting` module's strategy engine to implement state-based position allocation, mapping HMM-inferred states to trading positions (long/short/flat) with realistic trade execution.",
+        "details": "This task covers the `strategy_engine.py` component:\n\n1.  **Regime-Based Position Allocation (`backtest_strategy`)**: Implement a function that takes the HMM state sequence (from `model_training.inference_engine`), price data (from `data_processing`), and a strategy configuration (from `utils.config`). This configuration will define the mapping from specific HMM states to trading actions (e.g., State 0 = Long, State 1 = Short, State 2 = Flat). The engine should iterate through the time series, applying the state-to-position mapping to generate a `position_array` (e.g., 1 for long, -1 for short, 0 for flat).\n2.  **Position Transitions**: Implement realistic handling of position transitions, including transaction costs (slippage, commissions) if specified in the config, and avoiding over-optimization. Ensure that trades are only executed at the open of the next bar *after* a state change is identified, respecting the lookahead bias prevention principles. Vectorize calculations where possible to optimize performance for large datasets.\n3.  **Output**: The function should return a `position_array` and a `trade_log` (list of `Trade` objects, potentially defined in `utils.data_types`) detailing entry/exit points, prices, and P&L.\n\n**Pseudo-code for `backtest_strategy` (simplified):**\n```python\nimport pandas as pd\nimport numpy as np\nfrom src.utils.data_types import BacktestConfig # Assume a BacktestConfig with state_map and fees\n\ndef backtest_strategy(states: np.ndarray, prices: pd.Series, config: BacktestConfig) -> tuple:\n    positions = np.zeros_like(states, dtype=int)\n    trades = [] # List of Trade objects\n    \n    current_position = 0\n    entry_price = np.nan\n\n    # Note: Lookahead bias prevention is crucial here. States should be lagged.\n    # For simplicity here, assume states are already appropriately lagged/forward-shifted\n    # e.g. states[t-1] is used for decisions at time t.\n\n    for i in range(1, len(states)): # Start from 1 to look at previous state\n        current_state = states[i-1] # Decision at `i` is based on state at `i-1`\n        target_position = config.state_map.get(current_state, 0)\n        \n        if target_position != current_position:\n            # Place trade at current price (prices[i] could be Open or Close depending on strategy)\n            # For simplicity, let's assume decision at end of day t-1, executed at open of day t\n            trade_price = prices.iloc[i]\n            # Simulate transaction costs here\n            # ...\n\n            # Log trade, update position\n            trades.append(Trade(time=prices.index[i], action='BUY' if target_position > current_position else 'SELL', ...))\n            current_position = target_position\n            # ... handle entry/exit prices, P&L\n\n        positions[i] = current_position\n\n    # Post-process positions and trades into a clean DataFrame or object\n    return pd.Series(positions, index=prices.index), trades\n```\n\n**Recommended Libraries & Versions:**\n*   `pandas`: 2.1.3+\n*   `numpy`: 1.26.2+\n*   Custom classes from `utils.data_types`",
+        "testStrategy": "Unit tests for `strategy_engine.py` using synthetic price data and predetermined state sequences to verify correct position generation and trade logging. Test edge cases such as continuous states, rapid state changes, and zero-volume periods. Validate state-to-position mapping accuracy against configured rules. Integration tests to confirm that HMM-inferred states can drive strategy execution correctly. Critical scenarios: Rapid entry/exit, handling of transaction costs, correct position sizing based on config, ensure no lookahead bias in position generation by explicit lagging.",
+        "priority": "medium",
+        "dependencies": [
+          1,
+          5
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Core Regime-Based Position Mapping with Lookahead Prevention",
+            "description": "Develop the initial `backtest_strategy` function within `strategy_engine.py` to map HMM-inferred states to target positions (long/short/flat) based on `config.state_map`. Ensure strict lookahead bias prevention by using lagged states for all trading decisions. The output should be a raw `position_array` indicating target positions without immediate trade execution.",
+            "dependencies": [],
+            "details": "Create the `backtest_strategy` function signature: `backtest_strategy(states: np.ndarray, prices: pd.Series, config: BacktestConfig) -> pd.Series`. Implement the core loop that iterates through the time series. For each time step `i`, determine the target position using `states[i-1]` and `config.state_map`. Populate a `positions` pandas Series or numpy array (1 for long, -1 for short, 0 for flat). Ensure `BacktestConfig` and `Trade` dataclasses are available from `utils.data_types` and `config` module.",
+            "status": "pending",
+            "testStrategy": "Unit tests using synthetic price data and pre-defined HMM state sequences. Verify that the `position_array` correctly reflects the `state_map` for each time step, explicitly validating lookahead prevention by asserting that decisions at time `t` are based solely on information available at `t-1` or earlier. Test cases should include different `state_map` configurations, continuous states, and rapid state changes."
+          },
+          {
+            "id": 2,
+            "title": "Develop Realistic Trade Execution & Transaction Cost Modeling",
+            "description": "Enhance the `backtest_strategy` function to simulate realistic trade execution by processing position changes identified in Subtask 1. This involves executing trades only at the open of the next bar *after* a state change, incorporating transaction costs (slippage, commissions) from the configuration, and accurately managing the `current_position` over time.",
+            "dependencies": [
+              1
+            ],
+            "details": "Modify the `backtest_strategy` to track the `current_position`. When a change from `current_position` to `target_position` (from subtask 1) is detected, simulate a trade at the current bar's open price (`prices.iloc[i]`). Calculate and apply transaction costs using `config.slippage_bps` (as a percentage of trade value) and `config.commission_per_trade` (fixed cost per trade). Update `current_position` after each simulated trade. Ensure vectorized calculations are used where possible for cost application to optimize performance.",
+            "status": "pending",
+            "testStrategy": "Unit tests with synthetic data including various state change patterns (e.g., long-flat-short, multiple consecutive long positions). Verify correct trade execution timing (decision at `t-1`, execution at `t`). Validate transaction cost application for both entry and exit trades. Test scenarios with varying `slippage_bps` and `commission_per_trade` values (including zero costs) to confirm accurate P&L impact."
+          },
+          {
+            "id": 3,
+            "title": "Implement Trade Logging and Final Output Generation",
+            "description": "Finalize the `backtest_strategy` function to meticulously log all executed trades into a `trade_log` (a list of `Trade` objects, defined in `utils.data_types`) and return both the final `position_array` and the comprehensive `trade_log`. Each `Trade` object must capture critical details such as entry/exit points, prices, P&L, and transaction costs.",
+            "dependencies": [
+              2
+            ],
+            "details": "Define a `Trade` dataclass in `src.utils.data_types` with attributes like `entry_time`, `entry_price`, `exit_time`, `exit_price`, `size`, `pnl`, `commission`, `slippage`. Within `backtest_strategy`, populate a list of these `Trade` objects during the trade execution phase (Subtask 2). Calculate the final P&L for each trade, including all costs. The function should ultimately return a `tuple` containing the `pd.Series` representing the final `position_array` and the `list[Trade]` representing the `trade_log`.",
+            "status": "pending",
+            "testStrategy": "Unit tests to verify that the returned `trade_log` contains accurate and complete `Trade` objects for all simulated trades. Validate the P&L calculations within each `Trade` object, ensuring transaction costs are correctly reflected. Confirm that the final `position_array` is properly aligned with the `prices.index` and accurately reflects the state after all transitions and trade executions. Test edge cases like no trades occurring."
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Develop Backtest Performance Metrics & Bias Prevention",
+        "description": "Implement comprehensive performance metric calculation for strategy evaluation and build robust lookahead bias detection and prevention mechanisms within the `backtesting` module.",
+        "details": "This task complements the backtesting module with analytics and validation:\n\n1.  **Performance Metrics Calculation (`calculate_performance`)**: Implement this function in `performance_metrics.py`. It should take an equity curve `pd.Series` (generated by `strategy_engine`), optional benchmark data, and a risk-free rate. Calculate comprehensive risk-adjusted performance metrics, including:\n    *   Annualized Returns (CAGR)\n    *   Annualized Volatility\n    *   Sharpe Ratio (using `numpy` and `pandas` for calculations, as `empyrical` or `quantstats` are alternatives but PRD implies custom logic)\n    *   Maximum Drawdown and Drawdown Duration\n    *   Calmar Ratio\n    *   Win Rate, Loss Rate, Profit Factor\n    *   Sortino Ratio (if applicable)\n    Ensure intraday data scaling is handled correctly for annualization. The `PerformanceMetrics` dataclass from `utils.data_types` should store these results.\n2.  **Lookahead Bias Prevention (`prevent_lookahead`)**: Implement this logic in `bias_prevention.py`. While the core strategy engine in Task 6 should implement lagging, this module provides explicit functions to detect and report potential bias sources. This could involve:\n    *   **Timing Consistency Check**: Verify that `state[t]` is not used to make decisions at `t` or earlier. This is primarily a verification step.\n    *   **Data Availability Validation**: Ensure that all features used for HMM inference at time `t` were genuinely available at `t` (e.g., no 'future' close prices used for indicator calculation). This requires careful data pipeline design in `data_processing`.\n    *   **Position Shifting Validation**: Confirm that if `states[t-N]` is used, the resulting performance is indeed bias-free by comparing against a benchmark where known bias exists. This feature could also provide a utility to explicitly shift state sequences by a specified lag `N` for users if needed.\n\n**Pseudo-code for Sharpe Ratio:**\n```python\nimport numpy as np\nimport pandas as pd\n\ndef calculate_sharpe_ratio(equity_curve: pd.Series, risk_free_rate: float = 0.02) -> float:\n    daily_returns = equity_curve.pct_change().dropna()\n    if daily_returns.empty:\n        return 0.0\n\n    # Annualization factor depends on data frequency\n    # Assuming daily data (252 trading days)\n    annualization_factor = 252.0 # Can be configured based on data frequency (e.g., 252 for daily, 52 for weekly, etc.)\n\n    excess_returns = daily_returns - (risk_free_rate / annualization_factor)\n    sharpe = np.sqrt(annualization_factor) * excess_returns.mean() / excess_returns.std()\n    return sharpe\n```\n\n**Recommended Libraries & Versions:**\n*   `pandas`: 2.1.3+\n*   `numpy`: 1.26.2+\n*   Custom classes from `utils.data_types`",
+        "testStrategy": "Unit tests for `performance_metrics.py` to calculate metrics (Sharpe, Max Drawdown) against manually computed results for various synthetic equity curves. Test edge cases (flat equity curve, all losses). Unit tests for `bias_prevention.py` to validate timing consistency checks and report potential bias sources using specially crafted datasets. Integration tests to ensure backtest results flow into performance calculations and bias prevention validation correctly. Critical scenarios: Accurate Sharpe ratio for different annualization periods, correct identification of lookahead bias, robust handling of zero-volatility returns.",
+        "priority": "medium",
+        "dependencies": [
+          1,
+          2,
+          6
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Core Risk-Adjusted Performance Metrics",
+            "description": "Develop the initial `calculate_performance` function in `performance_metrics.py` to compute fundamental risk-adjusted performance metrics. This includes Annualized Returns (CAGR), Annualized Volatility, Sharpe Ratio, and Maximum Drawdown.",
+            "dependencies": [
+              6
+            ],
+            "details": "Implement the `calculate_performance` function that takes an equity curve (pd.Series), optional benchmark, and risk-free rate. Focus on calculating CAGR, Annualized Volatility, Sharpe Ratio (using provided pseudo-code with numpy/pandas), and Maximum Drawdown and its duration. Ensure correct annualization factors are applied based on data frequency (e.g., 252 for daily).",
+            "status": "pending",
+            "testStrategy": "Unit tests for `performance_metrics.py` to calculate CAGR, Volatility, Sharpe Ratio, and Maximum Drawdown against manually computed results for various synthetic equity curves. Test edge cases such as flat equity curves or curves with only losses."
+          },
+          {
+            "id": 2,
+            "title": "Implement Advanced Performance Metrics & Dataclass Integration",
+            "description": "Extend the `calculate_performance` function to include additional advanced metrics such as Calmar Ratio, Win Rate, Loss Rate, Profit Factor, and Sortino Ratio. Integrate all computed results into the `PerformanceMetrics` dataclass.",
+            "dependencies": [
+              1
+            ],
+            "details": "Build upon the work in Subtask 1. Add calculation logic for Calmar Ratio, Win Rate, Loss Rate, Profit Factor, and Sortino Ratio. Ensure all metrics, both from Subtask 1 and this subtask, are correctly populated into the `PerformanceMetrics` dataclass from `utils.data_types`. Handle scenarios like zero standard deviation for Sortino Ratio. Confirm intraday data scaling is handled for annualization.",
+            "status": "pending",
+            "testStrategy": "Unit tests to verify the accuracy of newly implemented metrics (Calmar Ratio, Win/Loss Rate, Profit Factor, Sortino Ratio). Integration tests to ensure the `PerformanceMetrics` dataclass is fully and correctly populated with all calculated values from various equity curve scenarios."
+          },
+          {
+            "id": 3,
+            "title": "Develop Lookahead Bias Detection and Prevention Utilities",
+            "description": "Implement the `bias_prevention.py` module, focusing on creating explicit functions to detect and report potential sources of lookahead bias, including timing consistency checks and data availability validation.",
+            "dependencies": [
+              2,
+              6
+            ],
+            "details": "Create functions within `bias_prevention.py` for 'Timing Consistency Check' to verify decisions are made only with available past data, and 'Data Availability Validation' to ensure features used were genuinely available at `t`. Optionally, develop 'Position Shifting Validation' logic that can compare performance with known bias against a shifted version. This module should provide detection and reporting, complementing lagging logic in the strategy engine.",
+            "status": "pending",
+            "testStrategy": "Unit tests for `bias_prevention.py` using synthetic datasets specifically designed to exhibit lookahead bias (e.g., using future data for indicator calculation) to ensure the detection mechanisms trigger correctly. Test the reporting functionality and any utility functions for shifting state sequences."
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Implement Visualization & Reporting Module",
+        "description": "Develop the `visualization` module to generate publication-ready charts of HMM states overlaid on price data, interactive performance dashboards, and detailed regime analysis reports.",
+        "details": "This task implements the `visualization` module:\n\n1.  **State Visualization Engine (`plot_states`)**: Implement this in `chart_generator.py`. Use `matplotlib` (version 3.8.2+) for static charts. Create multi-panel plots showing OHLCV data, HMM states (color-coded, overlaid on price charts), and selected technical indicators (from `data_processing`). Leverage `mplfinance` (version 0.12.9b0+) for efficient candlestick chart generation with overlays. Ensure customizable time ranges, legends, and annotations. Output to publication-ready formats (PNG/SVG).\n2.  **Performance Dashboard Generation (`build_dashboard`)**: Implement this in `dashboard_builder.py`. Use `plotly` (version 5.18.0+) to create interactive HTML dashboards. The dashboard should display key performance metrics (from `backtesting.performance_metrics`), interactive equity curves, drawdown charts, and potentially pie/bar charts for regime durations. The output should be a single standalone HTML file with interactive elements.\n3.  **Regime Analysis Reports (`generate_regime_report`)**: Implement this in `report_generator.py`. Generate PDF/HTML reports detailing regime characteristics (e.g., mean return, volatility per state), transition probabilities (using `hmm.transmat_`), and feature distributions within each state. Use `jinja2` (version 3.1.2+) for templating the report content and `WeasyPrint` (version 61.1+) to convert HTML to PDF if PDF output is required, or just output HTML directly.\n\n**Pseudo-code for `plot_states`:**\n```python\nimport mplfinance as mpf\nimport pandas as pd\nimport numpy as np\n\ndef plot_states(prices: pd.DataFrame, states: np.ndarray, indicators: pd.DataFrame, config: dict):\n    # Create a DataFrame for plotting, ensure alignment\n    plot_df = prices.copy()\n    plot_df['HMM_State'] = states # Ensure states are mapped to meaningful labels/colors\n\n    # Example: create an 'apds' list for mplfinance to overlay states as colored bands\n    apds = []\n    unique_states = np.unique(states)\n    colors = ['blue', 'green', 'red', 'purple', 'orange'] # Map states to colors\n    for s_val in unique_states:\n        state_mask = (plot_df['HMM_State'] == s_val)\n        # Create a series for the state, fill with nan where not in state\n        state_band = plot_df['close'].copy()\n        state_band[~state_mask] = np.nan\n        \n        apds.append(mpf.make_addplot(state_band, type='hollow_candles', color=colors[s_val], width=0.7,\n                                     panel=0, alpha=0.3, scatter=False))\n\n    # Overlay indicators\n    # Add more apds for indicators as needed\n    # mpf.make_addplot(indicators['RSI'], panel=1, color='orange')\n    \n    # Generate plot\n    mpf.plot(plot_df, type='candle', style='yahoo', volume=True, addplot=apds, \n             title='HMM States Overlayed on Price Data', figscale=1.5, savefig='hmm_states.png')\n```\n\n**Recommended Libraries & Versions:**\n*   `matplotlib`: 3.8.2+\n*   `mplfinance`: 0.12.9b0+\n*   `plotly`: 5.18.0+\n*   `jinja2`: 3.1.2+\n*   `WeasyPrint`: 61.1+ (for PDF reports)\n*   `pandas`: 2.1.3+\n*   `numpy`: 1.26.2+",
+        "testStrategy": "Unit tests for `chart_generator.py` to ensure charts render without errors and contain expected elements (legends, annotations, correctly overlaid states and indicators) using mock data. Visual validation is key here. Unit tests for `dashboard_builder.py` to confirm interactive elements function correctly and all metrics are displayed accurately in a generated HTML file. Unit tests for `report_generator.py` to verify report content and structure (e.g., correct tables, charts embedded) using templating. Integration tests to ensure data from `backtesting`, `model_training`, and `data_processing` can be correctly visualized and reported. Critical scenarios: Large datasets rendering efficiently, responsive dashboard elements, export functionality.",
+        "priority": "medium",
+        "dependencies": [
+          1,
+          2,
+          5,
+          7
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement HMM State Visualization Engine (`plot_states`)",
+            "description": "Develop the `plot_states` function in `chart_generator.py` to generate static, publication-ready charts. These charts will overlay HMM states (color-coded) on OHLCV price data and selected technical indicators from the `data_processing` module.",
+            "dependencies": [
+              2
+            ],
+            "details": "Implement `plot_states` in `chart_generator.py`. Utilize `matplotlib` (3.8.2+) and `mplfinance` (0.12.9b0+) for efficient candlestick chart generation with state overlays. Ensure customizable time ranges, interactive legends, and annotations. Output must be to publication-ready formats like PNG and SVG. Integrate with `data_processing` for technical indicator data.",
+            "status": "pending",
+            "testStrategy": "Unit tests for `chart_generator.py` to verify charts render without errors, displaying correct OHLCV data, HMM state overlays, and indicators. Test different time ranges, number of states, and output formats (PNG/SVG). Visual inspection is crucial for correctness and aesthetic appeal."
+          },
+          {
+            "id": 2,
+            "title": "Develop Interactive Performance Dashboard (`build_dashboard`)",
+            "description": "Create the `build_dashboard` function in `dashboard_builder.py` to generate interactive HTML dashboards. These dashboards will display key backtesting performance metrics, interactive equity curves, drawdown charts, and regime duration analysis.",
+            "dependencies": [
+              7
+            ],
+            "details": "Implement `build_dashboard` in `dashboard_builder.py`. Use `plotly` (5.18.0+) to create interactive HTML dashboards. Integrate performance metrics from `backtesting.performance_metrics`. The dashboard should include interactive equity curves, drawdown charts, and visual representations (e.g., pie/bar charts) of regime durations. The final output must be a single standalone HTML file with all interactive elements.",
+            "status": "pending",
+            "testStrategy": "Unit tests for `dashboard_builder.py` to ensure interactive elements function as expected, performance metrics are displayed correctly, and the HTML output is valid and self-contained. Test with various backtest results, including edge cases like flat equity curves or scenarios with high drawdowns."
+          },
+          {
+            "id": 3,
+            "title": "Implement Detailed Regime Analysis Report Generator (`generate_regime_report`)",
+            "description": "Develop the `generate_regime_report` function in `report_generator.py` to produce detailed PDF/HTML reports. These reports will describe HMM regime characteristics, transition probabilities (from `hmm.transmat_`), and feature distributions within each state.",
+            "dependencies": [],
+            "details": "Implement `generate_regime_report` in `report_generator.py`. Utilize `jinja2` (3.1.2+) for templating the report content. Include details on mean return, volatility per state, transition probabilities (using `hmm.transmat_`), and feature distributions within each state. Use `WeasyPrint` (61.1+) for converting templated HTML to PDF if PDF output is required, otherwise directly output HTML. Ensure the reports are well-formatted and easy to read.",
+            "status": "pending",
+            "testStrategy": "Unit tests for `report_generator.py` to verify report content accuracy, correct formatting, and successful generation of both HTML and PDF outputs. Test with different HMM model outputs to ensure all regime characteristics and transition probabilities are correctly captured and presented."
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "title": "Build CLI Integration and Orchestration",
+        "description": "Implement a comprehensive command-line interface (`cli.py`) to orchestrate all modules, providing a single-command execution pipeline for HMM futures analysis, along with robust error handling and performance optimizations.",
+        "details": "This task integrates all previously developed modules into a user-friendly CLI tool:\n\n1.  **CLI Interface (`cli.py`)**: Use `Click` (version 8.1.7+) to build the command-line interface. Define top-level commands (e.g., `analyze`, `train`, `backtest`, `visualize`) and subcommands/options for all configurable parameters (e.g., input CSV path, HMM states, processing engine type, output directory). The CLI should orchestrate the entire analysis pipeline, calling functions from `data_processing`, `processing_engines`, `model_training`, `backtesting`, and `visualization` in the correct sequence based on the dependency graph.\n2.  **Comprehensive Error Handling**: Integrate `utils.logging_config` for detailed logging. Implement global error handling within the CLI using `try-except` blocks. Provide clear, user-friendly error messages with suggested fixes, distinct from technical stack traces (which can be logged at DEBUG level). Leverage `Click`'s error handling features.\n3.  **Performance Optimization & Memory Management**: Integrate `tqdm` (version 4.66.1+) for progress bars during long-running operations (e.g., data processing, HMM training). Continuously monitor memory usage and provide warnings if limits are approached, leveraging Python's `resource` module or `psutil` (version 5.9.6+) for system metrics. Ensure efficient data passing between modules to avoid unnecessary copying. The multi-engine processing framework (Task 3) will be dynamically selected here based on input parameters and estimated data size.\n\n**Pseudo-code for CLI structure (using Click):**\n```python\nimport click\nimport os\nfrom src.utils.config import HMMConfig, ProcessingConfig\nfrom src.data_processing.index import DataProcessor\nfrom src.processing_engines.index import ProcessingEngineFactory\nfrom src.model_training.index import HMMTrainer\nfrom src.backtesting.index import BacktestEngine\nfrom src.visualization.index import VisualizationEngine\nfrom src.utils.logging_config import setup_logging\n\n@click.group()\ndef cli():\n    pass\n\n@cli.command()\n@click.option('--input-csv', type=click.Path(exists=True), required=True, help='Path to input OHLCV CSV file.')\n@click.option('--output-dir', type=click.Path(), default='./results', help='Output directory for results.')\n@click.option('--n-states', type=int, default=3, help='Number of hidden states for HMM.')\n@click.option('--engine', type=str, default='streaming', help='Processing engine (streaming, dask, daft).')\n@click.option('--log-level', type=click.Choice(['DEBUG', 'INFO', 'WARNING', 'ERROR']), default='INFO', help='Logging level.')\ndef analyze(\n    input_csv, output_dir, n_states, engine, log_level\n):\n    setup_logging(log_level)\n    click.echo(f'Starting HMM analysis for {input_csv}...')\n    os.makedirs(output_dir, exist_ok=True)\n\n    try:\n        # 1. Data Processing\n        processing_config = ProcessingConfig(engine_type=engine, indicators={'sma': {'length': 20}})\n        processed_data = ProcessingEngineFactory.get_engine(engine)(input_csv, processing_config)\n        click.echo('Data processing complete.')\n\n        # 2. HMM Training\n        hmm_config = HMMConfig(n_states=n_states)\n        trainer = HMMTrainer()\n        model, scaler, _ = trainer.train_model(processed_data.drop(columns=['open', 'high', 'low', 'volume']), hmm_config)\n        click.echo('HMM training complete.')\n        \n        # 3. Inference and Persistence (simplified)\n        states, _ = trainer.predict_states(model, scaler, processed_data.drop(columns=['open', 'high', 'low', 'volume']))\n        trainer.save_model(model, scaler, os.path.join(output_dir, 'hmm_model.pkl'))\n\n        # 4. Backtesting (simplified)\n        backtest_engine = BacktestEngine()\n        equity_curve, _ = backtest_engine.backtest_strategy(states, processed_data['close'], None) # Need strategy config\n        metrics = backtest_engine.calculate_performance(equity_curve)\n        click.echo('Backtesting complete.')\n\n        # 5. Visualization (simplified)\n        vis_engine = VisualizationEngine()\n        vis_engine.plot_states(processed_data[['open','high','low','close']], states, processed_data.drop(columns=['open','high','low','close','volume']), os.path.join(output_dir, 'states_chart.png'))\n        vis_engine.build_dashboard(metrics, os.path.join(output_dir, 'dashboard.html'))\n        click.echo(f'Results saved to {output_dir}')\n\n    except Exception as e:\n        click.echo(f'Error during analysis: {e}', err=True)\n        click.echo('Please check the log for details.', err=True)\n        # Log full traceback at DEBUG level\n\nif __name__ == '__main__':\n    cli() # pragma: no cover\n```\n\n**Recommended Libraries & Versions:**\n*   `Click`: 8.1.7+\n*   `tqdm`: 4.66.1+\n*   `psutil`: 5.9.6+ (optional, for advanced memory monitoring)",
+        "testStrategy": "End-to-end integration tests for `cli.py` covering various command combinations, input parameters, and expected outputs. Test error cases by providing invalid inputs (e.g., non-existent file, invalid HMM states) and verify correct error messages are displayed and logged. Performance benchmarking for the complete pipeline to ensure processing of 1GB+ CSVs with <8GB RAM and model convergence <5 minutes. Critical scenarios: Full pipeline execution with Dask/Daft, graceful handling of unexpected module failures, accurate progress reporting, consistent output artifact generation.",
+        "priority": "medium",
+        "dependencies": [
+          1,
+          2,
+          3,
+          5,
+          7,
+          8
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Core CLI Structure and Analysis Command",
+            "description": "Develop the `cli.py` entry point using Click, define the `analyze` command, and integrate options for `input-csv`, `output-dir`, `n-states`, `engine`, and `log-level`. Orchestrate calls to `data_processing`, `processing_engines`, `model_training`, `backtesting`, and `visualization` modules in sequence as outlined in the pseudo-code.",
+            "dependencies": [
+              1,
+              2,
+              3,
+              5,
+              7,
+              8
+            ],
+            "details": "Use `Click` (version 8.1.7+) to create the `@click.group()` and `@cli.command('analyze')`. Implement all specified `@click.option` decorators with appropriate types (e.g., `click.Path`, `click.Choice`) and descriptive help messages. Ensure the `analyze` function properly calls `setup_logging` from `utils.logging_config` and `os.makedirs` for the output directory. Follow the provided pseudo-code structure to instantiate and call functions from `DataProcessor`, `ProcessingEngineFactory`, `HMMTrainer`, `BacktestEngine`, and `VisualizationEngine` using the parameters passed via CLI options. Focus on correct module import paths.",
+            "status": "pending",
+            "testStrategy": "Write end-to-end integration tests for `cli.py` to invoke the `analyze` command with various valid parameters (e.g., different input CSVs, number of states, engines, log levels). Verify that output directories are created, and that the expected sequence of module functions is called (using mocks for lower-level module functions if necessary to isolate CLI logic). Assert successful execution and no unhandled exceptions for valid inputs."
+          },
+          {
+            "id": 2,
+            "title": "Integrate Comprehensive Error Handling and Detailed Logging",
+            "description": "Integrate `utils.logging_config` to establish a robust logging system within the CLI. Implement global `try-except` blocks around the main analysis pipeline within the `analyze` command to catch exceptions, display clear, user-friendly error messages to the console, and log full technical stack traces at a DEBUG level for diagnostics.",
+            "dependencies": [
+              1,
+              1
+            ],
+            "details": "Modify the `analyze` command in `cli.py` to wrap the entire analysis logic (from data processing through visualization) in a `try-except Exception as e:` block. Use `click.echo(f'Error during analysis: {e}', err=True)` for user-facing error messages on `stderr` and `click.echo('Please check the log for details.', err=True)`. Ensure `setup_logging(log_level)` from `utils.logging_config` is called first. Within the `except` block, log the full traceback using `logger.exception('An unexpected error occurred during CLI execution.')` at DEBUG level, preventing raw stack traces from appearing in user-facing output.",
+            "status": "pending",
+            "testStrategy": "Develop unit and integration tests that simulate various error conditions (e.g., non-existent input CSV, invalid configuration passed to internal modules, module-specific exceptions during data processing or training). Assert that user-friendly error messages are printed to `stderr`, and that detailed stack traces are logged correctly at DEBUG level without being displayed to the user on the console. Verify `log_level` option correctly filters log outputs."
+          },
+          {
+            "id": 3,
+            "title": "Implement Performance Optimizations with Progress Bars and Memory Monitoring",
+            "description": "Integrate `tqdm` progress bars for long-running operations (e.g., data processing, HMM training) within the `analyze` command to provide user feedback. Implement memory usage monitoring using `psutil` or Python's `resource` module, providing warnings through the logging system if memory limits are approached during execution, and ensure efficient data passing between modules.",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Incorporate `tqdm` (version 4.66.1+) around iterative or data-intensive steps in `cli.py`. For example, wrap `DataProcessor` or `HMMTrainer` calls if they expose an iterable or a progress callback. Implement periodic memory checks using `psutil` (version 5.9.6+). Define a configurable memory threshold (e.g., as a percentage of available RAM or a fixed limit) in `utils.config` and issue log warnings (e.g., `logger.warning`) when this threshold is exceeded. Focus on ensuring data structures are passed by reference where appropriate and unnecessary copies are avoided between modules (e.g., `processed_data` between processing and training).",
+            "status": "pending",
+            "testStrategy": "Test with large synthetic datasets to verify `tqdm` progress bars display correctly, update in real-time, and complete without errors. Simulate high memory usage conditions (e.g., by loading extremely large datasets or creating memory-intensive objects) to confirm memory monitoring triggers warnings in the logs as expected. Monitor system resources (CPU, RAM) during CLI execution tests to validate the `psutil` integration works and that memory usage is within reasonable bounds given the input data. Verify that the selected processing engine (streaming, dask, daft) handles data efficiently."
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "title": "Comprehensive Testing, Documentation & Examples",
+        "description": "Finalize the project by implementing a comprehensive test suite (unit, integration, E2E), generating complete user documentation, API references, and providing practical usage examples and deployment scripts.",
+        "details": "This task focuses on quality assurance, usability, and deployability:\n\n1.  **Comprehensive Test Suite (`tests/`)**: Expand the test suite to achieve >95% line coverage, >90% branch coverage, and 100% function coverage. Organize tests into `unit/`, `integration/`, and `e2e/` as per `test-strategy`. Use `pytest` (version 7.4.3+) for test execution and `pytest-cov` (version 4.1.0+) for coverage reporting. Implement `hypothesis` (version 6.94.0+) for property-based testing on mathematical functions (indicators, performance metrics). This ensures robust validation against a wide range of inputs and edge cases.\n2.  **Documentation (`docs/`)**: Write comprehensive user guides, installation instructions, API documentation, and troubleshooting FAQs. Use `Sphinx` (version 7.2.6+) for generating professional documentation from reStructuredText or Markdown files. Auto-generate API documentation from docstrings using `sphinx-autodoc`. Host documentation using `Read the Docs` or GitHub Pages.\n3.  **Examples (`examples/`, `notebooks/`)**: Create practical usage examples (e.g., Python scripts for specific tasks) and Jupyter notebooks (version 7.0.6+) for step-by-step walkthroughs of the analysis pipeline. Include example datasets and expected outputs. Ensure all examples are runnable and demonstrate key features.\n4.  **Deployment & Installation Scripts (`scripts/`)**: Provide clear installation instructions (`README.md`). Create deployment scripts if necessary (e.g., for packaging as a Docker image using `docker` 24.0.7+ or setting up environment with `Poetry`). Ensure project adheres to `PEP 517/PEP 621` for build backend definition in `pyproject.toml`.\n\n**Code Quality:** Enforce code style with `black` (version 23.12.1+) and ensure static type checking with `mypy` (version 1.7.1+) across the entire codebase. Integrate these into pre-commit hooks using `pre-commit` (version 3.5.0+).\n\n**Recommended Libraries & Versions:**\n*   `pytest`: 7.4.3+\n*   `pytest-cov`: 4.1.0+\n*   `hypothesis`: 6.94.0+\n*   `Sphinx`: 7.2.6+\n*   `sphinx-autodoc`: (part of Sphinx)\n*   `Jupyter Notebook`: 7.0.6+\n*   `docker`: 24.0.7+\n*   `black`: 23.12.1+\n*   `mypy`: 1.7.1+\n*   `pre-commit`: 3.5.0+",
+        "testStrategy": "Execute the full test suite (`pytest --cov=src --cov-report=term-missing`). Verify coverage reports meet the specified requirements (>95% line, >90% branch, 100% function). Conduct a thorough documentation review for clarity, accuracy, and completeness. Run all example scripts and Jupyter notebooks to validate their correctness and reproducibility. Perform installation tests on clean environments (e.g., fresh OS, Docker container) to ensure smooth deployment. Critical scenarios: Identifying undocumented features, ensuring all error paths are tested, validating property-based tests catch subtle calculation errors, verifying deployment steps on target platforms.",
+        "priority": "low",
+        "dependencies": [
+          9
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Structured Logging & Error Tracking",
+            "description": "Integrate structured logging across both backend and frontend components, and set up a centralized error tracking and alerting system (e.g., Sentry) to capture, categorize, and notify on application errors, improving diagnosability and incident response.",
+            "dependencies": [],
+            "details": "1.  **Backend Structured Logging**: Configure Python's `logging` module to output logs in a structured format (e.g., JSON) including timestamps, log level, message, and relevant context (e.g., request ID, user ID) using `python-json-logger`. Define appropriate logging levels (DEBUG, INFO, WARNING, ERROR, CRITICAL).\n2.  **Frontend Structured Logging**: Implement a client-side logging mechanism to capture significant events and errors, formatted for consistency with backend logs if possible.\n3.  **Error Tracking (Sentry)**: Integrate the Sentry SDK into both backend (e.g., Python Flask/Django) and frontend (e.g., React/Vue.js) applications. Configure it to automatically report unhandled exceptions and errors. Ensure PII is sanitized.\n4.  **Alerting Configuration**: Set up Sentry alerts for critical error rates, new error types, and specific error patterns. Define notification channels (e.g., Slack, email).\n5.  **Documentation**: Document the logging configurations, log formats, error tracking setup, and alerting rules.",
+            "status": "pending",
+            "testStrategy": "Trigger specific backend and frontend errors (e.g., division by zero, API call failure) in a staging environment to verify Sentry captures them correctly with relevant context. Check log files to ensure structured JSON output. Test alert notifications."
+          },
+          {
+            "id": 2,
+            "title": "Configure Performance Monitoring & User Analytics",
+            "description": "Set up comprehensive performance monitoring for backend and frontend applications, including metrics collection for response times, resource utilization, and implement user analytics/event tracking to gain insights into application usage and user behavior.",
+            "dependencies": [
+              1
+            ],
+            "details": "1.  **Backend Performance Monitoring**: \n    *   Instrument key API endpoints and critical functions to collect metrics such as request latency, CPU usage, memory consumption, and error rates. \n    *   Integrate with a monitoring system (e.g., Prometheus/Grafana, Datadog) using appropriate client libraries (e.g., `prometheus_client` for Python). \n    *   Create Grafana dashboards (or similar) to visualize these metrics over time.\n2.  **Frontend Performance Monitoring**: \n    *   Measure crucial client-side performance metrics like page load times (FCP, LCP), Time To Interactive (TTI), and asset loading times. \n    *   Utilize Web Performance APIs or integrate dedicated frontend APM tools (if chosen).\n3.  **User Analytics/Event Tracking**: \n    *   Define key user interactions and events to track (e.g., login success, feature usage, report generation, data exports). \n    *   Integrate an analytics platform (e.g., Google Analytics 4, PostHog, Mixpanel) to collect and analyze these events. \n    *   Ensure data collection adheres to privacy regulations (e.g., GDPR, CCPA) through anonymization or consent mechanisms.\n4.  **Documentation**: Document all collected performance metrics, the structure of tracked user events, and dashboard locations/access procedures.",
+            "status": "pending",
+            "testStrategy": "Conduct load tests on backend endpoints and perform user journey simulations on the frontend to verify performance metrics are accurately captured and displayed in monitoring dashboards. Verify user analytics events are correctly registered in the chosen analytics platform upon specific user actions."
+          },
+          {
+            "id": 3,
+            "title": "Develop Health Check Endpoints & Operational Documentation",
+            "description": "Implement robust health check endpoints for the application to report its status and develop comprehensive documentation for critical operational procedures including backup/recovery, security monitoring, and incident response.",
+            "dependencies": [],
+            "details": "1.  **Health Check Endpoints**: \n    *   Create a simple `/health` endpoint that returns a 200 OK when the application process is running (liveness probe). \n    *   Create a more comprehensive `/ready` endpoint that checks the status of essential dependencies (e.g., database connection, external services, critical configurations) and returns a 200 OK only if all dependencies are healthy (readiness probe). Include detailed status messages in the response body.\n2.  **Backup & Recovery Procedures**: \n    *   Document detailed, step-by-step procedures for backing up all critical data (database, configuration files, uploaded assets). \n    *   Outline the process for restoring the application and its data from backups, including required tools and verification steps. \n    *   Specify backup frequency, retention policies, and storage locations.\n3.  **Security Monitoring Procedures**: \n    *   Document procedures for reviewing security-related logs (e.g., authentication attempts, access controls, anomaly detection from monitoring systems).\n    *   Define incident response protocols for detected security events, including escalation paths and communication plans.\n4.  **Deployment Integration**: Ensure health check endpoints are properly configured in deployment environments (e.g., Kubernetes liveness and readiness probes) to facilitate automated restarts and traffic management.",
+            "status": "pending",
+            "testStrategy": "Manually test `/health` and `/ready` endpoints, simulating dependency failures (e.g., disconnect database) to ensure accurate status reporting. Conduct a tabletop exercise for documented backup/recovery and security incident response procedures with key stakeholders."
+          }
+        ]
+      }
+    ],
+    "metadata": {
+      "created": "2025-10-19T08:32:45.168Z",
+      "updated": "2025-10-19T08:32:45.168Z",
+      "description": "Tasks for master context"
+    }
+  }
+}

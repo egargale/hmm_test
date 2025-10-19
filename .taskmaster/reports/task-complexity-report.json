@@ -1,0 +1,93 @@
+{
+	"meta": {
+		"generatedAt": "2025-10-19T09:25:21.709Z",
+		"tasksAnalyzed": 10,
+		"totalTasks": 10,
+		"analysisCount": 10,
+		"thresholdScore": 5,
+		"projectName": "Taskmaster",
+		"usedResearch": false
+	},
+	"complexityAnalysis": [
+		{
+			"taskId": 1,
+			"taskTitle": "Setup Core Utilities Module",
+			"complexityScore": 5,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "The existing subtasks adequately cover the necessary components for setting up the core utilities module. Proceed with these subtasks to establish data types, configuration management, and logging infrastructure.",
+			"reasoning": "This task is foundational, involving the setup of project structure, essential dependencies, core data types, robust configuration management with Pydantic, and structured logging. While not algorithmically complex, getting these foundational pieces correct and integrated is crucial for the stability and maintainability of the entire project, elevating its complexity beyond a simple setup task."
+		},
+		{
+			"taskId": 2,
+			"taskTitle": "Implement Data Processing & Feature Engineering Module",
+			"complexityScore": 7,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "The existing subtasks are well-defined for this module. Focus on implementing the multi-format CSV parsing with memory efficiency, developing comprehensive feature engineering with pandas_ta, and building robust data validation and reporting mechanisms.",
+			"reasoning": "This task involves significant effort in handling diverse CSV formats with memory efficiency (chunking, type downcasting), calculating 11+ technical indicators accurately using `pandas_ta` (requiring careful parameterization and handling of rolling windows), and implementing sophisticated data validation including outlier detection. The combination of data robustness, performance optimization, and extensive calculations makes this a high-complexity task, especially given the strict testing requirements like property-based testing."
+		},
+		{
+			"taskId": 3,
+			"taskTitle": "Develop Multi-Engine Processing Framework",
+			"complexityScore": 8,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "The current subtasks accurately reflect the work needed. Proceed with implementing each processing engine (Pandas streaming, Dask, Daft) and then the factory for dynamic selection, with a strong focus on consistent output and performance across engines.",
+			"reasoning": "Implementing three distinct, scalable data processing engines (Pandas streaming, Dask, Daft) and a factory to dynamically select between them is a substantial architectural and technical challenge. Each engine requires understanding its specific APIs and optimization strategies (e.g., lazy evaluation, columnar processing, memory management). Ensuring consistent behavior, output formats, and performing benchmarks across these diverse frameworks for varying dataset sizes significantly increases complexity."
+		},
+		{
+			"taskId": 4,
+			"taskTitle": "Build HMM Model Training Pipeline",
+			"complexityScore": 7,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "The provided subtasks are appropriate. Focus on core HMM training with robust feature scaling, implementing multiple restarts for convergence, and comprehensive numerical stability checks and input validation for a reliable training pipeline.",
+			"reasoning": "While `hmmlearn` provides the core HMM implementation, this task demands a robust and production-ready training pipeline. Integrating feature scaling with `StandardScaler` (and ensuring it's saved), implementing multiple restarts to mitigate local optima, and adding comprehensive numerical stability checks (e.g., for singular covariance matrices, zero-variance features) are critical and add significant complexity beyond basic model fitting. Errors in HMM training can be subtle and hard to debug."
+		},
+		{
+			"taskId": 5,
+			"taskTitle": "Develop State Inference and Model Persistence",
+			"complexityScore": 6,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "The existing subtasks provide a good roadmap. Concentrate on developing the state inference function with correct scaler application, implementing robust model persistence with integrity validation using pickle, and explicitly supporting lagged state retrieval for bias prevention.",
+			"reasoning": "The core inference (`model.predict` after scaling) is relatively straightforward. However, the task's complexity comes from implementing robust model persistence using `pickle` (including saving multiple components like the scaler and config, and performing integrity checks on load), and crucially, designing for lookahead bias prevention by providing mechanisms for lagged state retrieval. This requires careful data flow planning and attention to potential pitfalls in historical simulation."
+		},
+		{
+			"taskId": 6,
+			"taskTitle": "Create Regime-Based Backtesting Engine",
+			"complexityScore": 8,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "The existing subtasks outline the necessary work. Focus heavily on implementing core position mapping with strict lookahead prevention, simulating realistic trade execution with transaction costs, and meticulous logging of trades for accurate backtest results.",
+			"reasoning": "This is a critical and highly complex task due to the intricacies of simulating a realistic trading environment. Implementing state-based position allocation, correctly applying transaction costs (slippage, commissions), and rigorously preventing lookahead bias (by ensuring decisions are based *only* on past information) are common sources of errors in backtesting. The need for vectorized operations for performance and detailed trade logging further increases the complexity and risk of subtle bugs."
+		},
+		{
+			"taskId": 7,
+			"taskTitle": "Develop Backtest Performance Metrics & Bias Prevention",
+			"complexityScore": 7,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "The provided subtasks are appropriate. Prioritize the accurate implementation of core risk-adjusted performance metrics, then extend to advanced metrics with dataclass integration, and finally develop robust lookahead bias detection and prevention utilities.",
+			"reasoning": "Calculating a comprehensive suite of financial performance metrics accurately (CAGR, Sharpe, Max Drawdown, Calmar, Sortino, etc.) requires careful handling of time series data, annualization, and edge cases. Furthermore, developing explicit lookahead bias *detection* and *prevention* mechanisms (beyond just lagging states) is a challenging aspect, as subtle biases can be hard to identify and prove, requiring deep understanding of the entire data and backtesting pipeline."
+		},
+		{
+			"taskId": 8,
+			"taskTitle": "Implement Visualization & Reporting Module",
+			"complexityScore": 7,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "The current subtasks are well-suited. Proceed with developing the HMM state visualization using mplfinance, then create the interactive performance dashboard with plotly, and finally implement the detailed regime analysis report generator using Jinja2 and WeasyPrint.",
+			"reasoning": "This task involves significant development with multiple visualization libraries (Matplotlib, mplfinance, Plotly) for different types of outputs (static charts, interactive dashboards, PDF/HTML reports). Integrating these tools, ensuring data alignment, creating aesthetically pleasing and publication-ready outputs, and handling the complexities of templating (`Jinja2`) and potential PDF generation (`WeasyPrint`) from various data sources makes this a high-effort and complex task."
+		},
+		{
+			"taskId": 9,
+			"taskTitle": "Build CLI Integration and Orchestration",
+			"complexityScore": 8,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "The existing subtasks are appropriate. Focus on building the core CLI structure with Click, integrating comprehensive error handling and detailed logging, and implementing performance optimizations with progress bars and real-time memory monitoring.",
+			"reasoning": "This task is the critical integration point for the entire project. Orchestrating complex data flows between disparate modules (data processing, model training, backtesting, visualization) in a single CLI command is highly challenging. Implementing robust, user-friendly error handling that gracefully captures exceptions from all downstream modules, along with real-time performance monitoring (progress bars, memory usage with `psutil`), adds significant complexity. End-to-end testing of this orchestration layer will be extensive."
+		},
+		{
+			"taskId": 10,
+			"taskTitle": "Comprehensive Testing, Documentation & Examples",
+			"complexityScore": 9,
+			"recommendedSubtasks": 5,
+			"expansionPrompt": "Generate subtasks for Task 10 focusing on developing a comprehensive test suite (unit, integration, E2E, property-based tests, high coverage targets), creating complete user and API documentation using Sphinx, developing practical usage examples and Jupyter notebooks, providing robust deployment and installation scripts (e.g., Docker, Poetry), and enforcing code quality standards (Black, Mypy, pre-commit).",
+			"reasoning": "This task, despite being 'finalization,' is exceptionally complex due to its broad and cross-cutting nature. Achieving the specified high test coverage (>95% line, >90% branch, 100% function, including property-based tests) requires deep understanding and meticulous testing of *every* module. Writing comprehensive, accurate documentation (user guides, API references, FAQs) for a complex system and developing runnable examples/notebooks is a significant effort. Lastly, ensuring robust deployment and installation, along with strict code quality enforcement, impacts the entire codebase. The sheer scope and rigorous quality requirements make this one of the most challenging tasks, encompassing validation and usability across the entire project."
+		}
+	]
+}

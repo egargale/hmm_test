@@ -1,0 +1,1245 @@
+<rpg-method>
+# Repository Planning Graph (RPG) Method - PRD Template
+
+This template teaches you (AI or human) how to create structured, dependency-aware PRDs using the RPG methodology from Microsoft Research. The key insight: separate WHAT (functional) from HOW (structural), then connect them with explicit dependencies.
+
+## Core Principles
+
+1. **Dual-Semantics**: Think functional (capabilities) AND structural (code organization) separately, then map them
+2. **Explicit Dependencies**: Never assume - always state what depends on what
+3. **Topological Order**: Build foundation first, then layers on top
+4. **Progressive Refinement**: Start broad, refine iteratively
+
+## How to Use This Template
+
+- Follow the instructions in each `<instruction>` block
+- Look at `<example>` blocks to see good vs bad patterns
+- Fill in the content sections with your project details
+- The AI reading this will learn the RPG method by following along
+- Task Master will parse the resulting PRD into dependency-aware tasks
+
+## Recommended Tools for Creating PRDs
+
+When using this template to **create** a PRD (not parse it), use **code-context-aware AI assistants** for best results:
+
+**Why?** The AI needs to understand your existing codebase to make good architectural decisions about modules, dependencies, and integration points.
+
+**Recommended tools:**
+- **Claude Code** (claude-code CLI) - Best for structured reasoning and large contexts
+- **Cursor/Windsurf** - IDE integration with full codebase context
+- **Gemini CLI** (gemini-cli) - Massive context window for large codebases
+- **Codex/Grok CLI** - Strong code generation with context awareness
+
+**Note:** Once your PRD is created, `task-master parse-prd` works with any configured AI model - it just needs to read the PRD text itself, not your codebase.
+</rpg-method>
+
+---
+
+<overview>
+<instruction>
+Start with the problem, not the solution. Be specific about:
+- What pain point exists?
+- Who experiences it?
+- Why existing solutions don't work?
+- What success looks like (measurable outcomes)?
+
+Keep this section focused - don't jump into implementation details yet.
+</instruction>
+
+## Problem Statement
+Quantitative analysts and researchers working with futures market data face a critical challenge: Hidden Markov Model implementations typically fail when processing multi-gigabyte OHLCV datasets due to memory constraints. Existing solutions either require powerful computing resources or sacrifice analytical depth by using simplified feature sets. This creates a barrier between sophisticated market analysis and practical implementation, forcing analysts to either downsample their data (losing valuable information) or abandon HMM-based regime detection entirely.
+
+## Target Users
+**Primary Users:**
+- Quantitative analysts at hedge funds and trading firms who need to identify market regimes in large futures datasets
+- Independent researchers and academics studying market microstructure and regime dynamics
+- Algorithmic traders developing systematic strategies based on market state detection
+
+**Secondary Users:**
+- Financial data scientists building feature pipelines for machine learning models
+- Portfolio managers seeking to understand risk regime changes across different market conditions
+
+**User Workflows:**
+- Load multi-GB futures CSV files with intraday data (5-minute, 15-minute, or hourly)
+- Apply comprehensive feature engineering including volatility, momentum, and trend indicators
+- Train HMM models to detect latent market states (low volatility uptrend, high volatility downtrend, etc.)
+- Backtest regime-based trading strategies with realistic performance metrics
+- Visualize regime transitions overlaid on price charts for validation
+
+## Success Metrics
+**Performance Metrics:**
+- Process 1GB+ CSV files with <8GB RAM usage (95% of standard laptops)
+- Achieve model convergence in <5 minutes for 1M+ data points
+- Maintain Sharpe ratio >2.0 on backtested regime-based strategies
+- Support real-time inference with <10ms latency per data point
+
+**Quality Metrics:**
+- >99% model persistence reliability (successful save/load operations)
+- <5% lookahead bias in backtesting (verified against benchmark datasets)
+- Support for 3-5 hidden states with clear economic interpretation
+- Cross-validation consistency >85% across different time periods
+
+**Usability Metrics:**
+- Zero dependencies beyond standard Python data science stack
+- Single-command execution for complete analysis pipeline
+- Comprehensive error messages with suggested fixes
+- Clear visualization outputs for non-technical stakeholders
+
+</overview>
+
+---
+
+<functional-decomposition>
+<instruction>
+Now think about CAPABILITIES (what the system DOES), not code structure yet.
+
+Step 1: Identify high-level capability domains
+- Think: "What major things does this system do?"
+- Examples: Data Management, Core Processing, Presentation Layer
+
+Step 2: For each capability, enumerate specific features
+- Use explore-exploit strategy:
+  * Exploit: What features are REQUIRED for core value?
+  * Explore: What features make this domain COMPLETE?
+
+Step 3: For each feature, define:
+- Description: What it does in one sentence
+- Inputs: What data/context it needs
+- Outputs: What it produces/returns
+- Behavior: Key logic or transformations
+
+<example type="good">
+Capability: Data Validation
+  Feature: Schema validation
+    - Description: Validate JSON payloads against defined schemas
+    - Inputs: JSON object, schema definition
+    - Outputs: Validation result (pass/fail) + error details
+    - Behavior: Iterate fields, check types, enforce constraints
+
+  Feature: Business rule validation
+    - Description: Apply domain-specific validation rules
+    - Inputs: Validated data object, rule set
+    - Outputs: Boolean + list of violated rules
+    - Behavior: Execute rules sequentially, short-circuit on failure
+</example>
+
+<example type="bad">
+Capability: validation.js
+  (Problem: This is a FILE, not a CAPABILITY. Mixing structure into functional thinking.)
+
+Capability: Validation
+  Feature: Make sure data is good
+  (Problem: Too vague. No inputs/outputs. Not actionable.)
+</example>
+</instruction>
+
+## Capability Tree
+
+### Capability: Data Processing & Feature Engineering
+**What it covers**: Transform raw OHLCV futures data into feature-rich datasets suitable for HMM training, handling various data formats and memory constraints.
+
+#### Feature: Multi-format CSV Parsing
+- **Description**: Parse futures CSV files with different column naming conventions and whitespace handling
+- **Inputs**: CSV file path, chunk size parameter, optional symbol filter
+- **Outputs**: Standardized pandas DataFrame with DateTime index and OHLCV columns
+- **Behavior**: Detect column format (DateTime vs Date+Time, Close vs Last), strip whitespace, handle multiple symbols, downcast dtypes to float32
+
+#### Feature: Technical Indicator Calculation
+- **Description**: Compute comprehensive technical indicators for market regime detection
+- **Inputs**: Clean OHLCV DataFrame, indicator configuration parameters
+- **Outputs**: Enhanced DataFrame with 11+ technical indicators (log returns, ATR, ROC, RSI, Bollinger Bands, ADX, Stochastic, SMA ratios, volume metrics)
+- **Behavior**: Apply rolling window calculations, handle NaN boundaries, compute both volatility and momentum indicators
+
+#### Feature: Data Validation & Cleaning
+- **Description**: Validate input data format and clean anomalies before feature engineering
+- **Inputs**: Raw CSV data, validation rules
+- **Outputs**: Cleaned dataset with data quality reports
+- **Behavior**: Check for required columns, validate data types, handle missing values, detect outliers, log data quality issues
+
+### Capability: HMM Model Training & Inference
+**What it covers**: Train Gaussian Hidden Markov Models on engineered features and perform state prediction for regime detection.
+
+#### Feature: Model Training Pipeline
+- **Description**: Train Gaussian HMM with configurable parameters and convergence monitoring
+- **Inputs**: Feature matrix, number of states, covariance type, max iterations, random seed
+- **Outputs**: Trained HMM model object, training metadata, convergence status
+- **Behavior**: Fit EM algorithm, monitor log-likelihood convergence, handle numerical stability, validate model parameters
+
+#### Feature: State Inference Engine
+- **Description**: Predict hidden states for new data using trained HMM models
+- **Inputs**: Trained model, feature matrix, optional lookahead bias prevention
+- **Outputs**: State sequence array, state probability distributions
+- **Behavior**: Apply Viterbi algorithm, handle feature scaling, implement position shifting for realistic inference
+
+#### Feature: Model Persistence
+- **Description**: Save and load trained HMM models with associated preprocessing parameters
+- **Inputs**: Model object, scaler object, file path
+- **Outputs**: Serialized model file with metadata
+- **Behavior**: Use pickle serialization with error handling, include version info, validate model integrity on load
+
+### Capability: Backtesting & Performance Analysis
+**What it covers**: Evaluate the performance of regime-based trading strategies with realistic market simulation.
+
+#### Feature: Regime-Based Strategy Engine
+- **Description**: Implement state-based position allocation for different market regimes
+- **Inputs**: State sequence, price data, strategy configuration
+- **Outputs**: Position array, trade signals
+- **Behavior**: Map states to positions (long/short/flat), implement position transitions, handle regime change timing
+
+#### Feature: Performance Metrics Calculation
+- **Description**: Compute comprehensive performance metrics for strategy evaluation
+- **Inputs**: Equity curve series, benchmark data, risk-free rate
+- **Outputs**: Performance report with Sharpe ratio, max drawdown, win rate, etc.
+- **Behavior**: Calculate annualized returns, compute rolling metrics, handle intraday data scaling, generate risk-adjusted measures
+
+#### Feature: Lookahead Bias Prevention
+- **Description**: Ensure realistic backtesting by preventing information leakage from future states
+- **Inputs**: State sequence, price data, bias prevention parameters
+- **Outputs**: Bias-corrected state sequence, validation report
+- **Behavior**: Implement position shifting, validate timing consistency, detect and report potential bias sources
+
+### Capability: Visualization & Reporting
+**What it covers**: Generate visual representations of HMM results and create comprehensive analysis reports.
+
+#### Feature: State Visualization Engine
+- **Description**: Create charts showing HMM states overlaid on price data and indicators
+- **Inputs**: Price data, state sequence, technical indicators, chart configuration
+- **Outputs**: Publication-ready PNG/SVG charts with legends and annotations
+- **Behavior**: Multi-panel layout, color-coded states, indicator overlays, customizable time ranges
+
+#### Feature: Performance Dashboard Generation
+- **Description**: Generate comprehensive dashboards showing strategy performance and regime analysis
+- **Inputs**: Backtest results, model metrics, regime statistics
+- **Outputs**: HTML dashboard with interactive charts and summary tables
+- **Behavior**: Responsive layout, interactive filters, export capabilities, automated scheduling
+
+#### Feature: Regime Analysis Reports
+- **Description**: Create detailed reports on regime characteristics and transition patterns
+- **Inputs**: State sequence, feature data, transition matrix
+- **Outputs**: PDF/HTML report with regime statistics and economic interpretation
+- **Behavior**: Calculate state durations, transition probabilities, feature distributions, economic insights
+
+### Capability: Multi-Engine Processing Framework
+**What it covers**: Provide different processing approaches optimized for various dataset sizes and memory constraints.
+
+#### Feature: Streaming Processing Engine
+- **Description**: Memory-efficient chunked processing using pandas for medium-sized datasets
+- **Inputs**: CSV file, chunk size, processing parameters
+- **Outputs**: Processed feature matrix, memory usage report
+- **Behavior**: Chunked CSV reading, incremental feature computation, memory monitoring, result aggregation
+
+#### Feature: Dask Distributed Processing
+- **Description**: Parallel processing using Dask for large datasets with memory constraints
+- **Inputs**: CSV file, Dask configuration, processing parameters
+- **Outputs**: Distributed feature matrix, processing statistics
+- **Behavior**: Lazy evaluation, automatic chunking, cluster utilization, memory-mapped operations
+
+#### Feature: Daft Out-of-Core Processing
+- **Description**: Arrow-based lazy evaluation for very large datasets exceeding memory capacity
+- **Inputs**: CSV file, Daft configuration, processing parameters
+- **Outputs**: Lazy feature pipeline, resource usage tracking
+- **Behavior**: Arrow memory format, predicate pushdown, columnar processing, disk-based operations
+
+</functional-decomposition>
+
+---
+
+<structural-decomposition>
+<instruction>
+NOW think about code organization. Map capabilities to actual file/folder structure.
+
+Rules:
+1. Each capability maps to a module (folder or file)
+2. Features within a capability map to functions/classes
+3. Use clear module boundaries - each module has ONE responsibility
+4. Define what each module exports (public interface)
+
+The goal: Create a clear mapping between "what it does" (functional) and "where it lives" (structural).
+
+<example type="good">
+Capability: Data Validation
+  → Maps to: src/validation/
+    ├── schema-validator.js      (Schema validation feature)
+    ├── rule-validator.js         (Business rule validation feature)
+    └── index.js                  (Public exports)
+
+Exports:
+  - validateSchema(data, schema)
+  - validateRules(data, rules)
+</example>
+
+<example type="bad">
+Capability: Data Validation
+  → Maps to: src/utils.js
+  (Problem: "utils" is not a clear module boundary. Where do I find validation logic?)
+
+Capability: Data Validation
+  → Maps to: src/validation/everything.js
+  (Problem: One giant file. Features should map to separate files for maintainability.)
+</example>
+</instruction>
+
+## Repository Structure
+
+```
+hmm-futures-analysis/
+├── src/
+│   ├── data_processing/         # Maps to: Data Processing & Feature Engineering
+│   │   ├── csv_parser.py        # Maps to: Multi-format CSV Parsing
+│   │   ├── feature_engineering.py # Maps to: Technical Indicator Calculation
+│   │   ├── data_validation.py   # Maps to: Data Validation & Cleaning
+│   │   └── index.py             # Public exports for data processing
+│   ├── model_training/          # Maps to: HMM Model Training & Inference
+│   │   ├── hmm_trainer.py       # Maps to: Model Training Pipeline
+│   │   ├── inference_engine.py  # Maps to: State Inference Engine
+│   │   ├── model_persistence.py # Maps to: Model Persistence
+│   │   └── index.py             # Public exports for model operations
+│   ├── backtesting/             # Maps to: Backtesting & Performance Analysis
+│   │   ├── strategy_engine.py   # Maps to: Regime-Based Strategy Engine
+│   │   ├── performance_metrics.py # Maps to: Performance Metrics Calculation
+│   │   ├── bias_prevention.py   # Maps to: Lookahead Bias Prevention
+│   │   └── index.py             # Public exports for backtesting
+│   ├── visualization/           # Maps to: Visualization & Reporting
+│   │   ├── chart_generator.py   # Maps to: State Visualization Engine
+│   │   ├── dashboard_builder.py # Maps to: Performance Dashboard Generation
+│   │   ├── report_generator.py  # Maps to: Regime Analysis Reports
+│   │   └── index.py             # Public exports for visualization
+│   ├── processing_engines/      # Maps to: Multi-Engine Processing Framework
+│   │   ├── streaming_engine.py  # Maps to: Streaming Processing Engine
+│   │   ├── dask_engine.py       # Maps to: Dask Distributed Processing
+│   │   ├── daft_engine.py       # Maps to: Daft Out-of-Core Processing
+│   │   └── index.py             # Public exports for processing engines
+│   ├── utils/                   # Shared utilities and constants
+│   │   ├── data_types.py        # Common data structures and type hints
+│   │   ├── config.py            # Configuration management
+│   │   ├── logging_config.py    # Logging setup and utilities
+│   │   └── index.py             # Public utility exports
+│   └── cli.py                   # Command-line interface orchestrating all modules
+├── tests/                       # Comprehensive test suite
+│   ├── unit/                    # Unit tests for each module
+│   ├── integration/             # Integration tests across modules
+│   └── fixtures/                # Test data and fixtures
+├── docs/                        # Documentation and examples
+├── notebooks/                   # Jupyter notebooks for analysis and demos
+├── scripts/                     # Utility scripts and tools
+└── examples/                    # Example usage scripts and datasets
+```
+
+## Module Definitions
+
+### Module: data_processing
+- **Maps to capability**: Data Processing & Feature Engineering
+- **Responsibility**: Transform raw futures data into clean, feature-rich datasets
+- **File structure**:
+  ```
+  data_processing/
+  ├── csv_parser.py        (Multi-format CSV parsing with robust error handling)
+  ├── feature_engineering.py (Technical indicator calculations and feature creation)
+  ├── data_validation.py   (Data quality checks and cleaning operations)
+  └── index.py             (Unified interface: process_csv(), add_features(), validate_data())
+  ```
+- **Exports**:
+  - `process_csv(file_path, chunk_size, symbol_filter)` - Parse and standardize CSV files
+  - `add_features(df, indicator_config)` - Calculate technical indicators
+  - `validate_data(df, rules)` - Validate and clean data
+  - `DataProcessor` - High-level class combining all functionality
+
+### Module: model_training
+- **Maps to capability**: HMM Model Training & Inference
+- **Responsibility**: Train HMM models and perform state inference
+- **File structure**:
+  ```
+  model_training/
+  ├── hmm_trainer.py       (HMM model fitting with convergence monitoring)
+  ├── inference_engine.py  (State prediction and probability calculation)
+  ├── model_persistence.py (Model save/load with integrity validation)
+  └── index.py             (Unified interface: train_model(), predict_states(), save_model())
+  ```
+- **Exports**:
+  - `train_model(features, n_states, config)` - Train Gaussian HMM
+  - `predict_states(model, features, prevent_lookahead)` - Infer hidden states
+  - `save_model(model, scaler, path)` - Serialize model with preprocessing
+  - `load_model(path)` - Load and validate saved model
+  - `HMMTrainer` - High-level training class
+
+### Module: backtesting
+- **Maps to capability**: Backtesting & Performance Analysis
+- **Responsibility**: Evaluate trading strategies based on HMM states
+- **File structure**:
+  ```
+  backtesting/
+  ├── strategy_engine.py   (Regime-based position allocation)
+  ├── performance_metrics.py (Risk-adjusted performance calculation)
+  ├── bias_prevention.py   (Lookahead bias detection and prevention)
+  └── index.py             (Unified interface: backtest_strategy(), calculate_metrics())
+  ```
+- **Exports**:
+  - `backtest_strategy(states, prices, config)` - Execute regime-based backtest
+  - `calculate_performance(equity_curve, benchmark)` - Compute performance metrics
+  - `prevent_lookahead(states, positions)` - Apply bias prevention
+  - `BacktestEngine` - Comprehensive backtesting class
+
+### Module: visualization
+- **Maps to capability**: Visualization & Reporting
+- **Responsibility**: Generate charts, dashboards, and analysis reports
+- **File structure**:
+  ```
+  visualization/
+  ├── chart_generator.py   (State overlay charts and technical plots)
+  ├── dashboard_builder.py (Interactive performance dashboards)
+  ├── report_generator.py  (Automated regime analysis reports)
+  └── index.py             (Unified interface: plot_states(), build_dashboard(), generate_report())
+  ```
+- **Exports**:
+  - `plot_states(prices, states, indicators)` - Create state visualization
+  - `build_dashboard(backtest_results, model_metrics)` - Generate performance dashboard
+  - `generate_regime_report(state_analysis, transitions)` - Create analysis report
+  - `VisualizationEngine` - High-level visualization class
+
+### Module: processing_engines
+- **Maps to capability**: Multi-Engine Processing Framework
+- **Responsibility**: Provide different processing approaches for various dataset sizes
+- **File structure**:
+  ```
+  processing_engines/
+  ├── streaming_engine.py  (Pandas-based chunked processing)
+  ├── dask_engine.py       (Dask distributed processing)
+  ├── daft_engine.py       (Daft out-of-core processing)
+  └── index.py             (Unified interface: process_with_engine())
+  ```
+- **Exports**:
+  - `process_streaming(csv_path, config)` - Memory-efficient chunked processing
+  - `process_dask(csv_path, config)` - Distributed large-scale processing
+  - `process_daft(csv_path, config)` - Out-of-core very large dataset processing
+  - `ProcessingEngineFactory` - Engine selection and configuration
+
+### Module: utils
+- **Maps to capability**: Shared Foundation Services
+- **Responsibility**: Provide common utilities, types, and configuration
+- **File structure**:
+  ```
+  utils/
+  ├── data_types.py        (Common data structures and type definitions)
+  ├── config.py            (Configuration management and validation)
+  ├── logging_config.py    (Logging setup and utilities)
+  └── index.py             (Public utility exports)
+  ```
+- **Exports**:
+  - `FuturesData` - Type definitions for futures data structures
+  - `HMMConfig` - Configuration class for model parameters
+  - `setup_logging(level, format)` - Logging configuration
+  - `validate_config(config)` - Configuration validation
+
+</structural-decomposition>
+
+---
+
+<dependency-graph>
+<instruction>
+This is THE CRITICAL SECTION for Task Master parsing.
+
+Define explicit dependencies between modules. This creates the topological order for task execution.
+
+Rules:
+1. List modules in dependency order (foundation first)
+2. For each module, state what it depends on
+3. Foundation modules should have NO dependencies
+4. Every non-foundation module should depend on at least one other module
+5. Think: "What must EXIST before I can build this module?"
+
+<example type="good">
+Foundation Layer (no dependencies):
+  - error-handling: No dependencies
+  - config-manager: No dependencies
+  - base-types: No dependencies
+
+Data Layer:
+  - schema-validator: Depends on [base-types, error-handling]
+  - data-ingestion: Depends on [schema-validator, config-manager]
+
+Core Layer:
+  - algorithm-engine: Depends on [base-types, error-handling]
+  - pipeline-orchestrator: Depends on [algorithm-engine, data-ingestion]
+</example>
+
+<example type="bad">
+- validation: Depends on API
+- API: Depends on validation
+(Problem: Circular dependency. This will cause build/runtime issues.)
+
+- user-auth: Depends on everything
+(Problem: Too many dependencies. Should be more focused.)
+</example>
+</instruction>
+
+## Dependency Chain
+
+### Foundation Layer (Phase 0)
+No dependencies - these are built first.
+
+- **utils**: Provides shared data types, configuration management, and logging utilities that all other modules depend on
+- **data_processing**: Processes raw CSV files into clean feature matrices without requiring any other modules
+
+### Data Ingestion Layer (Phase 1)
+- **processing_engines**: Depends on [utils, data_processing]
+  - Requires data types and configuration from utils
+  - Uses data processing modules for feature engineering within each engine
+  - Provides different processing strategies for the same data processing interface
+
+### Model Training Layer (Phase 2)
+- **model_training**: Depends on [utils, data_processing]
+  - Uses data types and configuration from utils
+  - Depends on processed feature matrices from data_processing
+  - Core HMM training and inference functionality
+
+### Analysis Layer (Phase 3)
+- **backtesting**: Depends on [utils, model_training, data_processing]
+  - Requires utilities and configuration from utils
+  - Uses trained models and state predictions from model_training
+  - Needs processed price data from data_processing for realistic backtesting
+  - Implements lookahead bias prevention using model outputs
+
+### Presentation Layer (Phase 4)
+- **visualization**: Depends on [utils, backtesting, model_training, data_processing]
+  - Uses utilities for configuration and logging
+  - Depends on backtest results from backtesting module
+  - Requires model state information from model_training
+  - Needs processed data and indicators from data_processing
+  - Creates comprehensive visualizations combining all analysis results
+
+### Integration Layer (Phase 5)
+- **cli**: Depends on [utils, data_processing, model_training, backtesting, visualization, processing_engines]
+  - Orchestrates all modules to provide complete analysis pipeline
+  - Uses processing engines to handle different dataset sizes
+  - Integrates all functionality into user-friendly command interface
+  - Coordinates module interactions and error handling
+
+</dependency-graph>
+
+---
+
+<implementation-roadmap>
+<instruction>
+Turn the dependency graph into concrete development phases.
+
+Each phase should:
+1. Have clear entry criteria (what must exist before starting)
+2. Contain tasks that can be parallelized (no inter-dependencies within phase)
+3. Have clear exit criteria (how do we know phase is complete?)
+4. Build toward something USABLE (not just infrastructure)
+
+Phase ordering follows topological sort of dependency graph.
+
+<example type="good">
+Phase 0: Foundation
+  Entry: Clean repository
+  Tasks:
+    - Implement error handling utilities
+    - Create base type definitions
+    - Setup configuration system
+  Exit: Other modules can import foundation without errors
+
+Phase 1: Data Layer
+  Entry: Phase 0 complete
+  Tasks:
+    - Implement schema validator (uses: base types, error handling)
+    - Build data ingestion pipeline (uses: validator, config)
+  Exit: End-to-end data flow from input to validated output
+</example>
+
+<example type="bad">
+Phase 1: Build Everything
+  Tasks:
+    - API
+    - Database
+    - UI
+    - Tests
+  (Problem: No clear focus. Too broad. Dependencies not considered.)
+</example>
+</instruction>
+
+## Development Phases
+
+### Phase 0: Foundation Infrastructure
+**Goal**: Establish core utilities and data processing capabilities that enable all other modules.
+
+**Entry Criteria**: Clean repository with Python project structure
+
+**Tasks**:
+- [ ] Implement shared utilities module (depends on: none)
+  - Acceptance criteria: Data types, configuration management, logging utilities available
+  - Test strategy: Unit tests for all utility functions with >90% coverage
+
+- [ ] Create robust data processing pipeline (depends on: [utils])
+  - Acceptance criteria: CSV parsing, feature engineering, data validation working for standard formats
+  - Test strategy: Integration tests with multiple CSV formats and data quality scenarios
+
+- [ ] Implement processing engine framework (depends on: [utils, data_processing])
+  - Acceptance criteria: Streaming, Dask, and Daft engines provide consistent interface
+  - Test strategy: Comparative tests ensuring identical outputs across engines
+
+**Exit Criteria**: All modules can process raw CSV files and output clean feature matrices with technical indicators
+
+**Delivers**: End-to-end data processing from raw CSV to engineered features ready for model training
+
+---
+
+### Phase 1: Core HMM Training & Inference
+**Goal**: Build the core Hidden Markov Model training and state inference capabilities.
+
+**Entry Criteria**: Phase 0 complete - reliable data processing pipeline available
+
+**Tasks**:
+- [ ] Implement HMM model training engine (depends on: [utils, data_processing])
+  - Acceptance criteria: Gaussian HMM trains reliably with convergence monitoring
+  - Test strategy: Parameter sensitivity tests and convergence validation
+
+- [ ] Create state inference and prediction system (depends on: [utils, model_training])
+  - Acceptance criteria: Accurate state prediction with optional lookahead bias prevention
+  - Test strategy: Cross-validation tests and bias prevention validation
+
+- [ ] Build model persistence system (depends on: [utils, model_training])
+  - Acceptance criteria: Models can be saved and loaded with integrity validation
+  - Test strategy: Save/load reliability tests across different model configurations
+
+**Exit Criteria**: Complete HMM training and inference pipeline with model persistence
+
+**Delivers**: Trained HMM models with state predictions ready for backtesting analysis
+
+---
+
+### Phase 2: Strategy Backtesting & Performance Analysis
+**Goal**: Develop comprehensive backtesting framework for regime-based trading strategies.
+
+**Entry Criteria**: Phase 1 complete - trained HMM models with state predictions available
+
+**Tasks**:
+- [ ] Implement regime-based strategy engine (depends on: [utils, model_training])
+  - Acceptance criteria: State-to-position mapping with realistic trade execution
+  - Test strategy: Strategy logic tests and edge case handling
+
+- [ ] Create performance metrics calculation system (depends on: [utils, backtesting])
+  - Acceptance criteria: Comprehensive risk-adjusted metrics with intraday scaling
+  - Test strategy: Metric accuracy tests against benchmark calculations
+
+- [ ] Build lookahead bias prevention system (depends on: [utils, backtesting])
+  - Acceptance criteria: Realistic backtesting with verified bias prevention
+  - Test strategy: Bias detection tests and timing validation
+
+**Exit Criteria**: Complete backtesting pipeline with realistic performance metrics
+
+**Delivers**: Validated performance results for regime-based trading strategies
+
+---
+
+### Phase 3: Visualization & Reporting
+**Goal**: Create comprehensive visualization and reporting capabilities for analysis communication.
+
+**Entry Criteria**: Phase 2 complete - backtest results and performance metrics available
+
+**Tasks**:
+- [ ] Implement state visualization engine (depends on: [utils, backtesting, model_training, data_processing])
+  - Acceptance criteria: Publication-ready charts showing states overlaid on price data
+  - Test strategy: Visual validation tests and chart rendering tests
+
+- [ ] Create performance dashboard builder (depends on: [utils, backtesting])
+  - Acceptance criteria: Interactive dashboards with comprehensive performance metrics
+  - Test strategy: Dashboard functionality tests and user interaction validation
+
+- [ ] Build automated report generation system (depends on: [utils, backtesting, model_training])
+  - Acceptance criteria: Professional reports with regime analysis and insights
+  - Test strategy: Report generation tests and content validation
+
+**Exit Criteria**: Complete visualization and reporting system for stakeholder communication
+
+**Delivers**: Professional charts, dashboards, and analysis reports for HMM strategy performance
+
+---
+
+### Phase 4: CLI Integration & Production Readiness
+**Goal**: Integrate all modules into a production-ready command-line tool.
+
+**Entry Criteria**: Phase 3 complete - all core functionality implemented and tested
+
+**Tasks**:
+- [ ] Implement comprehensive CLI interface (depends on: [utils, data_processing, model_training, backtesting, visualization, processing_engines])
+  - Acceptance criteria: Single-command execution for complete analysis pipeline
+  - Test strategy: End-to-end CLI tests with various parameter combinations
+
+- [ ] Add comprehensive error handling and logging (depends on: [utils])
+  - Acceptance criteria: Clear error messages with suggested fixes and detailed logging
+  - Test strategy: Error simulation tests and log output validation
+
+- [ ] Create performance optimization and memory management (depends on: [utils, processing_engines])
+  - Acceptance criteria: Efficient processing of large datasets with minimal memory footprint
+  - Test strategy: Performance benchmarking and memory usage validation
+
+**Exit Criteria**: Production-ready CLI tool with comprehensive error handling and performance optimization
+
+**Delivers**: Complete HMM futures analysis tool ready for production deployment and user adoption
+
+---
+
+### Phase 5: Documentation & Testing
+**Goal**: Complete documentation, testing, and examples for user onboarding.
+
+**Entry Criteria**: Phase 4 complete - production-ready CLI tool available
+
+**Tasks**:
+- [ ] Create comprehensive documentation and examples (depends on: all modules)
+  - Acceptance criteria: Complete user guide, API documentation, and example notebooks
+  - Test strategy: Documentation review and example validation
+
+- [ ] Implement comprehensive test suite (depends on: all modules)
+  - Acceptance criteria: >95% code coverage with unit, integration, and end-to-end tests
+  - Test strategy: Automated test execution and coverage reporting
+
+- [ ] Add deployment and installation scripts (depends on: all modules)
+  - Acceptance criteria: Easy installation and deployment across different environments
+  - Test strategy: Installation tests and deployment validation
+
+**Exit Criteria**: Complete project with documentation, testing, and deployment capabilities
+
+**Delivers**: Professional open-source project ready for user adoption and community contribution
+
+---
+
+<test-strategy>
+<instruction>
+Define how testing will be integrated throughout development (TDD approach).
+
+Specify:
+1. Test pyramid ratios (unit vs integration vs e2e)
+2. Coverage requirements
+3. Critical test scenarios
+4. Test generation guidelines for Surgical Test Generator
+
+This section guides the AI when generating tests during the RED phase of TDD.
+
+<example type="good">
+Critical Test Scenarios for Data Validation module:
+  - Happy path: Valid data passes all checks
+  - Edge cases: Empty strings, null values, boundary numbers
+  - Error cases: Invalid types, missing required fields
+  - Integration: Validator works with ingestion pipeline
+</example>
+</instruction>
+
+## Test Pyramid
+
+```
+        /\
+       /E2E\       ← 10% (End-to-end CLI workflows, full pipeline validation)
+      /------\
+     /Integration\ ← 30% (Module interactions, data flow validation, engine compatibility)
+    /------------\
+   /  Unit Tests  \ ← 60% (Individual functions, edge cases, error handling)
+  /----------------\
+```
+
+## Coverage Requirements
+- Line coverage: 95% minimum
+- Branch coverage: 90% minimum
+- Function coverage: 100% minimum
+- Statement coverage: 95% minimum
+
+## Critical Test Scenarios
+
+### Data Processing Module
+**Happy path**:
+- Standard CSV format parses correctly with all indicators calculated
+- Multiple symbol CSV processes with correct symbol filtering
+- Large file streaming processes without memory issues
+
+**Edge cases**:
+- CSV with minimal rows (just enough for indicators) processes correctly
+- Maximum chunk size processes efficiently
+- Datetime format variations handled correctly
+
+**Error cases**:
+- Missing required columns raises clear error with suggestions
+- Corrupted CSV data handled gracefully with partial processing
+- Invalid data types raise descriptive errors
+
+**Integration points**:
+- Data processing outputs work correctly with all processing engines
+- Feature matrices compatible with model training inputs
+- Data validation integrates with error handling system
+
+### Model Training Module
+**Happy path**:
+- HMM converges with different state configurations (2-5 states)
+- Model saves and loads correctly with preprocessing parameters
+- State inference produces consistent results across runs
+
+**Edge cases**:
+- Small datasets (minimum required for training) handled correctly
+- Different covariance types produce valid models
+- Maximum iteration limits respected during training
+
+**Error cases**:
+- Insufficient data for requested number of states raises clear error
+- Invalid model parameters raise descriptive errors
+- Corrupted model files handled gracefully during loading
+
+**Integration points**:
+- Trained models work correctly with backtesting module
+- Model persistence integrates with CLI save/load functionality
+- State inference compatible with visualization requirements
+
+### Backtesting Module
+**Happy path**:
+- Regime-based strategy produces expected position arrays
+- Performance metrics match manual calculations
+- Lookahead bias prevention shifts positions correctly
+
+**Edge cases**:
+- Single-state sequences handled correctly
+- Empty position arrays produce valid performance metrics
+- Minimum data length scenarios processed correctly
+
+**Error cases**:
+- Mismatched state and price arrays raise clear errors
+- Invalid strategy configurations raise descriptive errors
+- Negative or infinite values handled gracefully
+
+**Integration points**:
+- Backtest results integrate correctly with visualization module
+- Performance metrics work with dashboard generation
+- Strategy engine receives correct state predictions from model training
+
+### Visualization Module
+**Happy path**:
+- State overlay charts render correctly with proper colors
+- Performance dashboards display all metrics accurately
+- Reports generate with all sections and charts
+
+**Edge cases**:
+- Large datasets render efficiently with downsampling
+- Minimal data points produce valid visualizations
+- Custom chart configurations apply correctly
+
+**Error cases**:
+- Invalid data types for visualization raise clear errors
+- Missing chart components handled gracefully
+- File export failures raise descriptive errors
+
+**Integration points**:
+- Charts correctly display data from all other modules
+- Dashboards integrate backtest and model metrics
+- Reports include analysis from complete pipeline
+
+### Processing Engines Module
+**Happy path**:
+- All three engines produce identical results for same input
+- Memory usage stays within specified limits
+- Processing time scales appropriately with data size
+
+**Edge cases**:
+- Very small files processed efficiently across all engines
+- Maximum practical dataset sizes handled without crashes
+- Engine selection works correctly based on data characteristics
+
+**Error cases**:
+- Insufficient memory for processing raises clear errors
+- Engine initialization failures handled gracefully
+- File system errors during processing raise descriptive errors
+
+**Integration points**:
+- All engines provide consistent interface to other modules
+- Engine selection integrates with CLI parameter handling
+- Processing statistics integrate with performance monitoring
+
+### CLI Integration
+**Happy path**:
+- Complete analysis pipeline executes with single command
+- All parameter combinations work correctly
+- Output files generated in expected locations and formats
+
+**Edge cases**:
+- Minimal parameter sets work with sensible defaults
+- Very large parameter values handled appropriately
+- Interactive parameter prompts work correctly
+
+**Error cases**:
+- Invalid parameter combinations raise clear errors with usage hints
+- Missing input files raise descriptive errors
+- Permission errors for output files handled gracefully
+
+**Integration points**:
+- CLI correctly orchestrates all modules in proper sequence
+- Error handling integrates with module-specific error messages
+- Progress reporting provides accurate status updates
+
+## Test Generation Guidelines
+
+**Surgical Test Generator Instructions:**
+
+1. **Data Processing Tests**: Focus on edge cases around CSV format variations, indicator calculations with minimal data, and memory efficiency validation. Use property-based testing for indicator calculations.
+
+2. **Model Training Tests**: Generate synthetic datasets with known state distributions to validate model convergence. Test boundary conditions for state counts and data sufficiency.
+
+3. **Backtesting Tests**: Create deterministic price series with known regime patterns to validate strategy logic. Use mathematical properties to verify performance metric calculations.
+
+4. **Visualization Tests**: Focus on chart generation with various data sizes and edge cases. Validate that charts render without errors and contain expected elements.
+
+5. **Integration Tests**: Emphasize end-to-end workflows with realistic data. Test module compatibility and data flow validation across the complete pipeline.
+
+6. **Property-Based Testing**: Apply to mathematical functions (indicators, performance metrics) with generated inputs to ensure correctness across wide parameter ranges.
+
+7. **Error Injection**: Test error handling paths by simulating various failure modes (file I/O errors, memory constraints, invalid data) to ensure robust error reporting.
+
+</test-strategy>
+
+---
+
+<architecture>
+<instruction>
+Describe technical architecture, data models, and key design decisions.
+
+Keep this section AFTER functional/structural decomposition - implementation details come after understanding structure.
+</instruction>
+
+## System Components
+
+### Data Processing Layer
+- **CSV Parser**: Robust multi-format CSV reader with automatic format detection and memory-efficient chunking
+- **Feature Engine**: Technical indicator calculator using pandas TA library with optimized rolling window computations
+- **Data Validator**: Quality checker ensuring data integrity and format consistency
+
+### Model Training Layer
+- **HMM Engine**: Gaussian Hidden Markov Model trainer using hmmlearn with convergence monitoring and parameter validation
+- **Inference Engine**: State prediction system with Viterbi algorithm and lookahead bias prevention
+- **Model Store**: Persistence layer with pickle serialization and integrity validation
+
+### Backtesting Layer
+- **Strategy Engine**: Regime-based position allocation system with configurable state-to-position mappings
+- **Performance Calculator**: Risk-adjusted metrics engine with intraday scaling and benchmark comparison
+- **Bias Prevention**: Lookahead bias detection and correction system
+
+### Visualization Layer
+- **Chart Generator**: Matplotlib-based visualization engine with multi-panel layouts and publication-ready styling
+- **Dashboard Builder**: Interactive HTML dashboard creation with Plotly for stakeholder communication
+- **Report Generator**: Automated PDF/HTML report creation with comprehensive analysis summaries
+
+### Processing Framework
+- **Streaming Engine**: Pandas-based chunked processing for medium datasets with configurable memory usage
+- **Dask Engine**: Distributed processing framework for large datasets with automatic parallelization
+- **Daft Engine**: Out-of-core processing using Arrow memory format for very large datasets
+
+## Data Models
+
+### Core Data Structures
+```python
+@dataclass
+class FuturesData:
+    """Core futures data structure with OHLCV format"""
+    timestamp: datetime
+    open: float
+    high: float
+    low: float
+    close: float
+    volume: float
+
+@dataclass
+class HMMState:
+    """HMM state prediction with metadata"""
+    state: int
+    probability: float
+    timestamp: datetime
+    features: np.ndarray
+
+@dataclass
+class BacktestResult:
+    """Backtest performance results"""
+    equity_curve: pd.Series
+    positions: np.ndarray
+    trades: List[Trade]
+    metrics: PerformanceMetrics
+```
+
+### Configuration Models
+```python
+@dataclass
+class HMMConfig:
+    """HMM model configuration parameters"""
+    n_states: int = 3
+    covariance_type: str = "diag"
+    max_iter: int = 100
+    random_state: int = 42
+    tol: float = 1e-3
+
+@dataclass
+class ProcessingConfig:
+    """Data processing configuration"""
+    chunk_size: int = 100_000
+    engine_type: str = "streaming"
+    memory_limit: str = "8GB"
+    indicators: Dict[str, Any] = field(default_factory=dict)
+```
+
+## Technology Stack
+
+**Core Libraries:**
+- **pandas**: Data manipulation and time series processing
+- **numpy**: Numerical computing and array operations
+- **scikit-learn**: Feature scaling and preprocessing utilities
+- **hmmlearn**: Hidden Markov Model implementation
+- **ta**: Technical analysis library for indicator calculations
+
+**Processing Engines:**
+- **dask**: Distributed computing framework for large datasets
+- **daft**: Out-of-core processing engine with Arrow backend
+- **tqdm**: Progress bars for long-running operations
+
+**Visualization & Reporting:**
+- **matplotlib**: Static plotting and chart generation
+- **plotly**: Interactive dashboards and web-based visualizations
+- **jinja2**: Template engine for report generation
+
+**Development & Testing:**
+- **pytest**: Testing framework with comprehensive assertion library
+- **hypothesis**: Property-based testing for mathematical functions
+- **black**: Code formatting and style enforcement
+- **mypy**: Static type checking for improved code quality
+
+## Key Design Decisions
+
+**Decision: Gaussian HMM with Diagonal Covariance**
+- **Rationale**: Financial time series exhibit regime-dependent volatility patterns that are well-captured by Gaussian distributions. Diagonal covariance provides computational efficiency while maintaining model flexibility.
+- **Trade-offs**: Assumes conditional independence between features given the hidden state, but provides numerical stability and faster convergence.
+- **Alternatives considered**: Full covariance matrices (more flexible but computationally expensive), mixture models (more complex modeling).
+
+**Decision: Multi-Engine Processing Architecture**
+- **Rationale**: Different dataset sizes require different processing strategies. Streaming for medium data, Dask for large distributed processing, Daft for out-of-core very large datasets.
+- **Trade-offs**: Increased code complexity but provides optimal performance across all use cases from small research datasets to institutional-grade data pipelines.
+- **Alternatives considered**: Single engine approach (simpler but suboptimal), cloud-only processing (vendor lock-in).
+
+**Decision: Technical Indicator Integration via TA Library**
+- **Rationale**: Well-maintained, comprehensive technical analysis library with battle-tested implementations of common indicators.
+- **Trade-offs**: Additional dependency but provides validated implementations and continuous maintenance.
+- **Alternatives considered**: Custom indicator implementations (more control but maintenance burden), manual calculations only (limited feature set).
+
+**Decision: Pickle-Based Model Persistence**
+- **Rationale**: Native Python serialization with broad compatibility and support for complex object graphs.
+- **Trade-offs**: Python-specific format but provides complete model preservation including internal state.
+- **Alternatives considered**: ONNX format (language agnostic but limited library support), custom serialization (more control but complex implementation).
+
+**Decision: Modular Architecture with Clear Interfaces**
+- **Rationale**: Enables independent development, testing, and optimization of individual components while maintaining system integration.
+- **Trade-offs**: Initial development overhead but provides long-term maintainability and extensibility.
+- **Alternatives considered**: Monolithic design (faster initial development but harder to maintain), microservices (overkill for single-machine application).
+
+</architecture>
+
+---
+
+<risks>
+<instruction>
+Identify risks that could derail development and how to mitigate them.
+
+Categories:
+- Technical risks (complexity, unknowns)
+- Dependency risks (blocking issues)
+- Scope risks (creep, underestimation)
+</instruction>
+
+## Technical Risks
+
+**Risk**: HMM convergence issues with real-world futures data
+- **Impact**: High - Core functionality failure
+- **Likelihood**: Medium - Financial data can be challenging for HMM models
+- **Mitigation**:
+  - Implement robust convergence monitoring with multiple restart strategies
+  - Add data preprocessing for stationarity and outlier handling
+  - Provide fallback to simpler models if HMM fails to converge
+  - Include comprehensive parameter tuning guidance
+- **Fallback**: Use alternative regime detection methods (Gaussian mixture models, clustering)
+
+**Risk**: Memory constraints with very large datasets
+- **Impact**: High - System becomes unusable for target use cases
+- **Likelihood**: Medium - Multi-GB futures datasets are common
+- **Mitigation**:
+  - Implement and test all three processing engines (Streaming, Dask, Daft)
+  - Add automatic memory monitoring and engine selection
+  - Provide clear memory usage estimates and requirements
+  - Include chunking strategies for all data processing stages
+- **Fallback**: Require users to pre-process large datasets or use cloud resources
+
+**Risk**: Numerical stability issues in HMM calculations
+- **Impact**: Medium - Model training failures or incorrect results
+- **Likelihood**: Low - hmmlearn is well-tested, but financial data can be challenging
+- **Mitigation**:
+  - Implement robust feature scaling and normalization
+  - Add numerical stability checks and warnings
+  - Provide parameter validation and range checking
+  - Include fallback covariance types if diagonal fails
+- **Fallback**: Use regularized covariance matrices or alternative distance metrics
+
+**Risk**: Performance bottlenecks in real-time inference
+- **Impact**: Medium - System may be unsuitable for live trading applications
+- **Likelihood**: Low - Inference is typically fast for trained HMM models
+- **Mitigation**:
+  - Profile and optimize inference pipeline
+  - Implement vectorized operations for state prediction
+  - Add caching for repeated calculations
+  - Provide performance benchmarks and expectations
+- **Fallback**: Require model retraining for batch processing only
+
+## Dependency Risks
+
+**Risk**: hmmlearn library deprecation or compatibility issues
+- **Impact**: High - Core library dependency
+- **Likelihood**: Low - Stable, well-maintained library
+- **Mitigation**:
+  - Pin specific versions in requirements and test compatibility
+  - Implement adapter pattern for easy library substitution
+  - Monitor library development and community activity
+  - Maintain fallback implementations using alternative libraries
+- **Fallback**: Implement custom HMM using scikit-learn or scipy
+
+**Risk**: TA library limitations or indicator calculation errors
+- **Impact**: Medium - Feature engineering quality issues
+- **Likelihood**: Low - Well-established library with active maintenance
+- **Mitigation**:
+  - Validate indicator calculations against manual implementations
+  - Implement custom indicators for critical calculations
+  - Add comprehensive testing of indicator outputs
+  - Monitor library updates and breaking changes
+- **Fallback**: Implement custom technical indicator calculations
+
+**Risk**: Dask/Daft processing engine compatibility issues
+- **Impact**: Medium - Large dataset processing failures
+- **Likelihood**: Medium - Complex distributed computing libraries
+- **Mitigation**:
+  - Implement comprehensive testing across different environments
+  - Provide clear installation and setup instructions
+  - Add graceful fallback to streaming engine if others fail
+  - Include environment validation and dependency checking
+- **Fallback**: Use streaming engine for all processing with memory warnings
+
+## Scope Risks
+
+**Risk**: Feature creep with additional analysis capabilities
+- **Impact**: Medium - Project timeline extension and complexity increase
+- **Likelihood**: High - Natural tendency to add more features
+- **Mitigation**:
+  - Maintain strict focus on core HMM futures analysis functionality
+  - Use modular design to allow future extensions without core changes
+  - Implement clear project boundaries and completion criteria
+  - Regular review against original requirements and success metrics
+- **Fallback**: Defer additional features to future releases or separate projects
+
+**Risk**: Underestimation of testing and validation requirements
+- **Impact**: Medium - Quality issues and delayed delivery
+- **Likelihood**: Medium - Complex financial modeling requires thorough testing
+- **Mitigation**:
+  - Allocate 40% of development time to testing and validation
+  - Implement automated testing pipeline from project start
+  - Use property-based testing for mathematical functions
+  - Include validation against known financial datasets and benchmarks
+- **Fallback**: Release with reduced feature set but higher quality
+
+**Risk**: Performance optimization requirements greater than expected
+- **Impact**: Medium - Additional development time for optimization work
+- **Likelihood**: Medium - Financial applications often have high performance requirements
+- **Mitigation**:
+  - Implement performance monitoring and profiling from early stages
+  - Set clear performance benchmarks and requirements
+  - Use efficient libraries and vectorized operations
+  - Plan optimization work as separate development phase
+- **Fallback**: Provide clear performance expectations and hardware requirements
+
+**Risk**: Documentation and user onboarding complexity underestimation
+- **Impact**: Low - User adoption challenges
+- **Likelihood**: Medium - Complex quantitative finance tools require good documentation
+- **Mitigation**:
+  - Start documentation development alongside core functionality
+  - Include comprehensive examples and tutorials
+  - Provide clear troubleshooting guides and FAQ
+  - Plan dedicated documentation phase before release
+- **Fallback**: Release with core documentation and add guides over time
+
+</risks>
+
+---
+
+<appendix>
+## References
+- **hmmlearn documentation**: https://hmmlearn.readthedocs.io/
+- **pandas TA library**: https://technical-analysis-library-in-python.readthedocs.io/
+- **Dask distributed computing**: https://docs.dask.org/
+- **Daft processing framework**: https://www.getdaft.io/
+- **Hidden Markov Models in Finance**: "Hidden Markov Models in Finance" by R. S. Mamon and R. J. Elliott
+- **Futures Market Regime Detection**: "Regime-Switching Models in Financial Markets" - Various academic papers
+
+## Glossary
+- **HMM (Hidden Markov Model)**: Statistical model where system being modeled is assumed to be Markov process with hidden states
+- **OHLCV**: Open, High, Low, Close, Volume - standard format for financial time series data
+- **ATR (Average True Range)**: Technical analysis indicator measuring market volatility
+- **RSI (Relative Strength Index)**: Momentum oscillator measuring speed and change of price movements
+- **Lookahead Bias**: Error introduced by using information not available at trading time
+- **Backtesting**: Process of testing trading strategy on historical data
+- **Sharpe Ratio**: Risk-adjusted performance measure comparing return to volatility
+
+## Open Questions
+- Optimal number of hidden states for different futures contracts and timeframes
+- Best practices for handling contract rollovers and continuous futures series
+- Integration with real-time data feeds for live trading applications
+- Support for multi-asset portfolio analysis with correlated regime detection
+- Cloud deployment strategies for institutional-scale processing
+
+</appendix>
+
+---
+
+<task-master-integration>
+# How Task Master Uses This PRD
+
+When you run `task-master parse-prd <file>.txt`, the parser:
+
+1. **Extracts capabilities** → Main tasks
+   - Each `### Capability:` becomes a top-level task
+
+2. **Extracts features** → Subtasks
+   - Each `#### Feature:` becomes a subtask under its capability
+
+3. **Parses dependencies** → Task dependencies
+   - `Depends on: [X, Y]` sets task.dependencies = ["X", "Y"]
+
+4. **Orders by phases** → Task priorities
+   - Phase 0 tasks = highest priority
+   - Phase N tasks = lower priority, properly sequenced
+
+5. **Uses test strategy** → Test generation context
+   - Feeds test scenarios to Surgical Test Generator during implementation
+
+**Result**: A dependency-aware task graph that can be executed in topological order.
+
+## Why RPG Structure Matters
+
+Traditional flat PRDs lead to:
+- ❌ Unclear task dependencies
+- ❌ Arbitrary task ordering
+- ❌ Circular dependencies discovered late
+- ❌ Poorly scoped tasks
+
+RPG-structured PRDs provide:
+- ✅ Explicit dependency chains
+- ✅ Topological execution order
+- ✅ Clear module boundaries
+- ✅ Validated task graph before implementation
+
+## Tips for Best Results
+
+1. **Spend time on dependency graph** - This is the most valuable section for Task Master
+2. **Keep features atomic** - Each feature should be independently testable
+3. **Progressive refinement** - Start broad, use `task-master expand` to break down complex tasks
+4. **Use research mode** - `task-master parse-prd --research` leverages AI for better task generation
+
+## Expected Task Generation
+
+This PRD should generate approximately **15 main tasks** (capabilities) and **45 subtasks** (features) organized into **5 development phases** with clear dependency relationships and comprehensive test coverage requirements.
+
+The resulting task graph will enable systematic development of the HMM futures analysis system with proper sequencing, parallelization opportunities, and quality assurance throughout the development process.
+</task-master-integration>
