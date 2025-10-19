@@ -1,0 +1,65 @@
+# HMM Futures Analysis - Default Configuration
+
+# HMM Model Configuration
+hmm:
+  n_states: 3
+  covariance_type: "diag"
+  max_iter: 100
+  random_state: 42
+  tol: 0.001
+  num_restarts: 3
+
+# Data Processing Configuration
+processing:
+  engine_type: "streaming"
+  chunk_size: 10000
+  memory_limit_gb: 8.0
+  enable_validation: true
+  downcast_floats: true
+  indicators:
+    sma:
+      length: 20
+    ema:
+      length: 20
+    rsi:
+      length: 14
+    atr:
+      length: 14
+    macd:
+      fast: 12
+      slow: 26
+      signal: 9
+    bollinger_bands:
+      length: 20
+      std: 2
+    roc:
+      length: 10
+    stochastic:
+      k: 14
+      d: 3
+    adx:
+      length: 14
+    volume_sma:
+      length: 20
+
+# Backtesting Configuration
+backtest:
+  initial_capital: 100000.0
+  commission_per_trade: 0.0
+  slippage_bps: 0.0
+  position_size: 1.0
+  lookahead_lag: 1
+  state_map:
+    0: 1    # State 0 -> Long position
+    1: -1   # State 1 -> Short position
+    2: 0    # State 2 -> Flat position
+
+# Logging Configuration
+logging:
+  level: "INFO"
+  format: "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+  date_format: "%Y-%m-%d %H:%M:%S"
+  file_path: "logs/hmm_analysis.log"
+  max_file_size: "10 MB"
+  backup_count: 5
+  enable_rotation: true

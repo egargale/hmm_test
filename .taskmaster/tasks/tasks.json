@@ -9,7 +9,7 @@
         "testStrategy": "Unit tests for each utility function (e.g., `test_load_config_valid`, `test_load_config_invalid`, `test_setup_logging_output`). Ensure type hints are correctly applied and validated by `mypy`. Achieve >90% line coverage for the `utils` module. Critical scenarios: Configuration loading with missing or invalid fields, logging output at different levels.",
         "priority": "high",
         "dependencies": [],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -17,7 +17,7 @@
             "description": "Set up the project structure using Poetry, create the `pyproject.toml` file, and add essential libraries like `pydantic`, `numpy`, and `pandas` as specified, including creating the `utils` directory.",
             "dependencies": [],
             "details": "Use `Poetry new project_name` to initialize the project (if not already done). Configure `pyproject.toml` to specify Python 3.10+. Add `pydantic` (version 2.5.3+), `numpy` (version 1.26.2+), and `pandas` (version 2.1.3+) to `[tool.poetry.dependencies]`. Run `poetry install`. Create the `src/utils` directory structure within the project.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Verify `poetry env info` shows the correct Python version. Run `poetry install` and ensure all dependencies are resolved without errors. Check for the existence of `pyproject.toml` and the `src/utils` directory. Confirm that `pydantic`, `numpy`, and `pandas` are listed in `poetry show` output."
           },
           {
@@ -28,7 +28,7 @@
               1
             ],
             "details": "In `src/utils/data_types.py`, define `dataclasses` like `FuturesData` (timestamp: datetime, open: float, high: float, low: float, close: float, volume: float), `HMMState`, `BacktestResult`, and `PerformanceMetrics`. Leverage `numpy` and `pandas` for appropriate array/series types where applicable. In `src/utils/config.py`, implement `HMMConfig` and `ProcessingConfig` using `pydantic.BaseModel` with `Field` validation (e.g., `n_states: int = Field(3, ge=1, le=10)`). Add a `load_config(config_path: str) -> HMMConfig` (or similar for ProcessingConfig) function to load YAML/JSON files and validate them using `Pydantic`'s parsing capabilities.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Unit tests for `config.py`: `test_load_config_valid_yaml`, `test_load_config_invalid_schema`, `test_default_config_values`. Ensure `mypy` passes for type checking across `data_types.py` and `config.py`. Manually inspect `dataclasses` and `pydantic` models for correct field definitions, types, and default values. Create example config files (valid/invalid) to test loading logic."
           },
           {
@@ -39,7 +39,7 @@
               1
             ],
             "details": "Create `src/utils/logging_config.py`. Implement a `setup_logging()` function that configures Python's built-in `logging` module. This function should handle different log levels (DEBUG, INFO, WARNING, ERROR) and output formats for both console and a file. Consider integrating `loguru` (version 0.7.2+) for more developer-friendly logging features like automatic rotation and colorization, or `structlog` for structured JSON output if deeper integration with monitoring systems is planned.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Unit tests for `logging_config.py`: `test_setup_logging_console_output`, `test_setup_logging_file_output`, `test_log_levels_filtering`. Verify that log messages appear in the correct format and destination (console, log file) for different severity levels. Check for log file creation and rotation if those features are implemented."
           }
         ]
@@ -54,7 +54,7 @@
         "dependencies": [
           1
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -62,7 +62,7 @@
             "description": "Develop the `process_csv` function to efficiently parse multi-format OHLCV CSV files, detect and standardize datetime columns, rename columns, strip whitespace, downcast numerical data types for memory efficiency, and optionally filter by symbol.",
             "dependencies": [],
             "details": "Create `csv_parser.py` and implement `process_csv`. Utilize `pandas.read_csv` with `chunksize` for memory-efficient loading. Implement logic to detect and convert various date/time column formats (e.g., 'YYYY-MM-DD HH:MM:SS' vs 'YYYY-MM-DD' and 'HH:MM:SS' separately) using `pd.to_datetime(..., infer_datetime_format=True)`. Rename columns to a standardized OHLCV format (e.g., 'date', 'open', 'high', 'low', 'close', 'volume'). Strip leading/trailing whitespace from column names and string data. Downcast numerical columns to `float32` (or `float16` if suitable) and integer columns to `int32`/`int16` using `df.astype()` to minimize memory footprint. Add a parameter for optional symbol filtering.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Unit tests for `process_csv` with various CSV formats (e.g., different delimiters like comma/semicolon, different date/time column arrangements, missing date/time components, varying column names like 'open_price', 'Close', 'Date Time'), including tests for symbol filtering, data type downcasting, and memory usage profiling with large files."
           },
           {
@@ -73,7 +73,7 @@
               1
             ],
             "details": "Implement `feature_engineering.py` and define `add_features(df: pd.DataFrame, indicator_config: dict) -> pd.DataFrame`. Ensure the input DataFrame has a datetime index. Calculate log returns using `ta.log_return`. Dynamically calculate other indicators specified in `indicator_config` using `pandas_ta` (e.g., ATR, ROC, RSI, BBANDS, ADX, STOCH, SMA ratios, volume indicators). Handle `min_periods` for rolling window calculations to avoid excessive NaNs propagating unnecessarily. Leverage vectorized `pandas` operations for performance. Downcast new feature columns to `float32` after calculation, as shown in the provided pseudo-code, to minimize memory footprint.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Property-based tests using `hypothesis` (e.g., `hypothesis.extra.pandas`) to validate indicator calculations across wide ranges of synthetic price data (random walks, trends, volatility changes). Unit tests for specific indicators to ensure correct output against known examples. Verify that `indicator_config` correctly applies and parameterizes indicators. Test NaN handling and downcasting of generated features."
           },
           {
@@ -85,7 +85,7 @@
               2
             ],
             "details": "Implement `data_validation.py` and define `validate_data(df: pd.DataFrame) -> (pd.DataFrame, dict)`. Verify the presence of all required OHLCV columns (e.g., 'open', 'high', 'low', 'close', 'volume') and the datetime index. Validate data types for all columns (e.g., numerical for prices/features, datetime for index). Identify and handle missing values, applying strategies like forward-fill or dropping rows/columns depending on context. Implement outlier detection using methods such as IQR or Z-score for relevant columns. Log detected issues and generate a data quality report (e.g., dictionary summarizing issues, counts, and proposed actions). Return the cleaned DataFrame and the report.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Unit tests for `validate_data` with dataframes containing various data quality issues: missing OHLCV columns, incorrect data types (e.g., string in 'close'), missing values (NaNs in price, volume), and clearly defined outliers. Verify that the function correctly identifies issues, applies specified handling (fill/drop), and generates an accurate quality report. Test different outlier detection thresholds and reporting formats."
           }
         ]
@@ -101,7 +101,7 @@
           1,
           2
         ],
-        "status": "pending",
+        "status": "in-progress",
         "subtasks": [
           {
             "id": 1,
@@ -109,7 +109,7 @@
             "description": "Develop the `process_streaming` function in `streaming_engine.py` using `pandas.read_csv` with `chunksize` for memory-efficient processing. Apply `data_processing.add_features` and `data_processing.validate_data` to each chunk, aggregate results into a final DataFrame, and manage memory effectively.",
             "dependencies": [],
             "details": "Create `src/processing_engines/streaming_engine.py`. Implement `process_streaming(csv_path: str, config: ProcessingConfig)` function. Use `pandas.read_csv(chunksize=...)` to iterate through data. Within each chunk, apply `data_processing.add_features` and `data_processing.validate_data`. Concatenate processed chunks into a final `pandas.DataFrame`. Implement explicit memory cleanup (e.g., `del chunk`, `gc.collect()`) after each chunk to minimize memory usage. Ensure `pandas` version 2.1.3+ is used.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Unit tests for `process_streaming` with small and medium-sized CSVs (e.g., 10MB, 100MB) to verify correct chunk processing, feature addition, data validation, and aggregation. Monitor memory usage during tests to confirm efficient memory management, especially with `chunksize`."
           },
           {
@@ -118,7 +118,7 @@
             "description": "Develop the `process_dask` function in `dask_engine.py` to leverage Dask DataFrames for lazy, scalable processing of large datasets. Map `data_processing` functions across partitions and manage Dask's computation lifecycle, including scheduler configuration.",
             "dependencies": [],
             "details": "Create `src/processing_engines/dask_engine.py`. Implement `process_dask(csv_path: str, config: ProcessingConfig)` function. Use `dask.dataframe.read_csv()` to create a lazy Dask DataFrame. Apply `data_processing.add_features` and `data_processing.validate_data` using `dask.dataframe.map_partitions` or `apply`. Trigger the computation with `.compute()` to get the final `pandas.DataFrame`. Configure Dask's scheduler (local or distributed) via `dask.distributed.Client` as needed. Ensure `dask` version 2023.11.0+ is used.",
-            "status": "pending",
+            "status": "in-progress",
             "testStrategy": "Unit tests for `process_dask` with various CSV sizes to verify lazy computation setup, correct mapping of `data_processing` functions across partitions, and accurate final results after `.compute()`. Test with a local Dask client and validate distributed processing logic if applicable."
           },
           {
@@ -479,7 +479,7 @@
     ],
     "metadata": {
       "created": "2025-10-19T08:32:45.168Z",
-      "updated": "2025-10-19T08:32:45.168Z",
+      "updated": "2025-10-19T10:23:36.345Z",
       "description": "Tasks for master context"
     }
   }

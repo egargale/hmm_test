@@ -1,0 +1,1 @@
+- if you need data to use in tests always use @BTC.csv
