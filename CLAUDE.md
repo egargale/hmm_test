@@ -1,1 +1,2 @@
-- if you need data to use in tests always use @BTC.csv
+- if you need data to use in tests always search for local csv files and take samples of data from them (to save memory)
+- use uv and uvx as python library manager

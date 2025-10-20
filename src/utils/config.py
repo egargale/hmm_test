@@ -58,7 +58,7 @@ class ProcessingConfig(BaseModel):
     @validator('engine_type')
     def validate_engine_type(cls, v):
         """Validate engine type is one of the allowed values."""
-        allowed_types = ['streaming', 'dask', 'daft']
+        allowed_types = ['streaming', 'dask', 'daft', 'auto']
         if v not in allowed_types:
             raise ValueError(f"engine_type must be one of {allowed_types}")
         return v

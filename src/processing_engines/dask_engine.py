@@ -289,13 +289,18 @@ def _update_dask_metadata(ddf: dd.DataFrame) -> dd.DataFrame:
     Returns:
         dd.DataFrame: Updated Dask DataFrame with correct metadata
     """
-    # Compute a small sample to get the actual structure
-    sample = ddf.head(1)
+    try:
+        # Compute a small sample to get the actual structure
+        sample = ddf.head(1)
 
-    # Update the metadata to match the actual computed result
-    ddf._meta = sample
+        # Update the metadata to match the actual computed result
+        # Note: _meta is read-only in newer Dask versions, so we use clear_divisions
+        ddf = ddf.clear_divisions()
+        return ddf
 
-    return ddf
+    except Exception as e:
+        logger.warning(f"Could not update Dask metadata: {e}")
+        return ddf
 
 
 def _detect_ohlcv_columns_dask(df: pd.DataFrame) -> Dict[str, str]:

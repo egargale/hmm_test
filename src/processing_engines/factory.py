@@ -384,6 +384,75 @@ class ProcessingEngineFactory:
 
         return results
 
+    def get_engine(self, engine_type: str):
+        """
+        Get a specific processing engine function.
+
+        Args:
+            engine_type: Type of engine ('streaming', 'dask', 'daft')
+
+        Returns:
+            Processing function for the specified engine
+
+        Raises:
+            ValueError: If engine type is not supported or not available
+        """
+        if engine_type not in self.get_available_engines():
+            raise ValueError(f"Engine '{engine_type}' is not available. Available: {self.get_available_engines()}")
+
+        if engine_type == 'streaming':
+            return process_streaming
+        elif engine_type == 'dask':
+            return process_dask
+        elif engine_type == 'daft':
+            return process_daft
+        else:
+            raise ValueError(f"Unknown engine type: {engine_type}")
+
+    def process_with_engine(
+        self,
+        csv_path: str,
+        config: ProcessingConfig,
+        engine: Optional[str] = None,
+        compute_result: bool = True,
+        show_progress: bool = True,
+        **engine_kwargs
+    ) -> pd.DataFrame:
+        """
+        Convenience function to process data with automatic or specified engine selection.
+
+        Args:
+            csv_path: Path to CSV file
+            config: Processing configuration
+            engine: Specific engine to use (None = auto-select)
+            compute_result: Whether to compute the final result
+            show_progress: Whether to show progress
+            **engine_kwargs: Engine-specific parameters
+
+        Returns:
+            pd.DataFrame: Processed data
+        """
+        # Auto-select engine if not specified
+        if engine is None:
+            engine = self.recommend_engine(
+                csv_path=csv_path,
+                memory_limit_gb=engine_kwargs.get('memory_limit_gb', 8.0),
+                prefer_speed=engine_kwargs.get('prefer_speed', True),
+                prefer_memory_efficiency=engine_kwargs.get('prefer_memory_efficiency', False)
+            )
+
+        logger.info(f"Processing with {engine} engine")
+
+        # Create processor
+        processed_data = self.create_processor(engine, csv_path, config, **engine_kwargs)
+
+        # Compute result if requested
+        if compute_result:
+            result = self.compute_result(processed_data, show_progress=show_progress)
+            return result
+        else:
+            return processed_data
+
     def get_engine_info(self) -> Dict[str, Any]:
         """Get information about all available engines."""
         info = {
@@ -403,7 +472,7 @@ class ProcessingEngineFactory:
         # Dask engine info
         if self._engine_status.get('dask'):
             try:
-                from dask_engine import get_dask_cluster_info
+                from .dask_engine import get_dask_cluster_info
                 cluster_info = get_dask_cluster_info()
                 info['engine_details']['dask'] = {
                     'type': 'dask',
@@ -424,7 +493,7 @@ class ProcessingEngineFactory:
         # Daft engine info
         if self._engine_status.get('daft'):
             try:
-                from daft_engine import get_daft_cluster_info
+                from .daft_engine import get_daft_cluster_info
                 daft_info = get_daft_cluster_info()
                 info['engine_details']['daft'] = {
                     'type': 'daft',

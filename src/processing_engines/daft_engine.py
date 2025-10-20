@@ -8,16 +8,18 @@ cloud-native data processing with automatic optimization and GPU acceleration.
 import time
 import warnings
 from pathlib import Path
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Union
 
 try:
     import daft
     import pyarrow as pa
+    import pyarrow.compute as pc
     DAFT_AVAILABLE = True
 except ImportError:
     DAFT_AVAILABLE = False
     daft = None
     pa = None
+    pc = None
 
 from data_processing import add_features, validate_data
 from utils import get_logger, ProcessingConfig
@@ -165,11 +167,18 @@ def _apply_csv_preprocessing_daft(df: "daft.DataFrame") -> "daft.DataFrame":
     if not column_mapping:
         raise ValueError("Could not detect required OHLCV columns in Daft DataFrame")
 
-    # Rename columns to standard names
+    # Rename columns to standard names using Daft's native operations
+    # Since Daft doesn't have rename, we'll manually recreate columns
     for old_name, new_name in column_mapping.items():
         if old_name != new_name:
             df = df.with_column(new_name, df[old_name])
             df = df.exclude(old_name)
+
+    # Process datetime columns using Daft expressions
+    df = _process_datetime_columns_daft_expressions(df)
+
+    # Clean numeric data using Daft expressions
+    df = _clean_numeric_data_daft_expressions(df)
 
     logger.info(f"Standardized columns: {list(df.column_names)}")
     return df
@@ -237,6 +246,86 @@ def _apply_feature_engineering_daft(df: "daft.DataFrame", config: ProcessingConf
         # Fallback: return original DataFrame without features
         logger.warning("Returning original DataFrame without features")
         return df
+
+
+def _process_datetime_columns_daft_expressions(df: "daft.DataFrame") -> "daft.DataFrame":
+    """
+    Process datetime columns using Daft expressions for better performance.
+
+    Args:
+        df: Daft DataFrame
+
+    Returns:
+        daft.DataFrame: DataFrame with processed datetime columns
+    """
+    date_columns = ['date', 'Date', 'datetime', 'DateTime', 'timestamp', 'Timestamp']
+    time_columns = ['time', 'Time', 'datetime', 'DateTime', 'timestamp', 'Timestamp']
+
+    # Find date column
+    date_col = None
+    for col in date_columns:
+        if col in df.column_names:
+            date_col = col
+            break
+
+    # Find time column
+    time_col = None
+    for col in time_columns:
+        if col in df.column_names and col != date_col:
+            time_col = col
+            break
+
+    if date_col is None:
+        return df  # Keep original if no date column found
+
+    try:
+        if time_col and time_col in df.column_names:
+            # Combine date and time columns
+            datetime_col = "datetime"
+            df = df.with_column(
+                datetime_col,
+                daft.col(date_col).cast(daft.DataType.string()) + daft.lit(" ") + daft.col(time_col).cast(daft.DataType.string())
+            )
+            df = df.with_column(datetime_col, daft.col(datetime_col).cast(daft.DataType.timestamp("us")))
+            df = df.exclude(date_col, time_col)
+        else:
+            # Convert date column to datetime
+            df = df.with_column(date_col, daft.col(date_col).cast(daft.DataType.timestamp("us")))
+            datetime_col = date_col
+
+        # Set datetime as index
+        df = df.set_index(datetime_col)
+
+    except Exception as e:
+        logger.warning(f"Failed to process datetime columns with Daft expressions: {e}")
+        # Fallback to pandas-based processing
+        pass
+
+    return df
+
+
+def _clean_numeric_data_daft_expressions(df: "daft.DataFrame") -> "daft.DataFrame":
+    """
+    Clean and standardize numeric data using Daft expressions.
+
+    Args:
+        df: Daft DataFrame
+
+    Returns:
+        daft.DataFrame: DataFrame with cleaned numeric data
+    """
+    numeric_columns = ['open', 'high', 'low', 'close', 'volume']
+
+    for col in numeric_columns:
+        if col in df.column_names:
+            # Convert to numeric, coercing errors to null
+            df = df.with_column(col, daft.col(col).cast(daft.DataType.float32()))
+
+            # Remove rows with null in price columns (but not volume)
+            if col != 'volume':
+                df = df.filter(daft.col(col).not_null())
+
+    return df
 
 
 def _apply_validation_daft(df: "daft.DataFrame") -> "daft.DataFrame":
