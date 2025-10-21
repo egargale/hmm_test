@@ -339,7 +339,7 @@
           5,
           7
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -349,7 +349,7 @@
               2
             ],
             "details": "Implement `plot_states` in `chart_generator.py`. Utilize `matplotlib` (3.8.2+) and `mplfinance` (0.12.9b0+) for efficient candlestick chart generation with state overlays. Ensure customizable time ranges, interactive legends, and annotations. Output must be to publication-ready formats like PNG and SVG. Integrate with `data_processing` for technical indicator data.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Unit tests for `chart_generator.py` to verify charts render without errors, displaying correct OHLCV data, HMM state overlays, and indicators. Test different time ranges, number of states, and output formats (PNG/SVG). Visual inspection is crucial for correctness and aesthetic appeal."
           },
           {
@@ -360,7 +360,7 @@
               7
             ],
             "details": "Implement `build_dashboard` in `dashboard_builder.py`. Use `plotly` (5.18.0+) to create interactive HTML dashboards. Integrate performance metrics from `backtesting.performance_metrics`. The dashboard should include interactive equity curves, drawdown charts, and visual representations (e.g., pie/bar charts) of regime durations. The final output must be a single standalone HTML file with all interactive elements.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Unit tests for `dashboard_builder.py` to ensure interactive elements function as expected, performance metrics are displayed correctly, and the HTML output is valid and self-contained. Test with various backtest results, including edge cases like flat equity curves or scenarios with high drawdowns."
           },
           {
@@ -369,7 +369,7 @@
             "description": "Develop the `generate_regime_report` function in `report_generator.py` to produce detailed PDF/HTML reports. These reports will describe HMM regime characteristics, transition probabilities (from `hmm.transmat_`), and feature distributions within each state.",
             "dependencies": [],
             "details": "Implement `generate_regime_report` in `report_generator.py`. Utilize `jinja2` (3.1.2+) for templating the report content. Include details on mean return, volatility per state, transition probabilities (using `hmm.transmat_`), and feature distributions within each state. Use `WeasyPrint` (61.1+) for converting templated HTML to PDF if PDF output is required, otherwise directly output HTML. Ensure the reports are well-formatted and easy to read.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Unit tests for `report_generator.py` to verify report content accuracy, correct formatting, and successful generation of both HTML and PDF outputs. Test with different HMM model outputs to ensure all regime characteristics and transition probabilities are correctly captured and presented."
           }
         ]
@@ -479,7 +479,7 @@
     ],
     "metadata": {
       "created": "2025-10-19T08:32:45.168Z",
-      "updated": "2025-10-21T09:33:07.480Z",
+      "updated": "2025-10-21T11:17:50.612Z",
       "description": "Tasks for master context"
     }
   }
