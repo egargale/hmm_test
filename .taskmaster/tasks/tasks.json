@@ -101,7 +101,7 @@
           1,
           2
         ],
-        "status": "in-progress",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -117,8 +117,8 @@
             "title": "Implement Dask Processing Engine (`dask_engine.py`)",
             "description": "Develop the `process_dask` function in `dask_engine.py` to leverage Dask DataFrames for lazy, scalable processing of large datasets. Map `data_processing` functions across partitions and manage Dask's computation lifecycle, including scheduler configuration.",
             "dependencies": [],
-            "details": "Create `src/processing_engines/dask_engine.py`. Implement `process_dask(csv_path: str, config: ProcessingConfig)` function. Use `dask.dataframe.read_csv()` to create a lazy Dask DataFrame. Apply `data_processing.add_features` and `data_processing.validate_data` using `dask.dataframe.map_partitions` or `apply`. Trigger the computation with `.compute()` to get the final `pandas.DataFrame`. Configure Dask's scheduler (local or distributed) via `dask.distributed.Client` as needed. Ensure `dask` version 2023.11.0+ is used.",
-            "status": "in-progress",
+            "details": "Create `src/processing_engines/dask_engine.py`. Implement `process_dask(csv_path: str, config: ProcessingConfig)` function. Use `dask.dataframe.read_csv()` to create a lazy Dask DataFrame. Apply `data_processing.add_features` and `data_processing.validate_data` using `dask.dataframe.map_partitions` or `apply`. Trigger the computation with `.compute()` to get the final `pandas.DataFrame`. Configure Dask's scheduler (local or distributed) via `dask.distributed.Client` as needed. Ensure `dask` version 2023.11.0+ is used.\n<info added on 2025-10-21T07:42:02.609Z>\n{\n  \"content\": \"Implementation is complete and has been tested. Key features include lazy DataFrame processing using `dask.dataframe.read_csv` with configurable block sizes and automatic partition optimization. The `map_partitions` function is used to apply feature engineering and validation from the `data_processing` module across partitions. The engine supports multiple Dask scheduler configurations (threads, processes, distributed) and includes progress monitoring via `dask.diagnostics.ProgressBar`. Testing confirmed that lazy evaluation works correctly, feature engineering adds 8+ indicators per partition, and data validation achieves 100% quality scores. The engine is fully functional for scalable, out-of-memory dataset processing.\"\n}\n</info added on 2025-10-21T07:42:02.609Z>",
+            "status": "done",
             "testStrategy": "Unit tests for `process_dask` with various CSV sizes to verify lazy computation setup, correct mapping of `data_processing` functions across partitions, and accurate final results after `.compute()`. Test with a local Dask client and validate distributed processing logic if applicable."
           },
           {
@@ -130,7 +130,7 @@
               2
             ],
             "details": "1. Create `src/processing_engines/daft_engine.py`. Implement `process_daft(csv_path: str, config: ProcessingConfig)` function. Use `daft.read_csv()` to load data and apply `data_processing.add_features` and `data_processing.validate_data` steps using Daft's expression API or `map_batches`. Emphasize predicate pushdown and columnar operations for performance. Ensure `daft` version 0.1.2+ and `pyarrow` 14.0.1+ are used. \n2. Create `src/processing_engines/index.py`. Implement `ProcessingEngineFactory` with a static method `get_engine(engine_type: str)` that imports and returns the respective processing function (`process_streaming`, `process_dask`, `process_daft`) based on `engine_type`. Implement `process_with_engine` as the module's entry point.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Unit tests for `process_daft` validating correct data loading, feature engineering, and validation using Daft's API. Compare Daft's output for small/medium datasets against Pandas/Dask outputs. Unit tests for `ProcessingEngineFactory.get_engine` to ensure it correctly returns the expected engine function for 'streaming', 'dask', and 'daft' types. Integration tests for `process_with_engine` using all three engine types to process a sample CSV, verifying correct engine dispatch and end-to-end data processing."
           }
         ]
@@ -146,7 +146,7 @@
           1,
           2
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -157,7 +157,7 @@
               2
             ],
             "details": "Create `src/model_training/hmm_trainer.py`. Implement `train_model` function accepting `features: np.ndarray` and `config: HMMConfig` (from utils). Inside, initialize `StandardScaler`, call `fit_transform` on features. Pass scaled features to `hmm.GaussianHMM` using parameters like `n_components`, `covariance_type='diag'`, `n_iter`, and `random_state` from `config`. The function should return the fitted HMM model and the fitted scaler.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Unit tests for `train_model` ensuring correct HMM instantiation and feature scaling application. Verify that the output includes both the trained model and the fitted scaler. Test with simple synthetic data to confirm basic functionality."
           },
           {
@@ -169,7 +169,7 @@
               2
             ],
             "details": "Modify the `train_model` function to include a loop for `config.num_restarts`. Inside the loop, vary `random_state` for each `hmm.GaussianHMM` initialization (e.g., `config.random_state + i`). After each `model.fit()`, calculate `model.score(scaled_features)` to get the log-likelihood. Keep track of `best_model` and `best_score` and update them if a higher score is achieved. Handle cases where no model converges successfully across any restart.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Unit tests to verify that `train_model` performs multiple restarts as specified by `config.num_restarts`. Ensure the function correctly identifies and returns the model with the highest log-likelihood. Test with synthetic data known to potentially have multiple local optima to validate best model selection."
           },
           {
@@ -181,7 +181,7 @@
               2
             ],
             "details": "Before initializing `hmm.GaussianHMM`, validate `config.n_states` (e.g., `n_states >= 1`). Within the training loop (especially around `model.fit()`), add comprehensive `try-except` blocks to catch `ValueError`, `RuntimeError`, or `ConvergenceWarning` from `hmmlearn`. Log informative warnings for issues like singular covariance matrices or zero-variance features. Provide a `RuntimeError` if HMM fails to converge after all restarts. Consider adding a small epsilon to the diagonal of covariance matrices if such customization is necessary for robustness.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Unit tests for parameter validation (e.g., `n_states < 1`). Test with synthetic data designed to cause numerical instability (e.g., constant features leading to zero variance) to ensure warnings or error handling mechanisms are triggered correctly. Verify that the function gracefully handles exceptions from `hmmlearn` during training without crashing."
           }
         ]
@@ -197,7 +197,7 @@
           1,
           4
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -205,7 +205,7 @@
             "description": "Develop the `predict_states` function in `inference_engine.py`. This includes scaling input features using a provided `StandardScaler` and then applying the trained `hmmlearn.hmm.GaussianHMM` model to predict hidden state sequences and their probabilities.",
             "dependencies": [],
             "details": "Implement `predict_states(model, scaler, features)` which first `scaler.transform(features)` then `model.predict(scaled_features)` for the state sequence. Additionally, obtain state probabilities using `model.predict_proba(scaled_features)`. Ensure the function returns both the inferred state sequence and the probability matrix. Leverage `hmmlearn.hmm.GaussianHMM` and `sklearn.preprocessing.StandardScaler` for the implementation.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Unit tests for `inference_engine.py` to verify accurate state prediction against known HMM sequences and correct application of feature scaling. Test `predict_proba` for probability distribution correctness (e.g., rows sum to 1)."
           },
           {
@@ -214,7 +214,7 @@
             "description": "Create `save_model` and `load_model` functions in `model_persistence.py` using Python's `pickle` module. These functions will serialize and deserialize trained HMM models, their associated feature scalers, and HMM configuration, including robust integrity validation upon loading.",
             "dependencies": [],
             "details": "Implement `save_model(model, scaler, config, path)` and `load_model(path)` as per the provided pseudo-code. The `save_model` function must store a dictionary containing `'hmm_model'`, `'scaler'`, `'config'` (converted to dict), `'version'`, and `'timestamp'`. The `load_model` function must include checks for existence of expected keys (`'hmm_model'`, `'scaler'`, `'config'`) in the loaded dictionary to validate integrity and raise `ValueError` for corrupted files. Reconstruct `HMMConfig` from the loaded dictionary.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Unit tests for `model_persistence.py` to ensure successful save/load operations for various valid combinations of HMMs, scalers, and configs. Test error handling for non-existent files and corrupted (missing key) model files. Perform a basic prediction test after loading to ensure functional integrity of the loaded components."
           },
           {
@@ -225,7 +225,7 @@
               1
             ],
             "details": "Implement a helper function like `get_lagged_states(raw_states, lag_periods)` within `inference_engine.py`. This function should take the raw state sequence generated by `predict_states` and return a new sequence where each state at time `t` corresponds to the inferred state at `t-N` (e.g., `N=1` for a single-period lag). Ensure proper handling of initial periods where a lag cannot be applied (e.g., by padding with a designated 'no-state' value or a default state).",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Unit tests for the new `get_lagged_states` helper function in `inference_engine.py`, verifying correct state shifts and handling of `lag_periods`. Test with different lag values and edge cases (e.g., `lag_periods = 0`, `lag_periods >= data_length`)."
           }
         ]
@@ -241,7 +241,7 @@
           1,
           5
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -249,7 +249,7 @@
             "description": "Develop the initial `backtest_strategy` function within `strategy_engine.py` to map HMM-inferred states to target positions (long/short/flat) based on `config.state_map`. Ensure strict lookahead bias prevention by using lagged states for all trading decisions. The output should be a raw `position_array` indicating target positions without immediate trade execution.",
             "dependencies": [],
             "details": "Create the `backtest_strategy` function signature: `backtest_strategy(states: np.ndarray, prices: pd.Series, config: BacktestConfig) -> pd.Series`. Implement the core loop that iterates through the time series. For each time step `i`, determine the target position using `states[i-1]` and `config.state_map`. Populate a `positions` pandas Series or numpy array (1 for long, -1 for short, 0 for flat). Ensure `BacktestConfig` and `Trade` dataclasses are available from `utils.data_types` and `config` module.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Unit tests using synthetic price data and pre-defined HMM state sequences. Verify that the `position_array` correctly reflects the `state_map` for each time step, explicitly validating lookahead prevention by asserting that decisions at time `t` are based solely on information available at `t-1` or earlier. Test cases should include different `state_map` configurations, continuous states, and rapid state changes."
           },
           {
@@ -260,7 +260,7 @@
               1
             ],
             "details": "Modify the `backtest_strategy` to track the `current_position`. When a change from `current_position` to `target_position` (from subtask 1) is detected, simulate a trade at the current bar's open price (`prices.iloc[i]`). Calculate and apply transaction costs using `config.slippage_bps` (as a percentage of trade value) and `config.commission_per_trade` (fixed cost per trade). Update `current_position` after each simulated trade. Ensure vectorized calculations are used where possible for cost application to optimize performance.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Unit tests with synthetic data including various state change patterns (e.g., long-flat-short, multiple consecutive long positions). Verify correct trade execution timing (decision at `t-1`, execution at `t`). Validate transaction cost application for both entry and exit trades. Test scenarios with varying `slippage_bps` and `commission_per_trade` values (including zero costs) to confirm accurate P&L impact."
           },
           {
@@ -271,7 +271,7 @@
               2
             ],
             "details": "Define a `Trade` dataclass in `src.utils.data_types` with attributes like `entry_time`, `entry_price`, `exit_time`, `exit_price`, `size`, `pnl`, `commission`, `slippage`. Within `backtest_strategy`, populate a list of these `Trade` objects during the trade execution phase (Subtask 2). Calculate the final P&L for each trade, including all costs. The function should ultimately return a `tuple` containing the `pd.Series` representing the final `position_array` and the `list[Trade]` representing the `trade_log`.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Unit tests to verify that the returned `trade_log` contains accurate and complete `Trade` objects for all simulated trades. Validate the P&L calculations within each `Trade` object, ensuring transaction costs are correctly reflected. Confirm that the final `position_array` is properly aligned with the `prices.index` and accurately reflects the state after all transitions and trade executions. Test edge cases like no trades occurring."
           }
         ]
@@ -288,7 +288,7 @@
           2,
           6
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -298,7 +298,7 @@
               6
             ],
             "details": "Implement the `calculate_performance` function that takes an equity curve (pd.Series), optional benchmark, and risk-free rate. Focus on calculating CAGR, Annualized Volatility, Sharpe Ratio (using provided pseudo-code with numpy/pandas), and Maximum Drawdown and its duration. Ensure correct annualization factors are applied based on data frequency (e.g., 252 for daily).",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Unit tests for `performance_metrics.py` to calculate CAGR, Volatility, Sharpe Ratio, and Maximum Drawdown against manually computed results for various synthetic equity curves. Test edge cases such as flat equity curves or curves with only losses."
           },
           {
@@ -309,7 +309,7 @@
               1
             ],
             "details": "Build upon the work in Subtask 1. Add calculation logic for Calmar Ratio, Win Rate, Loss Rate, Profit Factor, and Sortino Ratio. Ensure all metrics, both from Subtask 1 and this subtask, are correctly populated into the `PerformanceMetrics` dataclass from `utils.data_types`. Handle scenarios like zero standard deviation for Sortino Ratio. Confirm intraday data scaling is handled for annualization.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Unit tests to verify the accuracy of newly implemented metrics (Calmar Ratio, Win/Loss Rate, Profit Factor, Sortino Ratio). Integration tests to ensure the `PerformanceMetrics` dataclass is fully and correctly populated with all calculated values from various equity curve scenarios."
           },
           {
@@ -321,7 +321,7 @@
               6
             ],
             "details": "Create functions within `bias_prevention.py` for 'Timing Consistency Check' to verify decisions are made only with available past data, and 'Data Availability Validation' to ensure features used were genuinely available at `t`. Optionally, develop 'Position Shifting Validation' logic that can compare performance with known bias against a shifted version. This module should provide detection and reporting, complementing lagging logic in the strategy engine.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Unit tests for `bias_prevention.py` using synthetic datasets specifically designed to exhibit lookahead bias (e.g., using future data for indicator calculation) to ensure the detection mechanisms trigger correctly. Test the reporting functionality and any utility functions for shifting state sequences."
           }
         ]
@@ -479,7 +479,7 @@
     ],
     "metadata": {
       "created": "2025-10-19T08:32:45.168Z",
-      "updated": "2025-10-19T10:23:36.345Z",
+      "updated": "2025-10-21T09:33:07.480Z",
       "description": "Tasks for master context"
     }
   }

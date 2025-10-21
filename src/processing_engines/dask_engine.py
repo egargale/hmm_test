@@ -183,13 +183,14 @@ def _apply_feature_engineering_dask(ddf: dd.DataFrame, config: ProcessingConfig)
         )
         return df
 
-    # Create sample meta with feature columns
-    sample_meta = _create_sample_meta_with_features()
+    # Clear divisions to ensure metadata doesn't interfere
+    ddf = ddf.clear_divisions()
 
-    # Apply feature engineering to each partition
+    # Apply feature engineering to each partition without specifying meta
+    # This allows Dask to infer the metadata from the computation
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")  # Suppress Dask warnings
-        ddf = ddf.map_partitions(process_partition, meta=sample_meta)
+        ddf = ddf.map_partitions(process_partition)
 
     return ddf
 
@@ -257,13 +258,13 @@ def _apply_csv_preprocessing_dask(ddf: dd.DataFrame) -> dd.DataFrame:
 
         return df
 
-    # Create sample meta for preprocessing
-    sample_meta = _create_sample_meta_for_preprocessing()
+    # Clear divisions to ensure metadata doesn't interfere
+    ddf = ddf.clear_divisions()
 
-    # Apply preprocessing to each partition
+    # Apply preprocessing to each partition without specifying meta
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")  # Suppress Dask warnings
-        ddf = ddf.map_partitions(preprocess_partition, meta=sample_meta)
+        ddf = ddf.map_partitions(preprocess_partition)
 
     return ddf
 
@@ -293,14 +294,28 @@ def _update_dask_metadata(ddf: dd.DataFrame) -> dd.DataFrame:
         # Compute a small sample to get the actual structure
         sample = ddf.head(1)
 
-        # Update the metadata to match the actual computed result
-        # Note: _meta is read-only in newer Dask versions, so we use clear_divisions
+        # Clear divisions to reset metadata
         ddf = ddf.clear_divisions()
+
+        # Update metadata based on actual computed sample
+        if hasattr(ddf, '_meta_assign'):
+            # For newer Dask versions that support _meta_assign
+            ddf._meta_assign(sample)
+        elif hasattr(ddf, '_meta'):
+            # Try to update directly if possible
+            try:
+                ddf._meta = sample
+            except (AttributeError, TypeError):
+                # If _meta is read-only, just clear divisions
+                pass
+
+        logger.debug(f"Updated Dask metadata: {len(sample.columns)} columns")
         return ddf
 
     except Exception as e:
         logger.warning(f"Could not update Dask metadata: {e}")
-        return ddf
+        # Clear divisions as fallback
+        return ddf.clear_divisions()
 
 
 def _detect_ohlcv_columns_dask(df: pd.DataFrame) -> Dict[str, str]:
@@ -413,13 +428,13 @@ def _apply_validation_dask(ddf: dd.DataFrame) -> dd.DataFrame:
         )
         return df
 
-    # Use same meta as input (validation doesn't change columns)
-    sample_meta = ddf._meta
+    # Clear divisions to ensure metadata doesn't interfere
+    ddf = ddf.clear_divisions()
 
-    # Apply validation to each partition
+    # Apply validation to each partition without specifying meta
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")  # Suppress Dask warnings
-        ddf = ddf.map_partitions(validate_partition, meta=sample_meta)
+        ddf = ddf.map_partitions(validate_partition)
 
     return ddf
 
@@ -445,9 +460,28 @@ def compute_with_progress(ddf: dd.DataFrame, show_progress: bool = True) -> pd.D
                     result = ddf.compute()
         except Exception as e:
             logger.warning(f"Failed to use Dask progress bar: {e}")
-            result = ddf.compute()
+            # Try computing without progress bar
+            try:
+                result = ddf.compute()
+            except Exception as e2:
+                logger.error(f"Dask computation failed: {e2}")
+                # Try with clear_divisions to reset metadata
+                try:
+                    ddf_cleared = ddf.clear_divisions()
+                    result = ddf_cleared.compute()
+                except Exception as e3:
+                    raise RuntimeError(f"Dask computation failed after multiple attempts: {e3}") from e3
     else:
-        result = ddf.compute()
+        try:
+            result = ddf.compute()
+        except Exception as e:
+            logger.error(f"Dask computation failed: {e}")
+            # Try with clear_divisions to reset metadata
+            try:
+                ddf_cleared = ddf.clear_divisions()
+                result = ddf_cleared.compute()
+            except Exception as e2:
+                raise RuntimeError(f"Dask computation failed: {e2}") from e2
 
     logger.info(f"Computation completed: {len(result)} rows, {len(result.columns)} columns")
     return result
