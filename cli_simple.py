@@ -1,16 +1,20 @@
 """
-Simple HMM Futures Analysis CLI
+HMM Futures Analysis CLI - Comprehensive Orchestration
 
-A simplified command-line interface for HMM analysis focusing on core functionality.
+A comprehensive command-line interface for HMM futures market analysis
+with full orchestration, error handling, progress monitoring, and memory management.
 """
 
 import sys
 import os
 import logging
 import traceback
+import gc
+import psutil
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict, Any
 import time
+import json
 
 import click
 import pandas as pd
@@ -20,20 +24,164 @@ from tqdm import tqdm
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent / 'src'))
 
+# Import utilities
 from utils import get_logger, setup_logging
 from data_processing.csv_parser import process_csv
 from data_processing.data_validation import validate_data
+from data_processing.feature_engineering import add_features
+from processing_engines.index import ProcessingEngineFactory
+from model_training.hmm_trainer import train_model, validate_features_for_hmm
+from model_training.inference_engine import StateInference
+from model_training.model_persistence import save_model, load_model
 
-# Global logger
+# Global logger and configuration
 logger = None
+current_memory_usage = 0.0
+MEMORY_WARNING_THRESHOLD = 0.8  # 80% of available RAM
+
+
+def get_memory_usage() -> float:
+    """Get current memory usage as percentage of available RAM."""
+    try:
+        process = psutil.Process()
+        memory_info = process.memory_info()
+        memory_percent = process.memory_percent()
+        return memory_percent / 100.0
+    except Exception:
+        return 0.0
+
+
+def check_memory_usage(operation: str = "operation"):
+    """Check memory usage and log warnings if threshold exceeded."""
+    global current_memory_usage
+    current_memory_usage = get_memory_usage()
+
+    if current_memory_usage > MEMORY_WARNING_THRESHOLD:
+        logger.warning(
+            f"High memory usage during {operation}: {current_memory_usage:.1%} of available RAM"
+        )
+        # Trigger garbage collection
+        gc.collect()
+        # Re-check after collection
+        new_usage = get_memory_usage()
+        if new_usage < current_memory_usage:
+            logger.info(f"Memory reduced after garbage collection: {new_usage:.1%}")
+
+
+def log_performance_metrics(start_time: float, operation: str, additional_info: Dict[str, Any] = None):
+    """Log performance metrics for completed operations."""
+    elapsed_time = time.time() - start_time
+    memory_usage = get_memory_usage()
+
+    metrics = {
+        'operation': operation,
+        'elapsed_time_seconds': elapsed_time,
+        'memory_usage_percent': memory_usage,
+        'timestamp': time.time()
+    }
+
+    if additional_info:
+        metrics.update(additional_info)
+
+    logger.info(f"Performance - {operation}: {elapsed_time:.2f}s, Memory: {memory_usage:.1%}")
+
+    return metrics
+
+
+class HMMConfig:
+    """Configuration class for HMM analysis parameters."""
+
+    def __init__(self, n_states: int = 3, covariance_type: str = 'full',
+                 n_iter: int = 100, random_state: int = 42, tol: float = 1e-3,
+                 num_restarts: int = 3):
+        self.n_states = n_states
+        self.covariance_type = covariance_type
+        self.n_iter = n_iter
+        self.random_state = random_state
+        self.tol = tol
+        self.num_restarts = num_restarts
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert config to dictionary."""
+        return {
+            'n_states': self.n_states,
+            'covariance_type': self.covariance_type,
+            'n_iter': self.n_iter,
+            'random_state': self.random_state,
+            'tol': self.tol,
+            'num_restarts': self.num_restarts
+        }
+
+
+class ProcessingConfig:
+    """Configuration class for data processing parameters."""
+
+    def __init__(self, engine_type: str = 'streaming', chunk_size: int = 100000,
+                 indicators: Optional[Dict[str, Any]] = None):
+        self.engine_type = engine_type
+        self.chunk_size = chunk_size
+        self.indicators = indicators or {
+            'sma_5': {'window': 5},
+            'sma_10': {'window': 10},
+            'sma_20': {'window': 20},
+            'volatility_14': {'window': 14},
+            'returns': {}
+        }
 
 
 @click.group()
-@click.version_option(version="1.0.0", prog_name="hmm-analysis")
+@click.version_option(version="1.0.0", prog_name="hmm-futures-analysis")
+@click.option('--config-file', type=click.Path(exists=True),
+              help='Configuration file (JSON/YAML)')
 @click.option('--log-level',
               type=click.Choice(['DEBUG', 'INFO', 'WARNING', 'ERROR'], case_sensitive=False),
               default='INFO',
               help='Set logging level (default: INFO)')
+@click.option('--memory-monitor/--no-memory-monitor', default=True,
+              help='Enable memory monitoring (default: enabled)')
+@click.pass_context
+def cli(ctx, config_file, log_level, memory_monitor):
+    """
+    HMM Futures Analysis CLI - Comprehensive Orchestration
+
+    A production-ready command-line tool for comprehensive HMM futures market analysis
+    with multi-engine processing, advanced error handling, and performance monitoring.
+    """
+    # Set up logging
+    setup_logging(level=log_level.upper())
+    global logger
+    logger = get_logger(__name__)
+
+    logger.info("🚀 HMM Futures Analysis CLI started")
+    logger.info(f"📊 Log level: {log_level}")
+    logger.info(f"🧠 Memory monitoring: {'enabled' if memory_monitor else 'disabled'}")
+
+    # Load configuration if provided
+    config = {}
+    if config_file:
+        try:
+            with open(config_file, 'r') as f:
+                if config_file.endswith('.json'):
+                    config = json.load(f)
+                else:
+                    # Simple YAML parsing (basic)
+                    import yaml
+                    config = yaml.safe_load(f)
+            logger.info(f"✅ Configuration loaded from {config_file}")
+        except Exception as e:
+            logger.error(f"❌ Failed to load configuration: {e}")
+            raise click.ClickException(f"Configuration loading failed: {e}")
+
+    # Store global config in context
+    ctx.ensure_object(dict)
+    ctx.obj['log_level'] = log_level
+    ctx.obj['logger'] = logger
+    ctx.obj['config'] = config
+    ctx.obj['memory_monitor'] = memory_monitor
+
+    # Initial memory check
+    if memory_monitor:
+        check_memory_usage("CLI initialization")
 @click.pass_context
 def cli(ctx, log_level):
     """

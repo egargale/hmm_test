@@ -1,0 +1,33 @@
+# HMM Futures Analysis Configuration Example
+
+hmm:
+  n_states: 3
+  covariance_type: full
+  n_iter: 100
+  random_state: 42
+  tol: 0.001
+  num_restarts: 3
+
+processing:
+  engine_type: streaming
+  chunk_size: 100000
+  indicators:
+    sma_5:
+      window: 5
+    sma_10:
+      window: 10
+    sma_20:
+      window: 20
+    volatility_14:
+      window: 14
+    returns: {}
+
+analysis:
+  test_size: 0.2
+  generate_charts: false
+  generate_dashboard: false
+  generate_report: false
+
+logging:
+  level: INFO
+  memory_monitor: true
