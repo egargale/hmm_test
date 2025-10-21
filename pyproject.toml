@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "click>=8.3.0",
     "daft>=0.5.9",
     "dask[distributed]>=2025.10.0",
     "hmmlearn>=0.2.8",
