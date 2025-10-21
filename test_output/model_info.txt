@@ -1,0 +1,10 @@
+HMM Model Information
+=====================
+
+n_states: 2
+n_components: 2
+converged: True
+n_iter: 50
+score: -50.737751020489604
+training_samples: 21
+total_samples: 31

@@ -1,0 +1,13 @@
+State Statistics
+================
+
+State 0:
+  count: 25.0000
+  mean_return: -0.0053
+  std_return: 0.0178
+
+State 1:
+  count: 6.0000
+  mean_return: -0.0038
+  std_return: 0.0244
+

@@ -1,0 +1,12 @@
+Data Validation Report
+======================
+
+File: /tmp/tmpu7sz9br2/test_data.csv
+Rows: 30
+Columns: ['Unnamed: 0', 'open', 'high', 'low', 'close', 'volume']
+Date range: 1970-01-01 00:00:00 to 1970-01-01 00:00:00.000000029
+Quality score: 99.0
+Issues found: 1
+Critical issues: 0
+
+Validation status: PASSED
