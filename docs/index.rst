@@ -96,7 +96,7 @@ Table of Contents
 
    installation
    user_guide/index
-   api/index
+   api
    examples/index
    developer_guide/index
    contributing

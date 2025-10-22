@@ -1579,6 +1579,11 @@ viz = [
     { name = "mplfinance" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "pre-commit" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "altair", marker = "extra == 'viz'", specifier = ">=4.2.0" },
@@ -1632,6 +1637,9 @@ requires-dist = [
     { name = "typer", specifier = ">=0.4.0" },
 ]
 provides-extras = ["dev", "docs", "test", "viz", "all"]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pre-commit", specifier = ">=4.3.0" }]
 
 [[package]]
 name = "hmmlearn"

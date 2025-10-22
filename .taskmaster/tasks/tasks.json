@@ -389,7 +389,7 @@
           7,
           8
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -404,7 +404,7 @@
               8
             ],
             "details": "Use `Click` (version 8.1.7+) to create the `@click.group()` and `@cli.command('analyze')`. Implement all specified `@click.option` decorators with appropriate types (e.g., `click.Path`, `click.Choice`) and descriptive help messages. Ensure the `analyze` function properly calls `setup_logging` from `utils.logging_config` and `os.makedirs` for the output directory. Follow the provided pseudo-code structure to instantiate and call functions from `DataProcessor`, `ProcessingEngineFactory`, `HMMTrainer`, `BacktestEngine`, and `VisualizationEngine` using the parameters passed via CLI options. Focus on correct module import paths.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Write end-to-end integration tests for `cli.py` to invoke the `analyze` command with various valid parameters (e.g., different input CSVs, number of states, engines, log levels). Verify that output directories are created, and that the expected sequence of module functions is called (using mocks for lower-level module functions if necessary to isolate CLI logic). Assert successful execution and no unhandled exceptions for valid inputs."
           },
           {
@@ -416,7 +416,7 @@
               1
             ],
             "details": "Modify the `analyze` command in `cli.py` to wrap the entire analysis logic (from data processing through visualization) in a `try-except Exception as e:` block. Use `click.echo(f'Error during analysis: {e}', err=True)` for user-facing error messages on `stderr` and `click.echo('Please check the log for details.', err=True)`. Ensure `setup_logging(log_level)` from `utils.logging_config` is called first. Within the `except` block, log the full traceback using `logger.exception('An unexpected error occurred during CLI execution.')` at DEBUG level, preventing raw stack traces from appearing in user-facing output.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Develop unit and integration tests that simulate various error conditions (e.g., non-existent input CSV, invalid configuration passed to internal modules, module-specific exceptions during data processing or training). Assert that user-friendly error messages are printed to `stderr`, and that detailed stack traces are logged correctly at DEBUG level without being displayed to the user on the console. Verify `log_level` option correctly filters log outputs."
           },
           {
@@ -428,7 +428,7 @@
               2
             ],
             "details": "Incorporate `tqdm` (version 4.66.1+) around iterative or data-intensive steps in `cli.py`. For example, wrap `DataProcessor` or `HMMTrainer` calls if they expose an iterable or a progress callback. Implement periodic memory checks using `psutil` (version 5.9.6+). Define a configurable memory threshold (e.g., as a percentage of available RAM or a fixed limit) in `utils.config` and issue log warnings (e.g., `logger.warning`) when this threshold is exceeded. Focus on ensuring data structures are passed by reference where appropriate and unnecessary copies are avoided between modules (e.g., `processed_data` between processing and training).",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test with large synthetic datasets to verify `tqdm` progress bars display correctly, update in real-time, and complete without errors. Simulate high memory usage conditions (e.g., by loading extremely large datasets or creating memory-intensive objects) to confirm memory monitoring triggers warnings in the logs as expected. Monitor system resources (CPU, RAM) during CLI execution tests to validate the `psutil` integration works and that memory usage is within reasonable bounds given the input data. Verify that the selected processing engine (streaming, dask, daft) handles data efficiently."
           }
         ]
@@ -479,7 +479,7 @@
     ],
     "metadata": {
       "created": "2025-10-19T08:32:45.168Z",
-      "updated": "2025-10-21T11:17:50.612Z",
+      "updated": "2025-10-21T19:07:23.385Z",
       "description": "Tasks for master context"
     }
   }
