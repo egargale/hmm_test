@@ -1,0 +1,202 @@
+# HMM Futures Analysis Makefile
+# Provides convenient commands for development, testing, and deployment
+
+.PHONY: help install setup test lint format docs clean build docker-build docker-run docker-dev
+
+# Default target
+.DEFAULT_GOAL := help
+
+# Variables
+PYTHON := uv run python
+PYTEST := uv run pytest
+SPHINX := uv run sphinx-build
+DOCKER_COMPOSE := docker-compose
+
+# Colors for output
+BLUE := \033[36m
+GREEN := \033[32m
+YELLOW := \033[33m
+RED := \033[31m
+NC := \033[0m
+
+help: ## Show this help message
+	@echo "$(BLUE)HMM Futures Analysis - Available Commands:$(NC)"
+	@echo ""
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "$(GREEN)%-20s$(NC) %s\n", $$1, $$2}'
+
+install: ## Install dependencies using uv
+	@echo "$(BLUE)Installing dependencies...$(NC)"
+	uv sync
+	@echo "$(GREEN)Dependencies installed successfully!$(NC)"
+
+setup: ## Set up the development environment
+	@echo "$(BLUE)Setting up development environment...$(NC)"
+	./setup.sh
+	@echo "$(GREEN)Development environment setup complete!$(NC)"
+
+test: ## Run all tests with coverage
+	@echo "$(BLUE)Running tests...$(NC)"
+	$(PYTEST) tests/ -v --cov=src --cov-report=html --cov-report=term-missing
+	@echo "$(GREEN)Tests completed!$(NC)"
+
+test-unit: ## Run unit tests only
+	@echo "$(BLUE)Running unit tests...$(NC)"
+	$(PYTEST) tests/unit/ -v
+	@echo "$(GREEN)Unit tests completed!$(NC)"
+
+test-integration: ## Run integration tests only
+	@echo "$(BLUE)Running integration tests...$(NC)"
+	$(PYTEST) tests/integration/ -v
+	@echo "$(GREEN)Integration tests completed!$(NC)"
+
+test-e2e: ## Run end-to-end tests only
+	@echo "$(BLUE)Running end-to-end tests...$(NC)"
+	$(PYTEST) tests/e2e/ -v
+	@echo "$(GREEN)End-to-end tests completed!$(NC)"
+
+test-watch: ## Run tests in watch mode
+	@echo "$(BLUE)Running tests in watch mode...$(NC)"
+	$(PYTEST) tests/ -v -f
+
+lint: ## Run all linting and code quality checks
+	@echo "$(BLUE)Running linting checks...$(NC)"
+	uv run pre-commit run --all-files
+	@echo "$(GREEN)Linting completed!$(NC)"
+
+format: ## Format code using black and isort
+	@echo "$(BLUE)Formatting code...$(NC)"
+	uv run black src/ tests/ *.py
+	uv run isort src/ tests/ *.py
+	@echo "$(GREEN)Code formatted successfully!$(NC)
+
+format-check: ## Check code formatting without making changes
+	@echo "$(BLUE)Checking code formatting...$(NC)"
+	uv run black --check src/ tests/ *.py
+	uv run isort --check-only src/ tests/ *.py
+	@echo "$(GREEN)Code formatting check completed!$(NC)"
+
+mypy: ## Run type checking with mypy
+	@echo "$(BLUE)Running type checking...$(NC)"
+	uv run mypy src/
+	@echo "$(GREEN)Type checking completed!$(NC)"
+
+docs: ## Build documentation
+	@echo "$(BLUE)Building documentation...$(NC)"
+	cd docs && $(SPHINX) -b html . _build/html
+	@echo "$(GREEN)Documentation built successfully!$(NC)"
+	@echo "$(BLUE)Open docs/_build/html/index.html to view$(NC)"
+
+docs-live: ## Serve documentation with live reload
+	@echo "$(BLUE)Starting documentation server...$(NC)"
+	cd docs && uv run sphinx-autobuild . _build/html
+
+docs-clean: ## Clean documentation build files
+	@echo "$(BLUE)Cleaning documentation build files...$(NC)"
+	rm -rf docs/_build/
+	@echo "$(GREEN)Documentation build files cleaned!$(NC)"
+
+clean: ## Clean up build artifacts and cache files
+	@echo "$(BLUE)Cleaning up...$(NC)"
+	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+	find . -type f -name "*.pyc" -delete 2>/dev/null || true
+	find . -type f -name "*.pyo" -delete 2>/dev/null || true
+	rm -rf .pytest_cache/
+	rm -rf .coverage htmlcov/
+	rm -rf .mypy_cache/
+	rm -rf dist/ build/ *.egg-info/
+	rm -rf logs/*
+	@echo "$(GREEN)Cleanup completed!$(NC)"
+
+build: ## Build the package
+	@echo "$(BLUE)Building package...$(NC)"
+	uv build
+	@echo "$(GREEN)Package built successfully!$(NC)"
+
+docker-build: ## Build Docker image
+	@echo "$(BLUE)Building Docker image...$(NC)"
+	docker build -t hmm-futures-analysis:latest .
+	@echo "$(GREEN)Docker image built successfully!$(NC)"
+
+docker-run: ## Run Docker container
+	@echo "$(BLUE)Running Docker container...$(NC)"
+	docker run --rm -v $(PWD)/data:/app/data -v $(PWD)/output:/app/output hmm-futures-analysis:latest
+
+docker-dev: ## Run development Docker environment
+	@echo "$(BLUE)Starting development environment...$(NC)"
+	$(DOCKER_COMPOSE) --profile dev up
+
+docker-down: ## Stop Docker containers
+	@echo "$(BLUE)Stopping Docker containers...$(NC)"
+	$(DOCKER_COMPOSE) down
+
+docker-clean: ## Clean Docker resources
+	@echo "$(BLUE)Cleaning Docker resources...$(NC)"
+	docker system prune -f
+	docker volume prune -f
+
+# CLI commands
+cli-help: ## Show CLI help
+	@$(PYTHON) cli_comprehensive.py --help
+
+cli-validate: ## Validate a CSV file (Usage: make cli-validate INPUT_FILE=path/to/file.csv)
+	@if [ -z "$(INPUT_FILE)" ]; then \
+		echo "$(RED)Error: INPUT_FILE parameter is required$(NC)"; \
+		echo "$(YELLOW)Usage: make cli-validate INPUT_FILE=path/to/file.csv$(NC)"; \
+		exit 1; \
+	fi
+	@$(PYTHON) cli_comprehensive.py validate -i $(INPUT_FILE)
+
+cli-analyze: ## Run analysis on a CSV file (Usage: make cli-analyze INPUT_FILE=path/to/file.csv OUTPUT_DIR=output)
+	@if [ -z "$(INPUT_FILE)" ]; then \
+		echo "$(RED)Error: INPUT_FILE parameter is required$(NC)"; \
+		echo "$(YELLOW)Usage: make cli-analyze INPUT_FILE=path/to/file.csv OUTPUT_DIR=output$(NC)"; \
+		exit 1; \
+	fi
+	@$(PYTHON) cli_comprehensive.py analyze -i $(INPUT_FILE) -o $(OUTPUT_DIR:=output)
+
+# Development shortcuts
+dev-install: install setup ## Install and set up everything
+dev-test: format lint test ## Format, lint, and test
+dev-check: format-check lint mypy test ## Check formatting, lint, type check, and test
+
+# Quick examples
+example-basic: ## Run basic analysis example
+	@echo "$(BLUE)Running basic analysis example...$(NC)"
+	@if [ -f "BTC.csv" ]; then \
+		$(PYTHON) cli_comprehensive.py analyze -i BTC.csv -o example_output --n-states 3; \
+		echo "$(GREEN)Example completed! Check example_output/ directory.$(NC)"; \
+	else \
+		echo "$(RED)Example data file BTC.csv not found.$(NC)"; \
+	fi
+
+example-validate: ## Run validation example
+	@echo "$(BLUE)Running validation example...$(NC)"
+	@if [ -f "BTC.csv" ]; then \
+		$(PYTHON) cli_comprehensive.py validate -i BTC.csv -o validation_output; \
+		echo "$(GREEN)Validation completed! Check validation_output/ directory.$(NC)"; \
+	else \
+		echo "$(RED)Example data file BTC.csv not found.$(NC)"; \
+	fi
+
+# Version and status
+version: ## Show version information
+	@$(PYTHON) cli_comprehensive.py version
+
+status: ## Show project status
+	@echo "$(BLUE)Project Status:$(NC)"
+	@echo "Python: $(shell $(PYTHON) --version)"
+	@echo "uv: $(shell uv --version)"
+	@echo "Git: $(shell git --version 2>/dev/null || echo 'Not installed')"
+	@echo "Docker: $(shell docker --version 2>/dev/null || echo 'Not installed')"
+	@if [ -d ".git" ]; then \
+		echo "Git branch: $(shell git branch --show-current)"; \
+		echo "Git commit: $(shell git rev-parse --short HEAD)"; \
+	fi
+
+# Installation verification
+verify-install: ## Verify installation
+	@echo "$(BLUE)Verifying installation...$(NC)"
+	@$(PYTHON) -c "import sys; sys.path.insert(0, 'src'); from utils import ProcessingConfig; print('✅ Utils module working')"
+	@$(PYTHON) -c "import sys; sys.path.insert(0, 'src'); from data_processing.csv_parser import process_csv; print('✅ Data processing module working')"
+	@$(PYTHON) cli_comprehensive.py version > /dev/null && echo "✅ CLI working" || echo "❌ CLI not working"
+	@echo "$(GREEN)Installation verification completed!$(NC)"

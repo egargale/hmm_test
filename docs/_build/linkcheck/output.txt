@@ -1,0 +1,1 @@
+index.rst:2: [redirected permanently] https://opensource.org/licenses/MIT to https://opensource.org/license/MIT

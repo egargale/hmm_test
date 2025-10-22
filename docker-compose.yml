@@ -1,0 +1,96 @@
+version: '3.8'
+
+services:
+  # Main HMM Analysis service
+  hmm-analysis:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: hmm-futures-analysis
+    volumes:
+      # Mount data directory
+      - ./data:/app/data:ro
+      # Mount output directory
+      - ./output:/app/output
+      # Mount configuration files
+      - ./config:/app/config:ro
+    environment:
+      - PYTHONPATH=/app/src
+      - LOG_LEVEL=INFO
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "cli_comprehensive.py", "version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Development service with hot reload
+  hmm-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+      target: development
+    container_name: hmm-futures-analysis-dev
+    volumes:
+      # Mount entire source code for development
+      - .:/app
+      # Mount tests
+      - ./tests:/app/tests
+    environment:
+      - PYTHONPATH=/app/src
+      - LOG_LEVEL=DEBUG
+    ports:
+      - "8001:8000"
+    profiles:
+      - dev
+    command: uvicorn --host 0.0.0.0 --port 8000 --reload
+
+  # Jupyter notebook service for analysis
+  jupyter:
+    build:
+      context: .
+      dockerfile: Dockerfile.jupyter
+    container_name: hmm-jupyter
+    volumes:
+      - ./:/app
+      - ./notebooks:/app/notebooks
+      - ./data:/app/data
+      - ./output:/app/output
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+    ports:
+      - "8888:8888"
+    profiles:
+      - dev
+      - jupyter
+    command: jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root --NotebookApp.token=''
+
+  # Documentation service
+  docs:
+    build:
+      context: .
+      dockerfile: Dockerfile.docs
+    container_name: hmm-docs
+    volumes:
+      - ./docs:/app/docs
+      - ./src:/app/src
+    ports:
+      - "8080:8080"
+    profiles:
+      - dev
+      - docs
+    command: python -m http.server 8080 --directory docs/_build/html
+
+volumes:
+  hmm_data:
+    driver: local
+  hmm_output:
+    driver: local
+
+networks:
+  default:
+    name: hmm-network

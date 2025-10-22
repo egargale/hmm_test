@@ -1,0 +1,59 @@
+# Development Dockerfile for HMM Futures Analysis
+# Includes development tools and hot reload capabilities
+
+FROM python:3.11-slim as development
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PYTHONPATH=/app/src
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    build-essential \
+    curl \
+    git \
+    vim \
+    htop \
+    tree \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install uv for faster package management
+RUN pip install uv
+
+# Set working directory
+WORKDIR /app
+
+# Copy project files
+COPY pyproject.toml uv.lock ./
+
+# Install all dependencies including dev dependencies
+RUN uv sync --frozen
+
+# Copy source code
+COPY src/ ./src/
+COPY cli_comprehensive.py cli_simple.py ./
+COPY tests/ ./tests/
+COPY docs/ ./docs/
+COPY pytest.ini ./
+COPY .pre-commit-config.yaml ./
+
+# Install pre-commit hooks
+RUN uv run pre-commit install
+
+# Create non-root user for development
+RUN groupadd -r developer && useradd -r -g developer developer
+RUN chown -R developer:developer /app
+USER developer
+
+# Default command for development
+CMD ["uv", "run", "python", "cli_comprehensive.py", "--help"]
+
+# Development-specific labels
+LABEL maintainer="HMM Futures Analysis Team" \
+      version="1.0.0-dev" \
+      description="Development environment for HMM Futures Analysis"
