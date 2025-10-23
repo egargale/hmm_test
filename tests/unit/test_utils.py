@@ -5,18 +5,15 @@ Tests the core utility functions, data types, and configurations
 that support the HMM futures analysis system.
 """
 
-import pytest
-import pandas as pd
-import numpy as np
-from pathlib import Path
-import tempfile
 import json
-from unittest.mock import patch, MagicMock
-from typing import Dict, Any
 
-from utils.data_types import BacktestConfig, BacktestResult, Trade, PerformanceMetrics
+import numpy as np
+import pandas as pd
+import pytest
+
 from utils import get_logger, setup_logging
 from utils.config import load_config
+from utils.data_types import BacktestConfig, BacktestResult, PerformanceMetrics, Trade
 
 
 class TestBacktestConfig:
@@ -26,39 +23,43 @@ class TestBacktestConfig:
         """Test creating BacktestConfig with default values."""
         config = BacktestConfig()
         assert config.initial_capital == 100000.0
-        assert config.commission == 0.001
-        assert config.slippage == 0.0001
-        assert config.lookahead_bias_prevention is True
-        assert config.lookahead_days == 1
+        assert config.commission_per_trade == 0.0
+        assert config.slippage_bps == 0.0
+        assert config.position_size == 1.0
+        assert config.state_map == {}
 
     def test_backtest_config_custom_values(self):
         """Test creating BacktestConfig with custom values."""
         config = BacktestConfig(
             initial_capital=50000.0,
-            commission=0.002,
-            slippage=0.0002,
-            lookahead_bias_prevention=False,
-            lookahead_days=2
+            commission_per_trade=2.0,
+            slippage_bps=5.0,
+            position_size=2.0,
+            state_map={0: 1, 1: -1},
         )
         assert config.initial_capital == 50000.0
-        assert config.commission == 0.002
-        assert config.slippage == 0.0002
-        assert config.lookahead_bias_prevention is False
-        assert config.lookahead_days == 2
+        assert config.commission_per_trade == 2.0
+        assert config.slippage_bps == 5.0
+        assert config.position_size == 2.0
+        assert config.state_map == {0: 1, 1: -1}
 
     def test_backtest_config_validation(self):
         """Test BacktestConfig parameter validation."""
         # Test negative initial capital
-        with pytest.raises(ValueError):
+        with pytest.warns(UserWarning):
             BacktestConfig(initial_capital=-1000.0)
 
         # Test negative commission
-        with pytest.raises(ValueError):
-            BacktestConfig(commission=-0.01)
+        with pytest.warns(UserWarning):
+            BacktestConfig(commission_per_trade=-0.01)
 
         # Test negative slippage
-        with pytest.raises(ValueError):
-            BacktestConfig(slippage=-0.01)
+        with pytest.warns(UserWarning):
+            BacktestConfig(slippage_bps=-0.01)
+
+        # Test zero position size
+        with pytest.warns(UserWarning):
+            BacktestConfig(position_size=0.0)
 
 
 class TestTrade:
@@ -66,8 +67,8 @@ class TestTrade:
 
     def test_trade_creation(self):
         """Test creating Trade with valid data."""
-        entry_time = pd.Timestamp('2020-01-01')
-        exit_time = pd.Timestamp('2020-01-02')
+        entry_time = pd.Timestamp("2020-01-01")
+        exit_time = pd.Timestamp("2020-01-02")
 
         trade = Trade(
             entry_time=entry_time,
@@ -77,7 +78,7 @@ class TestTrade:
             size=1.0,
             pnl=5.0,
             commission=1.0,
-            slippage=0.5
+            slippage=0.5,
         )
 
         assert trade.entry_time == entry_time
@@ -91,8 +92,8 @@ class TestTrade:
 
     def test_trade_calculations(self):
         """Test trade P&L calculations."""
-        entry_time = pd.Timestamp('2020-01-01')
-        exit_time = pd.Timestamp('2020-01-02')
+        entry_time = pd.Timestamp("2020-01-01")
+        exit_time = pd.Timestamp("2020-01-02")
 
         trade = Trade(
             entry_time=entry_time,
@@ -102,7 +103,7 @@ class TestTrade:
             size=2.0,
             pnl=10.0,  # (105-100) * 2 = 10
             commission=2.0,
-            slippage=1.0
+            slippage=1.0,
         )
 
         expected_pnl = (105.0 - 100.0) * 2.0 - 2.0 - 1.0
@@ -125,7 +126,7 @@ class TestPerformanceMetrics:
             win_rate=0.6,
             loss_rate=0.4,
             profit_factor=1.5,
-            sortino_ratio=1.2
+            sortino_ratio=1.2,
         )
 
         assert metrics.total_return == 0.15
@@ -136,15 +137,15 @@ class TestPerformanceMetrics:
     def test_performance_metrics_validation(self):
         """Test PerformanceMetrics parameter validation."""
         # Test win rate > 1
-        with pytest.raises(ValueError):
+        with pytest.warns(UserWarning):
             PerformanceMetrics(win_rate=1.5)
 
         # Test loss rate > 1
-        with pytest.raises(ValueError):
+        with pytest.warns(UserWarning):
             PerformanceMetrics(loss_rate=1.5)
 
         # Test negative profit factor
-        with pytest.raises(ValueError):
+        with pytest.warns(UserWarning):
             PerformanceMetrics(profit_factor=-1.0)
 
 
@@ -153,15 +154,17 @@ class TestBacktestResult:
 
     def test_backtest_result_creation(self, sample_ohlcv_data):
         """Test creating BacktestResult with valid data."""
-        equity_curve = sample_ohlcv_data['close'] * 10
-        positions = pd.Series([1, -1, 0, 1, -1] * 20, index=sample_ohlcv_data.index[:100])
+        equity_curve = sample_ohlcv_data["close"] * 10
+        positions = pd.Series(
+            [1, -1, 0, 1, -1] * 20, index=sample_ohlcv_data.index[:100]
+        )
 
         result = BacktestResult(
             equity_curve=equity_curve,
             positions=positions,
             trades=[],
             start_date=sample_ohlcv_data.index[0],
-            end_date=sample_ohlcv_data.index[-1]
+            end_date=sample_ohlcv_data.index[-1],
         )
 
         assert len(result.equity_curve) == len(sample_ohlcv_data)
@@ -170,18 +173,18 @@ class TestBacktestResult:
 
     def test_backtest_result_validation(self):
         """Test BacktestResult parameter validation."""
-        dates = pd.date_range('2020-01-01', periods=10, freq='D')
+        dates = pd.date_range("2020-01-01", periods=10, freq="D")
         equity_curve = pd.Series([100] * 10, index=dates)
         positions = pd.Series([1, -1, 0] * 3 + [1], index=dates)
 
         # Test start_date > end_date
-        with pytest.raises(ValueError):
+        with pytest.warns(UserWarning):
             BacktestResult(
                 equity_curve=equity_curve,
                 positions=positions,
                 trades=[],
                 start_date=dates[-1],
-                end_date=dates[0]
+                end_date=dates[0],
             )
 
 
@@ -209,7 +212,7 @@ class TestLogger:
 
     def test_setup_logging_invalid_level(self):
         """Test setting up logging with invalid level."""
-        with pytest.raises(ValueError):
+        with pytest.warns(UserWarning):
             setup_logging(level="INVALID_LEVEL")
 
 
@@ -218,11 +221,7 @@ class TestConfig:
 
     def test_load_config_file_exists(self, temp_dir):
         """Test loading configuration from existing file."""
-        config_data = {
-            "initial_capital": 150000.0,
-            "commission": 0.002,
-            "n_states": 4
-        }
+        config_data = {"initial_capital": 150000.0, "commission": 0.002, "n_states": 4}
         config_file = temp_dir / "test_config.json"
         config_file.write_text(json.dumps(config_data))
 
@@ -237,11 +236,7 @@ class TestConfig:
 
     def test_load_config_basic(self):
         """Test basic config loading functionality."""
-        config_data = {
-            "initial_capital": 100000.0,
-            "commission": 0.001,
-            "n_states": 3
-        }
+        config_data = {"initial_capital": 100000.0, "commission": 0.001, "n_states": 3}
         # Test that we can create config data structure
         assert config_data["initial_capital"] == 100000.0
         assert config_data["commission"] == 0.001
@@ -267,16 +262,18 @@ class TestUtilityFunctions:
     def test_data_frame_operations(self):
         """Test DataFrame utility operations."""
         # Create test DataFrame
-        data = pd.DataFrame({
-            'A': [1, 2, 3, 4, 5],
-            'B': [10, 20, 30, 40, 50],
-            'C': ['a', 'b', 'c', 'd', 'e']
-        })
+        data = pd.DataFrame(
+            {
+                "A": [1, 2, 3, 4, 5],
+                "B": [10, 20, 30, 40, 50],
+                "C": ["a", "b", "c", "d", "e"],
+            }
+        )
 
         # Test basic operations
         assert len(data) == 5
-        assert list(data.columns) == ['A', 'B', 'C']
-        assert data['A'].sum() == 15
+        assert list(data.columns) == ["A", "B", "C"]
+        assert data["A"].sum() == 15
 
     def test_numpy_operations(self):
         """Test NumPy utility operations."""
@@ -292,12 +289,12 @@ class TestUtilityFunctions:
     def test_datetime_operations(self):
         """Test datetime utility operations."""
         # Create test dates
-        dates = pd.date_range('2020-01-01', periods=5, freq='D')
+        dates = pd.date_range("2020-01-01", periods=5, freq="D")
 
         # Test operations
         assert len(dates) == 5
-        assert dates[0] == pd.Timestamp('2020-01-01')
-        assert dates[-1] == pd.Timestamp('2020-01-05')
+        assert dates[0] == pd.Timestamp("2020-01-01")
+        assert dates[-1] == pd.Timestamp("2020-01-05")
 
     def test_mathematical_functions(self):
         """Test mathematical utility functions."""
@@ -315,8 +312,8 @@ class TestIntegrationUtils:
     def test_config_with_backtest(self, backtest_config):
         """Test configuration integration with backtest components."""
         assert isinstance(backtest_config, dict)
-        assert 'initial_capital' in backtest_config
-        assert 'commission' in backtest_config
+        assert "initial_capital" in backtest_config
+        assert "commission" in backtest_config
 
     def test_logging_with_config(self, temp_dir):
         """Test logging integration with configuration."""

@@ -59,11 +59,58 @@ def sample_ohlcv_data() -> pd.DataFrame:
 
 
 @pytest.fixture(scope="session")
-def sample_ohl_csv_file(sample_ohlcv_data: pd.DataFrame, test_data_dir: Path) -> Path:
+def sample_ohlcv_csv_file(sample_ohlcv_data: pd.DataFrame, test_data_dir: Path) -> Path:
     """Create a sample CSV file with OHLCV data."""
     csv_path = test_data_dir / "sample_ohlcv.csv"
     sample_ohlcv_data.to_csv(csv_path)
     return csv_path
+
+
+@pytest.fixture(scope="session")
+def btc_csv_file() -> Path:
+    """Return the path to the BTC.csv test data file."""
+    btc_path = Path(__file__).parent.parent / "BTC.csv"
+    if not btc_path.exists():
+        pytest.skip(f"BTC.csv not found at {btc_path}")
+    return btc_path
+
+
+@pytest.fixture(scope="session")
+def btc_ohlcv_data(btc_csv_file: Path) -> pd.DataFrame:
+    """Load BTC.csv data for testing, mapping to standard OHLCV column names."""
+    # Load BTC data
+    btc_data = pd.read_csv(btc_csv_file)
+
+    # Map columns to standard names used by the system
+    column_mapping = {
+        "Open": "open",
+        "High": "high",
+        "Low": "low",
+        "Last": "close",  # Use 'Last' as close price
+        "Volume": "volume",
+    }
+
+    # Select and rename columns
+    ohlcv_data = btc_data[["Date", "Time"] + list(column_mapping.keys())].copy()
+    ohlcv_data = ohlcv_data.rename(columns=column_mapping)
+
+    # Create datetime index
+    ohlcv_data["datetime"] = pd.to_datetime(
+        ohlcv_data["Date"] + " " + ohlcv_data["Time"]
+    )
+    ohlcv_data = ohlcv_data.set_index("datetime")
+
+    # Select only OHLCV columns and drop date/time columns
+    ohlcv_data = ohlcv_data[["open", "high", "low", "close", "volume"]]
+
+    # Convert to numeric and handle any parsing issues
+    for col in ohlcv_data.columns:
+        ohlcv_data[col] = pd.to_numeric(ohlcv_data[col], errors="coerce")
+
+    # Drop any rows with NaN values
+    ohlcv_data = ohlcv_data.dropna()
+
+    return ohlcv_data
 
 
 @pytest.fixture
