@@ -140,6 +140,50 @@ class BacktestConfig:
             self.state_map = {}
 
 
+@dataclass
+class CSVFormat:
+    """Data class for CSV format information."""
+    format_type: str  # "datetime" or "date_time"
+    columns: List[str]
+    required_columns: List[str]
+    has_header: bool = True
+    separator: str = ","
+
+    def __post_init__(self):
+        """Validate CSV format after initialization."""
+        if self.format_type not in ["datetime", "date_time"]:
+            raise ValueError("format_type must be 'datetime' or 'date_time'")
+        if not self.columns:
+            raise ValueError("Columns list cannot be empty")
+        if not self.required_columns:
+            raise ValueError("Required columns list cannot be empty")
+        if self.separator == "":
+            raise ValueError("Separator cannot be empty")
+
+
+@dataclass
+class ProcessingStats:
+    """Data class for processing statistics."""
+    total_rows: int = 0
+    processed_rows: int = 0
+    dropped_rows: int = 0
+    memory_used_mb: float = 0.0
+    processing_time: float = 0.0
+
+    def __post_init__(self):
+        """Validate processing stats after initialization."""
+        if self.total_rows < 0:
+            raise ValueError("Total rows cannot be negative")
+        if self.processed_rows < 0:
+            raise ValueError("Processed rows cannot be negative")
+        if self.dropped_rows < 0:
+            raise ValueError("Dropped rows cannot be negative")
+        if self.memory_used_mb < 0:
+            raise ValueError("Memory usage cannot be negative")
+        if self.processing_time < 0:
+            raise ValueError("Processing time cannot be negative")
+
+
 # Type aliases for better readability
 PriceData = pd.DataFrame  # Expected columns: open, high, low, close, volume
 FeatureMatrix = np.ndarray
