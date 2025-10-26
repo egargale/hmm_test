@@ -19,8 +19,48 @@ from tqdm import tqdm
 
 from ..data_processing.feature_engineering import FeatureEngineer
 from ..data_processing.streaming_processor import StreamingDataProcessor
-from ..model_training.hmm_trainer import HMMTrainer
-from ..model_training.model_persistence import ModelPersistence
+from ..model_training.hmm_trainer import train_single_hmm_model, train_model, HMMTrainingResult
+
+
+class HMMTrainer:
+    """Compatibility wrapper for HMM training functions."""
+
+    def __init__(self, config=None):
+        self.config = config
+
+    def train(self, features, n_components=3, **kwargs):
+        """Train HMM model using the underlying train_single_hmm_model function."""
+        return train_single_hmm_model(
+            features=features,
+            n_components=n_components,
+            config=self.config,
+            **kwargs
+        )
+from ..model_training.model_persistence import save_model, load_model, get_model_info
+
+
+class ModelPersistence:
+    """Compatibility wrapper for model persistence functions."""
+
+    def __init__(self, config=None):
+        self.config = config
+
+    def save(self, model, scaler, filepath, **kwargs):
+        """Save model and scaler using the underlying save_model function."""
+        return save_model(
+            model=model,
+            scaler=scaler,
+            filepath=filepath,
+            **kwargs
+        )
+
+    def load(self, filepath, **kwargs):
+        """Load model and scaler using the underlying load_model function."""
+        return load_model(filepath=filepath, **kwargs)
+
+    def get_info(self, filepath, **kwargs):
+        """Get model info using the underlying get_model_info function."""
+        return get_model_info(path=filepath, **kwargs)
 from ..backtesting.strategy_engine import StrategyEngine
 from ..backtesting.performance_analyzer import PerformanceAnalyzer
 from ..utils.logging_config import setup_logger

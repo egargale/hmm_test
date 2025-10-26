@@ -52,6 +52,9 @@ dependencies = [
     "psutil>=7.1.0",
     "pyyaml>=6.0.3",
     "ta>=0.11.0",
+    "chardet>=5.2.0",
+    "mplfinance>=0.12.9b0",
+    "pytest-cov>=7.0.0",
 ]
 
 [project.optional-dependencies]
@@ -278,4 +281,5 @@ known_first_party = ["src"]
 [dependency-groups]
 dev = [
     "pre-commit>=4.3.0",
+    "pytest>=8.4.2",
 ]

@@ -14,6 +14,7 @@ Enhanced capabilities from Phases 2.1.1-2.1.4:
 
 # Legacy components
 from .csv_parser import process_csv
+from .data_validation import validate_data
 
 # Enhanced feature engineering
 try:

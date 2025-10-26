@@ -12,7 +12,7 @@ import logging
 import warnings
 from pathlib import Path
 
-from ..pipelines.hmm_pipeline import HMMPipeline
+from ..pipelines.hmm_pipeline import HMMPipeline, HMMTrainer
 from ..utils.logging_config import setup_logger
 
 # Set up deprecation warning
