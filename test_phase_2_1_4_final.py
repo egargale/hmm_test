@@ -7,10 +7,9 @@ to ensure the basic architecture is working correctly.
 """
 
 import sys
-import pandas as pd
+
 import numpy as np
-from datetime import datetime, timedelta
-from pathlib import Path
+import pandas as pd
 
 # Add src to path for imports
 sys.path.insert(0, 'src')
@@ -61,11 +60,14 @@ def test_core_pipeline():
     print("Testing Core Unified Pipeline...")
 
     try:
-        from src.data_processing.unified_pipeline import UnifiedDataPipeline
         from src.data_processing.pipeline_config import (
-            PipelineConfig, InputSourceType, PipelineMode,
-            ValidationConfig, FeatureConfig
+            FeatureConfig,
+            InputSourceType,
+            PipelineConfig,
+            PipelineMode,
+            ValidationConfig,
         )
+        from src.data_processing.unified_pipeline import UnifiedDataPipeline
 
         # Create test data
         test_data = create_simple_test_data()
@@ -97,7 +99,7 @@ def test_core_pipeline():
         result = pipeline.process(test_data)
 
         if result.success:
-            print(f"  ✅ Pipeline processed successfully!")
+            print("  ✅ Pipeline processed successfully!")
             print(f"  ✓ Output: {len(result.data)} rows, {len(result.data.columns)} columns")
             print(f"  ✓ Execution time: {result.execution_time:.3f} seconds")
 
@@ -123,11 +125,14 @@ def test_pipeline_with_basic_features():
     print("\nTesting Pipeline with Basic Features...")
 
     try:
-        from src.data_processing.unified_pipeline import UnifiedDataPipeline
         from src.data_processing.pipeline_config import (
-            PipelineConfig, InputSourceType, PipelineMode,
-            ValidationConfig, FeatureConfig
+            FeatureConfig,
+            InputSourceType,
+            PipelineConfig,
+            PipelineMode,
+            ValidationConfig,
         )
+        from src.data_processing.unified_pipeline import UnifiedDataPipeline
 
         # Create test data
         test_data = create_simple_test_data()
@@ -150,7 +155,7 @@ def test_pipeline_with_basic_features():
         )
 
         pipeline = UnifiedDataPipeline(config)
-        print(f"  ✓ Created pipeline with basic features")
+        print("  ✓ Created pipeline with basic features")
 
         # Process data
         result = pipeline.process(test_data)
@@ -160,7 +165,7 @@ def test_pipeline_with_basic_features():
             final_cols = len(result.data.columns)
             features_added = final_cols - original_cols
 
-            print(f"  ✅ Feature pipeline successful!")
+            print("  ✅ Feature pipeline successful!")
             print(f"  ✓ Original columns: {original_cols}")
             print(f"  ✓ Final columns: {final_cols}")
             print(f"  ✓ Features added: {features_added}")
@@ -168,7 +173,7 @@ def test_pipeline_with_basic_features():
             return True
         else:
             print(f"  ⚠ Feature pipeline failed (expected due to window issues): {result.issues}")
-            print(f"  → This is a known issue with small datasets and window calculations")
+            print("  → This is a known issue with small datasets and window calculations")
             return True  # Consider this a pass since we know the issue
 
     except Exception as e:
@@ -180,10 +185,12 @@ def test_pipeline_configuration_flexibility():
     print("\nTesting Pipeline Configuration Flexibility...")
 
     try:
-        from src.data_processing.unified_pipeline import UnifiedDataPipeline
         from src.data_processing.pipeline_config import (
-            PipelineConfig, InputSourceType, PipelineMode
+            InputSourceType,
+            PipelineConfig,
+            PipelineMode,
         )
+        from src.data_processing.unified_pipeline import UnifiedDataPipeline
 
         test_data = create_simple_test_data()
 

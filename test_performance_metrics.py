@@ -6,24 +6,28 @@ lookahead bias detection and prevention mechanisms.
 """
 
 import sys
-import os
-import pandas as pd
+
 import numpy as np
-from pathlib import Path
+import pandas as pd
 
 # Add src to path
 sys.path.insert(0, 'src')
 
-from utils.data_types import BacktestConfig
-from backtesting.performance_metrics import (
-    calculate_performance, infer_trading_frequency,
-    get_annualization_factor, validate_performance_metrics
-)
 from backtesting.bias_prevention import (
-    detect_lookahead_bias, validate_backtest_realism,
-    apply_bias_prevention, create_bias_prevention_report
+    apply_bias_prevention,
+    create_bias_prevention_report,
+    detect_lookahead_bias,
+    validate_backtest_realism,
+)
+from backtesting.performance_metrics import (
+    calculate_performance,
+    get_annualization_factor,
+    infer_trading_frequency,
+    validate_performance_metrics,
 )
 from backtesting.utils import create_sample_price_data, create_sample_state_sequence
+from utils.data_types import BacktestConfig
+
 
 def test_core_performance_metrics():
     """Test core performance metrics calculation."""
@@ -60,7 +64,7 @@ def test_core_performance_metrics():
         print("\nTesting core performance calculation...")
         metrics = calculate_performance(equity_curve, risk_free_rate=0.02)
 
-        print(f"✓ Core performance metrics calculated:")
+        print("✓ Core performance metrics calculated:")
         print(f"  - Total return: {metrics.total_return:.2%}")
         print(f"  - Annualized return: {metrics.annualized_return:.2%}")
         print(f"  - Annualized volatility: {metrics.annualized_volatility:.2%}")
@@ -119,7 +123,7 @@ def test_advanced_performance_metrics():
         from backtesting.performance_analyzer import analyze_performance
         metrics = analyze_performance(result, risk_free_rate=0.02)
 
-        print(f"✓ Advanced performance metrics:")
+        print("✓ Advanced performance metrics:")
         print(f"  - Total return: {metrics.total_return:.2%}")
         print(f"  - Annualized return: {metrics.annualized_return:.2%}")
         print(f"  - Annualized volatility: {metrics.annualized_volatility:.2%}")
@@ -181,7 +185,7 @@ def test_bias_prevention():
             lag_periods=1
         )
 
-        print(f"✓ Bias detection completed:")
+        print("✓ Bias detection completed:")
         print(f"  - Has lookahead bias: {bias_result.has_lookahead_bias}")
         print(f"  - Overall risk score: {bias_result.overall_risk_score:.3f}")
         print(f"  - Timing violations: {len(bias_result.timing_violations)}")
@@ -199,7 +203,7 @@ def test_bias_prevention():
             states, positions_series, lag_periods=1
         )
 
-        print(f"✓ Bias prevention applied:")
+        print("✓ Bias prevention applied:")
         print(f"  - Original states: {states[:5]}")
         print(f"  - Lagged states: {lagged_states[:5]}")
         print(f"  - Original positions: {positions_series.head().values}")
@@ -214,7 +218,7 @@ def test_bias_prevention():
             lag_periods=1
         )
 
-        print(f"\n✓ Re-detection after prevention:")
+        print("\n✓ Re-detection after prevention:")
         print(f"  - Has lookahead bias: {corrected_result.has_lookahead_bias}")
         print(f"  - Overall risk score: {corrected_result.overall_risk_score:.3f}")
 
@@ -252,7 +256,7 @@ def test_backtest_realism_validation():
         result_normal = backtest_with_analysis(states_normal, prices_normal, config)
         validation_normal = validate_backtest_realism(result_normal)
 
-        print(f"✓ Normal backtest validation:")
+        print("✓ Normal backtest validation:")
         print(f"  - Is realistic: {validation_normal['is_realistic']}")
         print(f"  - Warnings: {len(validation_normal['warnings'])}")
         print(f"  - Errors: {len(validation_normal['errors'])}")
@@ -267,7 +271,7 @@ def test_backtest_realism_validation():
         result_high = backtest_with_analysis(states_high, high_returns_prices, config_high)
         validation_high = validate_backtest_realism(result_high)
 
-        print(f"✓ High-return backtest validation:")
+        print("✓ High-return backtest validation:")
         print(f"  - Is realistic: {validation_high['is_realistic']}")
         print(f"  - Warnings: {len(validation_high['warnings'])}")
         if validation_high['warnings']:
@@ -280,7 +284,7 @@ def test_backtest_realism_validation():
         result_flat = backtest_with_analysis(states_flat, flat_prices, BacktestConfig(state_map={0: 1}))
         validation_flat = validate_backtest_realism(result_flat)
 
-        print(f"✓ Flat backtest validation:")
+        print("✓ Flat backtest validation:")
         print(f"  - Is realistic: {validation_flat['is_realistic']}")
         print(f"  - Warnings: {len(validation_flat['warnings'])}")
 

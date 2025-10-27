@@ -5,9 +5,10 @@ Implements Hidden Markov Model with Gaussian emission distributions
 for financial regime detection and state modeling.
 """
 
+from typing import Any, Dict, Optional, Union
+
 import numpy as np
 import pandas as pd
-from typing import Optional, Dict, Any, Union
 
 try:
     from hmmlearn import hmm
@@ -16,8 +17,8 @@ except ImportError:
     HMMLEARN_AVAILABLE = False
     hmm = None
 
-from .base import BaseHMMModel
 from utils import get_logger
+from .base import BaseHMMModel
 
 logger = get_logger(__name__)
 
@@ -213,7 +214,7 @@ class GaussianHMMModel(BaseHMMModel):
         descriptions = {}
         for state in range(self.n_components):
             state_mask = states == state
-            state_data = X_array[state_mask]
+            X_array[state_mask]
             state_prob = np.mean(state_mask)
 
             description = {

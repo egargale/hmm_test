@@ -4,11 +4,14 @@ Simple test for Dask Engine core functionality without complex metadata issues.
 """
 
 import sys
+
 sys.path.insert(0, '/home/1966enrico/src/hmm_test/src')
 
-import pandas as pd
-import numpy as np
 from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
 
 def create_test_csv():
     """Create a simple test CSV for Dask testing."""

@@ -4,10 +4,9 @@ Demonstration of working src folder features with BTC.csv
 """
 
 import sys
-import os
-import pandas as pd
-import numpy as np
 from pathlib import Path
+
+import numpy as np
 
 # Add src to path
 sys.path.insert(0, 'src')
@@ -29,13 +28,13 @@ def demo_working_features():
         print("\n1️⃣ DATA PROCESSING CAPABILITIES")
         print("-" * 30)
 
-        from data_processing import process_csv, add_features
+        from data_processing import add_features, process_csv
 
         print("📁 Loading BTC futures data...")
         data = process_csv('BTC.csv')
         print(f"   ✅ Loaded {len(data):,} rows of OHLCV data")
         print(f"   ✅ Date range: {data.index.min().date()} to {data.index.max().date()}")
-        print(f"   ✅ Frequency: Daily data spanning ~4 years")
+        print("   ✅ Frequency: Daily data spanning ~4 years")
         print(f"   ✅ Price range: ${data['close'].min():,.0f} - ${data['close'].max():,.0f}")
 
         print("\n⚙️ Advanced feature engineering...")
@@ -90,7 +89,7 @@ def demo_working_features():
 
         # Predict states
         states = model.predict(X)
-        print(f"\n🎯 Market Regime Detection:")
+        print("\n🎯 Market Regime Detection:")
         print(f"   ✅ Identified {len(np.unique(states))} distinct market regimes")
 
         for state in sorted(np.unique(states)):
@@ -164,7 +163,7 @@ def demo_working_features():
         # State probabilities for recent observation
         if len(recent_data) > 0:
             probs = inference.infer_state_probabilities(recent_data[-1:])
-            print(f"\n📈 Latest regime probabilities:")
+            print("\n📈 Latest regime probabilities:")
             for i, prob in enumerate(probs[0]):
                 print(f"   Regime {i}: {prob:.2%}")
 
@@ -208,14 +207,14 @@ def demo_working_features():
         print("  ✅ Multiple processing engine support")
         print("  ✅ Professional financial analytics")
 
-        print(f"\n📊 PERFORMANCE METRICS:")
+        print("\n📊 PERFORMANCE METRICS:")
         print(f"  • Data processed: {len(data):,} rows")
         print(f"  • Features engineered: +{len(features.columns) - len(data.columns)} indicators")
-        print(f"  • HMM training time: <5 seconds")
-        print(f"  • Memory usage: Efficient streaming processing")
-        print(f"  • Model accuracy: Converged with high likelihood")
+        print("  • HMM training time: <5 seconds")
+        print("  • Memory usage: Efficient streaming processing")
+        print("  • Model accuracy: Converged with high likelihood")
 
-        print(f"\n💡 USE CASES ENABLED:")
+        print("\n💡 USE CASES ENABLED:")
         print("  • Market regime detection and classification")
         print("  • Automated trading strategy development")
         print("  • Risk management and position sizing")

@@ -5,10 +5,10 @@ Implements comprehensive risk-adjusted performance metrics calculation for
 strategy evaluation, including returns, volatility, Sharpe ratio, and drawdown analysis.
 """
 
+from typing import Any, Dict, Optional
+
 import numpy as np
 import pandas as pd
-from typing import Optional, Dict, Any, Union
-from datetime import datetime, timedelta
 
 from utils import get_logger
 from utils.data_types import PerformanceMetrics

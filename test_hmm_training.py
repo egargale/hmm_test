@@ -6,19 +6,22 @@ for training Hidden Markov Models on financial time series data.
 """
 
 import sys
-import os
-import pandas as pd
+
 import numpy as np
-from pathlib import Path
 
 # Add src to path
 sys.path.insert(0, 'src')
 
-from utils import HMMConfig
 from model_training.hmm_trainer import (
-    train_model, validate_features_for_hmm, validate_hmm_config,
-    predict_states, evaluate_model, get_hmm_model_info
+    evaluate_model,
+    get_hmm_model_info,
+    predict_states,
+    train_model,
+    validate_features_for_hmm,
+    validate_hmm_config,
 )
+from utils import HMMConfig
+
 
 def create_synthetic_features(n_samples=1000, n_features=8, n_states=3, random_state=42):
     """
@@ -115,7 +118,7 @@ def test_hmm_basic_training():
         print("\nTesting basic HMM training...")
         model, scaler, score = train_model(features, config)
 
-        print(f"✓ HMM training completed successfully")
+        print("✓ HMM training completed successfully")
         print(f"  - Model type: {type(model).__name__}")
         print(f"  - Number of states: {model.n_components}")
         print(f"  - Number of features: {model.n_features}")
@@ -131,7 +134,7 @@ def test_hmm_basic_training():
         # Evaluate model
         print("\nTesting model evaluation...")
         eval_results = evaluate_model(model, features, scaler)
-        print(f"✓ Model evaluation completed:")
+        print("✓ Model evaluation completed:")
         for key, value in eval_results.items():
             print(f"  - {key}: {value}")
 
@@ -174,7 +177,7 @@ def test_hmm_multiple_restarts():
         # Train with detailed results
         result = train_model(features, config, return_all_results=True)
 
-        print(f"✓ Multiple restarts training completed:")
+        print("✓ Multiple restarts training completed:")
         print(f"  - Total restarts: {result.n_restarts_completed}")
         print(f"  - Successful restarts: {result.n_successful_restarts}")
         print(f"  - Success rate: {result.convergence_info['success_rate']:.2%}")
@@ -371,7 +374,7 @@ def test_hmm_different_configurations():
 
         # Summary
         successful = [r for r in results if r["success"]]
-        print(f"\nConfiguration test summary:")
+        print("\nConfiguration test summary:")
         print(f"  - Successful: {len(successful)}/{len(results)}")
 
         if successful:

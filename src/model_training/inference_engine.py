@@ -6,16 +6,17 @@ including Viterbi algorithm-based state prediction, probability extraction,
 and lookahead bias prevention mechanisms for backtesting applications.
 """
 
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Tuple, Union
+
 import numpy as np
 import pandas as pd
-from typing import Tuple, Optional, Dict, Any, Union, List
-from dataclasses import dataclass
 
 try:
     from hmmlearn import hmm
     from sklearn.preprocessing import StandardScaler
     HMM_AVAILABLE = True
-except ImportError as e:
+except ImportError:
     HMM_AVAILABLE = False
     hmm = None
     StandardScaler = None
@@ -239,7 +240,6 @@ def predict_states_comprehensive(
     mean_confidence = np.mean(max_probabilities)
 
     # Transition analysis (if we have enough samples)
-    transition_matrix = model.transmat_
     expected_transitions = {}
     if n_samples > 1:
         for i in range(n_samples - 1):

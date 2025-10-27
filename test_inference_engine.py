@@ -11,10 +11,8 @@ Tests the comprehensive inference functionality including:
 """
 
 import sys
-import os
-import tempfile
+
 import numpy as np
-from pathlib import Path
 
 # Add src to path
 sys.path.insert(0, '/home/1966enrico/src/hmm_test/src')
@@ -64,7 +62,7 @@ def test_basic_state_prediction():
 
         if isinstance(result, tuple) and len(result) == 3:
             states, probabilities, log_likelihood = result
-            print(f"  ✓ Prediction returned tuple with states, probabilities, and log_likelihood")
+            print("  ✓ Prediction returned tuple with states, probabilities, and log_likelihood")
         else:
             print(f"  ✗ Expected tuple of length 3, got {type(result)} with length {len(result) if hasattr(result, '__len__') else 'unknown'}")
             return False
@@ -94,10 +92,10 @@ def test_basic_state_prediction():
             if len(states) == len(features):
                 print(f"  ✓ States-only prediction works: {len(states)}")
             else:
-                print(f"  ✗ States-only prediction failed: wrong length")
+                print("  ✗ States-only prediction failed: wrong length")
                 return False
         else:
-            print(f"  ✗ States-only prediction failed: expected tuple of length 2")
+            print("  ✗ States-only prediction failed: expected tuple of length 2")
             return False
 
         return True
@@ -119,9 +117,9 @@ def test_lagged_state_prediction():
         result_lag1 = predict_states_with_lag(model, scaler, features, lag_periods=1)
 
         if hasattr(result_lag1, 'original_states') and hasattr(result_lag1, 'lagged_states'):
-            print(f"  ✓ Lagged prediction returned correct object type")
+            print("  ✓ Lagged prediction returned correct object type")
         else:
-            print(f"  ✗ Missing required attributes in lagged result")
+            print("  ✗ Missing required attributes in lagged result")
             return False
 
         if len(result_lag1.original_states) == len(features):
@@ -138,7 +136,7 @@ def test_lagged_state_prediction():
 
         # Test that lagged states have fill_value at the beginning (default is -1)
         if result_lag1.lagged_states[0] == -1:
-            print(f"  ✓ Lagged states have fill_value at beginning")
+            print("  ✓ Lagged states have fill_value at beginning")
         else:
             print(f"  ✗ Lagged states don't start with fill_value: {result_lag1.lagged_states[0]}")
             return False
@@ -148,7 +146,7 @@ def test_lagged_state_prediction():
         if result_lag3.lag_periods == 3:
             print(f"  ✓ Higher lag periods work: {result_lag3.lag_periods}")
         else:
-            print(f"  ✗ Higher lag periods failed")
+            print("  ✗ Higher lag periods failed")
             return False
 
         return True
@@ -206,10 +204,10 @@ def test_comprehensive_inference():
                     print(f"  ✗ State distribution inconsistent: {total_states} != {result.n_samples}")
                     return False
             else:
-                print(f"  ✗ State distribution not a dict")
+                print("  ✗ State distribution not a dict")
                 return False
         else:
-            print(f"  ✗ State distribution missing from metadata")
+            print("  ✗ State distribution missing from metadata")
             return False
 
         # Test confidence values in metadata
@@ -221,7 +219,7 @@ def test_comprehensive_inference():
                 print(f"  ✗ Invalid mean confidence: {confidence}")
                 return False
         else:
-            print(f"  ✗ Mean confidence missing from metadata")
+            print("  ✗ Mean confidence missing from metadata")
             return False
 
         return True
@@ -247,7 +245,7 @@ def test_state_stability_analysis():
         missing_keys = [key for key in required_keys if key not in stability]
 
         if not missing_keys:
-            print(f"  ✓ Stability analysis has all required keys")
+            print("  ✓ Stability analysis has all required keys")
         else:
             print(f"  ✗ Missing keys: {missing_keys}")
             return False
@@ -272,10 +270,10 @@ def test_state_stability_analysis():
             if len(trans_matrix) == config.n_states and all(len(row) == config.n_states for row in trans_matrix):
                 print(f"  ✓ Transition matrix shape correct: {config.n_states}x{config.n_states}")
             else:
-                print(f"  ✗ Wrong transition matrix shape")
+                print("  ✗ Wrong transition matrix shape")
                 return False
         else:
-            print(f"  ✗ Transition probabilities missing")
+            print("  ✗ Transition probabilities missing")
             return False
 
         return True
@@ -289,7 +287,10 @@ def test_input_validation():
     print("\n🔍 Testing Input Validation")
 
     try:
-        from model_training.inference_engine import predict_states, validate_inference_inputs
+        from model_training.inference_engine import (
+            predict_states,
+            validate_inference_inputs,
+        )
 
         model, scaler, features, config = create_test_model()
 
@@ -345,8 +346,6 @@ def test_error_handling():
 
     try:
         from model_training.inference_engine import predict_states_comprehensive
-        from utils.config import HMMConfig
-        from model_training import train_model
 
         # Test with single sample
         model, scaler, features, config = create_test_model()
@@ -382,7 +381,10 @@ def main():
 
     # Check dependencies first
     try:
-        from model_training.inference_engine import predict_states, predict_states_comprehensive
+        from model_training.inference_engine import (
+            predict_states,
+            predict_states_comprehensive,
+        )
         print("✅ Inference engine module loaded successfully")
     except ImportError as e:
         print(f"❌ Failed to import inference engine: {e}")

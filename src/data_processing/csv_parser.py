@@ -5,13 +5,13 @@ Provides robust CSV parsing functionality for multi-format OHLCV data,
 including datetime detection, column standardization, and memory-efficient processing.
 """
 
-import pandas as pd
-import numpy as np
-from pathlib import Path
-from typing import Optional, Dict, Any, Union, List
-import re
 import gc
 from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Union
+
+import numpy as np
+import pandas as pd
 
 from utils import get_logger
 

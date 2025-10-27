@@ -6,12 +6,11 @@ the overall project, handling different log levels, output formats, and
 optional advanced features like log rotation and JSON structured logging.
 """
 
-import sys
 import logging
 import logging.handlers
+import sys
 from pathlib import Path
-from typing import Optional, Dict, Any
-from datetime import datetime
+from typing import Optional
 
 try:
     from loguru import logger

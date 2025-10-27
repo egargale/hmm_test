@@ -5,20 +5,18 @@ This module provides advanced performance optimizations including parallel proce
 memory mapping, adaptive chunking, and vectorized operations.
 """
 
-import os
 import gc
 import mmap
-from typing import Callable, Any, Optional, Dict, Tuple
+import multiprocessing as mp
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
-import warnings
+from typing import Any, Callable, Dict, Optional, Tuple
 
-import pandas as pd
 import numpy as np
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
-import multiprocessing as mp
+import pandas as pd
 
-from ..utils.logging_config import get_logger
+from utils.logging_config import get_logger
 
 logger = get_logger(__name__)
 
@@ -329,11 +327,11 @@ class PerformanceOptimizer:
         chunks = []
 
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
+            with open(file_path, encoding='utf-8') as f:
                 with mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as mm:
                     # Read header first
                     header_line = mm.readline().decode('utf-8').strip()
-                    delimiter = kwargs.get('delimiter', ',')
+                    kwargs.get('delimiter', ',')
 
                     # Find line boundaries for chunking
                     chunk_size_bytes = kwargs['chunk_size'] * 100  # Rough estimate

@@ -5,16 +5,15 @@ This module provides comprehensive data validation, including OHLC consistency c
 outlier detection, missing data handling, and data quality scoring.
 """
 
-from typing import List, Dict, Any, Optional, Tuple, Union
 from dataclasses import dataclass
 from enum import Enum
-import warnings
+from typing import Any, Dict, List, Optional
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 from scipy import stats
 
-from ..utils.logging_config import get_logger
+from utils.logging_config import get_logger
 
 logger = get_logger(__name__)
 
@@ -140,10 +139,10 @@ class DataValidator:
             is_valid = not any(issue.level in [ValidationLevel.ERROR, ValidationLevel.CRITICAL]
                              for issue in self.issues)
 
-            valid_rows = len(df) - len(set(
+            valid_rows = len(df) - len({
                 idx for issue in self.issues if issue.row_indices
                 for idx in issue.row_indices
-            ))
+            })
 
             report = ValidationReport(
                 is_valid=is_valid,

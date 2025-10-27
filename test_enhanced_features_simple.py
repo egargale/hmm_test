@@ -6,17 +6,19 @@ This script tests the new enhanced indicators without requiring the full pipelin
 """
 
 import sys
+from datetime import datetime, timedelta
+
 import numpy as np
 import pandas as pd
-from datetime import datetime, timedelta
 
 # Add src to path for imports
 sys.path.insert(0, 'src')
 
 from src.data_processing.feature_engineering import add_features
 from src.data_processing.feature_selection import (
-    CorrelationFeatureSelector, VarianceFeatureSelector,
-    FeatureQualityScorer
+    CorrelationFeatureSelector,
+    FeatureQualityScorer,
+    VarianceFeatureSelector,
 )
 
 
@@ -196,7 +198,7 @@ def test_feature_selection():
     quality_scorer = FeatureQualityScorer()
     quality_report = quality_scorer.score_features(X, target)
 
-    print(f"✓ Quality scoring completed")
+    print("✓ Quality scoring completed")
     print(f"  - Average quality score: {quality_report['overall_score'].mean():.3f}")
     print(f"  - High quality features (>0.7): {len(quality_report[quality_report['overall_score'] > 0.7])}")
     print(f"  - Low quality features (<0.3): {len(quality_report[quality_report['overall_score'] < 0.3])}")

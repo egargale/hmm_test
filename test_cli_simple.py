@@ -17,9 +17,9 @@ sys.path.insert(0, "src")
 from click.testing import CliRunner
 
 try:
-    from cli_simple import cli
+    from test_cli import cli
 except ImportError:
-    print("CLI module not found, skipping tests")
+    print("Test CLI module not found, skipping tests")
     cli = None
 
 

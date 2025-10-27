@@ -6,20 +6,25 @@ data processing, feature engineering, model training, and results
 persistence into a unified workflow.
 """
 
-import logging
 import time
-from pathlib import Path
-from typing import Optional, Dict, Any, List, Union
-import asyncio
 from datetime import datetime
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
 
-from ..data_processing.feature_engineering import FeatureEngineer
-from ..data_processing.streaming_processor import StreamingDataProcessor
-from ..model_training.hmm_trainer import train_single_hmm_model, train_model, HMMTrainingResult
+from data_processing.feature_engineering import FeatureEngineer
+from data_processing.streaming_processor import StreamingDataProcessor
+from model_training.hmm_trainer import train_single_hmm_model
+from model_training.model_persistence import get_model_info, load_model, save_model
+from utils.logging_config import get_logger
+from .pipeline_types import (
+    PipelineConfig,
+    PipelineResult,
+    PipelineStage,
+    PipelineStatus,
+    ProcessingStats,
+)
 
 
 class HMMTrainer:
@@ -36,7 +41,6 @@ class HMMTrainer:
             config=self.config,
             **kwargs
         )
-from ..model_training.model_persistence import save_model, load_model, get_model_info
 
 
 class ModelPersistence:
@@ -61,19 +65,8 @@ class ModelPersistence:
     def get_info(self, filepath, **kwargs):
         """Get model info using the underlying get_model_info function."""
         return get_model_info(path=filepath, **kwargs)
-from ..backtesting.strategy_engine import StrategyEngine
-from ..backtesting.performance_analyzer import PerformanceAnalyzer
-from ..utils.logging_config import setup_logger
-from .pipeline_types import (
-    PipelineConfig,
-    PipelineResult,
-    PipelineStage,
-    PipelineStatus,
-    ProcessingStats
-)
 
-
-logger = setup_logger(__name__)
+logger = get_logger(__name__)
 
 
 class PipelineError(Exception):
@@ -148,8 +141,11 @@ class HMMPipeline:
 
             # Initialize backtesting components if enabled
             if self.config.backtesting:
-                self.strategy_engine = StrategyEngine(self.config.backtesting)
-                self.performance_analyzer = PerformanceAnalyzer()
+                # TODO: Implement proper backtesting classes
+                # self.strategy_engine = StrategyEngine(self.config.backtesting)
+                # self.performance_analyzer = PerformanceAnalyzer()
+                self.strategy_engine = None  # Placeholder
+                self.performance_analyzer = None  # Placeholder
 
             logger.info("All pipeline components initialized successfully")
 
@@ -454,7 +450,7 @@ class HMMPipeline:
     def from_config_file(cls, config_path: Path) -> 'HMMPipeline':
         """Create pipeline from configuration file"""
         import yaml
-        with open(config_path, 'r') as f:
+        with open(config_path) as f:
             config_dict = yaml.safe_load(f)
 
         config = PipelineConfig.from_dict(config_dict)
@@ -471,8 +467,11 @@ class HMMPipeline:
     def _convert_args_to_config(args) -> PipelineConfig:
         """Convert legacy CLI arguments to PipelineConfig"""
         from .pipeline_types import (
-            FeatureConfig, TrainingConfig, PersistenceConfig,
-            StreamingConfig, BacktestConfig
+            BacktestConfig,
+            FeatureConfig,
+            PersistenceConfig,
+            StreamingConfig,
+            TrainingConfig,
         )
 
         # Create feature config (mimic main.py defaults)

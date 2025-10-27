@@ -7,12 +7,13 @@ basic operations and integration validation.
 """
 
 import sys
-import pandas as pd
-import numpy as np
-from datetime import datetime, timedelta
-from pathlib import Path
 import tempfile
 import warnings
+from datetime import datetime, timedelta
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
 
 # Add src to path for imports
 sys.path.insert(0, 'src')
@@ -92,7 +93,12 @@ def test_basic_pipeline():
         test_data = create_test_data()
 
         # Create pipeline configured for DataFrame input with relaxed validation
-        from src.data_processing.pipeline_config import PipelineConfig, InputSourceType, ValidationConfig, FeatureConfig
+        from src.data_processing.pipeline_config import (
+            FeatureConfig,
+            InputSourceType,
+            PipelineConfig,
+            ValidationConfig,
+        )
         config = PipelineConfig(
             input_type=InputSourceType.DATAFRAME,
             validation_config=ValidationConfig(
@@ -148,7 +154,12 @@ def test_pipeline_with_different_inputs():
         # Test with DataFrame input
         print("  Testing with DataFrame input...")
         test_data = create_test_data()
-        from src.data_processing.pipeline_config import PipelineConfig, InputSourceType, ValidationConfig, FeatureConfig
+        from src.data_processing.pipeline_config import (
+            FeatureConfig,
+            InputSourceType,
+            PipelineConfig,
+            ValidationConfig,
+        )
         config = PipelineConfig(
             input_type=InputSourceType.DATAFRAME,
             validation_config=ValidationConfig(
@@ -178,7 +189,10 @@ def test_pipeline_with_different_inputs():
         csv_file = create_simple_csv_file(test_data)
 
         try:
-            from src.data_processing.pipeline_config import PipelineConfig, InputSourceType
+            from src.data_processing.pipeline_config import (
+                InputSourceType,
+                PipelineConfig,
+            )
             config_csv = PipelineConfig(
                 input_type=InputSourceType.CSV_FILE,
                 input_source=csv_file
@@ -206,8 +220,8 @@ def test_pipeline_configuration():
     print("\nTesting pipeline configuration...")
 
     try:
+        from src.data_processing.pipeline_config import PipelineMode
         from src.data_processing.unified_pipeline import UnifiedDataPipeline
-        from src.data_processing.pipeline_config import PipelineConfig, PipelineMode
 
         # Test default configuration
         default_pipeline = UnifiedDataPipeline()
@@ -234,7 +248,12 @@ def test_pipeline_stages():
         from src.data_processing.unified_pipeline import UnifiedDataPipeline
 
         test_data = create_test_data()
-        from src.data_processing.pipeline_config import PipelineConfig, InputSourceType, ValidationConfig, FeatureConfig
+        from src.data_processing.pipeline_config import (
+            FeatureConfig,
+            InputSourceType,
+            PipelineConfig,
+            ValidationConfig,
+        )
         config = PipelineConfig(
             input_type=InputSourceType.DATAFRAME,
             validation_config=ValidationConfig(
@@ -287,7 +306,7 @@ def test_feature_integration():
         original_columns = len(test_data.columns)
 
         # Create pipeline with features enabled
-        from src.data_processing.pipeline_config import PipelineConfig, InputSourceType
+        from src.data_processing.pipeline_config import InputSourceType, PipelineConfig
         config = PipelineConfig(input_type=InputSourceType.DATAFRAME)
         pipeline = UnifiedDataPipeline(config)
         result = pipeline.process(test_data)
@@ -331,7 +350,10 @@ def test_performance_characteristics():
 
             # Process data
             start_time = datetime.now()
-            from src.data_processing.pipeline_config import PipelineConfig, InputSourceType
+            from src.data_processing.pipeline_config import (
+                InputSourceType,
+                PipelineConfig,
+            )
             config = PipelineConfig(input_type=InputSourceType.DATAFRAME)
             pipeline = UnifiedDataPipeline(config)
             result = pipeline.process(test_data)
@@ -366,7 +388,12 @@ def test_pipeline_info():
         from src.data_processing.unified_pipeline import UnifiedDataPipeline
 
         test_data = create_test_data()
-        from src.data_processing.pipeline_config import PipelineConfig, InputSourceType, ValidationConfig, FeatureConfig
+        from src.data_processing.pipeline_config import (
+            FeatureConfig,
+            InputSourceType,
+            PipelineConfig,
+            ValidationConfig,
+        )
         config = PipelineConfig(
             input_type=InputSourceType.DATAFRAME,
             validation_config=ValidationConfig(

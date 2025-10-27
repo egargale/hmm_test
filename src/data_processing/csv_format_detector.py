@@ -5,17 +5,15 @@ This module provides comprehensive CSV format detection, supporting 10+ differen
 CSV formats with automatic detection and validation capabilities.
 """
 
-import chardet
 import re
-from pathlib import Path
-from typing import List, Dict, Any, Optional, Tuple
 from dataclasses import dataclass
-from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
+import chardet
 import pandas as pd
-import numpy as np
 
-from ..utils.logging_config import get_logger
+from utils.logging_config import get_logger
 
 logger = get_logger(__name__)
 
@@ -241,7 +239,7 @@ class CSVFormatDetector:
     def _detect_delimiter(self, file_path: Path, encoding: str) -> str:
         """Detect CSV delimiter."""
         try:
-            with open(file_path, 'r', encoding=encoding) as f:
+            with open(file_path, encoding=encoding) as f:
                 sample = f.read(1024)
 
             # Count common delimiters
@@ -359,7 +357,7 @@ class CSVFormatDetector:
         patterns = format_config.get('column_patterns', {})
         if patterns:
             pattern_matches = 0
-            for expected_col, col_patterns in patterns.items():
+            for _expected_col, col_patterns in patterns.items():
                 for actual_col in columns:
                     if any(re.search(pattern, actual_col, re.IGNORECASE) for pattern in col_patterns):
                         pattern_matches += 1

@@ -5,13 +5,12 @@ Provides factory functions for creating different types of HMM models
 with automatic configuration and hyperparameter management.
 """
 
-import warnings
-from typing import Dict, Any, Optional, List, Type, Union
+from typing import Any, Dict, List, Optional
 
+from utils import get_logger
 from .base import BaseHMMModel
 from .gaussian_hmm import GaussianHMMModel
 from .gmm_hmm import GMMHMMModel
-from utils import get_logger, ProcessingConfig
 
 logger = get_logger(__name__)
 

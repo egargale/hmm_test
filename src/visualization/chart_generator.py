@@ -5,16 +5,15 @@ Implements state visualization engine for generating publication-ready charts
 with HMM states overlaid on price data and technical indicators.
 """
 
-import numpy as np
-import pandas as pd
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
 import matplotlib.pyplot as plt
 import mplfinance as mpf
-from typing import Dict, Any, Optional, List, Tuple
-from pathlib import Path
-import warnings
+import numpy as np
+import pandas as pd
 
 from utils import get_logger
-from utils.data_types import BacktestConfig
 
 logger = get_logger(__name__)
 
@@ -41,11 +40,7 @@ def create_state_color_map(n_states: int, colormap: str = 'tab10') -> Dict[int, 
     for color in colors:
         if isinstance(color, tuple) and len(color) >= 3:
             rgb = color[:3]  # Take RGB, ignore alpha if present
-            hex_color = '#{:02x}{:02x}{:02x}'.format(
-                int(rgb[0] * 255),
-                int(rgb[1] * 255),
-                int(rgb[2] * 255)
-            )
+            hex_color = f'#{int(rgb[0] * 255):02x}{int(rgb[1] * 255):02x}{int(rgb[2] * 255):02x}'
             hex_colors.append(hex_color)
         else:
             hex_colors.append(color)
@@ -254,7 +249,7 @@ def plot_states(
 
     # Add technical indicators if provided
     if indicators is not None:
-        indicator_config = config.get('indicators', {})
+        config.get('indicators', {})
 
         # Common indicator configurations
         default_indicators = {
@@ -313,7 +308,7 @@ def plot_states(
         result = mpf.plot(
             price_data,
             **plot_kwargs,
-            savefig=dict(fname=output_path, dpi=config['dpi'], facecolor='white')
+            savefig={'fname': output_path, 'dpi': config['dpi'], 'facecolor': 'white'}
         )
 
         if result is not None:
@@ -389,7 +384,7 @@ def plot_state_distribution(
     config = default_config
 
     # Create state DataFrame
-    state_df = pd.DataFrame({'state': states}, index=indicators.index)
+    pd.DataFrame({'state': states}, index=indicators.index)
 
     # Select indicators to plot
     if config['indicator_columns'] is None:

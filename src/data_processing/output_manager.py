@@ -5,16 +5,16 @@ This module provides comprehensive output management, supporting multiple
 formats and automatic metadata preservation.
 """
 
-from typing import Union, Dict, Any, Optional, List
-from dataclasses import dataclass
-from pathlib import Path
 import json
 import pickle
+from dataclasses import dataclass
 from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
 
-from ..utils.logging_config import get_logger
+from utils.logging_config import get_logger
 from .pipeline_config import OutputFormat
 
 logger = get_logger(__name__)

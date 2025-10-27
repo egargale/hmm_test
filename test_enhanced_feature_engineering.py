@@ -7,18 +7,21 @@ and quality assessment capabilities added in Phase 2.1.2.
 """
 
 import sys
+from datetime import datetime, timedelta
+
 import numpy as np
 import pandas as pd
-from datetime import datetime, timedelta
 
 # Add src to path for imports
 sys.path.insert(0, 'src')
 
 from src.data_processing.feature_engineering import FeatureEngineer, add_features
 from src.data_processing.feature_selection import (
-    CorrelationFeatureSelector, VarianceFeatureSelector,
-    MutualInformationFeatureSelector, FeatureQualityScorer,
-    FeatureSelectionPipeline
+    CorrelationFeatureSelector,
+    FeatureQualityScorer,
+    FeatureSelectionPipeline,
+    MutualInformationFeatureSelector,
+    VarianceFeatureSelector,
 )
 from src.pipelines.pipeline_types import FeatureConfig
 
@@ -261,7 +264,7 @@ def test_feature_selection():
     quality_scorer = FeatureQualityScorer()
     quality_report = quality_scorer.score_features(features, target)
 
-    print(f"✓ Quality scoring completed")
+    print("✓ Quality scoring completed")
     print(f"  - Average quality score: {quality_report['overall_score'].mean():.3f}")
     print(f"  - High quality features (>0.7): {len(quality_report[quality_report['overall_score'] > 0.7])}")
     print(f"  - Low quality features (<0.3): {len(quality_report[quality_report['overall_score'] < 0.3])}")

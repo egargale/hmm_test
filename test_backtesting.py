@@ -6,21 +6,26 @@ for HMM-driven trading strategies with realistic trade execution.
 """
 
 import sys
-import os
-import pandas as pd
+
 import numpy as np
-from pathlib import Path
+import pandas as pd
 
 # Add src to path
 sys.path.insert(0, 'src')
 
-from utils.data_types import BacktestConfig
-from backtesting.strategy_engine import backtest_strategy, backtest_with_analysis
-from backtesting.performance_analyzer import analyze_performance, create_performance_report
-from backtesting.utils import (
-    create_sample_price_data, create_sample_state_sequence,
-    analyze_regime_performance, calculate_position_returns
+from backtesting.performance_analyzer import (
+    analyze_performance,
+    create_performance_report,
 )
+from backtesting.strategy_engine import backtest_strategy, backtest_with_analysis
+from backtesting.utils import (
+    analyze_regime_performance,
+    calculate_position_returns,
+    create_sample_price_data,
+    create_sample_state_sequence,
+)
+from utils.data_types import BacktestConfig
+
 
 def test_basic_backtesting():
     """Test basic backtesting functionality."""
@@ -51,7 +56,7 @@ def test_basic_backtesting():
         print("\nTesting basic backtesting...")
         positions, trades = backtest_strategy(states, prices, config)
 
-        print(f"✓ Backtesting completed:")
+        print("✓ Backtesting completed:")
         print(f"  - Position series length: {len(positions)}")
         print(f"  - Number of trades: {len(trades)}")
         print(f"  - Position distribution: {positions.value_counts().to_dict()}")
@@ -159,7 +164,7 @@ def test_lookahead_bias_prevention():
             states, prices, config, lookahead_bias_prevention=False
         )
 
-        print(f"✓ Results comparison:")
+        print("✓ Results comparison:")
         print(f"  - With bias prevention: {len(trades_with_bias)} trades")
         print(f"  - Without bias prevention: {len(trades_without_bias)} trades")
 
@@ -211,7 +216,7 @@ def test_performance_analysis():
         print("Analyzing performance metrics...")
         metrics = analyze_performance(result)
 
-        print(f"✓ Performance analysis completed:")
+        print("✓ Performance analysis completed:")
         print(f"  - Total return: {metrics.total_return:.2%}")
         print(f"  - Annualized return: {metrics.annualized_return:.2%}")
         print(f"  - Annualized volatility: {metrics.annualized_volatility:.2%}")

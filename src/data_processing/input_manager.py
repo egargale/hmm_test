@@ -5,14 +5,13 @@ This module provides comprehensive input source management, supporting multiple
 data sources and formats with automatic validation and preprocessing.
 """
 
-from typing import Union, Any, Dict, List, Optional, Tuple
 from dataclasses import dataclass
 from pathlib import Path
-import warnings
+from typing import Any, Dict, List, Optional, Union
 
 import pandas as pd
 
-from ..utils.logging_config import get_logger
+from utils.logging_config import get_logger
 from .pipeline_config import InputSourceType
 
 logger = get_logger(__name__)
@@ -360,7 +359,6 @@ class DataInputManager:
     def _extract_file_metadata(self, file_path: Path, data: pd.DataFrame, encoding: str) -> Dict[str, Any]:
         """Extract metadata from file and data."""
         try:
-            import os
 
             # File metadata
             stat = file_path.stat()

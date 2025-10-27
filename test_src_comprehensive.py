@@ -4,10 +4,9 @@ Comprehensive test of src modules using real BTC.csv data
 """
 
 import sys
-import os
-import pandas as pd
-import numpy as np
 from pathlib import Path
+
+import numpy as np
 
 # Add src to path
 sys.path.insert(0, 'src')
@@ -19,7 +18,7 @@ def test_data_processing():
     print("=" * 60)
 
     try:
-        from data_processing import process_csv, add_features, validate_data
+        from data_processing import add_features, process_csv, validate_data
         from utils import get_logger
 
         logger = get_logger(__name__)
@@ -141,8 +140,8 @@ def test_backtesting_engine(features, states):
     print("=" * 60)
 
     try:
-        from backtesting.strategy_engine import StrategyEngine
         from backtesting.performance_analyzer import PerformanceAnalyzer
+        from backtesting.strategy_engine import StrategyEngine
         from utils.data_types import BacktestConfig
 
         # Prepare price data
@@ -186,7 +185,7 @@ def test_backtesting_engine(features, states):
             state_mapping=state_mapping
         )
 
-        print(f"✅ Backtest completed:")
+        print("✅ Backtest completed:")
         print(f"  - Trades generated: {len(backtest_result.trades)}")
         print(f"  - Final equity: ${backtest_result.equity_curve.iloc[-1]:.2f}")
 
@@ -199,7 +198,7 @@ def test_backtesting_engine(features, states):
             benchmark=prices_aligned.pct_change()
         )
 
-        print(f"✅ Performance metrics:")
+        print("✅ Performance metrics:")
         print(f"  - Total return: {metrics.total_return:.2%}")
         print(f"  - Annualized return: {metrics.annualized_return:.2%}")
         print(f"  - Volatility: {metrics.annualized_volatility:.2%}")
@@ -222,8 +221,8 @@ def test_inference_engine(features):
     print("=" * 60)
 
     try:
-        from model_training.inference_engine import StateInference
         from hmm_models import GaussianHMMModel
+        from model_training.inference_engine import StateInference
 
         # Prepare features
         feature_cols = ['log_ret', 'atr', 'roc', 'rsi', 'bb_width', 'bb_position',

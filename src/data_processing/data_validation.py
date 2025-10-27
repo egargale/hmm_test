@@ -6,11 +6,11 @@ derived features, including outlier detection, missing value handling, and
 data quality reporting.
 """
 
-import pandas as pd
-import numpy as np
-from typing import Dict, Any, List, Tuple, Optional, Union
-import warnings
 from datetime import datetime
+from typing import Any, Dict, List, Optional, Tuple
+
+import numpy as np
+import pandas as pd
 
 from utils import get_logger
 
@@ -317,7 +317,7 @@ def _handle_outliers(
 
         # Flag outliers in a new column instead of removing them
         df['is_outlier'] = False
-        for col, count in outlier_counts.items():
+        for col, _count in outlier_counts.items():
             if method == "iqr":
                 outliers = _detect_outliers_iqr(df[col], threshold)
             elif method == "zscore":
@@ -495,7 +495,7 @@ def print_validation_report(report: Dict[str, Any]) -> None:
             print(f"  {i}. {severity_icon} [{issue.get('severity', 'info').upper()}] {issue['description']}")
 
     if report['statistics']:
-        print(f"\nStatistics:")
+        print("\nStatistics:")
         print(f"  - Memory Usage: {report['statistics']['memory_usage_mb']:.2f} MB")
         if 'ohlcv_statistics' in report['statistics']:
             print(f"  - OHLCV Columns: {len(report['statistics']['ohlcv_statistics'])}")

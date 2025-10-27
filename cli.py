@@ -5,36 +5,32 @@ Command-line interface for comprehensive HMM-based futures analysis regime detec
 Provides end-to-end analysis from data loading to visualization and reporting.
 """
 
+import signal
 import sys
-import os
-import logging
+import time
 import traceback
 from pathlib import Path
-from typing import Optional, Dict, Any
-import time
-import signal
 
 import click
-import pandas as pd
 import numpy as np
 from tqdm import tqdm
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent / 'src'))
 
-from utils import get_logger, setup_logging
-from utils.data_types import BacktestConfig
+from backtesting.performance_analyzer import PerformanceAnalyzer
+from backtesting.strategy_engine import StrategyEngine
 from data_processing.csv_parser import process_csv
-from data_processing.feature_engineering import add_features
 from data_processing.data_validation import validate_data
+from data_processing.feature_engineering import add_features
 from model_training.hmm_trainer import HMMTrainer
 from model_training.inference_engine import StateInference
-from backtesting.strategy_engine import StrategyEngine
-from backtesting.performance_analyzer import PerformanceAnalyzer
-from visualization.chart_generator import plot_states, create_regime_timeline_plot
+from processing_engines.factory import ProcessingEngineFactory
+from utils import get_logger, setup_logging
+from utils.data_types import BacktestConfig
+from visualization.chart_generator import create_regime_timeline_plot, plot_states
 from visualization.dashboard_builder import build_dashboard
 from visualization.report_generator import generate_regime_report
-from processing_engines.factory import ProcessingEngineFactory
 
 # Global handler for graceful shutdown
 shutdown_requested = False
@@ -252,7 +248,6 @@ def analyze(ctx, input_csv, output_dir, n_states, engine, target_column,
 
             elif engine == 'daft':
                 import daft
-                from daft import col
                 df = daft.from_pandas(data)
 
                 with tqdm(total=2, desc="Processing features", disable=quiet) as pbar:

@@ -9,18 +9,21 @@ produces equivalent results to the original implementation.
 import asyncio
 import sys
 import tempfile
-from pathlib import Path
 import warnings
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 
 # Add src to path for imports
 sys.path.insert(0, 'src')
 
-from src.compatibility.main_adapter import main as legacy_main, HMMPipeline
+from src.compatibility.main_adapter import HMMPipeline
 from src.pipelines.pipeline_types import (
-    PipelineConfig, FeatureConfig, TrainingConfig,
-    PersistenceConfig, StreamingConfig, BacktestConfig
+    FeatureConfig,
+    PipelineConfig,
+    StreamingConfig,
+    TrainingConfig,
 )
 
 

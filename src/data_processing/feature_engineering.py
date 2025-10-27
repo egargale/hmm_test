@@ -6,12 +6,19 @@ including pandas_ta, with support for memory-efficient processing and configurab
 indicator parameters.
 """
 
-import pandas as pd
-import numpy as np
-from typing import Dict, Any, Optional, List, Tuple
 import warnings
+from typing import Any, Dict, List, Optional, Tuple
+
+import numpy as np
+import pandas as pd
 
 from utils.logging_config import get_logger
+from .technical_indicators import (
+    get_default_indicator_config,
+    get_available_indicators,
+    validate_indicator_config,
+    validate_ohlcv_columns
+)
 
 logger = get_logger(__name__)
 
@@ -43,11 +50,11 @@ def add_features(
     logger.info(f"Adding features to DataFrame with {len(df)} rows")
 
     # Validate input DataFrame
-    _validate_ohlcv_columns(df)
+    validate_ohlcv_columns(df)
 
     # Use default indicator config if not provided
     if indicator_config is None:
-        indicator_config = _get_default_indicator_config()
+        indicator_config = get_default_indicator_config()
 
     # Make a copy to avoid modifying original
     df = df.copy()
@@ -138,42 +145,8 @@ def add_features(
     return df
 
 
-def _validate_ohlcv_columns(df: pd.DataFrame) -> None:
-    """Validate that required OHLCV columns exist."""
-    required_columns = ['open', 'high', 'low', 'close', 'volume']
-    missing_columns = [col for col in required_columns if col not in df.columns]
-
-    if missing_columns:
-        raise ValueError(f"Missing required OHLCV columns: {missing_columns}")
 
 
-def _get_default_indicator_config() -> Dict[str, Dict[str, Any]]:
-    """Get default indicator configuration."""
-    return {
-        'moving_averages': {
-            'sma': {'length': 20},
-            'ema': {'length': 20},
-            'sma_ratio': {'fast': 10, 'slow': 20}
-        },
-        'volatility': {
-            'atr': {'length': 14},
-            'bbands': {'length': 20, 'std': 2.0}
-        },
-        'momentum': {
-            'rsi': {'length': 14},
-            'roc': {'length': 10},
-            'stochastic': {'k': 14, 'd': 3}
-        },
-        'volume': {
-            'volume_sma': {'length': 20},
-            'volume_ratio': {'length': 20}
-        },
-        'trend': {
-            'adx': {'length': 14}
-        },
-        'patterns': {},
-        'custom': {}
-    }
 
 
 def _add_basic_returns(df: pd.DataFrame, min_periods: int) -> pd.DataFrame:
@@ -190,7 +163,7 @@ def _add_basic_returns(df: pd.DataFrame, min_periods: int) -> pd.DataFrame:
 def _add_moving_averages(df: pd.DataFrame, config: Dict[str, Any], min_periods: int) -> pd.DataFrame:
     """Add moving average indicators."""
     try:
-        from ta.trend import SMAIndicator, EMAIndicator
+        from ta.trend import EMAIndicator, SMAIndicator
     except ImportError:
         logger.warning("ta library not available for moving averages")
         return df
@@ -266,7 +239,7 @@ def _add_volatility_indicators(df: pd.DataFrame, config: Dict[str, Any], min_per
 def _add_momentum_indicators(df: pd.DataFrame, config: Dict[str, Any], min_periods: int) -> pd.DataFrame:
     """Add momentum indicators."""
     try:
-        from ta.momentum import RSIIndicator, ROCIndicator, StochasticOscillator
+        from ta.momentum import ROCIndicator, RSIIndicator, StochasticOscillator
     except ImportError:
         logger.warning("ta library not available for momentum indicators")
         return df
@@ -379,7 +352,7 @@ def _add_custom_indicators(df: pd.DataFrame, config: Dict[str, Any], min_periods
     # For now, it's a placeholder for future custom indicators
 
     # Example: Add any custom indicators specified in config
-    for indicator_name, params in config.items():
+    for indicator_name, _params in config.items():
         try:
             # This is where custom indicator logic would go
             logger.debug(f"Custom indicator '{indicator_name}' not implemented yet")
@@ -406,62 +379,20 @@ def _downcast_float_columns(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def get_available_indicators() -> Dict[str, List[str]]:
-    """
-    Get list of available indicators by category.
-
-    Returns:
-        Dict mapping categories to lists of indicator names
-    """
-    return {
-        'moving_averages': ['sma', 'ema', 'sma_ratio'],
-        'volatility': ['atr', 'bbands'],
-        'momentum': ['rsi', 'roc', 'stochastic'],
-        'volume': ['volume_sma', 'volume_ratio', 'obv', 'vwap'],
-        'trend': ['adx'],
-        'patterns': ['price_position', 'hl_ratio'],
-        'enhanced_momentum': ['williams_r', 'cci', 'mfi', 'mtm', 'proc'],
-        'enhanced_volatility': ['chaikin_volatility', 'historical_volatility', 'keltner_channels', 'donchian_channels'],
-        'enhanced_trend': ['tma', 'wma', 'hma', 'aroon', 'dmi'],
-        'enhanced_volume': ['adl', 'vpt', 'eom', 'volume_roc'],
-        'time_features': ['calendar', 'cyclical', 'intraday', 'weekend']
-    }
 
 
-def validate_indicator_config(config: Dict[str, Any]) -> bool:
-    """
-    Validate indicator configuration.
-
-    Args:
-        config: Indicator configuration dictionary
-
-    Returns:
-        bool: True if configuration is valid
-    """
-    available_indicators = get_available_indicators()
-    all_available = set()
-    for indicators in available_indicators.values():
-        all_available.update(indicators)
-
-    # Check if all configured indicators are available
-    for category, indicators in config.items():
-        if category not in available_indicators:
-            logger.warning(f"Unknown indicator category: {category}")
-            return False
-
-        for indicator in indicators:
-            if indicator not in all_available and indicator != 'custom':
-                logger.warning(f"Unknown indicator: {indicator}")
-                return False
-
-    return True
 
 
 # Enhanced indicator functions
 def _add_enhanced_momentum_indicators(df: pd.DataFrame, config: Dict[str, Any], min_periods: int) -> pd.DataFrame:
     """Add enhanced momentum indicators."""
     try:
-        from ta.momentum import WilliamsRIndicator, ROCIndicator, StochasticOscillator, MFIIndicator
+        from ta.momentum import (
+            MFIIndicator,
+            ROCIndicator,
+            StochasticOscillator,
+            WilliamsRIndicator,
+        )
     except ImportError:
         logger.warning("ta library not available for enhanced momentum indicators")
         return df
@@ -1019,8 +950,10 @@ class FeatureEngineer:
             Selected feature matrix
         """
         from .feature_selection import (
-            CorrelationFeatureSelector, VarianceFeatureSelector,
-            MutualInformationFeatureSelector, RecursiveFeatureEliminationSelector
+            CorrelationFeatureSelector,
+            MutualInformationFeatureSelector,
+            RecursiveFeatureEliminationSelector,
+            VarianceFeatureSelector,
         )
 
         # Create selector based on method

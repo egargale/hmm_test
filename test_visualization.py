@@ -6,21 +6,24 @@ including state visualization, interactive dashboards, and detailed regime repor
 """
 
 import sys
-import os
-import pandas as pd
-import numpy as np
-from pathlib import Path
 import tempfile
-import shutil
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
 
 # Add src to path
 sys.path.insert(0, 'src')
 
-from utils.data_types import BacktestConfig, BacktestResult, Trade, PerformanceMetrics
-from visualization.chart_generator import plot_states, plot_state_distribution, create_regime_timeline_plot
+from backtesting.utils import create_sample_price_data, create_sample_state_sequence
+from utils.data_types import BacktestConfig
+from visualization.chart_generator import (
+    create_regime_timeline_plot,
+    plot_state_distribution,
+    plot_states,
+)
 from visualization.dashboard_builder import build_dashboard
 from visualization.report_generator import generate_regime_report
-from backtesting.utils import create_sample_price_data, create_sample_state_sequence
 
 
 def test_state_visualization_engine():
@@ -177,7 +180,7 @@ def test_interactive_performance_dashboard():
         # Calculate performance metrics
         from backtesting.performance_analyzer import analyze_performance
         metrics = analyze_performance(result, risk_free_rate=0.02)
-        print(f"✓ Performance metrics calculated")
+        print("✓ Performance metrics calculated")
 
         # Test dashboard generation
         print("\nTesting dashboard generation...")
@@ -201,7 +204,7 @@ def test_interactive_performance_dashboard():
 
             if Path(result_path).exists():
                 # Check if file contains expected content
-                with open(result_path, 'r') as f:
+                with open(result_path) as f:
                     content = f.read()
 
                 if ('HMM Performance Dashboard' in content and
@@ -302,7 +305,7 @@ def test_regime_analysis_report():
         # Calculate performance metrics
         from backtesting.performance_analyzer import analyze_performance
         metrics = analyze_performance(result, risk_free_rate=0.02)
-        print(f"✓ Performance metrics calculated")
+        print("✓ Performance metrics calculated")
 
         # Test HTML report generation
         print("\nTesting HTML report generation...")
@@ -327,7 +330,7 @@ def test_regime_analysis_report():
 
             if Path(result_path).exists():
                 # Validate HTML content
-                with open(result_path, 'r') as f:
+                with open(result_path) as f:
                     content = f.read()
 
                 validation_checks = [
@@ -441,13 +444,13 @@ def test_integration_workflow():
             state_map={0: 1, 1: -1, 2: 0}
         )
 
-        from backtesting.strategy_engine import backtest_with_analysis
         from backtesting.performance_analyzer import analyze_performance
+        from backtesting.strategy_engine import backtest_with_analysis
 
         result = backtest_with_analysis(states, prices, config)
         metrics = analyze_performance(result, risk_free_rate=0.02)
 
-        print(f"✓ Complete analysis performed:")
+        print("✓ Complete analysis performed:")
         print(f"  - Price points: {len(prices)}")
         print(f"  - States: {len(np.unique(states))}")
         print(f"  - Trades: {len(result.trades)}")
@@ -497,7 +500,7 @@ def test_integration_workflow():
                     print(f"✗ {output_type}: Generation failed")
 
             if success_count == len(outputs):
-                print(f"\n✓ Complete integration workflow successful!")
+                print("\n✓ Complete integration workflow successful!")
                 print(f"✓ All {len(outputs)} visualization components generated")
                 return True
             else:

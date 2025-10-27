@@ -6,9 +6,10 @@ cloud-native data processing with automatic optimization and GPU acceleration.
 """
 
 import time
-import warnings
 from pathlib import Path
-from typing import Optional, Dict, Any, List, Union
+from typing import Any, Dict, List, Optional
+
+import pandas as pd
 
 try:
     import daft
@@ -22,7 +23,7 @@ except ImportError:
     pc = None
 
 from data_processing import add_features, validate_data
-from utils import get_logger, ProcessingConfig
+from utils import ProcessingConfig, get_logger
 
 logger = get_logger(__name__)
 
@@ -450,7 +451,7 @@ def optimize_daft_performance(
 
 def benchmark_daft_engine(
     csv_path: str,
-    partition_counts: List[int] = [1, 2, 4],
+    partition_counts: List[int] = None,
     use_accelerators: bool = True
 ) -> Dict[str, Any]:
     """
@@ -464,6 +465,8 @@ def benchmark_daft_engine(
     Returns:
         Dict with benchmark results
     """
+    if partition_counts is None:
+        partition_counts = [1, 2, 4]
     if not DAFT_AVAILABLE:
         return {'error': 'Daft is not available'}
 

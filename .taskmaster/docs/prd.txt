@@ -1,0 +1,100 @@
+# Product Requirements Document: HMM Futures Analysis - Makefile and Project Fixes
+
+## Overview
+This PRD addresses critical issues found in the comprehensive analysis of the HMM Futures Analysis project's Makefile, configuration, and code quality. The analysis revealed several blocking issues that prevent the project from running properly and meeting development workflow standards.
+
+## Key Issues Identified
+
+### Critical Issues (Blockers)
+1. **Entry Points Mismatch**: CLI entry points in pyproject.toml point to `src.cli_simple:main` but file exists in project root
+2. **Test Failures**: Import errors with StrategyEngine blocking test execution
+3. **Code Quality Issues**: 81+ ruff linting errors and mypy type checking failures
+
+### Configuration Issues
+1. **Deprecated Ruff Configuration**: Using outdated configuration format
+2. **Missing Dependencies**: types-PyYAML needed for type checking
+3. **Pydantic V1 Deprecations**: Using deprecated validator syntax
+
+### Development Workflow Issues
+1. **Missing Makefile Targets**: No targets for auto-fixing, live docs, or watch testing
+2. **Code Quality Gates**: Linting and type checking fail consistently
+3. **Documentation Generation**: Issues with import paths and dependencies
+
+## Requirements
+
+### 1. Fix Critical Entry Point Issues
+- Move cli_simple.py to src/ directory OR update pyproject.toml entry points
+- Ensure all CLI entry points work correctly after installation
+- Test both hmm-analyze and hmm-futures commands
+
+### 2. Resolve Test Import Errors
+- Fix StrategyEngine import issues in src/backtesting/strategy_engine.py
+- Ensure all test files can import required modules
+- Verify test collection and execution works
+
+### 3. Code Quality Improvements
+- Fix all 81 ruff linting errors (unused variables, bare excepts, imports)
+- Update pyproject.toml ruff configuration to use new format
+- Add types-PyYAML to dev dependencies
+- Fix mypy type checking issues
+- Update Pydantic validators from V1 to V2 syntax
+
+### 4. Enhanced Makefile Targets
+- Add auto-fix target for linting issues
+- Add live documentation preview target
+- Add continuous testing/watch target
+- Enhance clean targets for thorough Python cache cleanup
+- Add code quality reporting target
+
+### 5. Configuration Modernization
+- Update all deprecated configurations
+- Ensure compatibility with latest tool versions
+- Standardize project structure and imports
+
+### 6. Testing Infrastructure
+- Ensure all test markers are properly registered
+- Fix integration test configuration
+- Verify test coverage reporting works
+- Add missing test dependencies
+
+## Success Criteria
+
+### Functional Requirements
+- [ ] `make test` passes without errors
+- [ ] `make lint` returns clean (no errors)
+- [ ] `make type-check` completes successfully
+- [ ] CLI commands work after installation
+- [ ] All Makefile targets execute without errors
+
+### Quality Requirements
+- [ ] Zero ruff linting errors
+- [ ] Zero mypy type checking errors
+- [ ] All tests pass with >95% coverage
+- [ ] Documentation builds without warnings
+- [ ] Configuration follows latest standards
+
+### Development Workflow Requirements
+- [ ] Auto-fix targets work for common issues
+- [ ] Live documentation preview available
+- [ ] Continuous testing workflow functional
+- [ ] Code quality gates pass in CI
+
+## Technical Constraints
+
+### Environment
+- Python 3.9+ compatibility required
+- UV package manager required
+- Must maintain backward compatibility for existing features
+
+### Dependencies
+- All fixes must work with existing dependency versions
+- Cannot remove critical dependencies used by production code
+- Must maintain compatibility with existing configuration files
+
+## Timeline
+This is a critical infrastructure fix that should be completed before any new feature development. Estimated effort: 2-3 days for full implementation and testing.
+
+## Dependencies
+- Access to modify pyproject.toml and Makefile
+- Ability to run tests and linting locally
+- Understanding of project structure and dependencies

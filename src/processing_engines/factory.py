@@ -5,18 +5,29 @@ Implements a factory pattern for selecting and using different processing engine
 (Pandas Streaming, Dask, Daft) based on data size, memory constraints, and user preferences.
 """
 
-import sys
 import time
-import warnings
 from pathlib import Path
-from typing import Optional, Dict, Any, Union
+from typing import Any, Dict, Optional, Union
 
 import pandas as pd
 
-from .streaming_engine import process_streaming, estimate_processing_time
-from .dask_engine import process_dask, compute_with_progress, benchmark_dask_engines
-from .daft_engine import process_daft, compute_daft_with_progress, benchmark_daft_engine
-from utils import get_logger, ProcessingConfig
+from utils import ProcessingConfig, get_logger
+
+# Optional imports for type hints
+try:
+    import dask.dataframe
+except ImportError:
+    dask = None
+    dask.dataframe = None
+
+try:
+    import daft
+except ImportError:
+    daft = None
+
+from .daft_engine import benchmark_daft_engine, compute_daft_with_progress, process_daft
+from .dask_engine import benchmark_dask_engines, compute_with_progress, process_dask
+from .streaming_engine import estimate_processing_time, process_streaming
 
 logger = get_logger(__name__)
 
@@ -140,7 +151,7 @@ class ProcessingEngineFactory:
         csv_path: str,
         config: ProcessingConfig,
         **engine_kwargs
-    ) -> Union[pd.DataFrame, "dd.DataFrame", "daft.DataFrame"]:
+    ) -> Union[pd.DataFrame, "dask.dataframe.DataFrame", "daft.DataFrame"]:
         """
         Create a processor using the specified engine.
 
@@ -194,7 +205,7 @@ class ProcessingEngineFactory:
         memory_limit: str = "2GB",
         show_progress: bool = True,
         **kwargs
-    ) -> "dd.DataFrame":
+    ) -> "dask.dataframe.DataFrame":
         """Create Dask processor."""
         return process_dask(
             csv_path=csv_path,
@@ -227,7 +238,7 @@ class ProcessingEngineFactory:
 
     def compute_result(
         self,
-        processed_data: Union[pd.DataFrame, "dd.DataFrame", "daft.DataFrame"],
+        processed_data: Union[pd.DataFrame, "dask.dataframe.DataFrame", "daft.DataFrame"],
         show_progress: bool = True
     ) -> pd.DataFrame:
         """

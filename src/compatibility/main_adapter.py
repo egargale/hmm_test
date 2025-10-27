@@ -12,11 +12,11 @@ import logging
 import warnings
 from pathlib import Path
 
-from ..pipelines.hmm_pipeline import HMMPipeline, HMMTrainer
-from ..utils.logging_config import setup_logger
+from pipelines.hmm_pipeline import HMMPipeline
+from utils.logging_config import get_logger
 
 # Set up deprecation warning
-logger = setup_logger(__name__)
+logger = get_logger(__name__)
 
 
 def emit_deprecation_warning():
@@ -247,8 +247,8 @@ def add_features(df):
         stacklevel=2
     )
 
-    from ..data_processing.feature_engineering import FeatureEngineer
-    from ..pipelines.pipeline_types import FeatureConfig
+    from data_processing.feature_engineering import FeatureEngineer
+    from pipelines.pipeline_types import FeatureConfig
 
     engineer = FeatureEngineer(FeatureConfig())
     return engineer.add_features(df)
@@ -266,10 +266,12 @@ def stream_features(csv_path, chunksize=100_000):
         stacklevel=2
     )
 
-    from ..data_processing.streaming_processor import StreamingDataProcessor
-    from ..data_processing.feature_engineering import FeatureEngineer
-    from ..pipelines.pipeline_types import (
-        FeatureConfig, StreamingConfig, ProcessingMode
+    from data_processing.feature_engineering import FeatureEngineer
+    from data_processing.streaming_processor import StreamingDataProcessor
+    from pipelines.pipeline_types import (
+        FeatureConfig,
+        ProcessingMode,
+        StreamingConfig,
     )
 
     # Create configuration
@@ -300,8 +302,8 @@ def simple_backtest(df, states):
         stacklevel=2
     )
 
-    from ..backtesting.strategy_engine import StrategyEngine
-    from ..pipelines.pipeline_types import BacktestConfig
+    from backtesting.strategy_engine import StrategyEngine
+    from pipelines.pipeline_types import BacktestConfig
 
     # Create simple strategy config
     config = BacktestConfig(
@@ -329,10 +331,10 @@ def perf_metrics(series):
         stacklevel=2
     )
 
-    from ..backtesting.performance_analyzer import PerformanceAnalyzer
+    from backtesting.performance_analyzer import PerformanceAnalyzer
 
     analyzer = PerformanceAnalyzer()
-    metrics = analyzer.analyze(series)
+    analyzer.analyze(series)
 
     # Map to legacy format
     returns = series.diff().dropna()

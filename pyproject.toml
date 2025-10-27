@@ -70,6 +70,7 @@ dev = [
     "pre-commit>=2.17.0",
     "bandit>=1.7.0",
     "safety>=2.0.0",
+    "types-PyYAML>=6.0.0",
 ]
 docs = [
     "sphinx>=5.0.0",
@@ -105,8 +106,8 @@ Repository = "https://github.com/egargale/hmm_test"
 Changelog = "https://github.com/egargale/hmm_test/blob/main/CHANGELOG.md"
 
 [project.scripts]
-hmm-analyze = "src.cli_simple:main"
-hmm-futures = "src.cli_simple:main"
+hmm-analyze = "test_cli:cli"
+hmm-futures = "test_cli:cli"
 
 [tool.hatch.build.targets.sdist]
 include = [
@@ -142,20 +143,6 @@ extend-exclude = '''
 [tool.ruff]
 line-length = 88
 target-version = "py38"
-select = [
-    "E",  # pycodestyle errors
-    "W",  # pycodestyle warnings
-    "F",  # pyflakes
-    "I",  # isort
-    "B",  # flake8-bugbear
-    "C4", # flake8-comprehensions
-    "UP", # pyupgrade
-]
-ignore = [
-    "E501",  # line too long, handled by black
-    "B008",  # do not perform function calls in argument defaults
-    "C901",  # too complex
-]
 exclude = [
     ".bzr",
     ".direnv",
@@ -178,12 +165,35 @@ exclude = [
     "venv",
 ]
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "B",  # flake8-bugbear
+    "C4", # flake8-comprehensions
+    "UP", # pyupgrade
+]
+extend-select = [
+    "I002", # banned-relative-import
+]
+ignore = [
+    "E501",  # line too long, handled by black
+    "B008",  # do not perform function calls in argument defaults
+    "C901",  # too complex
+]
+
+[tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
 "tests/**" = ["E501", "B011", "B018"]
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 known-first-party = ["src"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
 
 [tool.mypy]
 python_version = "3.9"
@@ -214,6 +224,7 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 minversion = "7.0"
+pythonpath = ["src"]
 addopts = [
     "-ra",
     "--strict-markers",
@@ -280,6 +291,14 @@ known_first_party = ["src"]
 
 [dependency-groups]
 dev = [
+    "mypy>=1.18.2",
+    "pandas-stubs>=2.2.2.240807",
     "pre-commit>=4.3.0",
     "pytest>=8.4.2",
+    "pytest-watch>=4.2.0",
+    "types-chardet>=5.0.4.6",
+    "types-psutil>=7.0.0.20251001",
+    "types-pyyaml>=6.0.12.20250915",
+    "types-seaborn>=0.13.2.20250914",
+    "types-tqdm>=4.67.0.20250809",
 ]

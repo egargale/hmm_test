@@ -1,4 +1,4 @@
-.PHONY: help install install-dev test lint format type-check security clean docs docs-serve build publish
+.PHONY: help install install-dev test test-watch lint lint-fix format type-check security clean clean-py docs docs-serve docs-live build publish
 
 # Default target
 help:
@@ -6,14 +6,18 @@ help:
 	@echo "  install      Install package"
 	@echo "  install-dev  Install package with development dependencies"
 	@echo "  test         Run tests"
+	@echo "  test-watch   Run tests in watch mode"
 	@echo "  test-cov     Run tests with coverage"
 	@echo "  lint         Run linting"
+	@echo "  lint-fix     Auto-fix linting issues"
 	@echo "  format       Format code"
 	@echo "  type-check   Run type checking"
 	@echo "  security     Run security checks"
 	@echo "  clean        Clean build artifacts"
+	@echo "  clean-py     Clean Python cache files"
 	@echo "  docs         Build documentation"
 	@echo "  docs-serve   Serve documentation locally"
+	@echo "  docs-live    Live documentation preview with auto-reload"
 	@echo "  build        Build package"
 	@echo "  publish      Publish package to PyPI"
 
@@ -40,10 +44,16 @@ test-fast:
 test-integration:
 	uv run pytest -v -m integration
 
+test-watch:
+	uv run ptw -- -n auto --cov=src
+
 # Code quality
 lint:
 	uv run ruff check src/ tests/
 	uv run ruff format --check src/ tests/
+
+lint-fix:
+	uv run ruff check src/ tests/ --fix
 
 format:
 	uv run ruff check src/ tests/ --fix
@@ -68,6 +78,9 @@ docs:
 docs-serve:
 	cd docs && uv run sphinx-autobuild . _build/html --host 0.0.0.0 --port 8000
 
+docs-live:
+	cd docs && uv run sphinx-autobuild . _build/html --host 0.0.0.0 --port 8000 --open-browser
+
 docs-linkcheck:
 	cd docs && uv run sphinx-build -b linkcheck . _build/linkcheck
 
@@ -83,6 +96,17 @@ clean:
 	rm -rf .ruff_cache/
 	find . -type d -name __pycache__ -delete
 	find . -type f -name "*.pyc" -delete
+
+clean-py:
+	rm -rf htmlcov/
+	rm -rf .coverage
+	rm -rf .pytest_cache/
+	rm -rf .mypy_cache/
+	rm -rf .ruff_cache/
+	find . -type d -name __pycache__ ! -path "*/.venv/*" -exec rm -rf {} + 2>/dev/null || true
+	find . -type f -name "*.pyc" ! -path "*/.venv/*" -delete
+	find . -type f -name "*.pyo" ! -path "*/.venv/*" -delete
+	find . -type f -name ".coverage.*" ! -path "*/.venv/*" -delete
 
 build: clean
 	uv build

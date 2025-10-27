@@ -6,9 +6,9 @@ This script tests the core CLI orchestration components
 that don't require the full Click framework.
 """
 
+import json
 import sys
 import time
-import json
 from pathlib import Path
 
 # Add src to path for imports
@@ -66,7 +66,7 @@ def test_core_components():
                 }
 
         proc_config = ProcessingConfig(engine_type='dask', chunk_size=50000)
-        print(f"✅ ProcessingConfig created:")
+        print("✅ ProcessingConfig created:")
         print(f"   engine_type: {proc_config.engine_type}")
         print(f"   chunk_size: {proc_config.chunk_size}")
         print(f"   indicators: {len(proc_config.indicators)} items")
@@ -99,7 +99,7 @@ def test_core_components():
             {'test_param': 'test_value', 'test_count': 42}
         )
 
-        print(f"✅ Performance metrics logged:")
+        print("✅ Performance metrics logged:")
         print(f"   Operation: {metrics['operation']}")
         print(f"   Elapsed time: {metrics['elapsed_time_seconds']:.3f}s")
         print(f"   Additional params: {len(metrics) - 3}")
@@ -133,7 +133,7 @@ def test_core_components():
         print(f"   Processing settings: {len(test_config['processing'])}")
 
         # Test loading
-        with open(test_config_path, 'r') as f:
+        with open(test_config_path) as f:
             loaded_config = json.load(f)
 
         if loaded_config == test_config:

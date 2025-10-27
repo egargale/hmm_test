@@ -1,12 +1,13 @@
 # Imports
-from tensorflow import keras 
-import pandas as pd 
-import numpy as np 
-from sklearn.preprocessing import StandardScaler
-import matplotlib.pyplot as plt 
-import seaborn as sns 
-import os 
+import os
 from datetime import datetime
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
+from sklearn.preprocessing import StandardScaler
+from tensorflow import keras
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
@@ -77,7 +78,7 @@ X_train, y_train = [], []
 for i in range(60, len(training_data)):
     X_train.append(training_data[i-60:i, 0])
     y_train.append(training_data[i,0])
-    
+
 X_train, y_train = np.array(X_train), np.array(y_train)
 
 X_train = np.reshape(X_train, (X_train.shape[0], X_train.shape[1], 1))
@@ -116,7 +117,7 @@ X_test, y_test = [], dataset[training_data_len:]
 
 for i in range(60, len(test_data)):
     X_test.append(test_data[i-60:i, 0])
-    
+
 X_test = np.array(X_test)
 X_test = np.reshape(X_test, (X_test.shape[0],X_test.shape[1],1 ))
 

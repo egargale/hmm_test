@@ -11,12 +11,11 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from ta.volatility import AverageTrueRange, BollingerBands
-from ta.momentum import ROCIndicator, RSIIndicator, StochasticOscillator
-from ta.trend import MACD, ADXIndicator
-from ta.volume import VolumeWeightedAveragePrice
-from sklearn.preprocessing import StandardScaler
 from hmmlearn.hmm import GaussianHMM
+from sklearn.preprocessing import StandardScaler
+from ta.momentum import ROCIndicator, RSIIndicator, StochasticOscillator
+from ta.trend import ADXIndicator
+from ta.volatility import AverageTrueRange, BollingerBands
 from tqdm import tqdm
 
 ###############################################################################
@@ -102,7 +101,7 @@ def main(args):
         raise ValueError("Max iterations must be positive")
     if args.chunksize < 1:
         raise ValueError("Chunk size must be positive")
-        
+
     ###########################################################################
     # 2. Load / build features
     ###########################################################################
@@ -179,7 +178,7 @@ def main(args):
     # 4. Decode hidden states
     ###########################################################################
     states = model.predict(X_scaled)
-    
+
     # Apply position shifting to prevent lookahead bias if requested
     if args.prevent_lookahead:
         states = np.roll(states, 1)
@@ -205,7 +204,7 @@ def main(args):
         logging.info("  Final Equity: %.4f", backtest_results.iloc[-1])
         logging.info("  Sharpe Ratio: %.2f", sharpe)
         logging.info("  Max Drawdown: %.4f", max_dd)
-        
+
         # Save backtest results
         try:
             backtest_path = csv_path.with_suffix(".backtest.csv")
@@ -277,41 +276,41 @@ def stream_features(
     Lazily reads CSV in chunks, adds features, concatenates.
     """
     logging.info("Streaming CSV and computing features ...")
-    
+
     # Validate CSV has required columns
     try:
         first_chunk = pd.read_csv(csv_path, nrows=1)
         # Strip whitespace from column names
         first_chunk.columns = first_chunk.columns.str.strip()
-        
+
         # Check for both possible column formats
         required_cols_v1 = ["DateTime", "Open", "High", "Low", "Close", "Volume"]
         required_cols_v2 = ["Date", "Time", "Open", "High", "Low", "Last", "Volume"]
-        
+
         missing_cols_v1 = [col for col in required_cols_v1 if col not in first_chunk.columns]
         missing_cols_v2 = [col for col in required_cols_v2 if col not in first_chunk.columns]
-        
+
         if missing_cols_v1 and missing_cols_v2:
             raise ValueError(f"Missing required columns in CSV. Tried both formats. V1 missing: {missing_cols_v1}, V2 missing: {missing_cols_v2}")
     except Exception as e:
         logging.error("Failed to validate CSV format: %s", str(e))
         raise
-    
+
     # Determine which column format we have
     use_datetime_format = "DateTime" in first_chunk.columns
-    
+
     # For both formats, we'll read without parse_dates first and handle datetime parsing after
     reader = pd.read_csv(
         csv_path,
         chunksize=chunksize,
     )
-    
+
     frames = []
     for chunk in tqdm(reader, desc="Processing chunks"):
         try:
             # Strip whitespace from column names
             chunk.columns = chunk.columns.str.strip()
-            
+
             # Handle datetime parsing based on the column format
             if use_datetime_format:
                 # Parse single DateTime column
@@ -321,11 +320,11 @@ def stream_features(
                 # Parse separate Date and Time columns
                 chunk["DateTime"] = pd.to_datetime(chunk["Date"] + " " + chunk["Time"])
                 chunk = chunk.set_index("DateTime").drop(["Date", "Time"], axis=1)
-            
+
             # Rename 'Last' to 'Close' if needed
             if "Last" in chunk.columns and "Close" not in chunk.columns:
                 chunk = chunk.rename(columns={"Last": "Close"})
-            
+
             # Rename columns with leading spaces if needed (fallback)
             rename_dict = {}
             for col in ["Open", "High", "Low", "Close", "Volume"]:
@@ -333,7 +332,7 @@ def stream_features(
                     rename_dict[f" {col}"] = col
             if rename_dict:
                 chunk = chunk.rename(columns=rename_dict)
-            
+
             # Downcast dtypes for memory efficiency
             chunk = chunk.astype({
                 "Open": np.float32,

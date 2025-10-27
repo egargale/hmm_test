@@ -26,10 +26,10 @@ except ImportError:
 try:
     from .feature_selection import (
         CorrelationFeatureSelector,
-        VarianceFeatureSelector,
-        MutualInformationFeatureSelector,
         FeatureQualityScorer,
-        FeatureSelectionPipeline
+        FeatureSelectionPipeline,
+        MutualInformationFeatureSelector,
+        VarianceFeatureSelector,
     )
 except ImportError:
     CorrelationFeatureSelector = None
@@ -39,21 +39,25 @@ except ImportError:
     FeatureSelectionPipeline = None
 
 try:
-    from .csv_format_detector import CSVFormatDetector, CSVFormat, DetectionResult
+    from .csv_format_detector import CSVFormat, CSVFormatDetector, DetectionResult
 except ImportError:
     CSVFormatDetector = None
     CSVFormat = None
     DetectionResult = None
 
 try:
-    from .data_validator import DataValidator, ValidationReport, ValidationLevel
+    from .data_validator import DataValidator, ValidationLevel, ValidationReport
 except ImportError:
     DataValidator = None
     ValidationReport = None
     ValidationLevel = None
 
 try:
-    from .performance_optimizer import PerformanceOptimizer, PerformanceConfig, PerformanceMetrics
+    from .performance_optimizer import (
+        PerformanceConfig,
+        PerformanceMetrics,
+        PerformanceOptimizer,
+    )
 except ImportError:
     PerformanceOptimizer = None
     PerformanceConfig = None
@@ -67,7 +71,11 @@ except ImportError:
     ProcessingMetadata = None
 
 try:
-    from .enhanced_csv_config import EnhancedCSVConfig, create_default_config, create_high_performance_config
+    from .enhanced_csv_config import (
+        EnhancedCSVConfig,
+        create_default_config,
+        create_high_performance_config,
+    )
 except ImportError:
     EnhancedCSVConfig = None
     create_default_config = None
@@ -75,12 +83,12 @@ except ImportError:
 
 # Unified pipeline (Phase 2.1.4)
 try:
-    from .unified_pipeline import UnifiedDataPipeline, PipelineResult
-    from .pipeline_config import PipelineConfig, create_config_from_template
     from .input_manager import DataInputManager, InputData, ValidationResult
     from .output_manager import OutputManager, OutputPackage
+    from .pipeline_config import PipelineConfig, create_config_from_template
+    from .pipeline_metrics import MetricsCollector, MetricsReporter, PerformanceProfiler
     from .pipeline_stages import PipelineStage, PipelineStageFactory
-    from .pipeline_metrics import MetricsCollector, PerformanceProfiler, MetricsReporter
+    from .unified_pipeline import PipelineResult, UnifiedDataPipeline
 except ImportError:
     UnifiedDataPipeline = None
     PipelineResult = None

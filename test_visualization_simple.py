@@ -5,19 +5,19 @@ A simplified version that tests core functionality without complex dependencies.
 """
 
 import sys
-import os
-import pandas as pd
-import numpy as np
-from pathlib import Path
 import tempfile
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
 
 # Add src to path
 sys.path.insert(0, 'src')
 
-from utils.data_types import BacktestConfig
 from visualization.chart_generator import plot_states
 from visualization.dashboard_builder import build_dashboard
 from visualization.report_generator import generate_regime_report
+
 
 def create_simple_ohlcv_data(n_samples=100):
     """Create simple OHLCV data for testing."""
@@ -103,7 +103,7 @@ def test_simple_dashboard():
         states = np.random.choice([0, 1], 50)
 
         # Create simple backtest result
-        from utils.data_types import BacktestResult, Trade, PerformanceMetrics
+        from utils.data_types import BacktestResult, PerformanceMetrics, Trade
 
         # Simple equity curve
         equity_curve = prices['close'] * 10  # Scale to represent portfolio value
@@ -177,7 +177,7 @@ def test_simple_dashboard():
 
             if Path(result_path).exists():
                 # Check file content
-                with open(result_path, 'r') as f:
+                with open(result_path) as f:
                     content = f.read()
 
                 if 'HMM Dashboard' in content and len(content) > 1000:
@@ -216,7 +216,7 @@ def test_html_report():
         }, index=prices.index)
 
         # Create simple backtest result
-        from utils.data_types import BacktestResult, Trade, PerformanceMetrics
+        from utils.data_types import BacktestResult, PerformanceMetrics
 
         equity_curve = prices['close'] * 10
         positions = np.array([1, 0, -1] * 17)[:50]  # 48 positions (16*3)
@@ -244,7 +244,7 @@ def test_html_report():
             sortino_ratio=1.2
         )
 
-        print(f"✓ Created report data")
+        print("✓ Created report data")
 
         # Test HTML report generation
         print("\nTesting HTML report generation...")
@@ -268,7 +268,7 @@ def test_html_report():
 
             if Path(result_path).exists():
                 # Check file content
-                with open(result_path, 'r') as f:
+                with open(result_path) as f:
                     content = f.read()
 
                 if ('Regime Analysis' in content and

@@ -5,18 +5,14 @@ A comprehensive command-line interface for HMM futures market analysis
 with full orchestration, error handling, progress monitoring, and memory management.
 """
 
-import sys
-import os
-import logging
-import traceback
 import gc
-from pathlib import Path
-from typing import Optional, Dict, Any
-import time
 import json
+import sys
+import time
+from pathlib import Path
+from typing import Any, Dict, Optional
 
 import click
-import pandas as pd
 import numpy as np
 from tqdm import tqdm
 
@@ -39,14 +35,13 @@ except ImportError:
 sys.path.insert(0, str(Path(__file__).parent / 'src'))
 
 # Import utilities
-from utils import get_logger, setup_logging
-from data_processing.csv_parser import process_csv
 from data_processing.data_validation import validate_data
 from data_processing.feature_engineering import add_features
-from processing_engines.index import ProcessingEngineFactory
-from model_training.hmm_trainer import train_model, validate_features_for_hmm
 from model_training import inference_engine
-from model_training.model_persistence import save_model, load_model
+from model_training.hmm_trainer import train_model, validate_features_for_hmm
+from model_training.model_persistence import load_model, save_model
+from processing_engines.index import ProcessingEngineFactory
+from utils import get_logger, setup_logging
 
 # Global logger and configuration
 logger = None
@@ -181,7 +176,7 @@ def cli(ctx, config_file, log_level, memory_monitor):
     config = {}
     if config_file:
         try:
-            with open(config_file, 'r') as f:
+            with open(config_file) as f:
                 if config_file.endswith('.json'):
                     config = json.load(f)
                 else:
@@ -282,8 +277,8 @@ def validate(ctx, input_csv, output_dir, engine, chunk_size):
                 # Save validation report
                 report_path = output_dir / "validation_report.txt"
                 with open(report_path, 'w') as f:
-                    f.write(f"Data Validation Report\n")
-                    f.write(f"======================\n\n")
+                    f.write("Data Validation Report\n")
+                    f.write("======================\n\n")
                     f.write(f"File: {input_csv}\n")
                     f.write(f"Engine: {engine}\n")
                     f.write(f"Chunk size: {chunk_size}\n")
@@ -293,7 +288,7 @@ def validate(ctx, input_csv, output_dir, engine, chunk_size):
                     f.write(f"Quality score: {validation_result.get('quality_score', 'N/A')}\n")
                     f.write(f"Issues found: {len(validation_result['issues_found'])}\n")
                     f.write(f"Critical issues: {len(critical_issues)}\n")
-                    f.write(f"\nValidation status: PASSED\n")
+                    f.write("\nValidation status: PASSED\n")
 
                 click.echo(f"📄 Validation report saved to: {report_path}")
 
@@ -470,7 +465,7 @@ def analyze(ctx, input_csv, output_dir, engine, chunk_size, n_states, test_size,
             # Drop NaN values created by rolling windows
             features_clean = features.dropna()
 
-            logger.info(f"✅ Feature engineering completed")
+            logger.info("✅ Feature engineering completed")
             logger.info(f"   Original features: {len(data_clean.columns)}")
             logger.info(f"   Engineered features: {len(features.columns)}")
             logger.info(f"   Final dataset: {len(features_clean)} rows")
@@ -514,7 +509,7 @@ def analyze(ctx, input_csv, output_dir, engine, chunk_size, n_states, test_size,
 
             model, metadata = train_model(X_train, hmm_config.to_dict())
 
-            logger.info(f"✅ HMM training completed")
+            logger.info("✅ HMM training completed")
             logger.info(f"   Number of states: {metadata['n_components']}")
             logger.info(f"   Convergence: {metadata['converged']}")
             logger.info(f"   Log-likelihood: {metadata['log_likelihood']:.2f}")
@@ -550,7 +545,7 @@ def analyze(ctx, input_csv, output_dir, engine, chunk_size, n_states, test_size,
             # Combine states
             all_states = np.concatenate([train_states, test_states])
 
-            logger.info(f"✅ State inference completed")
+            logger.info("✅ State inference completed")
             logger.info(f"   Training states: {len(train_states)}")
             logger.info(f"   Test states: {len(test_states)}")
             logger.info(f"   Unique states: {len(np.unique(all_states))}")
@@ -618,7 +613,7 @@ def analyze(ctx, input_csv, output_dir, engine, chunk_size, n_states, test_size,
                 f.write("=====================\n\n")
                 for key, value in metadata.items():
                     f.write(f"{key}: {value}\n")
-                f.write(f"\nConfiguration:\n")
+                f.write("\nConfiguration:\n")
                 for key, value in hmm_config.to_dict().items():
                     f.write(f"  {key}: {value}\n")
 
@@ -633,7 +628,7 @@ def analyze(ctx, input_csv, output_dir, engine, chunk_size, n_states, test_size,
                         f.write(f"  {key}: {value:.4f}\n")
                     f.write("\n")
 
-            logger.info(f"✅ Analysis results saved")
+            logger.info("✅ Analysis results saved")
 
             if memory_monitor:
                 check_memory_usage("results_saving")
@@ -713,7 +708,6 @@ def _generate_charts(results, output_dir, logger):
     """Generate basic visualization charts."""
     try:
         import matplotlib.pyplot as plt
-        import seaborn as sns
 
         # Set style
         plt.style.use('seaborn-v0_8')
@@ -775,8 +769,6 @@ def _generate_charts(results, output_dir, logger):
 def _generate_dashboard(results, state_stats, output_dir, logger):
     """Generate interactive dashboard."""
     try:
-        import plotly.graph_objects as go
-        from plotly.subplots import make_subplots
 
         # Create dashboard HTML
         html_content = f"""
@@ -830,7 +822,7 @@ def _generate_dashboard(results, state_stats, output_dir, logger):
 
                 // State distribution pie chart
                 var stateData = [{{
-                    labels: {[f'State {{i}}' for i in state_stats.keys()]},
+                    labels: {['State {i}' for i in state_stats.keys()]},
                     values: {[stats['count'] for stats in state_stats.values()]},
                     type: 'pie'
                 }}];
@@ -964,7 +956,7 @@ def infer(ctx, model_path, input_csv, output_dir):
 
         # Load model
         model, scaler, config = load_model(str(model_path))
-        logger.info(f"✅ Model loaded successfully")
+        logger.info("✅ Model loaded successfully")
         logger.info(f"   Number of states: {config.get('n_states', 'N/A')}")
 
         # Process new data
@@ -997,7 +989,7 @@ def infer(ctx, model_path, input_csv, output_dir):
         states_path = output_dir / "inferred_states.csv"
         results.to_csv(states_path)
 
-        click.echo(f"✅ State inference completed")
+        click.echo("✅ State inference completed")
         click.echo(f"📊 {len(results)} rows processed")
         click.echo(f"🔢 {len(np.unique(states))} unique states found")
         click.echo(f"📄 Results saved to {states_path}")
@@ -1038,11 +1030,11 @@ def model_info(ctx, model_path):
         click.echo("HMM MODEL INFORMATION")
         click.echo("="*50)
 
-        click.echo(f"\n🔧 Model Configuration:")
+        click.echo("\n🔧 Model Configuration:")
         for key, value in config.items():
             click.echo(f"  {key}: {value}")
 
-        click.echo(f"\n📊 Model Parameters:")
+        click.echo("\n📊 Model Parameters:")
         click.echo(f"  Number of states (components): {model.n_components}")
         click.echo(f"  Covariance type: {model.covariance_type}")
         click.echo(f"  Number of iterations: {model.n_iter}")
@@ -1072,11 +1064,11 @@ def version():
     click.echo(f"Platform: {sys.platform}")
 
     try:
-        import pandas as pd
-        import numpy as np
-        import sklearn
         import hmmlearn
-        click.echo(f"\n📦 Key Dependencies:")
+        import numpy as np
+        import pandas as pd
+        import sklearn
+        click.echo("\n📦 Key Dependencies:")
         click.echo(f"  pandas: {pd.__version__}")
         click.echo(f"  numpy: {np.__version__}")
         click.echo(f"  scikit-learn: {sklearn.__version__}")
@@ -1087,14 +1079,14 @@ def version():
     if PSUTIL_AVAILABLE:
         try:
             memory = psutil.virtual_memory()
-            click.echo(f"\n💾 System Memory:")
+            click.echo("\n💾 System Memory:")
             click.echo(f"  Total: {memory.total / (1024**3):.1f} GB")
             click.echo(f"  Available: {memory.available / (1024**3):.1f} GB")
             click.echo(f"  Used: {memory.used / (1024**3):.1f} GB ({memory.percent:.1f}%)")
         except Exception:
-            click.echo(f"\n💾 Memory information unavailable")
+            click.echo("\n💾 Memory information unavailable")
     else:
-        click.echo(f"\n💾 psutil not available for memory information")
+        click.echo("\n💾 psutil not available for memory information")
 
 
 if __name__ == '__main__':

@@ -7,16 +7,15 @@ chunk sizes, progress monitoring, and automatic memory management.
 
 import gc
 import time
-import psutil
 from pathlib import Path
-from typing import Optional, Dict, Any, List
-import warnings
+from typing import Dict, Optional
 
 import pandas as pd
+import psutil
 from tqdm import tqdm
 
-from data_processing import add_features, validate_data, process_csv
-from utils import get_logger, ProcessingConfig
+from data_processing import add_features, validate_data
+from utils import ProcessingConfig, get_logger
 
 logger = get_logger(__name__)
 
@@ -102,7 +101,7 @@ def process_streaming(
             chunk_start_time = time.time()
 
             # Monitor memory before processing chunk
-            memory_before = psutil.Process().memory_info().rss / (1024 * 1024 * 1024)
+            psutil.Process().memory_info().rss / (1024 * 1024 * 1024)
 
             # Process chunk
             try:
@@ -191,7 +190,7 @@ def process_streaming(
         avg_processing_time = sum(processing_times) / len(processing_times) if processing_times else 0
         total_processing_time = sum(processing_times)
 
-        logger.info(f"Streaming processing completed successfully:")
+        logger.info("Streaming processing completed successfully:")
         logger.info(f"  - Total rows processed: {len(final_df)}")
         logger.info(f"  - Total chunks: {len(processing_times)}")
         logger.info(f"  - Total processing time: {total_processing_time:.2f}s")
@@ -295,7 +294,7 @@ def monitor_memory_usage(func):
 
             return result
 
-        except Exception as e:
+        except Exception:
             memory_error = get_memory_usage()
             logger.error(f"Memory during {func.__name__} error: {memory_error['rss']:.2f}GB")
             raise

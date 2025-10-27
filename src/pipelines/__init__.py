@@ -8,14 +8,14 @@ persistence into unified workflows.
 
 from .hmm_pipeline import HMMPipeline, PipelineConfig, PipelineResult
 from .pipeline_types import (
+    BacktestConfig,
+    FeatureConfig,
+    PersistenceConfig,
     PipelineStage,
     PipelineStatus,
     ProcessingMode,
-    FeatureConfig,
-    TrainingConfig,
-    PersistenceConfig,
     StreamingConfig,
-    BacktestConfig
+    TrainingConfig,
 )
 
 __all__ = [

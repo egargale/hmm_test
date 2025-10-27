@@ -5,9 +5,10 @@ Implements Hidden Markov Model with Gaussian Mixture Model emission distribution
 for more complex financial regime modeling with multi-modal distributions.
 """
 
+from typing import Any, Dict, List, Optional, Union
+
 import numpy as np
 import pandas as pd
-from typing import Optional, Dict, Any, Union, List
 
 try:
     from hmmlearn import hmm
@@ -16,8 +17,8 @@ except ImportError:
     HMMLEARN_AVAILABLE = False
     hmm = None
 
-from .base import BaseHMMModel
 from utils import get_logger
+from .base import BaseHMMModel
 
 logger = get_logger(__name__)
 

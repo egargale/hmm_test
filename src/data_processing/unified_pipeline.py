@@ -5,24 +5,28 @@ This module provides the main pipeline orchestrator that integrates all enhanced
 capabilities from Phases 2.1.1-2.1.3 into a single, cohesive processing system.
 """
 
-from typing import Union, Dict, Any, Optional, List
 from dataclasses import dataclass
-from pathlib import Path
 from datetime import datetime
-import time
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Union
 
 import pandas as pd
 
-from ..utils.logging_config import get_logger
-from .pipeline_config import PipelineConfig, InputSourceType, OutputFormat
+from utils.logging_config import get_logger
+from .input_manager import DataInputManager, InputData
+from .output_manager import OutputManager
+from .pipeline_config import InputSourceType, PipelineConfig
+from .pipeline_metrics import MetricsCollector, MetricsReporter, PerformanceProfiler
 from .pipeline_stages import (
-    PipelineStage, StageResult, PipelineContext, PipelineStageFactory,
-    FormatDetectionStage, DataLoadingStage, DataValidationStage,
-    FeatureEngineeringStage, QualityAssessmentStage
+    DataLoadingStage,
+    DataValidationStage,
+    FeatureEngineeringStage,
+    FormatDetectionStage,
+    PipelineContext,
+    PipelineStage,
+    QualityAssessmentStage,
+    StageResult,
 )
-from .input_manager import DataInputManager, InputData, ValidationResult
-from .output_manager import OutputManager, OutputPackage, OutputResult
-from .pipeline_metrics import MetricsCollector, PerformanceProfiler, MetricsReporter
 
 logger = get_logger(__name__)
 
@@ -473,7 +477,7 @@ class UnifiedDataPipeline:
             'mode_multiplier': multiplier,
             'stage_count': stage_count,
             'assumptions': [
-                f"Base rate: 10,000 rows/second",
+                "Base rate: 10,000 rows/second",
                 f"Mode multiplier: {multiplier:.2f}x ({self.config.mode.value})",
                 f"Stage multiplier: {stage_multiplier:.2f}x ({stage_count} stages)"
             ]

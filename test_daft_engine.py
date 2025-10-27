@@ -5,19 +5,20 @@ This script tests the Daft engine implementation and validates its functionality
 for processing financial OHLCV data with Arrow-native operations.
 """
 
-import sys
 import os
-import pandas as pd
+import sys
+
 import numpy as np
-from pathlib import Path
+import pandas as pd
 
 # Add src to path
 sys.path.insert(0, 'src')
 
-from utils import ProcessingConfig
 from processing_engines import process_daft
 from processing_engines.daft_engine import compute_daft_with_progress
 from processing_engines.factory import get_processing_engine_factory
+from utils import ProcessingConfig
+
 
 def create_test_data():
     """Create synthetic OHLCV data for testing."""
@@ -83,7 +84,7 @@ def test_daft_basic_functionality():
             engine_type="daft",
             chunk_size=1000
         )
-        print(f"✓ Created processing configuration")
+        print("✓ Created processing configuration")
 
         # Test Daft processing
         print("\nTesting Daft processing...")
@@ -93,7 +94,7 @@ def test_daft_basic_functionality():
             npartitions=2,
             show_progress=True
         )
-        print(f"✓ Daft processing completed")
+        print("✓ Daft processing completed")
 
         # Test computation
         print("\nTesting Daft computation...")
@@ -120,7 +121,7 @@ def test_daft_basic_functionality():
 
         # Cleanup
         os.remove(csv_path)
-        print(f"✓ Test completed successfully")
+        print("✓ Test completed successfully")
         return True
 
     except Exception as e:
@@ -182,7 +183,7 @@ def test_daft_factory_integration():
 
         # Cleanup
         os.remove(csv_path)
-        print(f"✓ Factory integration test completed successfully")
+        print("✓ Factory integration test completed successfully")
         return True
 
     except Exception as e:
@@ -225,7 +226,7 @@ def test_daft_benchmark():
 
         # Cleanup
         os.remove(csv_path)
-        print(f"✓ Benchmark test completed successfully")
+        print("✓ Benchmark test completed successfully")
         return True
 
     except Exception as e:

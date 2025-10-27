@@ -5,14 +5,15 @@ Implements comprehensive performance analysis for backtesting results,
 including risk metrics, drawdown analysis, and statistical evaluation.
 """
 
+from typing import Any, Dict
+
 import numpy as np
 import pandas as pd
-from typing import Dict, Any, Optional
-from datetime import datetime, timedelta
 
 from utils import get_logger
 from utils.data_types import BacktestResult, PerformanceMetrics
 from .performance_metrics import calculate_performance, calculate_returns
+
 
 def calculate_drawdown(equity_curve: pd.Series) -> pd.Series:
     """

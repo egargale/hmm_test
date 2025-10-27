@@ -4,9 +4,10 @@ Test script for HMM model implementations.
 """
 
 import sys
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
-from pathlib import Path
 
 # Add src to Python path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
@@ -70,7 +71,7 @@ def test_hmm_models():
 
             print("   📈 Fitting Gaussian HMM...")
             gaussian_model.fit(X)
-            print(f"   ✅ Gaussian HMM fitted successfully")
+            print("   ✅ Gaussian HMM fitted successfully")
 
             # Test predictions
             states = gaussian_model.predict(X)
@@ -92,7 +93,7 @@ def test_hmm_models():
 
             # Test transition analysis
             transitions = gaussian_model.analyze_state_transitions(X)
-            print(f"   ✅ Analyzed state transitions")
+            print("   ✅ Analyzed state transitions")
 
         except Exception as e:
             print(f"   ❌ Gaussian HMM test failed: {e}")
@@ -114,7 +115,7 @@ def test_hmm_models():
 
             print("   📈 Fitting GMM HMM...")
             gmm_model.fit(X)
-            print(f"   ✅ GMM HMM fitted successfully")
+            print("   ✅ GMM HMM fitted successfully")
 
             # Test predictions
             states = gmm_model.predict(X)
@@ -134,7 +135,7 @@ def test_hmm_models():
 
             # Test mixture analysis
             mixture_analysis = gmm_model.analyze_mixture_separation()
-            print(f"   ✅ Analyzed mixture separation")
+            print("   ✅ Analyzed mixture separation")
 
         except Exception as e:
             print(f"   ❌ GMM HMM test failed: {e}")
@@ -190,7 +191,7 @@ def test_hmm_models():
             # Load model
             loaded_model = GaussianHMMModel()
             loaded_model.load_model(model_path)
-            print(f"   ✅ Model loaded successfully")
+            print("   ✅ Model loaded successfully")
 
             # Verify loaded model works
             loaded_states = loaded_model.predict(X)
@@ -208,7 +209,7 @@ def test_hmm_models():
         print("\n🔄 Testing Cross-validation...")
         try:
             cv_results = gaussian_model.cross_validate(X, cv=3)
-            print(f"   ✅ Cross-validation completed")
+            print("   ✅ Cross-validation completed")
             print(f"   ✅ Mean CV score: {cv_results['mean_score']:.4f} ± {cv_results['std_score']:.4f}")
 
         except Exception as e:

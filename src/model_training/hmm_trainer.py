@@ -5,23 +5,24 @@ Implements the core Hidden Markov Model training functionality using hmmlearn,
 including feature scaling, convergence monitoring, multiple restarts, and numerical stability.
 """
 
-import numpy as np
 import warnings
-from typing import Tuple, Optional, Dict, Any
 from dataclasses import dataclass
+from typing import Any, Dict, Optional, Tuple
+
+import numpy as np
 
 try:
     from hmmlearn import hmm
-    from sklearn.preprocessing import StandardScaler
     from sklearn.exceptions import ConvergenceWarning
+    from sklearn.preprocessing import StandardScaler
     HMM_AVAILABLE = True
-except ImportError as e:
+except ImportError:
     HMM_AVAILABLE = False
     hmm = None
     StandardScaler = None
     ConvergenceWarning = None
 
-from utils import get_logger, HMMConfig
+from utils import HMMConfig, get_logger
 
 logger = get_logger(__name__)
 
@@ -319,7 +320,7 @@ def train_model(
         'success_rate': n_successful / config.num_restarts
     }
 
-    logger.info(f"HMM training completed successfully:")
+    logger.info("HMM training completed successfully:")
     logger.info(f"  - Best score: {best_score:.4f}")
     logger.info(f"  - Successful restarts: {n_successful}/{config.num_restarts}")
     logger.info(f"  - Best model converged: {best_training_info['converged']}")

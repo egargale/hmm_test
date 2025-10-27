@@ -11,19 +11,20 @@ This script tests the complete unified pipeline system, including:
 """
 
 import sys
-import pandas as pd
-import numpy as np
-from datetime import datetime, timedelta
-from pathlib import Path
 import tempfile
 import warnings
+from datetime import datetime, timedelta
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
 
 # Add src to path for imports
 sys.path.insert(0, 'src')
 
-from src.data_processing.unified_pipeline import UnifiedDataPipeline, PipelineResult
 from src.data_processing.pipeline_config import PipelineConfig, PipelineMode
-from src.data_processing.input_manager import DataInputManager
+from src.data_processing.unified_pipeline import PipelineResult, UnifiedDataPipeline
+
 
 def create_test_csv_data():
     """Create test data for unified pipeline testing."""
@@ -447,8 +448,11 @@ def test_pipeline_customization():
         pipeline = UnifiedDataPipeline()
 
         # Test adding custom stage
-        from src.data_processing.pipeline_stages import PipelineStage, StageResult, PipelineContext
-        from datetime import datetime
+
+        from src.data_processing.pipeline_stages import (
+            PipelineStage,
+            StageResult,
+        )
 
         class TestCustomStage(PipelineStage):
             def process(self, data, context):

@@ -5,21 +5,19 @@ Implements interactive HTML dashboard generation for HMM strategy performance
 analysis using Plotly for interactive visualizations.
 """
 
+from pathlib import Path
+from typing import Any, Dict, Optional
+
 import numpy as np
 import pandas as pd
-import plotly.graph_objects as go
 import plotly.express as px
+import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-from plotly.offline import plot
-import plotly.io as pio
-from typing import Dict, Any, Optional, List
-from pathlib import Path
-import json
 
+from backtesting.performance_analyzer import calculate_drawdown
+from backtesting.performance_metrics import calculate_returns
 from utils import get_logger
 from utils.data_types import BacktestResult, PerformanceMetrics
-from backtesting.performance_metrics import calculate_returns
-from backtesting.performance_analyzer import calculate_drawdown
 
 logger = get_logger(__name__)
 
@@ -61,7 +59,7 @@ def create_equity_curve_chart(
         y=equity_curve.values,
         mode='lines',
         name='Strategy',
-        line=dict(color='blue', width=config['line_width']),
+        line={'color': 'blue', 'width': config['line_width']},
         hovertemplate='<b>Strategy</b><br>' +
                      'Date: %{x|%Y-%m-%d}<br>' +
                      'Value: $%{y:,.2f}<extra></extra>'
@@ -74,7 +72,7 @@ def create_equity_curve_chart(
             y=benchmark_curve.values,
             mode='lines',
             name='Benchmark',
-            line=dict(color='gray', width=config['line_width'], dash='dash'),
+            line={'color': 'gray', 'width': config['line_width'], 'dash': 'dash'},
             hovertemplate='<b>Benchmark</b><br>' +
                          'Date: %{x|%Y-%m-%d}<br>' +
                          'Value: $%{y:,.2f}<extra></extra>'
@@ -134,7 +132,7 @@ def create_drawdown_chart(
         name='Drawdown',
         fill='tonexty',
         fillcolor=f'rgba(220, 53, 69, {config["fill_alpha"]})',
-        line=dict(color=config['line_color'], width=1.5),
+        line={'color': config['line_color'], 'width': 1.5},
         hovertemplate='<b>Drawdown</b><br>' +
                      'Date: %{x|%Y-%m-%d}<br>' +
                      'Drawdown: %{y:.2f}%<extra></extra>'
@@ -285,7 +283,7 @@ def create_monthly_returns_heatmap(
     )
 
     if config['show_scale']:
-        fig.update_layout(coloraxis_colorbar=dict(title="Return (%)"))
+        fig.update_layout(coloraxis_colorbar={'title': "Return (%)"})
 
     return fig
 
@@ -337,7 +335,7 @@ def create_regime_analysis_chart(
             y=equity_curve.values,
             mode='lines',
             name='Equity Curve',
-            line=dict(color='black', width=2),
+            line={'color': 'black', 'width': 2},
             hovertemplate='<b>Equity</b><br>Date: %{x|%Y-%m-%d}<br>Value: $%{y:,.2f}<extra></extra>'
         ),
         row=1, col=1
@@ -372,7 +370,7 @@ def create_regime_analysis_chart(
                 y=regime_values,
                 mode='markers',
                 name=f'State {state_value}',
-                marker=dict(color=color, size=4),
+                marker={'color': color, 'size': 4},
                 hovertemplate=f'<b>State {state_value}</b><br>Date: %{{x|%Y-%m-%d}}<extra></extra>'
             ),
             row=2, col=1
@@ -456,25 +454,25 @@ def create_performance_metrics_table(
 
     # Create table
     fig = go.Figure(data=[go.Table(
-        header=dict(
-            values=['Metric', 'Value'],
-            fill_color='lightblue',
-            align='left',
-            font=dict(size=14, color='black')
-        ),
-        cells=dict(
-            values=[[row[0] for row in metrics_data],
+        header={
+            'values': ['Metric', 'Value'],
+            'fill_color': 'lightblue',
+            'align': 'left',
+            'font': {'size': 14, 'color': 'black'}
+        },
+        cells={
+            'values': [[row[0] for row in metrics_data],
                     [row[1] for row in metrics_data]],
-            fill_color='white',
-            align='left',
-            font=dict(size=12, color='black')
-        )
+            'fill_color': 'white',
+            'align': 'left',
+            'font': {'size': 12, 'color': 'black'}
+        }
     )])
 
     fig.update_layout(
         title=config['title'],
         height=config['height'],
-        margin=dict(l=20, r=20, t=40, b=20)
+        margin={'l': 20, 'r': 20, 't': 40, 'b': 20}
     )
 
     return fig

@@ -5,34 +5,27 @@ A comprehensive command-line interface for HMM futures market analysis
 with full orchestration, error handling, progress monitoring, and memory management.
 """
 
-import sys
-import os
-import logging
-import traceback
 import gc
-import psutil
-from pathlib import Path
-from typing import Optional, Dict, Any
-import time
 import json
+import sys
+import time
+from pathlib import Path
+from typing import Any, Dict, Optional
 
 import click
-import pandas as pd
 import numpy as np
+import psutil
 from tqdm import tqdm
 
-# Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent / 'src'))
+# Add project root to path for imports
+project_root = Path(__file__).parent
+sys.path.insert(0, str(project_root))
+sys.path.insert(0, str(project_root / 'src'))  # Add src directory for internal module imports
 
-# Import utilities
-from utils import get_logger, setup_logging
-from data_processing.csv_parser import process_csv
-from data_processing.data_validation import validate_data
-from data_processing.feature_engineering import add_features
-from processing_engines.index import ProcessingEngineFactory
-from model_training.hmm_trainer import train_model, validate_features_for_hmm
-from model_training.inference_engine import StateInference
-from model_training.model_persistence import save_model, load_model
+# Import utilities - these will work once the path is set up
+from src.data_processing.csv_parser import process_csv
+from src.data_processing.data_validation import validate_data
+from src.utils import get_logger, setup_logging
 
 # Global logger and configuration
 logger = None
@@ -160,7 +153,7 @@ def cli(ctx, config_file, log_level, memory_monitor):
     config = {}
     if config_file:
         try:
-            with open(config_file, 'r') as f:
+            with open(config_file) as f:
                 if config_file.endswith('.json'):
                     config = json.load(f)
                 else:
@@ -242,8 +235,8 @@ def validate(ctx, input_csv, output_dir):
             # Save validation report
             report_path = output_dir / "validation_report.txt"
             with open(report_path, 'w') as f:
-                f.write(f"Data Validation Report\n")
-                f.write(f"======================\n\n")
+                f.write("Data Validation Report\n")
+                f.write("======================\n\n")
                 f.write(f"File: {input_csv}\n")
                 f.write(f"Rows: {len(data_clean)}\n")
                 f.write(f"Columns: {list(data_clean.columns)}\n")
@@ -251,7 +244,7 @@ def validate(ctx, input_csv, output_dir):
                 f.write(f"Quality score: {validation_result.get('quality_score', 'N/A')}\n")
                 f.write(f"Issues found: {len(validation_result['issues_found'])}\n")
                 f.write(f"Critical issues: {len(critical_issues)}\n")
-                f.write(f"\nValidation status: PASSED\n")
+                f.write("\nValidation status: PASSED\n")
 
             click.echo(f"📄 Validation report saved to: {report_path}")
         else:

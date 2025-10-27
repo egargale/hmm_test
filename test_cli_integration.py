@@ -6,9 +6,9 @@ This script demonstrates and tests the CLI orchestration components
 without requiring all dependencies to be installed.
 """
 
+import json
 import sys
 import time
-import json
 from pathlib import Path
 
 # Add src to path for imports
@@ -33,7 +33,7 @@ def test_cli_components():
 
         # Test ProcessingConfig
         proc_config = ProcessingConfig(engine_type='dask', chunk_size=50000)
-        print(f"✅ ProcessingConfig created:")
+        print("✅ ProcessingConfig created:")
         print(f"   engine_type: {proc_config.engine_type}")
         print(f"   chunk_size: {proc_config.chunk_size}")
         print(f"   indicators: {len(proc_config.indicators)} items")
@@ -55,7 +55,7 @@ def test_cli_components():
             {'test_param': 'test_value', 'test_count': 42}
         )
 
-        print(f"✅ Performance metrics logged:")
+        print("✅ Performance metrics logged:")
         print(f"   Operation: {metrics['operation']}")
         print(f"   Elapsed time: {metrics['elapsed_time_seconds']:.3f}s")
         print(f"   Additional params: {len(metrics) - 3}")
@@ -105,8 +105,9 @@ def test_cli_command_structure():
     print("="*50)
 
     try:
-        from cli_comprehensive import cli
         import click.testing
+
+        from cli_comprehensive import cli
 
         # Test CLI group creation
         print("✅ CLI group created successfully")
@@ -121,17 +122,17 @@ def test_cli_command_structure():
         if missing_commands:
             print(f"⚠️  Missing commands: {missing_commands}")
         else:
-            print(f"✅ All expected commands present")
+            print("✅ All expected commands present")
 
         # Test help functionality
         runner = click.testing.CliRunner()
         result = runner.invoke(cli, ['--help'])
-        print(f"✅ Help command executes successfully")
+        print("✅ Help command executes successfully")
         print(f"   Output length: {len(result.output)} characters")
 
         # Test version command
         result = runner.invoke(cli, ['version'])
-        print(f"✅ Version command executes successfully")
+        print("✅ Version command executes successfully")
         print(f"   Output: {result.output.strip()}")
 
         return True
@@ -147,8 +148,9 @@ def test_error_handling():
     print("="*50)
 
     try:
-        from cli_comprehensive import cli
         import click.testing
+
+        from cli_comprehensive import cli
 
         runner = click.testing.CliRunner()
 
@@ -183,7 +185,7 @@ def test_memory_monitoring():
     print("="*50)
 
     try:
-        from cli_comprehensive import get_memory_usage, check_memory_usage
+        from cli_comprehensive import check_memory_usage, get_memory_usage
 
         # Test memory usage function
         memory_usage = get_memory_usage()

@@ -5,15 +5,16 @@ This module provides comprehensive configuration management for the unified data
 integrating all configuration aspects from Phases 2.1.1-2.1.3 into a single, cohesive system.
 """
 
-from typing import Dict, Any, Optional, Union, List
 from dataclasses import dataclass, field
-from pathlib import Path
 from enum import Enum
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Union
 
-from ..utils.logging_config import get_logger
+import pandas as pd
+
+from utils.logging_config import get_logger
 from .enhanced_csv_config import EnhancedCSVConfig, create_high_performance_config
 from .performance_optimizer import PerformanceConfig
-from .data_validator import ValidationLevel
 
 logger = get_logger(__name__)
 
@@ -421,7 +422,7 @@ def load_config_from_file(config_path: Path) -> PipelineConfig:
     import json
 
     try:
-        with open(config_path, 'r') as f:
+        with open(config_path) as f:
             config_dict = json.load(f)
 
         # Convert string enums back to enum objects

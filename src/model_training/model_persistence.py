@@ -5,14 +5,12 @@ Implements robust model persistence and loading functionality using Python's pic
 Stores trained HMM models, feature scalers, and configurations with integrity validation.
 """
 
-import pickle
-import os
 import hashlib
 import json
+import pickle
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Any, Optional, Tuple, Union
-from dataclasses import dataclass, asdict
-import warnings
+from typing import Any, Dict, Optional, Tuple, Union
 
 import numpy as np
 
@@ -20,12 +18,12 @@ try:
     from hmmlearn import hmm
     from sklearn.preprocessing import StandardScaler
     HMM_AVAILABLE = True
-except ImportError as e:
+except ImportError:
     HMM_AVAILABLE = False
     hmm = None
     StandardScaler = None
 
-from utils import get_logger, HMMConfig
+from utils import HMMConfig, get_logger
 
 # Import pandas for timestamps
 try:
@@ -396,7 +394,7 @@ def _validate_model_integrity(model_data: Dict[str, Any], path: Path) -> None:
     if 'model_hash' in model_data:
         current_hash = generate_model_hash_hash(model_data)
         if current_hash != model_data['model_hash']:
-            logger.warning(f"Model hash mismatch: model may have been tampered with")
+            logger.warning("Model hash mismatch: model may have been tampered with")
 
     logger.debug("Integrity validation passed")
 

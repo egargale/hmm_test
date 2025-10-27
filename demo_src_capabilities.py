@@ -4,10 +4,9 @@ Demonstration of src folder capabilities using BTC.csv
 """
 
 import sys
-import os
-import pandas as pd
-import numpy as np
 from pathlib import Path
+
+import numpy as np
 
 # Add src to path
 sys.path.insert(0, 'src')
@@ -19,7 +18,7 @@ def demo_data_processing():
     print("=" * 60)
 
     try:
-        from data_processing import process_csv, add_features
+        from data_processing import add_features, process_csv
 
         print("1. CSV Processing:")
         print("   Loading BTC.csv...")
@@ -65,7 +64,7 @@ def demo_hmm_models(features):
         available_cols = [col for col in feature_cols if col in features.columns]
         X = features[available_cols].dropna().values
 
-        print(f"1. Feature Matrix:")
+        print("1. Feature Matrix:")
         print(f"   Using {len(available_cols)} technical indicators")
         print(f"   Matrix shape: {X.shape}")
 
@@ -129,8 +128,8 @@ def demo_backtesting(features, states):
     print("=" * 60)
 
     try:
-        from backtesting.strategy_engine import StrategyEngine
         from backtesting.performance_analyzer import PerformanceAnalyzer
+        from backtesting.strategy_engine import StrategyEngine
         from utils.data_types import BacktestConfig
 
         # Align data
@@ -139,7 +138,7 @@ def demo_backtesting(features, states):
         states_aligned = states[:min_len]
         prices_aligned = prices.iloc[:min_len]
 
-        print(f"1. Data Preparation:")
+        print("1. Data Preparation:")
         print(f"   Aligned {len(prices_aligned)} price points with states")
 
         print("\n2. Strategy Configuration:")
@@ -203,8 +202,8 @@ def demo_inference_engine(features):
     print("=" * 60)
 
     try:
-        from model_training.inference_engine import StateInference
         from hmm_models import GaussianHMMModel
+        from model_training.inference_engine import StateInference
 
         # Prepare features
         feature_cols = ['log_ret', 'atr', 'roc', 'rsi', 'bb_width', 'volume_ratio']

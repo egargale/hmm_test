@@ -10,22 +10,28 @@ This script tests all the enhanced CSV processing capabilities including:
 """
 
 import sys
-import os
-import pandas as pd
-import numpy as np
-from datetime import datetime, timedelta
-from pathlib import Path
 import tempfile
 import warnings
+from datetime import datetime, timedelta
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
 
 # Add src to path for imports
 sys.path.insert(0, 'src')
 
 from src.data_processing.csv_format_detector import CSVFormatDetector, DetectionResult
-from src.data_processing.data_validator import DataValidator, ValidationLevel
-from src.data_processing.performance_optimizer import PerformanceOptimizer, PerformanceConfig
 from src.data_processing.data_integrator import DataIntegrator
-from src.data_processing.enhanced_csv_config import EnhancedCSVConfig, create_high_performance_config
+from src.data_processing.data_validator import DataValidator, ValidationLevel
+from src.data_processing.enhanced_csv_config import (
+    EnhancedCSVConfig,
+    create_high_performance_config,
+)
+from src.data_processing.performance_optimizer import (
+    PerformanceConfig,
+    PerformanceOptimizer,
+)
 
 
 def create_test_csv_data():
@@ -248,7 +254,7 @@ def test_performance_optimization():
 
         # Simplified test - skip vectorized operations due to array shape issues
         # Note: Vectorized operations work but need careful array handling for testing
-        print(f"  ✓ Vectorized operations capability available")
+        print("  ✓ Vectorized operations capability available")
 
         # Test performance measurement
         def dummy_processing(df):

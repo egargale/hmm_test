@@ -8,16 +8,16 @@ processing of large datasets with automatic parallelization and out-of-core capa
 import time
 import warnings
 from pathlib import Path
-from typing import Optional, Dict, Any, List
+from typing import Any, Dict, List, Optional
 
 import dask
 import dask.dataframe as dd
 import pandas as pd
-from dask.distributed import Client
 from dask.diagnostics import ProgressBar
+from dask.distributed import Client
 
 from data_processing import add_features, validate_data
-from utils import get_logger, ProcessingConfig
+from utils import ProcessingConfig, get_logger
 
 logger = get_logger(__name__)
 
@@ -556,8 +556,8 @@ def optimize_dask_performance(
 
 def benchmark_dask_engines(
     csv_path: str,
-    chunk_sizes: List[int] = [1000, 5000, 10000],
-    schedulers: List[str] = ["threads", "processes"]
+    chunk_sizes: List[int] = None,
+    schedulers: List[str] = None
 ) -> Dict[str, Any]:
     """
     Benchmark different Dask configurations for performance testing.
@@ -570,6 +570,10 @@ def benchmark_dask_engines(
     Returns:
         Dict with benchmark results
     """
+    if schedulers is None:
+        schedulers = ["threads", "processes"]
+    if chunk_sizes is None:
+        chunk_sizes = [1000, 5000, 10000]
     logger.info("Starting Dask benchmarking...")
 
     results = {}

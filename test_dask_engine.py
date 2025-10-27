@@ -4,7 +4,6 @@ Test script for dask_engine functionality.
 """
 
 import sys
-import pandas as pd
 from pathlib import Path
 
 # Add src to Python path
@@ -15,7 +14,11 @@ def test_dask_engine():
     print("🧪 Testing Dask Engine...")
 
     try:
-        from processing_engines.dask_engine import process_dask, compute_with_progress, get_dask_cluster_info
+        from processing_engines.dask_engine import (
+            compute_with_progress,
+            get_dask_cluster_info,
+            process_dask,
+        )
         from utils import ProcessingConfig, setup_logging
 
         # Setup logging
@@ -44,7 +47,7 @@ def test_dask_engine():
         # Test computation
         print("\n⚙️ Testing computation...")
         df = compute_with_progress(ddf, show_progress=True)
-        print(f"   ✅ Computation completed")
+        print("   ✅ Computation completed")
         print(f"   ✅ Result: {len(df)} rows with {len(df.columns)} columns")
         print(f"   ✅ Memory usage: {df.memory_usage(deep=True).sum() / (1024*1024):.2f} MB")
 
@@ -58,7 +61,7 @@ def test_dask_engine():
         print("\n🖥️ Testing cluster monitoring...")
         cluster_info = get_dask_cluster_info()
         if 'error' not in cluster_info:
-            print(f"   ✅ Dask cluster info retrieved")
+            print("   ✅ Dask cluster info retrieved")
             print(f"   ✅ Workers: {cluster_info.get('workers', 'N/A')}")
             print(f"   ✅ Total cores: {cluster_info.get('total_cores', 'N/A')}")
             print(f"   ✅ Dashboard: {cluster_info.get('dashboard_link', 'N/A')}")

@@ -5,14 +5,15 @@ Implements regime-based backtesting with HMM state-driven position allocation,
 realistic trade execution, transaction cost modeling, and comprehensive trade logging.
 """
 
-import numpy as np
-import pandas as pd
-from typing import Tuple, List, Optional, Dict, Any
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Any, Dict, List, Tuple
+
+import numpy as np
+import pandas as pd
 
 from utils import get_logger
-from utils.data_types import Trade, BacktestConfig, BacktestResult
+from utils.data_types import BacktestConfig, BacktestResult, Trade
 
 logger = get_logger(__name__)
 
@@ -319,7 +320,7 @@ def backtest_strategy(
     total_pnl = sum(t.pnl for t in trades if t.pnl is not None)
     total_costs = sum(t.commission + t.slippage for t in trades)
 
-    logger.info(f"Backtest completed:")
+    logger.info("Backtest completed:")
     logger.info(f"  - Total trades: {total_trades}")
     logger.info(f"  - Winning trades: {winning_trades} ({winning_trades/max(total_trades,1)*100:.1f}%)")
     logger.info(f"  - Losing trades: {losing_trades} ({losing_trades/max(total_trades,1)*100:.1f}%)")
@@ -451,7 +452,7 @@ def backtest_with_analysis(
         end_date=prices.index[-1]
     )
 
-    logger.info(f"Backtest analysis completed:")
+    logger.info("Backtest analysis completed:")
     logger.info(f"  - Initial capital: {initial_capital:.2f}")
     logger.info(f"  - Final equity: {equity_curve.iloc[-1]:.2f}")
     logger.info(f"  - Total return: {(equity_curve.iloc[-1]/initial_capital - 1)*100:.2f}%")

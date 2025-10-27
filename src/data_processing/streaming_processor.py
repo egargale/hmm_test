@@ -5,20 +5,18 @@ This module provides streaming processing capabilities for large CSV files,
 with memory optimization, progress tracking, and error recovery.
 """
 
-import logging
-import gc
-from pathlib import Path
-from typing import Iterator, Optional, Dict, Any, List, Tuple
 import asyncio
+import gc
 from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, Iterator, Optional, Tuple
 
-import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
+from utils.data_types import CSVFormat
+from utils.logging_config import get_logger
 from .feature_engineering import FeatureEngineer
-from ..utils.logging_config import get_logger
-from ..utils.data_types import CSVFormat
 
 logger = get_logger(__name__)
 
@@ -280,8 +278,7 @@ class StreamingDataProcessor:
             dtype=self._get_dtypes()
         )
 
-        for chunk_num, chunk in enumerate(chunk_reader, 1):
-            yield chunk_num, chunk
+        yield from enumerate(chunk_reader, 1)
 
     def _get_dtypes(self) -> Dict[str, str]:
         """Get optimal data types for memory efficiency"""

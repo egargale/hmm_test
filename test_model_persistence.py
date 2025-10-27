@@ -10,12 +10,12 @@ This script tests the complete model persistence functionality including:
 - File management utilities
 """
 
-import sys
 import os
+import sys
 import tempfile
-import numpy as np
-import pandas as pd
 from pathlib import Path
+
+import numpy as np
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
@@ -63,7 +63,11 @@ def test_basic_save_load():
     print("🔍 Testing Basic Save and Load Operations")
 
     try:
-        from model_training.model_persistence import save_model, load_model, get_model_info
+        from model_training.model_persistence import (
+            get_model_info,
+            load_model,
+            save_model,
+        )
 
         model, scaler, config, original_features = create_test_model()
 
@@ -158,7 +162,11 @@ def test_integrity_validation():
     print("\n🔍 Testing Integrity Validation")
 
     try:
-        from model_training.model_persistence import save_model, load_model, generate_model_hash
+        from model_training.model_persistence import (
+            generate_model_hash,
+            load_model,
+            save_model,
+        )
 
         model, scaler, config, features = create_test_model()
 
@@ -223,7 +231,11 @@ def test_error_handling():
     print("\n🔍 Testing Error Handling")
 
     try:
-        from model_training.model_persistence import save_model, load_model, get_model_info, delete_model
+        from model_training.model_persistence import (
+            delete_model,
+            load_model,
+            save_model,
+        )
 
         model, scaler, config, features = create_test_model()
 
@@ -300,7 +312,10 @@ def test_metadata_functionality():
 
     try:
         from model_training.model_persistence import (
-            save_model, load_model, get_model_info, ModelMetadata
+            ModelMetadata,
+            get_model_info,
+            load_model,
+            save_model,
         )
 
         model, scaler, config, features = create_test_model()
@@ -366,10 +381,13 @@ def test_file_management():
     print("\n�Mocking Testing File Management Utilities")
 
     try:
-        from model_training.model_persistence import (
-            save_model, list_saved_models, copy_model, delete_model
-        )
         from model_training.hmm_trainer import HMMConfig
+        from model_training.model_persistence import (
+            copy_model,
+            delete_model,
+            list_saved_models,
+            save_model,
+        )
 
         model, scaler, config, features = create_test_model()
 
@@ -424,7 +442,7 @@ def test_file_management():
 
             # Verify copy exists
             if copy_path.exists():
-                print(f"    ✓ Copy verified")
+                print("    ✓ Copy verified")
             else:
                 print("    ✗ Copy failed")
                 return False
@@ -492,8 +510,8 @@ def test_end_to_end_workflow():
     print("\n🔍 Testing End-to-End Workflow")
 
     try:
-        from model_training import train_model, predict_states_comprehensive
-        from model_training.model_persistence import save_model, load_model
+        from model_training import predict_states_comprehensive, train_model
+        from model_training.model_persistence import load_model, save_model
         from utils.config import HMMConfig
 
         # Step 1: Create and train model

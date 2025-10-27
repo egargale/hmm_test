@@ -5,11 +5,11 @@ This module provides comprehensive configuration management for CSV processing,
 including format profiles, validation rules, performance tuning, and error handling.
 """
 
-from typing import Dict, Any, List, Optional
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import Any, Dict, List, Optional
 
-from ..utils.logging_config import get_logger
+from utils.logging_config import get_logger
 
 logger = get_logger(__name__)
 

@@ -4,7 +4,6 @@ Test script for the Multi-Engine Processing Framework.
 """
 
 import sys
-import pandas as pd
 from pathlib import Path
 
 # Add src to Python path
@@ -16,8 +15,11 @@ def test_multi_engine_framework():
 
     try:
         from processing_engines import (
-            process_streaming, process_dask, process_daft,
-            ProcessingEngineFactory, process_with_engine, get_processing_engine_factory
+            get_processing_engine_factory,
+            process_daft,
+            process_dask,
+            process_streaming,
+            process_with_engine,
         )
         from utils import ProcessingConfig, setup_logging
 
@@ -35,7 +37,7 @@ def test_multi_engine_framework():
         # Test 1: Processing Engine Factory
         print("\n🏭 Testing Processing Engine Factory...")
         factory = get_processing_engine_factory()
-        print(f"   ✅ Factory created")
+        print("   ✅ Factory created")
         print(f"   ✅ Available engines: {factory.get_available_engines()}")
 
         # Test engine recommendation
@@ -45,7 +47,7 @@ def test_multi_engine_framework():
         # Test 2: Engine Information
         print("\n📊 Testing Engine Information...")
         engine_info = factory.get_engine_info()
-        print(f"   ✅ Engine info retrieved")
+        print("   ✅ Engine info retrieved")
         print(f"   ✅ Available engines: {engine_info['available_engines']}")
         for engine, details in engine_info['engine_details'].items():
             print(f"   ✅ {engine}: {details['type']} - Best for: {details['best_for']}")
@@ -93,7 +95,7 @@ def test_multi_engine_framework():
                     npartitions=1,
                     show_progress=False
                 )
-                print(f"      ✅ Daft: Processing successful")
+                print("      ✅ Daft: Processing successful")
             except Exception as e:
                 print(f"      ❌ Daft failed: {e}")
         else:
@@ -141,7 +143,7 @@ def test_multi_engine_framework():
                 computed_result = factory.compute_result(dask_df, show_progress=False)
                 print(f"   ✅ Computed Dask result: {len(computed_result)} rows")
             else:
-                print(f"   ℹ️ Skipping Dask computation test (Dask not available)")
+                print("   ℹ️ Skipping Dask computation test (Dask not available)")
         except Exception as e:
             print(f"   ❌ Result computation failed: {e}")
 
@@ -154,7 +156,7 @@ def test_multi_engine_framework():
                 engines=["streaming"],  # Only test streaming for speed
                 cache_results=True
             )
-            print(f"   ✅ Benchmark completed")
+            print("   ✅ Benchmark completed")
             for engine, result in benchmark_results.items():
                 if result.get('success'):
                     print(f"   ✅ {engine}: {result['time']:.2f}s, {result['rows']} rows")

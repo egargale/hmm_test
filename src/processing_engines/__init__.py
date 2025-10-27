@@ -14,10 +14,10 @@ try:
     from .index import (
         ProcessingEngineFactory,
         get_processing_engine_factory,
-        process_with_engine,
-        process_streaming,
+        process_daft,
         process_dask,
-        process_daft
+        process_streaming,
+        process_with_engine,
     )
     _imports_available = True
 except ImportError as e:

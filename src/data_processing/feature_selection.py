@@ -5,20 +5,19 @@ This module provides automated feature selection algorithms and quality assessme
 tools for financial time series data used in HMM analysis.
 """
 
+from abc import ABC, abstractmethod
+from typing import Any, Dict, List, Optional, Tuple
+
 import numpy as np
 import pandas as pd
-from typing import Dict, Any, List, Optional, Tuple, Union
-from abc import ABC, abstractmethod
-from scipy import stats
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.feature_selection import (
-    VarianceThreshold, mutual_info_classif, mutual_info_regression,
-    RFE, SelectKBest, f_regression, f_classif
+    RFE,
+    mutual_info_classif,
+    mutual_info_regression,
 )
-from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
-from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import cross_val_score
 
-from ..utils.logging_config import get_logger
+from utils.logging_config import get_logger
 
 logger = get_logger(__name__)
 

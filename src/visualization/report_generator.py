@@ -5,23 +5,24 @@ Implements detailed regime analysis report generation for HMM strategies,
 producing professional PDF/HTML reports with comprehensive analysis.
 """
 
-import numpy as np
-import pandas as pd
-from typing import Dict, Any, Optional, List, Tuple
-from pathlib import Path
-from datetime import datetime
 import base64
 import io
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, Optional
+
+import numpy as np
+import pandas as pd
 
 # Jinja2 for templating
-from jinja2 import Template, Environment, BaseLoader
+from jinja2 import Template
 
 # WeasyPrint for PDF generation (optional)
 WEASYPRINT_AVAILABLE = False
 
+from backtesting.performance_metrics import calculate_returns
 from utils import get_logger
 from utils.data_types import BacktestResult, PerformanceMetrics
-from backtesting.performance_metrics import calculate_returns
 
 logger = get_logger(__name__)
 
@@ -326,7 +327,7 @@ def create_regime_charts_data(
         positive_returns = [regime_analysis[s]['return_stats']['positive_return_pct'] for s in states]
 
         # Annualized Returns
-        bars1 = ax1.bar(range(len(states)), returns, color='skyblue')
+        ax1.bar(range(len(states)), returns, color='skyblue')
         ax1.set_title('Annualized Returns by Regime')
         ax1.set_ylabel('Annualized Return')
         ax1.set_xticks(range(len(states)))
@@ -334,21 +335,21 @@ def create_regime_charts_data(
         ax1.axhline(y=0, color='black', linestyle='-', alpha=0.3)
 
         # Volatility
-        bars2 = ax2.bar(range(len(states)), volatilities, color='lightcoral')
+        ax2.bar(range(len(states)), volatilities, color='lightcoral')
         ax2.set_title('Annualized Volatility by Regime')
         ax2.set_ylabel('Annualized Volatility')
         ax2.set_xticks(range(len(states)))
         ax2.set_xticklabels([f'State {s}' for s in states])
 
         # Average Duration
-        bars3 = ax3.bar(range(len(states)), durations, color='lightgreen')
+        ax3.bar(range(len(states)), durations, color='lightgreen')
         ax3.set_title('Average Duration by Regime')
         ax3.set_ylabel('Average Duration (periods)')
         ax3.set_xticks(range(len(states)))
         ax3.set_xticklabels([f'State {s}' for s in states])
 
         # Positive Return Percentage
-        bars4 = ax4.bar(range(len(states)), positive_returns, color='gold')
+        ax4.bar(range(len(states)), positive_returns, color='gold')
         ax4.set_title('Positive Return Percentage by Regime')
         ax4.set_ylabel('Positive Returns (%)')
         ax4.set_xticks(range(len(states)))
@@ -844,7 +845,7 @@ def generate_regime_report(
         if format.lower() == 'pdf':
             # Try to import WeasyPrint only when needed
             try:
-                from weasyprint import HTML, CSS
+                from weasyprint import CSS, HTML
                 # Convert HTML to PDF
                 html_doc = HTML(string=html_content)
                 css = CSS(string='''

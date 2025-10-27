@@ -5,11 +5,12 @@ Implements Pydantic-based configuration management for loading and validating
 application settings from YAML/JSON configuration files.
 """
 
-import yaml
 import json
 from pathlib import Path
-from typing import Dict, Any, Optional, Union
-from pydantic import BaseModel, Field, validator
+from typing import Any, Dict, Optional, Union
+
+import yaml
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class HMMConfig(BaseModel):
@@ -21,8 +22,9 @@ class HMMConfig(BaseModel):
     tol: float = Field(1e-3, ge=1e-6, description="Convergence threshold")
     num_restarts: int = Field(3, ge=1, description="Number of restarts with different random states")
 
-    @validator('covariance_type')
-    def validate_covariance_type(cls, v):
+    @field_validator('covariance_type')
+    @classmethod
+    def validate_covariance_type(cls, v: str) -> str:
         """Validate covariance type is one of the allowed values."""
         allowed_types = ['full', 'diag', 'tied', 'spherical']
         if v not in allowed_types:
@@ -55,8 +57,9 @@ class ProcessingConfig(BaseModel):
         description="Technical indicators configuration"
     )
 
-    @validator('engine_type')
-    def validate_engine_type(cls, v):
+    @field_validator('engine_type')
+    @classmethod
+    def validate_engine_type(cls, v: str) -> str:
         """Validate engine type is one of the allowed values."""
         allowed_types = ['streaming', 'dask', 'daft', 'auto']
         if v not in allowed_types:
@@ -78,15 +81,17 @@ class BacktestConfig(BaseModel):
         description="Mapping from HMM states to trading positions (1=long, -1=short, 0=flat)"
     )
 
-    @validator('state_map', always=True)
-    def set_default_state_map(cls, v):
+    @field_validator('state_map')
+    @classmethod
+    def set_default_state_map(cls, v: Optional[Dict[int, int]]) -> Dict[int, int]:
         """Set default state mapping if not provided."""
         if v is None:
             return {0: 1, 1: -1, 2: 0}  # Default: state 0=long, 1=short, 2=flat
         return v
 
-    @validator('state_map')
-    def validate_state_map(cls, v):
+    @field_validator('state_map')
+    @classmethod
+    def validate_state_map(cls, v: Dict[int, int]) -> Dict[int, int]:
         """Validate state mapping values."""
         for state, position in v.items():
             if state < 0:
@@ -109,8 +114,9 @@ class LoggingConfig(BaseModel):
     backup_count: int = Field(5, ge=0, description="Number of backup log files")
     enable_rotation: bool = Field(True, description="Enable log file rotation")
 
-    @validator('level')
-    def validate_level(cls, v):
+    @field_validator('level')
+    @classmethod
+    def validate_level(cls, v: str) -> str:
         """Validate logging level."""
         allowed_levels = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
         if v.upper() not in allowed_levels:
@@ -125,10 +131,10 @@ class Config(BaseModel):
     backtest: BacktestConfig = Field(default_factory=BacktestConfig)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
 
-    class Config:
-        """Pydantic configuration."""
-        extra = "forbid"  # Forbid extra fields
-        use_enum_values = True
+    model_config = ConfigDict(
+        extra="forbid",  # Forbid extra fields
+        use_enum_values=True
+    )
 
 
 def load_config(config_path: Union[str, Path]) -> Config:
@@ -153,7 +159,7 @@ def load_config(config_path: Union[str, Path]) -> Config:
         raise FileNotFoundError(f"Configuration file not found: {config_path}")
 
     try:
-        with open(config_path, 'r', encoding='utf-8') as f:
+        with open(config_path, encoding='utf-8') as f:
             if config_path.suffix.lower() in ['.yaml', '.yml']:
                 data = yaml.safe_load(f)
             elif config_path.suffix.lower() == '.json':
