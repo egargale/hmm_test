@@ -9,7 +9,8 @@ from pathlib import Path
 import numpy as np
 
 # Add src to path
-sys.path.insert(0, 'src')
+sys.path.insert(0, "src")
+
 
 def demo_data_processing():
     """Demonstrate data processing capabilities."""
@@ -22,7 +23,7 @@ def demo_data_processing():
 
         print("1. CSV Processing:")
         print("   Loading BTC.csv...")
-        data = process_csv('BTC.csv')
+        data = process_csv("BTC.csv")
         print(f"   ✅ Loaded {len(data)} rows of OHLCV data")
         print(f"   ✅ Date range: {data.index.min()} to {data.index.max()}")
         print(f"   ✅ Original columns: {len(data.columns)}")
@@ -31,7 +32,9 @@ def demo_data_processing():
         print("   Adding technical indicators...")
         features = add_features(data)
         print(f"   ✅ Enhanced to {len(features.columns)} total columns")
-        print(f"   ✅ Added {len(features.columns) - len(data.columns)} technical indicators")
+        print(
+            f"   ✅ Added {len(features.columns) - len(data.columns)} technical indicators"
+        )
 
         # Show new features
         new_features = [col for col in features.columns if col not in data.columns]
@@ -39,7 +42,7 @@ def demo_data_processing():
 
         # Show data sample
         print("\n3. Data Sample:")
-        sample_data = features[['close', 'log_ret', 'atr', 'rsi', 'bb_width']].head(3)
+        sample_data = features[["close", "log_ret", "atr", "rsi", "bb_width"]].head(3)
         print("   Sample of engineered features:")
         print(sample_data.round(4))
 
@@ -48,6 +51,7 @@ def demo_data_processing():
     except Exception as e:
         print(f"   ❌ Error: {e}")
         return None
+
 
 def demo_hmm_models(features):
     """Demonstrate HMM modeling capabilities."""
@@ -59,8 +63,19 @@ def demo_hmm_models(features):
         from hmm_models import GaussianHMMModel, HMMModelFactory
 
         # Prepare features
-        feature_cols = ['log_ret', 'atr', 'roc', 'rsi', 'bb_width', 'bb_position',
-                       'adx', 'stoch', 'sma_5_ratio', 'hl_ratio', 'volume_ratio']
+        feature_cols = [
+            "log_ret",
+            "atr",
+            "roc",
+            "rsi",
+            "bb_width",
+            "bb_position",
+            "adx",
+            "stoch",
+            "sma_5_ratio",
+            "hl_ratio",
+            "volume_ratio",
+        ]
         available_cols = [col for col in feature_cols if col in features.columns]
         X = features[available_cols].dropna().values
 
@@ -74,7 +89,7 @@ def demo_hmm_models(features):
             covariance_type="diag",
             random_state=42,
             n_iter=50,
-            verbose=False
+            verbose=False,
         )
 
         print("   Training Hidden Markov Model...")
@@ -93,33 +108,37 @@ def demo_hmm_models(features):
 
         print("\n4. Model Factory:")
         factory_model = HMMModelFactory.create_model(
-            model_type='gaussian',
+            model_type="gaussian",
             n_components=3,
             n_samples=len(X),
-            n_features=X.shape[1]
+            n_features=X.shape[1],
         )
         print(f"   ✅ Factory created: {type(factory_model).__name__}")
 
         print("\n5. Model Persistence:")
-        model.save_model('demo_btc_hmm.pkl')
+        model.save_model("demo_btc_hmm.pkl")
         print("   ✅ Model saved to demo_btc_hmm.pkl")
 
         # Verify loading
         loaded_model = GaussianHMMModel()
-        loaded_model.load_model('demo_btc_hmm.pkl')
+        loaded_model.load_model("demo_btc_hmm.pkl")
         verify_states = loaded_model.predict(X[:100])
-        print(f"   ✅ Model loaded and verified ({len(np.unique(verify_states))} states)")
+        print(
+            f"   ✅ Model loaded and verified ({len(np.unique(verify_states))} states)"
+        )
 
         # Cleanup
-        Path('demo_btc_hmm.pkl').unlink(missing_ok=True)
+        Path("demo_btc_hmm.pkl").unlink(missing_ok=True)
 
         return states
 
     except Exception as e:
         print(f"   ❌ Error: {e}")
         import traceback
+
         traceback.print_exc()
         return None
+
 
 def demo_backtesting(features, states):
     """Demonstrate backtesting capabilities."""
@@ -133,7 +152,7 @@ def demo_backtesting(features, states):
         from utils.data_types import BacktestConfig
 
         # Align data
-        prices = features['close']
+        prices = features["close"]
         min_len = min(len(states), len(prices))
         states_aligned = states[:min_len]
         prices_aligned = prices.iloc[:min_len]
@@ -145,11 +164,11 @@ def demo_backtesting(features, states):
         config = BacktestConfig(
             initial_capital=100000.0,
             commission=0.001,  # 0.1%
-            slippage=0.0001,   # 0.01%
-            lookahead_bias_prevention=True
+            slippage=0.0001,  # 0.01%
+            lookahead_bias_prevention=True,
         )
         print(f"   Initial capital: ${config.initial_capital:,.0f}")
-        print(f"   Commission: {config.comission*100:.2f}%")
+        print(f"   Commission: {config.comission * 100:.2f}%")
         print(f"   Lookahead bias prevention: {config.lookahead_bias_prevention}")
 
         print("\n3. State-to-Position Mapping:")
@@ -166,7 +185,7 @@ def demo_backtesting(features, states):
         backtest_result = strategy_engine.backtest_strategy(
             data=features.iloc[:min_len],
             states=states_aligned,
-            state_mapping=state_mapping
+            state_mapping=state_mapping,
         )
 
         print(f"   ✅ Generated {len(backtest_result.trades)} trades")
@@ -177,7 +196,7 @@ def demo_backtesting(features, states):
         metrics = analyzer.calculate_performance(
             backtest_result.equity_curve,
             backtest_result.positions,
-            benchmark=prices_aligned.pct_change()
+            benchmark=prices_aligned.pct_change(),
         )
 
         print(f"   Total return: {metrics.total_return:.2%}")
@@ -192,8 +211,10 @@ def demo_backtesting(features, states):
     except Exception as e:
         print(f"   ❌ Error: {e}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 def demo_inference_engine(features):
     """Demonstrate inference capabilities."""
@@ -206,7 +227,7 @@ def demo_inference_engine(features):
         from model_training.inference_engine import StateInference
 
         # Prepare features
-        feature_cols = ['log_ret', 'atr', 'roc', 'rsi', 'bb_width', 'volume_ratio']
+        feature_cols = ["log_ret", "atr", "roc", "rsi", "bb_width", "volume_ratio"]
         available_cols = [col for col in feature_cols if col in features.columns]
         X = features[available_cols].dropna().values
 
@@ -226,7 +247,7 @@ def demo_inference_engine(features):
         print("   Simulating real-time state detection...")
         recent_states = []
         for i in range(min(50, len(X))):
-            state = inference.infer_single_state(X[i:i+1])
+            state = inference.infer_single_state(X[i : i + 1])
             recent_states.append(state)
             if i % 10 == 0:
                 print(f"   Period {i}: State {state}")
@@ -239,15 +260,17 @@ def demo_inference_engine(features):
         for i, prob in enumerate(probs):
             max_state = np.argmax(prob)
             confidence = prob[max_state]
-            print(f"   Obs {i+1}: State {max_state} (confidence: {confidence:.2%})")
+            print(f"   Obs {i + 1}: State {max_state} (confidence: {confidence:.2%})")
 
         return True
 
     except Exception as e:
         print(f"   ❌ Error: {e}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 def demo_processing_engines():
     """Demonstrate different processing engines."""
@@ -264,7 +287,7 @@ def demo_processing_engines():
 
         # Check availability of other engines
         try:
-            import dask
+
             print("\n2. Dask Engine:")
             print("   ✅ Available for distributed processing")
             print("   ✅ Parallel computation on large datasets")
@@ -274,7 +297,7 @@ def demo_processing_engines():
             print("   ⚠️ Not available (install dask for distributed processing)")
 
         try:
-            import daft
+
             print("\n3. Daft Engine:")
             print("   ✅ Available for high-performance data processing")
             print("   ✅ Optimized for analytical workloads")
@@ -293,6 +316,7 @@ def demo_processing_engines():
         print(f"   ❌ Error: {e}")
         return False
 
+
 def main():
     """Run complete demonstration."""
     print("🚀 COMPREHENSIVE SRC MODULES DEMONSTRATION")
@@ -300,7 +324,7 @@ def main():
     print("=" * 60)
 
     # Check data file
-    if not Path('BTC.csv').exists():
+    if not Path("BTC.csv").exists():
         print("❌ BTC.csv not found!")
         return False
 
@@ -311,22 +335,22 @@ def main():
 
     # Demo 1: Data Processing
     features = demo_data_processing()
-    results['Data Processing'] = features is not None
+    results["Data Processing"] = features is not None
 
     if features is not None:
         # Demo 2: HMM Models
         states = demo_hmm_models(features)
-        results['HMM Models'] = states is not None
+        results["HMM Models"] = states is not None
 
         if states is not None:
             # Demo 3: Backtesting
-            results['Backtesting'] = demo_backtesting(features, states)
+            results["Backtesting"] = demo_backtesting(features, states)
 
             # Demo 4: Inference
-            results['Inference Engine'] = demo_inference_engine(features)
+            results["Inference Engine"] = demo_inference_engine(features)
 
     # Demo 5: Processing Engines
-    results['Processing Engines'] = demo_processing_engines()
+    results["Processing Engines"] = demo_processing_engines()
 
     # Summary
     print("\n" + "=" * 60)
@@ -348,7 +372,7 @@ def main():
         print("✅ Real-world BTC futures data processed")
         print("✅ Production-ready system demonstrated")
     else:
-        print(f"\n⚠️ {total-passed} demonstrations had issues")
+        print(f"\n⚠️ {total - passed} demonstrations had issues")
 
     print("\n🔧 Key Capabilities Shown:")
     print("  • Advanced feature engineering with 11+ technical indicators")
@@ -361,6 +385,7 @@ def main():
     print("  • Professional-grade financial analysis")
 
     return passed == total
+
 
 if __name__ == "__main__":
     success = main()

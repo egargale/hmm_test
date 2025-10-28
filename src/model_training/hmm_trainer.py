@@ -15,6 +15,7 @@ try:
     from hmmlearn import hmm
     from sklearn.exceptions import ConvergenceWarning
     from sklearn.preprocessing import StandardScaler
+
     HMM_AVAILABLE = True
 except ImportError:
     HMM_AVAILABLE = False
@@ -30,6 +31,7 @@ logger = get_logger(__name__)
 @dataclass
 class HMMTrainingResult:
     """Container for HMM training results."""
+
     model: Optional[hmm.GaussianHMM]
     scaler: Optional[StandardScaler]
     score: float
@@ -50,7 +52,9 @@ def validate_features_for_hmm(features: np.ndarray) -> None:
         ValueError: If features are invalid for HMM training
     """
     if not HMM_AVAILABLE:
-        raise ImportError("HMM dependencies not available. Install with: uv add hmmlearn scikit-learn")
+        raise ImportError(
+            "HMM dependencies not available. Install with: uv add hmmlearn scikit-learn"
+        )
 
     if not isinstance(features, np.ndarray):
         raise ValueError("Features must be a numpy array")
@@ -73,7 +77,9 @@ def validate_features_for_hmm(features: np.ndarray) -> None:
     zero_var_features = np.where(feature_variances < 1e-10)[0]
 
     if len(zero_var_features) > 0:
-        logger.warning(f"Features {zero_var_features} have zero or near-zero variance, which may cause numerical issues")
+        logger.warning(
+            f"Features {zero_var_features} have zero or near-zero variance, which may cause numerical issues"
+        )
 
 
 def validate_hmm_config(config: HMMConfig) -> None:
@@ -90,7 +96,9 @@ def validate_hmm_config(config: HMMConfig) -> None:
         raise ValueError("Number of states must be at least 1")
 
     if config.n_states > 20:
-        logger.warning(f"Large number of states ({config.n_states}) may cause numerical instability")
+        logger.warning(
+            f"Large number of states ({config.n_states}) may cause numerical instability"
+        )
 
     if config.max_iter < 1:
         raise ValueError("Maximum iterations must be at least 1")
@@ -125,7 +133,7 @@ def train_single_hmm_model(
     features: np.ndarray,
     config: HMMConfig,
     random_state: int,
-    scaler: Optional[StandardScaler] = None
+    scaler: Optional[StandardScaler] = None,
 ) -> Tuple[Optional[hmm.GaussianHMM], float, Dict[str, Any]]:
     """
     Train a single HMM model with specified parameters.
@@ -140,11 +148,11 @@ def train_single_hmm_model(
         Tuple of (trained_model, log_likelihood_score, training_info)
     """
     training_info = {
-        'random_state': random_state,
-        'converged': False,
-        'n_iterations': 0,
-        'final_log_likelihood': -np.inf,
-        'warnings': []
+        "random_state": random_state,
+        "converged": False,
+        "n_iterations": 0,
+        "final_log_likelihood": -np.inf,
+        "warnings": [],
     }
 
     try:
@@ -155,9 +163,9 @@ def train_single_hmm_model(
             n_iter=config.max_iter,
             tol=config.tol,
             random_state=random_state,
-            init_params='stmc',  # Initialize start prob, trans prob, emission prob
-            params='stmc',       # Update start prob, trans prob, emission prob
-            verbose=False
+            init_params="stmc",  # Initialize start prob, trans prob, emission prob
+            params="stmc",  # Update start prob, trans prob, emission prob
+            verbose=False,
         )
 
         # Capture convergence warnings
@@ -168,33 +176,45 @@ def train_single_hmm_model(
             model.fit(features)
 
             # Check for convergence warnings
-            convergence_warnings = [warning for warning in w if issubclass(warning.category, ConvergenceWarning)]
+            convergence_warnings = [
+                warning
+                for warning in w
+                if issubclass(warning.category, ConvergenceWarning)
+            ]
             if convergence_warnings:
-                training_info['warnings'].extend([str(w.message) for w in convergence_warnings])
-                logger.warning(f"HMM training convergence warnings for random_state {random_state}")
+                training_info["warnings"].extend(
+                    [str(w.message) for w in convergence_warnings]
+                )
+                logger.warning(
+                    f"HMM training convergence warnings for random_state {random_state}"
+                )
 
             # Get final log likelihood
             final_score = model.score(features)
-            training_info['final_log_likelihood'] = final_score
+            training_info["final_log_likelihood"] = final_score
 
             # Check convergence status
-            training_info['converged'] = model.monitor_.converged
-            training_info['n_iterations'] = len(model.monitor_.history)
+            training_info["converged"] = model.monitor_.converged
+            training_info["n_iterations"] = len(model.monitor_.history)
 
-            logger.debug(f"HMM training completed: random_state={random_state}, "
-                        f"score={final_score:.4f}, converged={training_info['converged']}, "
-                        f"iterations={training_info['n_iterations']}")
+            logger.debug(
+                f"HMM training completed: random_state={random_state}, "
+                f"score={final_score:.4f}, converged={training_info['converged']}, "
+                f"iterations={training_info['n_iterations']}"
+            )
 
             return model, final_score, training_info
 
     except Exception as e:
         error_msg = f"HMM training failed for random_state {random_state}: {str(e)}"
         logger.warning(error_msg)
-        training_info['warnings'].append(error_msg)
+        training_info["warnings"].append(error_msg)
         return None, -np.inf, training_info
 
 
-def add_numerical_stability_epsilon(features: np.ndarray, epsilon: float = 1e-6) -> np.ndarray:
+def add_numerical_stability_epsilon(
+    features: np.ndarray, epsilon: float = 1e-6
+) -> np.ndarray:
     """
     Add small epsilon to features for numerical stability.
 
@@ -213,7 +233,9 @@ def add_numerical_stability_epsilon(features: np.ndarray, epsilon: float = 1e-6)
     small_variance_mask = feature_std < epsilon
 
     if np.any(small_variance_mask):
-        logger.debug(f"Adding epsilon to {np.sum(small_variance_mask)} low-variance features")
+        logger.debug(
+            f"Adding epsilon to {np.sum(small_variance_mask)} low-variance features"
+        )
         stabilized_features[:, small_variance_mask] += epsilon
 
     return stabilized_features
@@ -224,7 +246,7 @@ def train_model(
     config: HMMConfig,
     scaler_type: str = "standard",
     enable_numerical_stability: bool = True,
-    return_all_results: bool = False
+    return_all_results: bool = False,
 ) -> Tuple[hmm.GaussianHMM, StandardScaler, float]:
     """
     Train a Hidden Markov Model with multiple restarts and best model selection.
@@ -249,8 +271,10 @@ def train_model(
         ValueError: If inputs are invalid
         RuntimeError: If HMM fails to converge after all restarts
     """
-    logger.info(f"Starting HMM model training: n_states={config.n_states}, "
-                f"covariance_type={config.covariance_type}, n_restarts={config.num_restarts}")
+    logger.info(
+        f"Starting HMM model training: n_states={config.n_states}, "
+        f"covariance_type={config.covariance_type}, n_restarts={config.num_restarts}"
+    )
 
     # Validate inputs
     validate_features_for_hmm(features)
@@ -264,7 +288,7 @@ def train_model(
         scaled_features = scaler.fit_transform(features)
         logger.debug(f"Features scaled: mean={np.mean(scaled_features, axis=0)[:3]}...")
     except Exception as e:
-        raise RuntimeError(f"Feature scaling failed: {e}")
+        raise RuntimeError(f"Feature scaling failed: {e}") from e
 
     # Apply numerical stability measures if enabled
     if enable_numerical_stability:
@@ -278,30 +302,38 @@ def train_model(
     all_results = []
 
     # Train multiple models with different random states
-    logger.info(f"Training {config.num_restarts} HMM models with different random states")
+    logger.info(
+        f"Training {config.num_restarts} HMM models with different random states"
+    )
 
     for restart_idx in range(config.num_restarts):
         random_state = config.random_state + restart_idx
-        logger.debug(f"Training restart {restart_idx + 1}/{config.num_restarts} "
-                    f"with random_state {random_state}")
+        logger.debug(
+            f"Training restart {restart_idx + 1}/{config.num_restarts} "
+            f"with random_state {random_state}"
+        )
 
         model, score, training_info = train_single_hmm_model(
             scaled_features, config, random_state, scaler
         )
 
-        all_results.append({
-            'restart_idx': restart_idx,
-            'model': model,
-            'score': score,
-            'training_info': training_info
-        })
+        all_results.append(
+            {
+                "restart_idx": restart_idx,
+                "model": model,
+                "score": score,
+                "training_info": training_info,
+            }
+        )
 
         # Update best model if this one is better
         if model is not None and score > best_score:
             best_model = model
             best_score = score
             best_training_info = training_info
-            logger.debug(f"New best model found: score={score:.4f}, restart={restart_idx}")
+            logger.debug(
+                f"New best model found: score={score:.4f}, restart={restart_idx}"
+            )
 
     # Check if we found a valid model
     if best_model is None:
@@ -310,14 +342,14 @@ def train_model(
         raise RuntimeError(error_msg)
 
     # Prepare final results
-    n_successful = sum(1 for result in all_results if result['model'] is not None)
+    n_successful = sum(1 for result in all_results if result["model"] is not None)
     convergence_info = {
-        'best_restart': best_training_info['random_state'],
-        'best_converged': best_training_info['converged'],
-        'best_iterations': best_training_info['n_iterations'],
-        'successful_restarts': n_successful,
-        'total_restarts': config.num_restarts,
-        'success_rate': n_successful / config.num_restarts
+        "best_restart": best_training_info["random_state"],
+        "best_converged": best_training_info["converged"],
+        "best_iterations": best_training_info["n_iterations"],
+        "successful_restarts": n_successful,
+        "total_restarts": config.num_restarts,
+        "success_rate": n_successful / config.num_restarts,
     }
 
     logger.info("HMM training completed successfully:")
@@ -334,7 +366,9 @@ def train_model(
             n_restarts_completed=config.num_restarts,
             n_successful_restarts=n_successful,
             convergence_info=convergence_info,
-            warnings=[w for result in all_results for w in result['training_info']['warnings']]
+            warnings=[
+                w for result in all_results for w in result["training_info"]["warnings"]
+            ],
         )
         return result
 
@@ -342,9 +376,7 @@ def train_model(
 
 
 def predict_states(
-    model: hmm.GaussianHMM,
-    features: np.ndarray,
-    scaler: StandardScaler
+    model: hmm.GaussianHMM, features: np.ndarray, scaler: StandardScaler
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Predict hidden states using trained HMM model.
@@ -370,9 +402,7 @@ def predict_states(
 
 
 def evaluate_model(
-    model: hmm.GaussianHMM,
-    features: np.ndarray,
-    scaler: StandardScaler
+    model: hmm.GaussianHMM, features: np.ndarray, scaler: StandardScaler
 ) -> Dict[str, float]:
     """
     Evaluate trained HMM model performance.
@@ -398,12 +428,12 @@ def evaluate_model(
     transition_entropy = -np.sum(model.transmat_ * np.log(model.transmat_ + 1e-10))
 
     return {
-        'log_likelihood': log_likelihood,
-        'n_states': n_states,
-        'n_features': n_features,
-        'transition_entropy': transition_entropy,
-        'converged': model.monitor_.converged,
-        'n_iterations': len(model.monitor_.history)
+        "log_likelihood": log_likelihood,
+        "n_states": n_states,
+        "n_features": n_features,
+        "transition_entropy": transition_entropy,
+        "converged": model.monitor_.converged,
+        "n_iterations": len(model.monitor_.history),
     }
 
 
@@ -417,17 +447,21 @@ def get_hmm_model_info(model: hmm.GaussianHMM) -> Dict[str, Any]:
     Returns:
         Dictionary with model information
     """
-    if not hasattr(model, 'n_components'):
-        return {'error': 'Model not properly trained'}
+    if not hasattr(model, "n_components"):
+        return {"error": "Model not properly trained"}
 
     return {
-        'n_states': model.n_components,
-        'n_features': model.n_features,
-        'covariance_type': model.covariance_type,
-        'converged': model.monitor_.converged,
-        'n_iterations': len(model.monitor_.history) if hasattr(model, 'monitor_') else None,
-        'start_probabilities': model.startprob_.tolist(),
-        'transition_matrix': model.transmat_.tolist(),
-        'means': model.means_.tolist(),
-        'covariances': [cov.tolist() for cov in model.covars_] if hasattr(model.covars_, 'tolist') else str(model.covars_)
+        "n_states": model.n_components,
+        "n_features": model.n_features,
+        "covariance_type": model.covariance_type,
+        "converged": model.monitor_.converged,
+        "n_iterations": len(model.monitor_.history)
+        if hasattr(model, "monitor_")
+        else None,
+        "start_probabilities": model.startprob_.tolist(),
+        "transition_matrix": model.transmat_.tolist(),
+        "means": model.means_.tolist(),
+        "covariances": [cov.tolist() for cov in model.covars_]
+        if hasattr(model.covars_, "tolist")
+        else str(model.covars_),
     }

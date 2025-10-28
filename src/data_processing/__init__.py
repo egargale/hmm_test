@@ -22,6 +22,20 @@ try:
 except ImportError:
     add_features = None
 
+# Technical indicators module
+try:
+    from .technical_indicators import (
+        get_available_indicators,
+        get_default_indicator_config,
+        validate_indicator_config,
+        validate_ohlcv_columns,
+    )
+except ImportError:
+    get_default_indicator_config = None
+    get_available_indicators = None
+    validate_indicator_config = None
+    validate_ohlcv_columns = None
+
 # Enhanced components from Phases 2.1.2-2.1.4
 try:
     from .feature_selection import (
@@ -112,12 +126,28 @@ __all__ = ["process_csv"]
 if add_features is not None:
     __all__.append("add_features")
 
+# Technical indicators exports
+if get_default_indicator_config is not None:
+    __all__.extend(
+        [
+            "get_default_indicator_config",
+            "get_available_indicators",
+            "validate_indicator_config",
+            "validate_ohlcv_columns",
+        ]
+    )
+
 # Feature selection exports
 if CorrelationFeatureSelector is not None:
-    __all__.extend([
-        "CorrelationFeatureSelector", "VarianceFeatureSelector", "MutualInformationFeatureSelector",
-        "FeatureQualityScorer", "FeatureSelectionPipeline"
-    ])
+    __all__.extend(
+        [
+            "CorrelationFeatureSelector",
+            "VarianceFeatureSelector",
+            "MutualInformationFeatureSelector",
+            "FeatureQualityScorer",
+            "FeatureSelectionPipeline",
+        ]
+    )
 
 # CSV processing enhancements
 if CSVFormatDetector is not None:
@@ -133,12 +163,27 @@ if DataIntegrator is not None:
     __all__.extend(["DataIntegrator", "IntegrationResult", "ProcessingMetadata"])
 
 if EnhancedCSVConfig is not None:
-    __all__.extend(["EnhancedCSVConfig", "create_default_config", "create_high_performance_config"])
+    __all__.extend(
+        ["EnhancedCSVConfig", "create_default_config", "create_high_performance_config"]
+    )
 
 # Unified pipeline exports (Phase 2.1.4)
 if UnifiedDataPipeline is not None:
-    __all__.extend([
-        "UnifiedDataPipeline", "PipelineResult", "PipelineConfig", "create_config_from_template",
-        "DataInputManager", "InputData", "ValidationResult", "OutputManager", "OutputPackage",
-        "PipelineStage", "PipelineStageFactory", "MetricsCollector", "PerformanceProfiler", "MetricsReporter"
-    ])
+    __all__.extend(
+        [
+            "UnifiedDataPipeline",
+            "PipelineResult",
+            "PipelineConfig",
+            "create_config_from_template",
+            "DataInputManager",
+            "InputData",
+            "ValidationResult",
+            "OutputManager",
+            "OutputPackage",
+            "PipelineStage",
+            "PipelineStageFactory",
+            "MetricsCollector",
+            "PerformanceProfiler",
+            "MetricsReporter",
+        ]
+    )

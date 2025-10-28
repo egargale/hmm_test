@@ -2,6 +2,7 @@
 """
 End-to-end HMM + back-test on futures OHLCV using **Daft**.
 """
+
 import argparse
 import os
 import warnings
@@ -21,11 +22,11 @@ def load_daft(path: str, symbol: str | None) -> daf.DataFrame:
     """Return Daft DataFrame filtered to symbol; always cast numeric cols."""
     dtypes = {
         "Datetime": "datetime[ns]",
-        "Open":     "float32",
-        "High":     "float32",
-        "Low":      "float32",
-        "Close":    "float32",
-        "Volume":   "float32",
+        "Open": "float32",
+        "High": "float32",
+        "Low": "float32",
+        "Close": "float32",
+        "Volume": "float32",
     }
     # Daft reads huge CSV lazily via Arrow → very memory friendly
     df = daf.read_csv(Path(path).expanduser(), dtype=dtype_fix_dict(dtypes))
@@ -58,11 +59,13 @@ def make_features_daft(df: daf.DataFrame) -> daf.DataFrame:
 # 3. HMM utilities
 # ------------------------------------------------------------------
 def train_hmm(mat: np.ndarray, k: int, seed: int):
-    model = GaussianHMM(n_components=k,
-                        covariance_type="diag",
-                        n_iter=1000,
-                        random_state=seed,
-                        verbose=False)
+    model = GaussianHMM(
+        n_components=k,
+        covariance_type="diag",
+        n_iter=1000,
+        random_state=seed,
+        verbose=False,
+    )
     model.fit(mat)
     return model
 
@@ -103,8 +106,9 @@ def perf(stats: np.ndarray):
 def main():
     parser = argparse.ArgumentParser(description="HMM + back-test – Daft Edition")
     parser.add_argument("csv_file")
-    parser.add_argument("--symbol", default=None,
-                        help="Filter to that symbol (case-insensitive)")
+    parser.add_argument(
+        "--symbol", default=None, help="Filter to that symbol (case-insensitive)"
+    )
     parser.add_argument("--model-out", help="Save trained HMM to file")
     parser.add_argument("--model-path", help="Pre-trained model, skip training")
     parser.add_argument("--states", type=int, default=3, help="Number HMM states")
@@ -123,13 +127,13 @@ def main():
 
     # Align close prices with features (some rows are dropped by feature engineering)
     close_series = daf_df.select(daf.col("Close")).collect()["Close"].values
-    close_series = close_series[-len(X):]
+    close_series = close_series[-len(X) :]
 
     # Train or load model & scaler ---------------------------------------------
     if args.model_path and os.path.exists(args.model_path):
         bundle = joblib.load(args.model_path)
-        model = bundle['model']
-        scaler = bundle['scaler']
+        model = bundle["model"]
+        scaler = bundle["scaler"]
         print("Loaded existing HMM and Scaler.")
         # Scale features with the loaded scaler
         X_scaled = scaler.transform(X)
@@ -142,7 +146,7 @@ def main():
         # 2. Train HMM on scaled features
         model = train_hmm(X_scaled, k=args.states, seed=args.seed)
         if args.model_out:
-            bundle = {'model': model, 'scaler': scaler}
+            bundle = {"model": model, "scaler": scaler}
             joblib.dump(bundle, args.model_out)
             print(f"Model and scaler saved -> {args.model_out}")
 
@@ -162,6 +166,7 @@ def main():
 
     # Simple matplotlib plot
     import matplotlib.pyplot as plt
+
     plt.style.use("ggplot")
     plt.figure(figsize=(10, 4))
     plt.plot(equity_curve, label="HMM-based equity")

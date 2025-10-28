@@ -19,6 +19,7 @@ try:
         process_streaming,
         process_with_engine,
     )
+
     _imports_available = True
 except ImportError as e:
     print(f"Warning: Could not import processing engines: {e}")
@@ -33,14 +34,17 @@ except ImportError as e:
 __all__ = []
 
 if _imports_available:
-    __all__.extend([
-        "ProcessingEngineFactory",
-        "get_processing_engine_factory",
-        "process_with_engine",
-        "process_streaming",
-        "process_dask",
-        "process_daft"
-    ])
+    __all__.extend(
+        [
+            "ProcessingEngineFactory",
+            "get_processing_engine_factory",
+            "process_with_engine",
+            "process_streaming",
+            "process_dask",
+            "process_daft",
+        ]
+    )
+
 
 # Convenience function for quick engine selection
 def get_engine(engine_type: str):
@@ -64,6 +68,7 @@ def get_engine(engine_type: str):
         return process_daft
     else:
         raise ValueError(f"Unsupported engine type: {engine_type}")
+
 
 if _imports_available:
     __all__.append("get_engine")

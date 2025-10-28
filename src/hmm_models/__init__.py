@@ -10,9 +10,4 @@ from .factory import HMMModelFactory
 from .gaussian_hmm import GaussianHMMModel
 from .gmm_hmm import GMMHMMModel
 
-__all__ = [
-    'BaseHMMModel',
-    'GaussianHMMModel',
-    'GMMHMMModel',
-    'HMMModelFactory'
-]
+__all__ = ["BaseHMMModel", "GaussianHMMModel", "GMMHMMModel", "HMMModelFactory"]

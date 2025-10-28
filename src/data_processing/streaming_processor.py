@@ -16,6 +16,7 @@ from tqdm import tqdm
 
 from utils.data_types import CSVFormat
 from utils.logging_config import get_logger
+
 from .feature_engineering import FeatureEngineer
 
 logger = get_logger(__name__)
@@ -23,6 +24,7 @@ logger = get_logger(__name__)
 
 class DataProcessingError(Exception):
     """Data processing specific errors"""
+
     pass
 
 
@@ -51,12 +53,12 @@ class StreamingDataProcessor:
         self.memory_usage_mb = 0.0
         self.start_time = None
 
-        logger.info(f"Initialized streaming processor: chunk_size={self.chunk_size}, mode={self.processing_mode.value}")
+        logger.info(
+            f"Initialized streaming processor: chunk_size={self.chunk_size}, mode={self.processing_mode.value}"
+        )
 
     async def process_stream(
-        self,
-        csv_path: Path,
-        feature_engineer: FeatureEngineer
+        self, csv_path: Path, feature_engineer: FeatureEngineer
     ) -> pd.DataFrame:
         """
         Process large CSV files in streaming fashion.
@@ -80,10 +82,14 @@ class StreamingDataProcessor:
 
             if should_stream:
                 # Process in chunks
-                result = await self._process_chunks(csv_path, feature_engineer, csv_format)
+                result = await self._process_chunks(
+                    csv_path, feature_engineer, csv_format
+                )
             else:
                 # Process entire file at once
-                result = await self._process_entire_file(csv_path, feature_engineer, csv_format)
+                result = await self._process_entire_file(
+                    csv_path, feature_engineer, csv_format
+                )
 
             # Log processing statistics
             self._log_processing_stats(len(result))
@@ -92,7 +98,7 @@ class StreamingDataProcessor:
 
         except Exception as e:
             logger.error(f"Stream processing failed: {e}")
-            raise DataProcessingError(f"Stream processing failed: {e}")
+            raise DataProcessingError(f"Stream processing failed: {e}") from e
 
     def _validate_csv_format(self, csv_path: Path) -> CSVFormat:
         """
@@ -116,29 +122,46 @@ class StreamingDataProcessor:
             # Detect format type
             if "DateTime" in first_chunk.columns:
                 format_type = "datetime"
-                required_columns = ["DateTime", "Open", "High", "Low", "Close", "Volume"]
+                required_columns = [
+                    "DateTime",
+                    "Open",
+                    "High",
+                    "Low",
+                    "Close",
+                    "Volume",
+                ]
             elif "Date" in first_chunk.columns and "Time" in first_chunk.columns:
                 format_type = "date_time"
-                required_columns = ["Date", "Time", "Open", "High", "Low", "Last", "Volume"]
+                required_columns = [
+                    "Date",
+                    "Time",
+                    "Open",
+                    "High",
+                    "Low",
+                    "Last",
+                    "Volume",
+                ]
             else:
                 raise ValueError("Unrecognized CSV format")
 
             # Check required columns
-            missing_columns = [col for col in required_columns if col not in first_chunk.columns]
+            missing_columns = [
+                col for col in required_columns if col not in first_chunk.columns
+            ]
             if missing_columns:
                 raise ValueError(f"Missing required columns: {missing_columns}")
 
             csv_format = CSVFormat(
                 format_type=format_type,
                 columns=first_chunk.columns.tolist(),
-                required_columns=required_columns
+                required_columns=required_columns,
             )
 
             logger.info(f"CSV format detected: {format_type}")
             return csv_format
 
         except Exception as e:
-            raise DataProcessingError(f"CSV format validation failed: {e}")
+            raise DataProcessingError(f"CSV format validation failed: {e}") from e
 
     def _should_use_streaming(self, csv_path: Path) -> bool:
         """
@@ -160,10 +183,7 @@ class StreamingDataProcessor:
             return file_size_mb > self.max_memory_mb
 
     async def _process_chunks(
-        self,
-        csv_path: Path,
-        feature_engineer: FeatureEngineer,
-        csv_format: CSVFormat
+        self, csv_path: Path, feature_engineer: FeatureEngineer, csv_format: CSVFormat
     ) -> pd.DataFrame:
         """
         Process CSV file in chunks.
@@ -212,7 +232,9 @@ class StreamingDataProcessor:
                     logger.warning(f"Skipping chunk {chunk_num} due to error: {e}")
                     continue
                 else:
-                    raise DataProcessingError(f"Failed to process chunk {chunk_num}: {e}")
+                    raise DataProcessingError(
+                        f"Failed to process chunk {chunk_num}: {e}"
+                    ) from e
 
         if pbar:
             pbar.close()
@@ -227,10 +249,7 @@ class StreamingDataProcessor:
         return result
 
     async def _process_entire_file(
-        self,
-        csv_path: Path,
-        feature_engineer: FeatureEngineer,
-        csv_format: CSVFormat
+        self, csv_path: Path, feature_engineer: FeatureEngineer, csv_format: CSVFormat
     ) -> pd.DataFrame:
         """
         Process entire CSV file at once.
@@ -258,9 +277,7 @@ class StreamingDataProcessor:
         return result
 
     def _create_chunk_iterator(
-        self,
-        csv_path: Path,
-        csv_format: CSVFormat
+        self, csv_path: Path, csv_format: CSVFormat
     ) -> Iterator[Tuple[int, pd.DataFrame]]:
         """
         Create iterator for reading CSV in chunks.
@@ -273,9 +290,7 @@ class StreamingDataProcessor:
             Tuple of (chunk_number, chunk_dataframe)
         """
         chunk_reader = pd.read_csv(
-            csv_path,
-            chunksize=self.chunk_size,
-            dtype=self._get_dtypes()
+            csv_path, chunksize=self.chunk_size, dtype=self._get_dtypes()
         )
 
         yield from enumerate(chunk_reader, 1)
@@ -289,15 +304,12 @@ class StreamingDataProcessor:
                 "Low": "float32",
                 "Close": "float32",
                 "Last": "float32",
-                "Volume": "float32"
+                "Volume": "float32",
             }
         return {}
 
     async def _process_chunk(
-        self,
-        chunk: pd.DataFrame,
-        feature_engineer: FeatureEngineer,
-        chunk_num: int
+        self, chunk: pd.DataFrame, feature_engineer: FeatureEngineer, chunk_num: int
     ) -> Optional[pd.DataFrame]:
         """
         Process individual chunk with feature engineering.
@@ -324,7 +336,9 @@ class StreamingDataProcessor:
 
                 except Exception as e:
                     if attempt < self.config.max_retries - 1:
-                        logger.warning(f"Chunk {chunk_num} attempt {attempt + 1} failed: {e}. Retrying...")
+                        logger.warning(
+                            f"Chunk {chunk_num} attempt {attempt + 1} failed: {e}. Retrying..."
+                        )
                         await asyncio.sleep(self.config.retry_delay)
                     else:
                         raise
@@ -373,7 +387,9 @@ class StreamingDataProcessor:
 
         return chunk
 
-    def _preprocess_dataframe(self, df: pd.DataFrame, csv_format: CSVFormat) -> pd.DataFrame:
+    def _preprocess_dataframe(
+        self, df: pd.DataFrame, csv_format: CSVFormat
+    ) -> pd.DataFrame:
         """
         Preprocess entire dataframe.
 
@@ -419,6 +435,7 @@ class StreamingDataProcessor:
         # Update memory usage if possible
         try:
             import psutil
+
             process = psutil.Process()
             self.memory_usage_mb = process.memory_info().rss / (1024 * 1024)
         except ImportError:
@@ -428,7 +445,9 @@ class StreamingDataProcessor:
         """Log processing statistics"""
         if self.start_time:
             processing_time = (datetime.now() - self.start_time).total_seconds()
-            rows_per_second = final_row_count / processing_time if processing_time > 0 else 0
+            rows_per_second = (
+                final_row_count / processing_time if processing_time > 0 else 0
+            )
 
             logger.info(
                 f"Processing completed: {final_row_count} rows in {processing_time:.2f}s "
@@ -444,5 +463,5 @@ class StreamingDataProcessor:
             "total_rows_processed": self.total_rows_processed,
             "memory_usage_mb": self.memory_usage_mb,
             "chunk_size": self.chunk_size,
-            "processing_mode": self.processing_mode.value
+            "processing_mode": self.processing_mode.value,
         }

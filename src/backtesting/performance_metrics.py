@@ -27,28 +27,28 @@ def infer_trading_frequency(equity_curve: pd.Series) -> str:
         Inferred frequency ('daily', 'weekly', 'monthly', 'hourly', etc.)
     """
     if len(equity_curve) < 2:
-        return 'daily'  # Default assumption
+        return "daily"  # Default assumption
 
     # Calculate time differences
     time_diffs = equity_curve.index.to_series().diff().dropna()
 
     if len(time_diffs) == 0:
-        return 'daily'
+        return "daily"
 
     # Get the most common time difference
     median_diff = time_diffs.median()
 
     # Determine frequency based on time difference
     if median_diff <= pd.Timedelta(hours=1):
-        return 'hourly'
+        return "hourly"
     elif median_diff <= pd.Timedelta(days=1):
-        return 'daily'
+        return "daily"
     elif median_diff <= pd.Timedelta(weeks=1):
-        return 'weekly'
+        return "weekly"
     elif median_diff <= pd.Timedelta(days=31):
-        return 'monthly'
+        return "monthly"
     else:
-        return 'quarterly'
+        return "quarterly"
 
 
 def get_annualization_factor(frequency: str) -> float:
@@ -62,18 +62,20 @@ def get_annualization_factor(frequency: str) -> float:
         Annualization factor
     """
     frequency_factors = {
-        'hourly': 365 * 24,      # 8760 hours per year
-        'daily': 252,           # 252 trading days per year
-        'weekly': 52,           # 52 weeks per year
-        'monthly': 12,          # 12 months per year
-        'quarterly': 4,         # 4 quarters per year
-        'annual': 1,            # 1 year per year
+        "hourly": 365 * 24,  # 8760 hours per year
+        "daily": 252,  # 252 trading days per year
+        "weekly": 52,  # 52 weeks per year
+        "monthly": 12,  # 12 months per year
+        "quarterly": 4,  # 4 quarters per year
+        "annual": 1,  # 1 year per year
     }
 
     return frequency_factors.get(frequency, 252)  # Default to daily
 
 
-def calculate_returns(equity_curve: pd.Series, frequency: Optional[str] = None) -> pd.Series:
+def calculate_returns(
+    equity_curve: pd.Series, frequency: Optional[str] = None
+) -> pd.Series:
     """
     Calculate returns from equity curve.
 
@@ -90,13 +92,14 @@ def calculate_returns(equity_curve: pd.Series, frequency: Optional[str] = None) 
 
     returns = equity_curve.pct_change().fillna(0)
 
-    logger.debug(f"Calculated returns: mean={returns.mean():.6f}, std={returns.std():.6f}")
+    logger.debug(
+        f"Calculated returns: mean={returns.mean():.6f}, std={returns.std():.6f}"
+    )
     return returns
 
 
 def calculate_annualized_return(
-    equity_curve: pd.Series,
-    frequency: Optional[str] = None
+    equity_curve: pd.Series, frequency: Optional[str] = None
 ) -> float:
     """
     Calculate compound annualized return (CAGR).
@@ -132,8 +135,7 @@ def calculate_annualized_return(
 
 
 def calculate_annualized_volatility(
-    returns: pd.Series,
-    frequency: Optional[str] = None
+    returns: pd.Series, frequency: Optional[str] = None
 ) -> float:
     """
     Calculate annualized volatility.
@@ -157,14 +159,16 @@ def calculate_annualized_volatility(
     # Calculate annualized volatility
     annualized_volatility = returns.std() * np.sqrt(annualization_factor)
 
-    logger.debug(f"Annualized volatility: {annualized_volatility:.4f} (factor: {annualization_factor})")
+    logger.debug(
+        f"Annualized volatility: {annualized_volatility:.4f} (factor: {annualization_factor})"
+    )
     return annualized_volatility
 
 
 def calculate_sharpe_ratio(
     equity_curve: pd.Series,
     risk_free_rate: float = 0.02,
-    frequency: Optional[str] = None
+    frequency: Optional[str] = None,
 ) -> float:
     """
     Calculate Sharpe ratio.
@@ -215,10 +219,10 @@ def calculate_drawdown_metrics(equity_curve: pd.Series) -> Dict[str, float]:
     """
     if len(equity_curve) < 2:
         return {
-            'max_drawdown': 0.0,
-            'max_drawdown_duration': 0,
-            'avg_drawdown': 0.0,
-            'drawdown_recovery_time': 0.0
+            "max_drawdown": 0.0,
+            "max_drawdown_duration": 0,
+            "avg_drawdown": 0.0,
+            "drawdown_recovery_time": 0.0,
         }
 
     # Calculate running maximum
@@ -254,7 +258,7 @@ def calculate_drawdown_metrics(equity_curve: pd.Series) -> Dict[str, float]:
     drawdown_start = None
 
     for i in range(1, len(drawdown)):
-        if drawdown.iloc[i-1] < 0 and drawdown.iloc[i] >= 0:
+        if drawdown.iloc[i - 1] < 0 and drawdown.iloc[i] >= 0:
             # End of drawdown period
             if drawdown_start is not None:
                 recovery_time = i - drawdown_start
@@ -268,19 +272,20 @@ def calculate_drawdown_metrics(equity_curve: pd.Series) -> Dict[str, float]:
     avg_recovery_time = np.mean(recovery_times) if recovery_times else 0.0
 
     drawdown_metrics = {
-        'max_drawdown': max_drawdown,
-        'max_drawdown_duration': int(max_drawdown_duration),
-        'avg_drawdown': avg_drawdown,
-        'avg_recovery_time': avg_recovery_time
+        "max_drawdown": max_drawdown,
+        "max_drawdown_duration": int(max_drawdown_duration),
+        "avg_drawdown": avg_drawdown,
+        "avg_recovery_time": avg_recovery_time,
     }
 
-    logger.debug(f"Drawdown metrics: max={max_drawdown:.4f}, duration={max_drawdown_duration}")
+    logger.debug(
+        f"Drawdown metrics: max={max_drawdown:.4f}, duration={max_drawdown_duration}"
+    )
     return drawdown_metrics
 
 
 def calculate_calmar_ratio(
-    equity_curve: pd.Series,
-    risk_free_rate: float = 0.02
+    equity_curve: pd.Series, risk_free_rate: float = 0.02
 ) -> float:
     """
     Calculate Calmar ratio (annualized return / absolute max drawdown).
@@ -300,10 +305,10 @@ def calculate_calmar_ratio(
 
     # Calculate maximum drawdown
     drawdown_metrics = calculate_drawdown_metrics(equity_curve)
-    max_drawdown = abs(drawdown_metrics['max_drawdown'])
+    max_drawdown = abs(drawdown_metrics["max_drawdown"])
 
     if max_drawdown == 0:
-        return 0.0 if annualized_return == 0 else float('inf')
+        return 0.0 if annualized_return == 0 else float("inf")
 
     calmar_ratio = annualized_return / max_drawdown
 
@@ -315,7 +320,7 @@ def calculate_performance(
     equity_curve: pd.Series,
     risk_free_rate: float = 0.02,
     benchmark_curve: Optional[pd.Series] = None,
-    frequency: Optional[str] = None
+    frequency: Optional[str] = None,
 ) -> PerformanceMetrics:
     """
     Calculate comprehensive performance metrics.
@@ -339,7 +344,7 @@ def calculate_performance(
             annualized_volatility=0.0,
             sharpe_ratio=0.0,
             max_drawdown=0.0,
-            max_drawdown_duration=0
+            max_drawdown_duration=0,
         )
 
     # Infer frequency if not provided
@@ -360,8 +365,8 @@ def calculate_performance(
 
     # Calculate drawdown metrics
     drawdown_metrics = calculate_drawdown_metrics(equity_curve)
-    max_drawdown = drawdown_metrics['max_drawdown']
-    max_drawdown_duration = drawdown_metrics['max_drawdown_duration']
+    max_drawdown = drawdown_metrics["max_drawdown"]
+    max_drawdown_duration = drawdown_metrics["max_drawdown_duration"]
 
     # Calculate Calmar ratio
     calmar_ratio = calculate_calmar_ratio(equity_curve, risk_free_rate)
@@ -374,7 +379,7 @@ def calculate_performance(
         sharpe_ratio=sharpe_ratio,
         max_drawdown=max_drawdown,
         max_drawdown_duration=max_drawdown_duration,
-        calmar_ratio=calmar_ratio
+        calmar_ratio=calmar_ratio,
     )
 
     logger.info("Core performance metrics calculated:")
@@ -398,40 +403,42 @@ def validate_performance_metrics(metrics: PerformanceMetrics) -> Dict[str, Any]:
     Returns:
         Dictionary with validation results
     """
-    validation_results = {
-        'valid': True,
-        'warnings': [],
-        'errors': []
-    }
+    validation_results = {"valid": True, "warnings": [], "errors": []}
 
     # Check for impossible values
     if metrics.annualized_volatility < 0:
-        validation_results['errors'].append("Annualized volatility cannot be negative")
-        validation_results['valid'] = False
+        validation_results["errors"].append("Annualized volatility cannot be negative")
+        validation_results["valid"] = False
 
     if metrics.max_drawdown > 0:
-        validation_results['errors'].append("Maximum drawdown should be negative or zero")
-        validation_results['valid'] = False
+        validation_results["errors"].append(
+            "Maximum drawdown should be negative or zero"
+        )
+        validation_results["valid"] = False
 
     if metrics.max_drawdown_duration < 0:
-        validation_results['errors'].append("Maximum drawdown duration cannot be negative")
-        validation_results['valid'] = False
+        validation_results["errors"].append(
+            "Maximum drawdown duration cannot be negative"
+        )
+        validation_results["valid"] = False
 
     # Check for suspicious values
     if abs(metrics.annualized_return) > 10:  # > 1000% annual return
-        validation_results['warnings'].append("Extremely high annualized return detected")
+        validation_results["warnings"].append(
+            "Extremely high annualized return detected"
+        )
 
     if metrics.annualized_volatility > 5:  # > 500% annual volatility
-        validation_results['warnings'].append("Extremely high volatility detected")
+        validation_results["warnings"].append("Extremely high volatility detected")
 
     if abs(metrics.sharpe_ratio) > 10:
-        validation_results['warnings'].append("Extremely high Sharpe ratio detected")
+        validation_results["warnings"].append("Extremely high Sharpe ratio detected")
 
     # Check for reasonable relationships
     if metrics.calmar_ratio != 0 and metrics.annualized_return != 0:
         expected_calmar = metrics.annualized_return / abs(metrics.max_drawdown)
         if abs(metrics.calmar_ratio - expected_calmar) > 0.1:
-            validation_results['warnings'].append("Calmar ratio inconsistency detected")
+            validation_results["warnings"].append("Calmar ratio inconsistency detected")
 
     return validation_results
 

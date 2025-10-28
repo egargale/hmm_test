@@ -5,7 +5,7 @@ Simple test for Dask Engine core functionality without complex metadata issues.
 
 import sys
 
-sys.path.insert(0, '/home/1966enrico/src/hmm_test/src')
+sys.path.insert(0, "/home/1966enrico/src/hmm_test/src")
 
 from pathlib import Path
 
@@ -17,15 +17,15 @@ def create_test_csv():
     """Create a simple test CSV for Dask testing."""
     # Generate synthetic OHLCV data
     np.random.seed(42)
-    dates = pd.date_range('2023-01-01', periods=100, freq='D')
+    dates = pd.date_range("2023-01-01", periods=100, freq="D")
 
     data = {
-        'datetime': dates,
-        'open': np.random.randn(100).cumsum() + 100,
-        'high': 0,
-        'low': 0,
-        'close': 0,
-        'volume': np.random.randint(1000, 10000, 100)
+        "datetime": dates,
+        "open": np.random.randn(100).cumsum() + 100,
+        "high": 0,
+        "low": 0,
+        "close": 0,
+        "volume": np.random.randint(1000, 10000, 100),
     }
 
     # Create realistic OHLC data
@@ -34,7 +34,7 @@ def create_test_csv():
     close_values = []
 
     for i in range(100):
-        base_price = data['open'][i]
+        base_price = data["open"][i]
         change = np.random.randn() * 2
         close = base_price + change
         high = max(base_price, close) + abs(np.random.randn())
@@ -44,13 +44,14 @@ def create_test_csv():
         high_values.append(high)
         low_values.append(low)
 
-    data['close'] = close_values
-    data['high'] = high_values
-    data['low'] = low_values
+    data["close"] = close_values
+    data["high"] = high_values
+    data["low"] = low_values
 
     df = pd.DataFrame(data)
-    df.to_csv('test_dask_simple.csv', index=False)
-    return 'test_dask_simple.csv'
+    df.to_csv("test_dask_simple.csv", index=False)
+    return "test_dask_simple.csv"
+
 
 def test_dask_engine_simple():
     """Test Dask engine with a simple CSV."""
@@ -69,7 +70,7 @@ def test_dask_engine_simple():
         config = ProcessingConfig(
             engine_type="dask",
             enable_validation=False,  # Disable validation for simplicity
-            downcast_floats=True
+            downcast_floats=True,
         )
 
         print("  ✅ Dask engine imported successfully")
@@ -78,11 +79,7 @@ def test_dask_engine_simple():
         print("  🔄 Testing Dask processing...")
 
         ddf = process_dask(
-            csv_path,
-            config,
-            scheduler="threads",
-            npartitions=4,
-            show_progress=False
+            csv_path, config, scheduler="threads", npartitions=4, show_progress=False
         )
 
         print(f"  ✅ Dask DataFrame created with {ddf.npartitions} partitions")
@@ -94,10 +91,12 @@ def test_dask_engine_simple():
         # Use a more direct approach to computation
         try:
             result = ddf.compute()
-            print(f"  ✅ Computation successful: {len(result)} rows, {len(result.columns)} columns")
+            print(
+                f"  ✅ Computation successful: {len(result)} rows, {len(result.columns)} columns"
+            )
 
             # Verify basic structure
-            required_cols = ['open', 'high', 'low', 'close', 'volume']
+            required_cols = ["open", "high", "low", "close", "volume"]
             missing_cols = [col for col in required_cols if col not in result.columns]
 
             if missing_cols:
@@ -111,8 +110,12 @@ def test_dask_engine_simple():
 
             # Basic data validation
             if len(result) > 0:
-                print(f"  ✅ Data range check - Close: {result['close'].min():.2f} to {result['close'].max():.2f}")
-                print(f"  ✅ Volume range - Volume: {result['volume'].min()} to {result['volume'].max()}")
+                print(
+                    f"  ✅ Data range check - Close: {result['close'].min():.2f} to {result['close'].max():.2f}"
+                )
+                print(
+                    f"  ✅ Volume range - Volume: {result['volume'].min()} to {result['volume'].max()}"
+                )
 
             print("  🎉 Dask engine test PASSED!")
             return True
@@ -132,6 +135,7 @@ def test_dask_engine_simple():
         if Path(csv_path).exists():
             Path(csv_path).unlink()
 
+
 def test_dask_different_schedulers():
     """Test Dask engine with different schedulers."""
     print("\n🔄 Testing different Dask schedulers...")
@@ -144,9 +148,7 @@ def test_dask_different_schedulers():
         from utils.config import ProcessingConfig
 
         config = ProcessingConfig(
-            engine_type="dask",
-            enable_validation=False,
-            downcast_floats=True
+            engine_type="dask", enable_validation=False, downcast_floats=True
         )
 
         schedulers = ["threads", "synchronous"]
@@ -160,14 +162,16 @@ def test_dask_different_schedulers():
                     config,
                     scheduler=scheduler,
                     npartitions=2,
-                    show_progress=False
+                    show_progress=False,
                 )
 
                 # Try to compute just first partition to avoid metadata issues
                 with ddf.config.set(scheduler=scheduler):
                     result = ddf.get_partition(0).compute()
 
-                print(f"    ✅ {scheduler}: {len(result)} rows, {len(result.columns)} columns")
+                print(
+                    f"    ✅ {scheduler}: {len(result)} rows, {len(result.columns)} columns"
+                )
 
             except Exception as e:
                 print(f"    ❌ {scheduler}: Failed - {e}")
@@ -180,6 +184,7 @@ def test_dask_different_schedulers():
         # Clean up
         if Path(csv_path).exists():
             Path(csv_path).unlink()
+
 
 if __name__ == "__main__":
     success1 = test_dask_engine_simple()

@@ -12,12 +12,13 @@ import time
 from pathlib import Path
 
 # Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent / 'src'))
+sys.path.insert(0, str(Path(__file__).parent / "src"))
+
 
 def test_cli_components():
     """Test CLI integration components."""
     print("🧪 Testing CLI Integration Components")
-    print("="*50)
+    print("=" * 50)
 
     # Test 1: Configuration classes
     print("\n1. Testing Configuration Classes...")
@@ -25,14 +26,14 @@ def test_cli_components():
         from cli_comprehensive import HMMConfig, ProcessingConfig
 
         # Test HMMConfig
-        hmm_config = HMMConfig(n_states=4, covariance_type='diag')
+        hmm_config = HMMConfig(n_states=4, covariance_type="diag")
         config_dict = hmm_config.to_dict()
         print(f"✅ HMMConfig created: {len(config_dict)} parameters")
         print(f"   n_states: {config_dict['n_states']}")
         print(f"   covariance_type: {config_dict['covariance_type']}")
 
         # Test ProcessingConfig
-        proc_config = ProcessingConfig(engine_type='dask', chunk_size=50000)
+        proc_config = ProcessingConfig(engine_type="dask", chunk_size=50000)
         print("✅ ProcessingConfig created:")
         print(f"   engine_type: {proc_config.engine_type}")
         print(f"   chunk_size: {proc_config.chunk_size}")
@@ -51,8 +52,7 @@ def test_cli_components():
         time.sleep(0.1)  # Simulate work
 
         metrics = log_performance_metrics(
-            start_time, "test_operation",
-            {'test_param': 'test_value', 'test_count': 42}
+            start_time, "test_operation", {"test_param": "test_value", "test_count": 42}
         )
 
         print("✅ Performance metrics logged:")
@@ -69,19 +69,12 @@ def test_cli_components():
     try:
         # Create test config file
         test_config = {
-            "hmm": {
-                "n_states": 5,
-                "covariance_type": "full",
-                "n_iter": 200
-            },
-            "processing": {
-                "engine_type": "dask",
-                "chunk_size": 50000
-            }
+            "hmm": {"n_states": 5, "covariance_type": "full", "n_iter": 200},
+            "processing": {"engine_type": "dask", "chunk_size": 50000},
         }
 
         test_config_path = Path("test_config.json")
-        with open(test_config_path, 'w') as f:
+        with open(test_config_path, "w") as f:
             json.dump(test_config, f, indent=2)
 
         print(f"✅ Test configuration created: {test_config_path}")
@@ -102,7 +95,7 @@ def test_cli_components():
 def test_cli_command_structure():
     """Test CLI command structure without full execution."""
     print("\n🧪 Testing CLI Command Structure")
-    print("="*50)
+    print("=" * 50)
 
     try:
         import click.testing
@@ -114,7 +107,7 @@ def test_cli_command_structure():
 
         # Test command registration
         commands = [cmd.name for cmd in cli.commands.values()]
-        expected_commands = ['validate', 'analyze', 'infer', 'model-info', 'version']
+        expected_commands = ["validate", "analyze", "infer", "model-info", "version"]
 
         print(f"✅ Commands registered: {commands}")
 
@@ -126,12 +119,12 @@ def test_cli_command_structure():
 
         # Test help functionality
         runner = click.testing.CliRunner()
-        result = runner.invoke(cli, ['--help'])
+        result = runner.invoke(cli, ["--help"])
         print("✅ Help command executes successfully")
         print(f"   Output length: {len(result.output)} characters")
 
         # Test version command
-        result = runner.invoke(cli, ['version'])
+        result = runner.invoke(cli, ["version"])
         print("✅ Version command executes successfully")
         print(f"   Output: {result.output.strip()}")
 
@@ -145,7 +138,7 @@ def test_cli_command_structure():
 def test_error_handling():
     """Test CLI error handling mechanisms."""
     print("\n🧪 Testing CLI Error Handling")
-    print("="*50)
+    print("=" * 50)
 
     try:
         import click.testing
@@ -156,7 +149,7 @@ def test_error_handling():
 
         # Test non-existent file handling
         print("Testing non-existent file handling...")
-        result = runner.invoke(cli, ['validate', '--input-csv', 'nonexistent.csv'])
+        result = runner.invoke(cli, ["validate", "--input-csv", "nonexistent.csv"])
 
         if result.exit_code != 0:
             print("✅ Non-existent file correctly rejected")
@@ -165,7 +158,7 @@ def test_error_handling():
 
         # Test invalid parameter handling
         print("Testing invalid parameter handling...")
-        result = runner.invoke(cli, ['analyze', '--n-states', '1'])  # Below minimum
+        result = runner.invoke(cli, ["analyze", "--n-states", "1"])  # Below minimum
 
         if result.exit_code != 0:
             print("✅ Invalid parameter correctly rejected")
@@ -182,7 +175,7 @@ def test_error_handling():
 def test_memory_monitoring():
     """Test memory monitoring functionality."""
     print("\n🧪 Testing Memory Monitoring")
-    print("="*50)
+    print("=" * 50)
 
     try:
         from cli_comprehensive import check_memory_usage, get_memory_usage
@@ -206,7 +199,7 @@ def test_memory_monitoring():
 def run_integration_tests():
     """Run all CLI integration tests."""
     print("🚀 Running CLI Integration Tests")
-    print("="*60)
+    print("=" * 60)
 
     tests = [
         ("Component Tests", test_cli_components),
@@ -218,7 +211,7 @@ def run_integration_tests():
     results = []
 
     for test_name, test_func in tests:
-        print(f"\n{'='*20} {test_name} {'='*20}")
+        print(f"\n{'=' * 20} {test_name} {'=' * 20}")
         try:
             success = test_func()
             results.append((test_name, success))
@@ -227,9 +220,9 @@ def run_integration_tests():
             results.append((test_name, False))
 
     # Summary
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("📊 Test Results Summary")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     passed = sum(1 for _, success in results if success)
     total = len(results)

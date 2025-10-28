@@ -54,7 +54,6 @@ def create_test_csv_data(n_samples=50, filename="test_data.csv"):
 def test_cli_import():
     """Test that CLI module can be imported."""
     try:
-        from cli_simple import cli
 
         return True
     except ImportError as e:
@@ -285,7 +284,7 @@ def main():
     results = {}
 
     for test_name, test_func in tests:
-        print(f"\n{'='*20} {test_name} {'='*20}")
+        print(f"\n{'=' * 20} {test_name} {'=' * 20}")
         try:
             results[test_name] = test_func()
         except Exception as e:

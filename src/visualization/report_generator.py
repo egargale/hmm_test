@@ -17,20 +17,19 @@ import pandas as pd
 # Jinja2 for templating
 from jinja2 import Template
 
-# WeasyPrint for PDF generation (optional)
-WEASYPRINT_AVAILABLE = False
-
+# Local imports
 from backtesting.performance_metrics import calculate_returns
 from utils import get_logger
 from utils.data_types import BacktestResult, PerformanceMetrics
+
+# WeasyPrint for PDF generation (optional)
+WEASYPRINT_AVAILABLE = False
 
 logger = get_logger(__name__)
 
 
 def analyze_regime_characteristics(
-    states: np.ndarray,
-    indicators: pd.DataFrame,
-    equity_curve: pd.Series
+    states: np.ndarray, indicators: pd.DataFrame, equity_curve: pd.Series
 ) -> Dict[int, Dict[str, Any]]:
     """
     Analyze characteristics of each HMM regime.
@@ -46,17 +45,16 @@ def analyze_regime_characteristics(
     logger.info("Analyzing regime characteristics")
 
     # Create combined DataFrame
-    data_df = pd.DataFrame({
-        'state': states,
-        'equity': equity_curve
-    }, index=equity_curve.index)
+    data_df = pd.DataFrame(
+        {"state": states, "equity": equity_curve}, index=equity_curve.index
+    )
 
     # Add indicators if available
     for col in indicators.columns:
         data_df[col] = indicators[col]
 
     # Calculate returns
-    data_df['returns'] = calculate_returns(data_df['equity'])
+    data_df["returns"] = calculate_returns(data_df["equity"])
 
     # Analyze each state
     regime_analysis = {}
@@ -64,19 +62,19 @@ def analyze_regime_characteristics(
     unique_states = unique_states[unique_states >= 0]  # Skip negative states
 
     for state in unique_states:
-        state_data = data_df[data_df['state'] == state]
+        state_data = data_df[data_df["state"] == state]
 
         if len(state_data) == 0:
             continue
 
         analysis = {
-            'state_id': int(state),
-            'sample_size': len(state_data),
-            'percentage': len(state_data) / len(data_df) * 100,
-            'duration_stats': calculate_duration_stats(states, state),
-            'return_stats': calculate_return_stats(state_data['returns']),
-            'volatility_stats': calculate_volatility_stats(state_data['returns']),
-            'indicator_stats': {}
+            "state_id": int(state),
+            "sample_size": len(state_data),
+            "percentage": len(state_data) / len(data_df) * 100,
+            "duration_stats": calculate_duration_stats(states, state),
+            "return_stats": calculate_return_stats(state_data["returns"]),
+            "volatility_stats": calculate_volatility_stats(state_data["returns"]),
+            "indicator_stats": {},
         }
 
         # Analyze indicators for this state
@@ -84,12 +82,12 @@ def analyze_regime_characteristics(
             if indicator in state_data.columns:
                 indicator_data = state_data[indicator].dropna()
                 if len(indicator_data) > 0:
-                    analysis['indicator_stats'][indicator] = {
-                        'mean': float(indicator_data.mean()),
-                        'std': float(indicator_data.std()),
-                        'min': float(indicator_data.min()),
-                        'max': float(indicator_data.max()),
-                        'median': float(indicator_data.median())
+                    analysis["indicator_stats"][indicator] = {
+                        "mean": float(indicator_data.mean()),
+                        "std": float(indicator_data.std()),
+                        "min": float(indicator_data.min()),
+                        "max": float(indicator_data.max()),
+                        "median": float(indicator_data.median()),
                     }
 
         regime_analysis[state] = analysis
@@ -127,21 +125,21 @@ def calculate_duration_stats(states: np.ndarray, target_state: int) -> Dict[str,
 
     if not durations:
         return {
-            'mean_duration': 0.0,
-            'median_duration': 0.0,
-            'max_duration': 0.0,
-            'min_duration': 0.0,
-            'std_duration': 0.0,
-            'total_periods': 0
+            "mean_duration": 0.0,
+            "median_duration": 0.0,
+            "max_duration": 0.0,
+            "min_duration": 0.0,
+            "std_duration": 0.0,
+            "total_periods": 0,
         }
 
     return {
-        'mean_duration': float(np.mean(durations)),
-        'median_duration': float(np.median(durations)),
-        'max_duration': float(np.max(durations)),
-        'min_duration': float(np.min(durations)),
-        'std_duration': float(np.std(durations)),
-        'total_periods': len(durations)
+        "mean_duration": float(np.mean(durations)),
+        "median_duration": float(np.median(durations)),
+        "max_duration": float(np.max(durations)),
+        "min_duration": float(np.min(durations)),
+        "std_duration": float(np.std(durations)),
+        "total_periods": len(durations),
     }
 
 
@@ -159,23 +157,23 @@ def calculate_return_stats(returns: pd.Series) -> Dict[str, float]:
 
     if len(returns_clean) == 0:
         return {
-            'mean_daily_return': 0.0,
-            'annualized_return': 0.0,
-            'return_std': 0.0,
-            'return_skewness': 0.0,
-            'return_kurtosis': 0.0,
-            'positive_return_pct': 0.0,
-            'negative_return_pct': 0.0
+            "mean_daily_return": 0.0,
+            "annualized_return": 0.0,
+            "return_std": 0.0,
+            "return_skewness": 0.0,
+            "return_kurtosis": 0.0,
+            "positive_return_pct": 0.0,
+            "negative_return_pct": 0.0,
         }
 
     return {
-        'mean_daily_return': float(returns_clean.mean()),
-        'annualized_return': float(returns_clean.mean() * 252),
-        'return_std': float(returns_clean.std()),
-        'return_skewness': float(returns_clean.skew()),
-        'return_kurtosis': float(returns_clean.kurtosis()),
-        'positive_return_pct': float((returns_clean > 0).mean() * 100),
-        'negative_return_pct': float((returns_clean < 0).mean() * 100)
+        "mean_daily_return": float(returns_clean.mean()),
+        "annualized_return": float(returns_clean.mean() * 252),
+        "return_std": float(returns_clean.std()),
+        "return_skewness": float(returns_clean.skew()),
+        "return_kurtosis": float(returns_clean.kurtosis()),
+        "positive_return_pct": float((returns_clean > 0).mean() * 100),
+        "negative_return_pct": float((returns_clean < 0).mean() * 100),
     }
 
 
@@ -193,10 +191,10 @@ def calculate_volatility_stats(returns: pd.Series) -> Dict[str, float]:
 
     if len(returns_clean) == 0:
         return {
-            'daily_volatility': 0.0,
-            'annualized_volatility': 0.0,
-            'downside_volatility': 0.0,
-            'volatility_of_volatility': 0.0
+            "daily_volatility": 0.0,
+            "annualized_volatility": 0.0,
+            "downside_volatility": 0.0,
+            "volatility_of_volatility": 0.0,
         }
 
     daily_vol = returns_clean.std()
@@ -204,17 +202,19 @@ def calculate_volatility_stats(returns: pd.Series) -> Dict[str, float]:
 
     # Downside volatility (returns < 0)
     downside_returns = returns_clean[returns_clean < 0]
-    downside_vol = downside_returns.std() * np.sqrt(252) if len(downside_returns) > 0 else 0.0
+    downside_vol = (
+        downside_returns.std() * np.sqrt(252) if len(downside_returns) > 0 else 0.0
+    )
 
     # Volatility of volatility (rolling std)
     rolling_vol = returns_clean.rolling(window=21).std().dropna()
     vol_of_vol = rolling_vol.std() if len(rolling_vol) > 0 else 0.0
 
     return {
-        'daily_volatility': float(daily_vol),
-        'annualized_volatility': float(annualized_vol),
-        'downside_volatility': float(downside_vol),
-        'volatility_of_volatility': float(vol_of_vol)
+        "daily_volatility": float(daily_vol),
+        "annualized_volatility": float(annualized_vol),
+        "downside_volatility": float(downside_vol),
+        "volatility_of_volatility": float(vol_of_vol),
     }
 
 
@@ -254,16 +254,15 @@ def calculate_transition_matrix(states: np.ndarray) -> pd.DataFrame:
     # Create DataFrame
     transition_df = pd.DataFrame(
         transition_matrix,
-        index=[f'State {int(s)}' for s in unique_states],
-        columns=[f'State {int(s)}' for s in unique_states]
+        index=[f"State {int(s)}" for s in unique_states],
+        columns=[f"State {int(s)}" for s in unique_states],
     )
 
     return transition_df
 
 
 def create_regime_charts_data(
-    regime_analysis: Dict[int, Dict[str, Any]],
-    transition_matrix: pd.DataFrame
+    regime_analysis: Dict[int, Dict[str, Any]], transition_matrix: pd.DataFrame
 ) -> Dict[str, str]:
     """
     Create base64 encoded charts for the report.
@@ -284,84 +283,99 @@ def create_regime_charts_data(
         import seaborn as sns
 
         # Set style
-        plt.style.use('seaborn-v0_8')
+        plt.style.use("seaborn-v0_8")
         sns.set_palette("husl")
 
         # 1. State Distribution Pie Chart
         fig, ax = plt.subplots(figsize=(8, 6))
         state_labels = [f"State {k}" for k in regime_analysis.keys()]
-        state_sizes = [v['percentage'] for v in regime_analysis.values()]
+        state_sizes = [v["percentage"] for v in regime_analysis.values()]
 
-        ax.pie(state_sizes, labels=state_labels, autopct='%1.1f%%', startangle=90)
-        ax.set_title('Regime Distribution', fontsize=14, fontweight='bold')
+        ax.pie(state_sizes, labels=state_labels, autopct="%1.1f%%", startangle=90)
+        ax.set_title("Regime Distribution", fontsize=14, fontweight="bold")
 
         # Convert to base64
         img_buffer = io.BytesIO()
-        plt.savefig(img_buffer, format='png', dpi=150, bbox_inches='tight')
+        plt.savefig(img_buffer, format="png", dpi=150, bbox_inches="tight")
         img_buffer.seek(0)
-        charts_data['state_distribution'] = base64.b64encode(img_buffer.read()).decode()
+        charts_data["state_distribution"] = base64.b64encode(img_buffer.read()).decode()
         plt.close()
 
         # 2. Transition Matrix Heatmap
         fig, ax = plt.subplots(figsize=(10, 8))
-        sns.heatmap(transition_matrix, annot=True, cmap='Blues',
-                   square=True, fmt='.2f', cbar_kws={'label': 'Transition Probability'})
-        ax.set_title('State Transition Matrix', fontsize=14, fontweight='bold')
-        ax.set_xlabel('To State')
-        ax.set_ylabel('From State')
+        sns.heatmap(
+            transition_matrix,
+            annot=True,
+            cmap="Blues",
+            square=True,
+            fmt=".2f",
+            cbar_kws={"label": "Transition Probability"},
+        )
+        ax.set_title("State Transition Matrix", fontsize=14, fontweight="bold")
+        ax.set_xlabel("To State")
+        ax.set_ylabel("From State")
 
         # Convert to base64
         img_buffer = io.BytesIO()
-        plt.savefig(img_buffer, format='png', dpi=150, bbox_inches='tight')
+        plt.savefig(img_buffer, format="png", dpi=150, bbox_inches="tight")
         img_buffer.seek(0)
-        charts_data['transition_matrix'] = base64.b64encode(img_buffer.read()).decode()
+        charts_data["transition_matrix"] = base64.b64encode(img_buffer.read()).decode()
         plt.close()
 
         # 3. Regime Performance Comparison
         fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(15, 10))
 
         states = list(regime_analysis.keys())
-        returns = [regime_analysis[s]['return_stats']['annualized_return'] for s in states]
-        volatilities = [regime_analysis[s]['volatility_stats']['annualized_volatility'] for s in states]
-        durations = [regime_analysis[s]['duration_stats']['mean_duration'] for s in states]
-        positive_returns = [regime_analysis[s]['return_stats']['positive_return_pct'] for s in states]
+        returns = [
+            regime_analysis[s]["return_stats"]["annualized_return"] for s in states
+        ]
+        volatilities = [
+            regime_analysis[s]["volatility_stats"]["annualized_volatility"]
+            for s in states
+        ]
+        durations = [
+            regime_analysis[s]["duration_stats"]["mean_duration"] for s in states
+        ]
+        positive_returns = [
+            regime_analysis[s]["return_stats"]["positive_return_pct"] for s in states
+        ]
 
         # Annualized Returns
-        ax1.bar(range(len(states)), returns, color='skyblue')
-        ax1.set_title('Annualized Returns by Regime')
-        ax1.set_ylabel('Annualized Return')
+        ax1.bar(range(len(states)), returns, color="skyblue")
+        ax1.set_title("Annualized Returns by Regime")
+        ax1.set_ylabel("Annualized Return")
         ax1.set_xticks(range(len(states)))
-        ax1.set_xticklabels([f'State {s}' for s in states])
-        ax1.axhline(y=0, color='black', linestyle='-', alpha=0.3)
+        ax1.set_xticklabels([f"State {s}" for s in states])
+        ax1.axhline(y=0, color="black", linestyle="-", alpha=0.3)
 
         # Volatility
-        ax2.bar(range(len(states)), volatilities, color='lightcoral')
-        ax2.set_title('Annualized Volatility by Regime')
-        ax2.set_ylabel('Annualized Volatility')
+        ax2.bar(range(len(states)), volatilities, color="lightcoral")
+        ax2.set_title("Annualized Volatility by Regime")
+        ax2.set_ylabel("Annualized Volatility")
         ax2.set_xticks(range(len(states)))
-        ax2.set_xticklabels([f'State {s}' for s in states])
+        ax2.set_xticklabels([f"State {s}" for s in states])
 
         # Average Duration
-        ax3.bar(range(len(states)), durations, color='lightgreen')
-        ax3.set_title('Average Duration by Regime')
-        ax3.set_ylabel('Average Duration (periods)')
+        ax3.bar(range(len(states)), durations, color="lightgreen")
+        ax3.set_title("Average Duration by Regime")
+        ax3.set_ylabel("Average Duration (periods)")
         ax3.set_xticks(range(len(states)))
-        ax3.set_xticklabels([f'State {s}' for s in states])
+        ax3.set_xticklabels([f"State {s}" for s in states])
 
         # Positive Return Percentage
-        ax4.bar(range(len(states)), positive_returns, color='gold')
-        ax4.set_title('Positive Return Percentage by Regime')
-        ax4.set_ylabel('Positive Returns (%)')
+        ax4.bar(range(len(states)), positive_returns, color="gold")
+        ax4.set_title("Positive Return Percentage by Regime")
+        ax4.set_ylabel("Positive Returns (%)")
         ax4.set_xticks(range(len(states)))
-        ax4.set_xticklabels([f'State {s}' for s in states])
+        ax4.set_xticklabels([f"State {s}" for s in states])
 
         plt.tight_layout()
 
         # Convert to base64
         img_buffer = io.BytesIO()
-        plt.savefig(img_buffer, format='png', dpi=150, bbox_inches='tight')
+        plt.savefig(img_buffer, format="png", dpi=150, bbox_inches="tight")
         img_buffer.seek(0)
-        charts_data['regime_performance'] = base64.b64encode(img_buffer.read()).decode()
+        charts_data["regime_performance"] = base64.b64encode(img_buffer.read()).decode()
         plt.close()
 
         logger.info("Created all charts successfully")
@@ -379,7 +393,7 @@ def generate_html_report(
     transition_matrix: pd.DataFrame,
     metrics: PerformanceMetrics,
     result: BacktestResult,
-    config: Optional[Dict[str, Any]] = None
+    config: Optional[Dict[str, Any]] = None,
 ) -> str:
     """
     Generate HTML report content.
@@ -765,13 +779,15 @@ def generate_html_report(
 
     # Prepare template data
     template_data = {
-        'title': config.get('title', 'HMM Strategy Regime Analysis Report') if config else 'HMM Strategy Regime Analysis Report',
-        'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        'num_regimes': len(regime_analysis),
-        'metrics': metrics,
-        'regime_analysis': regime_analysis,
-        'transition_matrix': transition_matrix,
-        'charts_data': charts_data
+        "title": config.get("title", "HMM Strategy Regime Analysis Report")
+        if config
+        else "HMM Strategy Regime Analysis Report",
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "num_regimes": len(regime_analysis),
+        "metrics": metrics,
+        "regime_analysis": regime_analysis,
+        "transition_matrix": transition_matrix,
+        "charts_data": charts_data,
     }
 
     # Render template
@@ -786,7 +802,7 @@ def generate_regime_report(
     indicators: Optional[pd.DataFrame] = None,
     config: Optional[Dict[str, Any]] = None,
     output_path: Optional[str] = None,
-    format: str = 'html'
+    format: str = "html",
 ) -> str:
     """
     Generate a detailed regime analysis report.
@@ -807,10 +823,10 @@ def generate_regime_report(
 
     # Default configuration
     default_config = {
-        'title': 'HMM Strategy Regime Analysis Report',
-        'include_charts': True,
-        'include_indicators': True,
-        'chart_style': 'seaborn'
+        "title": "HMM Strategy Regime Analysis Report",
+        "include_charts": True,
+        "include_indicators": True,
+        "chart_style": "seaborn",
     }
 
     if config:
@@ -842,13 +858,15 @@ def generate_regime_report(
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Save report
-        if format.lower() == 'pdf':
+        if format.lower() == "pdf":
             # Try to import WeasyPrint only when needed
             try:
                 from weasyprint import CSS, HTML
+
                 # Convert HTML to PDF
                 html_doc = HTML(string=html_content)
-                css = CSS(string='''
+                css = CSS(
+                    string="""
                     @page {
                         size: A4;
                         margin: 2cm;
@@ -856,13 +874,16 @@ def generate_regime_report(
                     body {
                         font-size: 10pt;
                     }
-                ''')
+                """
+                )
                 html_doc.write_pdf(output_path, stylesheets=[css])
-            except ImportError:
-                raise ImportError("WeasyPrint is not available. Please install system dependencies or use HTML format.")
+            except ImportError as e:
+                raise ImportError(
+                    "WeasyPrint is not available. Please install system dependencies or use HTML format."
+                ) from e
         else:
             # Save as HTML
-            with open(output_path, 'w', encoding='utf-8') as f:
+            with open(output_path, "w", encoding="utf-8") as f:
                 f.write(html_content)
 
         logger.info(f"Regime analysis report saved to: {output_path}")

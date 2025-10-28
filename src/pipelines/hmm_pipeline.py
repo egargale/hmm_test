@@ -18,6 +18,7 @@ from data_processing.streaming_processor import StreamingDataProcessor
 from model_training.hmm_trainer import train_single_hmm_model
 from model_training.model_persistence import get_model_info, load_model, save_model
 from utils.logging_config import get_logger
+
 from .pipeline_types import (
     PipelineConfig,
     PipelineResult,
@@ -36,10 +37,7 @@ class HMMTrainer:
     def train(self, features, n_components=3, **kwargs):
         """Train HMM model using the underlying train_single_hmm_model function."""
         return train_single_hmm_model(
-            features=features,
-            n_components=n_components,
-            config=self.config,
-            **kwargs
+            features=features, n_components=n_components, config=self.config, **kwargs
         )
 
 
@@ -51,12 +49,7 @@ class ModelPersistence:
 
     def save(self, model, scaler, filepath, **kwargs):
         """Save model and scaler using the underlying save_model function."""
-        return save_model(
-            model=model,
-            scaler=scaler,
-            filepath=filepath,
-            **kwargs
-        )
+        return save_model(model=model, scaler=scaler, filepath=filepath, **kwargs)
 
     def load(self, filepath, **kwargs):
         """Load model and scaler using the underlying load_model function."""
@@ -66,21 +59,25 @@ class ModelPersistence:
         """Get model info using the underlying get_model_info function."""
         return get_model_info(path=filepath, **kwargs)
 
+
 logger = get_logger(__name__)
 
 
 class PipelineError(Exception):
     """Base pipeline exception"""
+
     pass
 
 
 class DataProcessingError(PipelineError):
     """Data processing specific errors"""
+
     pass
 
 
 class ModelTrainingError(PipelineError):
     """Model training specific errors"""
+
     pass
 
 
@@ -105,7 +102,7 @@ class HMMPipeline:
             pipeline_name=config.name,
             execution_time=0.0,
             status=PipelineStatus.PENDING,
-            stages_completed=[]
+            stages_completed=[],
         )
 
         # Initialize components
@@ -151,7 +148,7 @@ class HMMPipeline:
 
         except Exception as e:
             logger.error(f"Failed to initialize pipeline components: {e}")
-            raise PipelineError(f"Component initialization failed: {e}")
+            raise PipelineError(f"Component initialization failed: {e}") from e
 
     def _update_stage(self, stage: PipelineStage) -> None:
         """Update current pipeline stage"""
@@ -226,7 +223,7 @@ class HMMPipeline:
         if not data_path.exists():
             raise FileNotFoundError(f"Input file not found: {data_path}")
 
-        if not data_path.suffix.lower() == '.csv':
+        if not data_path.suffix.lower() == ".csv":
             raise ValueError(f"Expected CSV file, got: {data_path.suffix}")
 
         logger.info(f"Input validation passed: {data_path}")
@@ -250,7 +247,7 @@ class HMMPipeline:
             return processed_data
 
         except Exception as e:
-            raise DataProcessingError(f"Failed to load data: {e}")
+            raise DataProcessingError(f"Failed to load data: {e}") from e
 
     def _extract_features(self, data: pd.DataFrame) -> np.ndarray:
         """Extract features from processed data"""
@@ -275,7 +272,9 @@ class HMMPipeline:
                     # Drop rows with NaN values
                     valid_mask = ~np.isnan(features).any(axis=1)
                     features = features[valid_mask]
-                    logger.warning(f"Dropped {np.sum(~valid_mask)} rows with missing features")
+                    logger.warning(
+                        f"Dropped {np.sum(~valid_mask)} rows with missing features"
+                    )
                 else:
                     raise ValueError("Feature matrix contains NaN values")
 
@@ -287,7 +286,7 @@ class HMMPipeline:
             return features
 
         except Exception as e:
-            raise DataProcessingError(f"Feature extraction failed: {e}")
+            raise DataProcessingError(f"Feature extraction failed: {e}") from e
 
     async def _train_or_load_model(self, features: np.ndarray) -> tuple:
         """Train new model or load existing model"""
@@ -296,11 +295,16 @@ class HMMPipeline:
             start_time = time.perf_counter()
 
             # Check if we should load existing model
-            if self.config.persistence.model_path and self.config.persistence.model_path.exists():
+            if (
+                self.config.persistence.model_path
+                and self.config.persistence.model_path.exists()
+            ):
                 logger.info("Loading existing model...")
-                model_data = await self.persistence.load_model(self.config.persistence.model_path)
-                model = model_data['model']
-                scaler = model_data['scaler']
+                model_data = await self.persistence.load_model(
+                    self.config.persistence.model_path
+                )
+                model = model_data["model"]
+                scaler = model_data["scaler"]
 
                 # Apply scaling
                 features_scaled = scaler.transform(features)
@@ -315,10 +319,10 @@ class HMMPipeline:
 
                 # Update statistics
                 self.stats.training_time = time.perf_counter() - start_time
-                self.stats.convergence_iterations = training_metrics.get('n_iter', 0)
-                self.stats.log_likelihood = training_metrics.get('log_likelihood', 0.0)
-                self.stats.aic = training_metrics.get('aic')
-                self.stats.bic = training_metrics.get('bic')
+                self.stats.convergence_iterations = training_metrics.get("n_iter", 0)
+                self.stats.log_likelihood = training_metrics.get("log_likelihood", 0.0)
+                self.stats.aic = training_metrics.get("aic")
+                self.stats.bic = training_metrics.get("bic")
 
                 # Save model if configured
                 if self.config.persistence.save_model:
@@ -331,17 +335,22 @@ class HMMPipeline:
             states = model.predict(features_scaled)
 
             # Apply lookahead bias prevention if configured
-            if hasattr(self.config, 'prevent_lookahead') and self.config.prevent_lookahead:
+            if (
+                hasattr(self.config, "prevent_lookahead")
+                and self.config.prevent_lookahead
+            ):
                 states = np.roll(states, 1)
                 states[0] = states[1]
 
             self.stats.inference_time = time.perf_counter() - start_time
 
-            logger.info(f"Model training/inference completed. States: {np.unique(states)}")
+            logger.info(
+                f"Model training/inference completed. States: {np.unique(states)}"
+            )
             return model, states
 
         except Exception as e:
-            raise ModelTrainingError(f"Model training/inference failed: {e}")
+            raise ModelTrainingError(f"Model training/inference failed: {e}") from e
 
     async def _save_model(self, model, scaler) -> None:
         """Save trained model"""
@@ -368,7 +377,7 @@ class HMMPipeline:
 
             # Add states to data
             result_data = data.copy()
-            result_data['state'] = states
+            result_data["state"] = states
 
             # Save results
             if self.config.persistence.save_results:
@@ -411,11 +420,15 @@ class HMMPipeline:
 
             # Save backtesting results
             if self.config.backtesting.save_trades:
-                trades_path = Path(f"backtest_trades_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv")
+                trades_path = Path(
+                    f"backtest_trades_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+                )
                 returns.to_csv(trades_path)
                 self.result.add_output_file("backtest_trades", trades_path)
 
-            logger.info(f"Backtesting completed. Sharpe: {performance_metrics.get('sharpe_ratio', 'N/A')}")
+            logger.info(
+                f"Backtesting completed. Sharpe: {performance_metrics.get('sharpe_ratio', 'N/A')}"
+            )
 
         except Exception as e:
             logger.error(f"Backtesting failed: {e}")
@@ -427,11 +440,13 @@ class HMMPipeline:
             self._update_stage(PipelineStage.VISUALIZATION)
 
             # Add execution summary
-            self.result.metadata.update({
-                'pipeline_config': self.config.to_dict(),
-                'processing_stats': self.stats.to_dict(),
-                'execution_timestamp': datetime.now().isoformat()
-            })
+            self.result.metadata.update(
+                {
+                    "pipeline_config": self.config.to_dict(),
+                    "processing_stats": self.stats.to_dict(),
+                    "execution_timestamp": datetime.now().isoformat(),
+                }
+            )
 
             logger.info("Pipeline reports generated")
 
@@ -447,9 +462,10 @@ class HMMPipeline:
         logger.info(f"Pipeline completed successfully in {execution_time:.2f} seconds")
 
     @classmethod
-    def from_config_file(cls, config_path: Path) -> 'HMMPipeline':
+    def from_config_file(cls, config_path: Path) -> "HMMPipeline":
         """Create pipeline from configuration file"""
         import yaml
+
         with open(config_path) as f:
             config_dict = yaml.safe_load(f)
 
@@ -457,7 +473,7 @@ class HMMPipeline:
         return cls(config)
 
     @classmethod
-    def from_args(cls, args) -> 'HMMPipeline':
+    def from_args(cls, args) -> "HMMPipeline":
         """Create pipeline from command line arguments (backward compatibility)"""
         # Convert legacy CLI args to new config format
         config = cls._convert_args_to_config(args)
@@ -479,24 +495,18 @@ class HMMPipeline:
 
         # Create training config
         training = TrainingConfig(
-            n_states=args.n_states,
-            n_iter=args.max_iter,
-            random_state=42,
-            verbose=True
+            n_states=args.n_states, n_iter=args.max_iter, random_state=42, verbose=True
         )
 
         # Create persistence config
         persistence = PersistenceConfig(
             model_path=Path(args.model_path) if args.model_path else None,
             save_model=bool(args.model_out),
-            model_path_save=Path(args.model_out) if args.model_out else None
+            model_path_save=Path(args.model_out) if args.model_out else None,
         )
 
         # Create streaming config
-        streaming = StreamingConfig(
-            chunk_size=args.chunksize,
-            show_progress=True
-        )
+        streaming = StreamingConfig(chunk_size=args.chunksize, show_progress=True)
 
         # Create backtesting config if enabled
         backtesting = None
@@ -510,11 +520,13 @@ class HMMPipeline:
             persistence=persistence,
             streaming=streaming,
             backtesting=backtesting,
-            input_path=Path(args.csv) if args.csv else None
+            input_path=Path(args.csv) if args.csv else None,
         )
 
         # Add legacy attributes
-        config.prevent_lookahead = args.prevent_lookahead if hasattr(args, 'prevent_lookahead') else False
-        config.plot = args.plot if hasattr(args, 'plot') else False
+        config.prevent_lookahead = (
+            args.prevent_lookahead if hasattr(args, "prevent_lookahead") else False
+        )
+        config.plot = args.plot if hasattr(args, "plot") else False
 
         return config

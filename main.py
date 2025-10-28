@@ -22,9 +22,9 @@ from tqdm import tqdm
 # Logging
 ###############################################################################
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s"
+    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
 )
+
 
 ###############################################################################
 # Feature engineering
@@ -40,9 +40,7 @@ def add_features(df: pd.DataFrame) -> pd.DataFrame:
     df["log_ret"] = np.log(df["Close"]).diff()
 
     # 2. ATR (volatility, window 3 - smallest possible for ATR calculation)
-    atr = AverageTrueRange(
-        high=df["High"], low=df["Low"], close=df["Close"], window=3
-    )
+    atr = AverageTrueRange(high=df["High"], low=df["Low"], close=df["Close"], window=3)
     df["atr"] = atr.average_true_range()
 
     # 3. Rate-of-change (momentum, window 3 - smallest for meaningful momentum)
@@ -59,14 +57,18 @@ def add_features(df: pd.DataFrame) -> pd.DataFrame:
     df["bb_high"] = bollinger.bollinger_hband()
     df["bb_low"] = bollinger.bollinger_lband()
     df["bb_width"] = bollinger.bollinger_wband()  # Band width as volatility measure
-    df["bb_position"] = (df["Close"] - df["bb_low"]) / (df["bb_high"] - df["bb_low"] + 1e-10)  # Position within bands
+    df["bb_position"] = (df["Close"] - df["bb_low"]) / (
+        df["bb_high"] - df["bb_low"] + 1e-10
+    )  # Position within bands
 
     # 6. ADX (trend strength, window 3 - smallest for ADX calculation)
     adx = ADXIndicator(high=df["High"], low=df["Low"], close=df["Close"], window=3)
     df["adx"] = adx.adx()
 
     # 7. Stochastic oscillator (momentum, window 3 - smallest possible)
-    stoch = StochasticOscillator(high=df["High"], low=df["Low"], close=df["Close"], window=3, smooth_window=3)
+    stoch = StochasticOscillator(
+        high=df["High"], low=df["Low"], close=df["Close"], window=3, smooth_window=3
+    )
     df["stoch"] = stoch.stoch()
     df["stoch_signal"] = stoch.stoch_signal()
 
@@ -74,18 +76,19 @@ def add_features(df: pd.DataFrame) -> pd.DataFrame:
     df["sma_5_ratio"] = df["Close"] / df["Close"].rolling(window=5).mean()
 
     # 9. Price position relative to high/low (trend)
-    df["hl_ratio"] = (df["Close"] - df["Low"]) / (df["High"] - df["Low"] + 1e-10)  # Adding small value to avoid division by zero
+    df["hl_ratio"] = (df["Close"] - df["Low"]) / (
+        df["High"] - df["Low"] + 1e-10
+    )  # Adding small value to avoid division by zero
 
     # 10. Volume features (volume ratio to short-term average)
     df["volume_sma"] = df["Volume"].rolling(window=3).mean()
-    df["volume_ratio"] = df["Volume"] / (df["volume_sma"] + 1e-10)  # Adding small value to avoid division by zero
+    df["volume_ratio"] = df["Volume"] / (
+        df["volume_sma"] + 1e-10
+    )  # Adding small value to avoid division by zero
 
     # Drop NA rows caused by indicators
     df = df.dropna().reset_index(drop=True)
     return df
-
-
-
 
 
 ###############################################################################
@@ -118,9 +121,23 @@ def main(args):
     if len(feat_df) == 0:
         raise ValueError("No data remaining after feature engineering")
     if len(feat_df) < args.n_states:
-        raise ValueError(f"Insufficient data ({len(feat_df)} rows) for {args.n_states} states")
+        raise ValueError(
+            f"Insufficient data ({len(feat_df)} rows) for {args.n_states} states"
+        )
 
-    feature_cols = ["log_ret", "atr", "roc", "rsi", "bb_width", "bb_position", "adx", "stoch", "sma_5_ratio", "hl_ratio", "volume_ratio"]
+    feature_cols = [
+        "log_ret",
+        "atr",
+        "roc",
+        "rsi",
+        "bb_width",
+        "bb_position",
+        "adx",
+        "stoch",
+        "sma_5_ratio",
+        "hl_ratio",
+        "volume_ratio",
+    ]
     X = feat_df[feature_cols].values
 
     ###########################################################################
@@ -129,10 +146,10 @@ def main(args):
     if args.model_path and os.path.exists(args.model_path):
         try:
             logging.info("Loading pre-trained model and scaler ...")
-            with open(args.model_path, 'rb') as f:
+            with open(args.model_path, "rb") as f:
                 saved_data = pickle.load(f)
-            model = saved_data['model']
-            scaler = saved_data['scaler']
+            model = saved_data["model"]
+            scaler = saved_data["scaler"]
             X_scaled = scaler.transform(X)
         except Exception as e:
             logging.error("Failed to load model: %s", str(e))
@@ -165,11 +182,8 @@ def main(args):
         if args.model_out:
             try:
                 logging.info("Saving model and scaler to %s ...", args.model_out)
-                with open(args.model_out, 'wb') as f:
-                    pickle.dump({
-                        'model': model,
-                        'scaler': scaler
-                    }, f)
+                with open(args.model_out, "wb") as f:
+                    pickle.dump({"model": model, "scaler": scaler}, f)
             except Exception as e:
                 logging.error("Failed to save model: %s", str(e))
                 raise
@@ -220,6 +234,7 @@ def main(args):
     if args.plot:
         try:
             import matplotlib.pyplot as plt
+
             plt.figure(figsize=(14, 4))
             plt.plot(feat_df.index, feat_df["Close"], label="Close")
             for s in range(args.n_states):
@@ -249,14 +264,15 @@ def main(args):
 def simple_backtest(df: pd.DataFrame, states: np.ndarray) -> pd.Series:
     """Simple backtest using state-based positions."""
     position = np.zeros(len(df))
-    position[states == 0] = 1    # long low-vol up
-    position[states == 2] = -1   # short high-vol down
+    position[states == 0] = 1  # long low-vol up
+    position[states == 2] = -1  # short high-vol down
     # vectorized pnl (log return * signed position)
     df = df.copy()
-    df['next_ret'] = df['log_ret'].shift(-1)
-    pnl = df['next_ret'] * position
+    df["next_ret"] = df["log_ret"].shift(-1)
+    pnl = df["next_ret"] * position
     cum_pnl = pnl.dropna().cumsum()
     return cum_pnl
+
 
 def perf_metrics(series: pd.Series):
     """Annualized Sharpe & max drawdown assuming intraday data."""
@@ -264,6 +280,7 @@ def perf_metrics(series: pd.Series):
     sharpe = returns.mean() / returns.std() * np.sqrt(252 * 78)
     drawdown = (series - series.cummax()).min()
     return sharpe, drawdown
+
 
 ###############################################################################
 # Streaming reader for huge files
@@ -287,11 +304,17 @@ def stream_features(
         required_cols_v1 = ["DateTime", "Open", "High", "Low", "Close", "Volume"]
         required_cols_v2 = ["Date", "Time", "Open", "High", "Low", "Last", "Volume"]
 
-        missing_cols_v1 = [col for col in required_cols_v1 if col not in first_chunk.columns]
-        missing_cols_v2 = [col for col in required_cols_v2 if col not in first_chunk.columns]
+        missing_cols_v1 = [
+            col for col in required_cols_v1 if col not in first_chunk.columns
+        ]
+        missing_cols_v2 = [
+            col for col in required_cols_v2 if col not in first_chunk.columns
+        ]
 
         if missing_cols_v1 and missing_cols_v2:
-            raise ValueError(f"Missing required columns in CSV. Tried both formats. V1 missing: {missing_cols_v1}, V2 missing: {missing_cols_v2}")
+            raise ValueError(
+                f"Missing required columns in CSV. Tried both formats. V1 missing: {missing_cols_v1}, V2 missing: {missing_cols_v2}"
+            )
     except Exception as e:
         logging.error("Failed to validate CSV format: %s", str(e))
         raise
@@ -334,13 +357,15 @@ def stream_features(
                 chunk = chunk.rename(columns=rename_dict)
 
             # Downcast dtypes for memory efficiency
-            chunk = chunk.astype({
-                "Open": np.float32,
-                "High": np.float32,
-                "Low": np.float32,
-                "Close": np.float32,
-                "Volume": np.float32
-            })
+            chunk = chunk.astype(
+                {
+                    "Open": np.float32,
+                    "High": np.float32,
+                    "Low": np.float32,
+                    "Close": np.float32,
+                    "Volume": np.float32,
+                }
+            )
             frames.append(add_features(chunk))
         except Exception as e:
             logging.error("Failed to process chunk: %s", str(e))
@@ -350,13 +375,12 @@ def stream_features(
     logging.info("Features computed. Total rows: %d", len(full))
     return full
 
+
 ###############################################################################
 # CLI
 ###############################################################################
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Train HMM on huge futures CSV"
-    )
+    parser = argparse.ArgumentParser(description="Train HMM on huge futures CSV")
     parser.add_argument("csv", help="Path to futures OHLCV CSV")
     parser.add_argument(
         "-n",
@@ -404,5 +428,3 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     main(args)
-
-

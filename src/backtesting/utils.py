@@ -17,9 +17,7 @@ logger = get_logger(__name__)
 
 
 def validate_backtest_inputs(
-    states: np.ndarray,
-    prices: pd.Series,
-    config: BacktestConfig
+    states: np.ndarray, prices: pd.Series, config: BacktestConfig
 ) -> None:
     """
     Validate inputs for backtesting.
@@ -42,7 +40,9 @@ def validate_backtest_inputs(
         raise ValueError("Prices must be a pandas Series")
 
     if len(states) != len(prices):
-        raise ValueError(f"States length ({len(states)}) must match prices length ({len(prices)})")
+        raise ValueError(
+            f"States length ({len(states)}) must match prices length ({len(prices)})"
+        )
 
     if len(states) == 0:
         raise ValueError("Cannot backtest with empty data")
@@ -51,20 +51,25 @@ def validate_backtest_inputs(
         raise ValueError("Config must be a BacktestConfig instance")
 
     if not config.state_map:
-        raise ValueError("State map cannot be empty. Configure state mappings in BacktestConfig.")
+        raise ValueError(
+            "State map cannot be empty. Configure state mappings in BacktestConfig."
+        )
 
     # Validate state map contains only valid states
     max_state = np.max(states)
     invalid_states = [state for state in config.state_map.keys() if state > max_state]
     if invalid_states:
-        raise ValueError(f"State map contains states not present in data: {invalid_states}")
+        raise ValueError(
+            f"State map contains states not present in data: {invalid_states}"
+        )
 
-    logger.debug(f"Validation passed: {len(states)} samples, {len(config.state_map)} state mappings")
+    logger.debug(
+        f"Validation passed: {len(states)} samples, {len(config.state_map)} state mappings"
+    )
 
 
 def calculate_transaction_costs(
-    trade_value: float,
-    config: BacktestConfig
+    trade_value: float, config: BacktestConfig
 ) -> Tuple[float, float]:
     """
     Calculate transaction costs for a trade.
@@ -90,7 +95,7 @@ def create_sample_price_data(
     initial_price: float = 100.0,
     volatility: float = 0.02,
     drift: float = 0.0001,
-    frequency: str = 'D'
+    frequency: str = "D",
 ) -> pd.Series:
     """
     Create synthetic price data for testing.
@@ -116,15 +121,13 @@ def create_sample_price_data(
         prices.append(prices[-1] * (1 + ret))
 
     # Create datetime index
-    dates = pd.date_range('2020-01-01', periods=n_samples, freq=frequency)
+    dates = pd.date_range("2020-01-01", periods=n_samples, freq=frequency)
 
-    return pd.Series(prices, index=dates, name='price')
+    return pd.Series(prices, index=dates, name="price")
 
 
 def create_sample_state_sequence(
-    n_samples: int = 1000,
-    n_states: int = 3,
-    transition_probability: float = 0.05
+    n_samples: int = 1000, n_states: int = 3, transition_probability: float = 0.05
 ) -> np.ndarray:
     """
     Create synthetic state sequence for testing.
@@ -155,9 +158,7 @@ def create_sample_state_sequence(
 
 
 def align_state_and_price_data(
-    states: np.ndarray,
-    prices: pd.Series,
-    alignment_method: str = 'intersection'
+    states: np.ndarray, prices: pd.Series, alignment_method: str = "intersection"
 ) -> Tuple[np.ndarray, pd.Series]:
     """
     Align state and price data.
@@ -170,18 +171,20 @@ def align_state_and_price_data(
     Returns:
         Tuple of aligned (states, prices)
     """
-    if alignment_method == 'intersection':
+    if alignment_method == "intersection":
         # This is the default case where indices should already match
         if len(states) != len(prices):
-            raise ValueError(f"Length mismatch: states={len(states)}, prices={len(prices)}")
+            raise ValueError(
+                f"Length mismatch: states={len(states)}, prices={len(prices)}"
+            )
         return states, prices
 
-    elif alignment_method == 'states_to_prices':
+    elif alignment_method == "states_to_prices":
         # Truncate states to match prices length
         min_length = min(len(states), len(prices))
         return states[:min_length], prices.iloc[:min_length]
 
-    elif alignment_method == 'prices_to_states':
+    elif alignment_method == "prices_to_states":
         # Truncate prices to match states length
         min_length = min(len(states), len(prices))
         return states[:min_length], prices.iloc[:min_length]
@@ -191,9 +194,7 @@ def align_state_and_price_data(
 
 
 def calculate_position_returns(
-    positions: pd.Series,
-    prices: pd.Series,
-    position_size: float = 1.0
+    positions: pd.Series, prices: pd.Series, position_size: float = 1.0
 ) -> pd.Series:
     """
     Calculate returns from position series and price changes.
@@ -219,9 +220,7 @@ def calculate_position_returns(
 
 
 def analyze_regime_performance(
-    states: np.ndarray,
-    returns: pd.Series,
-    state_names: Optional[List[str]] = None
+    states: np.ndarray, returns: pd.Series, state_names: Optional[List[str]] = None
 ) -> Dict[int, Dict[str, float]]:
     """
     Analyze performance by regime/state.
@@ -249,22 +248,26 @@ def analyze_regime_performance(
         state_returns = returns[state_mask]
 
         state_analysis = {
-            'count': np.sum(state_mask),
-            'percentage': np.sum(state_mask) / len(states) * 100,
-            'mean_return': state_returns.mean(),
-            'std_return': state_returns.std(),
-            'sharpe_ratio': state_returns.mean() / state_returns.std() if state_returns.std() > 0 else 0,
-            'total_return': (1 + state_returns).prod() - 1,
-            'max_return': state_returns.max(),
-            'min_return': state_returns.min(),
-            'positive_return_periods': np.sum(state_returns > 0),
-            'negative_return_periods': np.sum(state_returns < 0),
-            'win_rate': np.sum(state_returns > 0) / len(state_returns) if len(state_returns) > 0 else 0
+            "count": np.sum(state_mask),
+            "percentage": np.sum(state_mask) / len(states) * 100,
+            "mean_return": state_returns.mean(),
+            "std_return": state_returns.std(),
+            "sharpe_ratio": state_returns.mean() / state_returns.std()
+            if state_returns.std() > 0
+            else 0,
+            "total_return": (1 + state_returns).prod() - 1,
+            "max_return": state_returns.max(),
+            "min_return": state_returns.min(),
+            "positive_return_periods": np.sum(state_returns > 0),
+            "negative_return_periods": np.sum(state_returns < 0),
+            "win_rate": np.sum(state_returns > 0) / len(state_returns)
+            if len(state_returns) > 0
+            else 0,
         }
 
         # Add state name if provided
         if state_names and state < len(state_names):
-            state_analysis['state_name'] = state_names[state]
+            state_analysis["state_name"] = state_names[state]
 
         analysis[state] = state_analysis
 
@@ -272,9 +275,7 @@ def analyze_regime_performance(
 
 
 def calculate_rolling_regime_metrics(
-    states: np.ndarray,
-    returns: pd.Series,
-    window: int = 252
+    states: np.ndarray, returns: pd.Series, window: int = 252
 ) -> pd.DataFrame:
     """
     Calculate rolling metrics by regime.
@@ -291,21 +292,22 @@ def calculate_rolling_regime_metrics(
         raise ValueError("States and returns must have same length")
 
     # Create DataFrame with states and returns
-    df = pd.DataFrame({
-        'state': states,
-        'return': returns
-    })
+    df = pd.DataFrame({"state": states, "return": returns})
 
     rolling_metrics = pd.DataFrame(index=returns.index)
 
     # Calculate rolling metrics for each state
     for state in np.unique(states):
-        state_mask = df['state'] == state
-        state_returns = df['return'].where(state_mask)
+        state_mask = df["state"] == state
+        state_returns = df["return"].where(state_mask)
 
-        rolling_metrics[f'state_{state}_count'] = state_mask.rolling(window).sum()
-        rolling_metrics[f'state_{state}_mean_return'] = state_returns.rolling(window).mean()
-        rolling_metrics[f'state_{state}_volatility'] = state_returns.rolling(window).std()
+        rolling_metrics[f"state_{state}_count"] = state_mask.rolling(window).sum()
+        rolling_metrics[f"state_{state}_mean_return"] = state_returns.rolling(
+            window
+        ).mean()
+        rolling_metrics[f"state_{state}_volatility"] = state_returns.rolling(
+            window
+        ).std()
 
     return rolling_metrics
 
@@ -325,18 +327,26 @@ def create_trade_log_dataframe(trades: List) -> pd.DataFrame:
 
     trade_data = []
     for trade in trades:
-        trade_data.append({
-            'entry_time': trade.entry_time,
-            'entry_price': trade.entry_price,
-            'exit_time': trade.exit_time,
-            'exit_price': trade.exit_price,
-            'size': trade.size,
-            'pnl': trade.pnl,
-            'commission': trade.commission,
-            'slippage': trade.slippage,
-            'duration_days': (trade.exit_time - trade.entry_time).days if trade.exit_time else None,
-            'direction': 'LONG' if trade.size > 0 else 'SHORT' if trade.size < 0 else 'FLAT'
-        })
+        trade_data.append(
+            {
+                "entry_time": trade.entry_time,
+                "entry_price": trade.entry_price,
+                "exit_time": trade.exit_time,
+                "exit_price": trade.exit_price,
+                "size": trade.size,
+                "pnl": trade.pnl,
+                "commission": trade.commission,
+                "slippage": trade.slippage,
+                "duration_days": (trade.exit_time - trade.entry_time).days
+                if trade.exit_time
+                else None,
+                "direction": "LONG"
+                if trade.size > 0
+                else "SHORT"
+                if trade.size < 0
+                else "FLAT",
+            }
+        )
 
     return pd.DataFrame(trade_data)
 
@@ -352,24 +362,24 @@ def calculate_monthly_returns(equity_curve: pd.Series) -> pd.DataFrame:
         DataFrame with monthly returns
     """
     # Resample to month end
-    monthly_equity = equity_curve.resample('M').last()
+    monthly_equity = equity_curve.resample("M").last()
 
     # Calculate monthly returns
     monthly_returns = monthly_equity.pct_change().fillna(0)
 
     # Create DataFrame with additional information
-    monthly_df = pd.DataFrame({
-        'equity': monthly_equity,
-        'return': monthly_returns,
-        'cumulative_return': (monthly_equity / monthly_equity.iloc[0] - 1)
-    })
+    monthly_df = pd.DataFrame(
+        {
+            "equity": monthly_equity,
+            "return": monthly_returns,
+            "cumulative_return": (monthly_equity / monthly_equity.iloc[0] - 1),
+        }
+    )
 
     return monthly_df
 
 
-def calculate_correlation_matrix(
-    returns_dict: Dict[str, pd.Series]
-) -> pd.DataFrame:
+def calculate_correlation_matrix(returns_dict: Dict[str, pd.Series]) -> pd.DataFrame:
     """
     Calculate correlation matrix for multiple return series.
 

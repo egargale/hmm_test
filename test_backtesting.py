@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 
 # Add src to path
-sys.path.insert(0, 'src')
+sys.path.insert(0, "src")
 
 from backtesting.performance_analyzer import (
     analyze_performance,
@@ -36,10 +36,16 @@ def test_basic_backtesting():
     try:
         # Create sample data
         print("Creating sample price and state data...")
-        prices = create_sample_price_data(n_samples=100, initial_price=100.0, volatility=0.02)
-        states = create_sample_state_sequence(n_samples=100, n_states=3, transition_probability=0.1)
+        prices = create_sample_price_data(
+            n_samples=100, initial_price=100.0, volatility=0.02
+        )
+        states = create_sample_state_sequence(
+            n_samples=100, n_states=3, transition_probability=0.1
+        )
 
-        print(f"✓ Created sample data: {len(prices)} price points, {len(states)} states")
+        print(
+            f"✓ Created sample data: {len(prices)} price points, {len(states)} states"
+        )
 
         # Create backtest configuration
         config = BacktestConfig(
@@ -47,7 +53,7 @@ def test_basic_backtesting():
             commission_per_trade=5.0,
             slippage_bps=2.0,  # 2 basis points
             position_size=1.0,
-            state_map={0: 1, 1: -1, 2: 0}  # State 0=Long, 1=Short, 2=Flat
+            state_map={0: 1, 1: -1, 2: 0},  # State 0=Long, 1=Short, 2=Flat
         )
 
         print(f"✓ Created backtest config: {config.state_map}")
@@ -62,18 +68,23 @@ def test_basic_backtesting():
         print(f"  - Position distribution: {positions.value_counts().to_dict()}")
 
         if trades:
-            print(f"  - Sample trade: Entry={trades[0].entry_price}, P&L={trades[0].pnl:.2f}")
+            print(
+                f"  - Sample trade: Entry={trades[0].entry_price}, P&L={trades[0].pnl:.2f}"
+            )
 
         # Test position returns calculation
         print("\nTesting position returns calculation...")
         position_returns = calculate_position_returns(positions, prices)
-        print(f"✓ Position returns calculated: mean={position_returns.mean():.6f}, std={position_returns.std():.6f}")
+        print(
+            f"✓ Position returns calculated: mean={position_returns.mean():.6f}, std={position_returns.std():.6f}"
+        )
 
         return True
 
     except Exception as e:
         print(f"✗ Basic backtesting test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -92,24 +103,18 @@ def test_transaction_costs():
         # Test with different cost configurations
         configs = [
             BacktestConfig(
-                commission_per_trade=0.0,
-                slippage_bps=0.0,
-                state_map={0: 1, 1: -1}
+                commission_per_trade=0.0, slippage_bps=0.0, state_map={0: 1, 1: -1}
             ),
             BacktestConfig(
-                commission_per_trade=5.0,
-                slippage_bps=2.0,
-                state_map={0: 1, 1: -1}
+                commission_per_trade=5.0, slippage_bps=2.0, state_map={0: 1, 1: -1}
             ),
             BacktestConfig(
-                commission_per_trade=10.0,
-                slippage_bps=5.0,
-                state_map={0: 1, 1: -1}
-            )
+                commission_per_trade=10.0, slippage_bps=5.0, state_map={0: 1, 1: -1}
+            ),
         ]
 
         for i, config in enumerate(configs):
-            print(f"\nTesting cost configuration {i+1}:")
+            print(f"\nTesting cost configuration {i + 1}:")
             print(f"  - Commission: ${config.commission_per_trade:.2f}")
             print(f"  - Slippage: {config.slippage_bps} bps")
 
@@ -123,7 +128,7 @@ def test_transaction_costs():
                 print(f"  - Total commission: ${total_commission:.2f}")
                 print(f"  - Total slippage: ${total_slippage:.2f}")
                 print(f"  - Total costs: ${total_costs:.2f}")
-                print(f"  - Avg cost per trade: ${total_costs/len(trades):.2f}")
+                print(f"  - Avg cost per trade: ${total_costs / len(trades):.2f}")
 
         print("✓ Transaction cost calculations completed successfully")
         return True
@@ -131,6 +136,7 @@ def test_transaction_costs():
     except Exception as e:
         print(f"✗ Transaction cost test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -143,13 +149,15 @@ def test_lookahead_bias_prevention():
 
     try:
         # Create sample data
-        prices = create_sample_price_data(n_samples=100, initial_price=100.0, volatility=0.01)
-        states = create_sample_state_sequence(n_samples=100, n_states=2, transition_probability=0.2)
+        prices = create_sample_price_data(
+            n_samples=100, initial_price=100.0, volatility=0.01
+        )
+        states = create_sample_state_sequence(
+            n_samples=100, n_states=2, transition_probability=0.2
+        )
 
         config = BacktestConfig(
-            commission_per_trade=0.0,
-            slippage_bps=0.0,
-            state_map={0: 1, 1: -1}
+            commission_per_trade=0.0, slippage_bps=0.0, state_map={0: 1, 1: -1}
         )
 
         # Test with lookahead bias prevention (default)
@@ -186,6 +194,7 @@ def test_lookahead_bias_prevention():
     except Exception as e:
         print(f"✗ Lookahead bias prevention test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -198,19 +207,25 @@ def test_performance_analysis():
 
     try:
         # Create sample data
-        prices = create_sample_price_data(n_samples=252, initial_price=100.0, volatility=0.02, drift=0.0005)
-        states = create_sample_state_sequence(n_samples=252, n_states=3, transition_probability=0.05)
+        prices = create_sample_price_data(
+            n_samples=252, initial_price=100.0, volatility=0.02, drift=0.0005
+        )
+        states = create_sample_state_sequence(
+            n_samples=252, n_states=3, transition_probability=0.05
+        )
 
         config = BacktestConfig(
             initial_capital=100000.0,
             commission_per_trade=5.0,
             slippage_bps=2.0,
-            state_map={0: 1, 1: -1, 2: 0}
+            state_map={0: 1, 1: -1, 2: 0},
         )
 
         # Run backtest with analysis
         print("Running backtest with performance analysis...")
-        result = backtest_with_analysis(states, prices, config, initial_capital=100000.0)
+        result = backtest_with_analysis(
+            states, prices, config, initial_capital=100000.0
+        )
 
         # Analyze performance
         print("Analyzing performance metrics...")
@@ -239,6 +254,7 @@ def test_performance_analysis():
     except Exception as e:
         print(f"✗ Performance analysis test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -251,22 +267,30 @@ def test_regime_performance():
 
     try:
         # Create sample data with known regime characteristics
-        prices = create_sample_price_data(n_samples=500, initial_price=100.0, volatility=0.02)
-        states = create_sample_state_sequence(n_samples=500, n_states=3, transition_probability=0.05)
+        prices = create_sample_price_data(
+            n_samples=500, initial_price=100.0, volatility=0.02
+        )
+        states = create_sample_state_sequence(
+            n_samples=500, n_states=3, transition_probability=0.05
+        )
 
         # Create returns from prices
         returns = prices.pct_change().fillna(0)
 
         # Analyze performance by regime
         print("Analyzing performance by regime...")
-        regime_analysis = analyze_regime_performance(states, returns, state_names=['Bull', 'Bear', 'Neutral'])
+        regime_analysis = analyze_regime_performance(
+            states, returns, state_names=["Bull", "Bear", "Neutral"]
+        )
 
         print(f"✓ Regime analysis completed for {len(regime_analysis)} regimes:")
 
         for state, metrics in regime_analysis.items():
-            state_name = metrics.get('state_name', f'State_{state}')
+            state_name = metrics.get("state_name", f"State_{state}")
             print(f"  - {state_name}:")
-            print(f"    * Occurrences: {metrics['count']} ({metrics['percentage']:.1f}%)")
+            print(
+                f"    * Occurrences: {metrics['count']} ({metrics['percentage']:.1f}%)"
+            )
             print(f"    * Mean return: {metrics['mean_return']:.4f}")
             print(f"    * Volatility: {metrics['std_return']:.4f}")
             print(f"    * Sharpe ratio: {metrics['sharpe_ratio']:.2f}")
@@ -277,6 +301,7 @@ def test_regime_performance():
     except Exception as e:
         print(f"✗ Regime performance test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -364,6 +389,7 @@ def test_edge_cases():
     except Exception as e:
         print(f"✗ Edge case testing failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -380,13 +406,13 @@ def main():
         ("Lookahead Bias Prevention", test_lookahead_bias_prevention),
         ("Performance Analysis", test_performance_analysis),
         ("Regime Performance", test_regime_performance),
-        ("Edge Cases", test_edge_cases)
+        ("Edge Cases", test_edge_cases),
     ]
 
     results = {}
 
     for test_name, test_func in tests:
-        print(f"\n{'='*20} {test_name} {'='*20}")
+        print(f"\n{'=' * 20} {test_name} {'=' * 20}")
         try:
             results[test_name] = test_func()
         except Exception as e:
@@ -413,6 +439,7 @@ def main():
     else:
         print("❌ Some backtesting tests failed.")
         return False
+
 
 if __name__ == "__main__":
     success = main()

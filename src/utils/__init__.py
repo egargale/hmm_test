@@ -47,7 +47,6 @@ __all__ = [
     "FeatureMatrix",
     "StateSequence",
     "ProbabilityMatrix",
-
     # Configuration
     "HMMConfig",
     "ProcessingConfig",
@@ -57,11 +56,10 @@ __all__ = [
     "load_config",
     "save_config",
     "create_default_config",
-
     # Logging
     "setup_logging",
     "setup_logging_from_config",
     "get_logger",
     "log_system_info",
-    "initialize_default_logging"
+    "initialize_default_logging",
 ]

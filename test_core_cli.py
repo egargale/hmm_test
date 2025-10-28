@@ -12,21 +12,28 @@ import time
 from pathlib import Path
 
 # Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent / 'src'))
+sys.path.insert(0, str(Path(__file__).parent / "src"))
+
 
 def test_core_components():
     """Test core CLI components without Click."""
     print("🧪 Testing Core CLI Components")
-    print("="*50)
+    print("=" * 50)
 
     # Test 1: Configuration classes
     print("\n1. Testing Configuration Classes...")
     try:
         # Create HMM config class directly in the test file
         class HMMConfig:
-            def __init__(self, n_states=3, covariance_type='full',
-                         n_iter=100, random_state=42, tol=1e-3,
-                         num_restarts=3):
+            def __init__(
+                self,
+                n_states=3,
+                covariance_type="full",
+                n_iter=100,
+                random_state=42,
+                tol=1e-3,
+                num_restarts=3,
+            ):
                 self.n_states = n_states
                 self.covariance_type = covariance_type
                 self.n_iter = n_iter
@@ -36,16 +43,16 @@ def test_core_components():
 
             def to_dict(self):
                 return {
-                    'n_states': self.n_states,
-                    'covariance_type': self.covariance_type,
-                    'n_iter': self.n_iter,
-                    'random_state': self.random_state,
-                    'tol': self.tol,
-                    'num_restarts': self.num_restarts
+                    "n_states": self.n_states,
+                    "covariance_type": self.covariance_type,
+                    "n_iter": self.n_iter,
+                    "random_state": self.random_state,
+                    "tol": self.tol,
+                    "num_restarts": self.num_restarts,
                 }
 
         # Test HMMConfig
-        hmm_config = HMMConfig(n_states=4, covariance_type='diag')
+        hmm_config = HMMConfig(n_states=4, covariance_type="diag")
         config_dict = hmm_config.to_dict()
         print(f"✅ HMMConfig created: {len(config_dict)} parameters")
         print(f"   n_states: {config_dict['n_states']}")
@@ -53,19 +60,20 @@ def test_core_components():
 
         # Test ProcessingConfig
         class ProcessingConfig:
-            def __init__(self, engine_type='streaming', chunk_size=100000,
-                         indicators=None):
+            def __init__(
+                self, engine_type="streaming", chunk_size=100000, indicators=None
+            ):
                 self.engine_type = engine_type
                 self.chunk_size = chunk_size
                 self.indicators = indicators or {
-                    'sma_5': {'window': 5},
-                    'sma_10': {'window': 10},
-                    'sma_20': {'window': 20},
-                    'volatility_14': {'window': 14},
-                    'returns': {}
+                    "sma_5": {"window": 5},
+                    "sma_10": {"window": 10},
+                    "sma_20": {"window": 20},
+                    "volatility_14": {"window": 14},
+                    "returns": {},
                 }
 
-        proc_config = ProcessingConfig(engine_type='dask', chunk_size=50000)
+        proc_config = ProcessingConfig(engine_type="dask", chunk_size=50000)
         print("✅ ProcessingConfig created:")
         print(f"   engine_type: {proc_config.engine_type}")
         print(f"   chunk_size: {proc_config.chunk_size}")
@@ -78,13 +86,14 @@ def test_core_components():
     # Test 2: Performance metrics logging
     print("\n2. Testing Performance Metrics...")
     try:
+
         def log_performance_metrics(start_time, operation, additional_info=None):
             """Log performance metrics for completed operations."""
             elapsed_time = time.time() - start_time
             metrics = {
-                'operation': operation,
-                'elapsed_time_seconds': elapsed_time,
-                'timestamp': time.time()
+                "operation": operation,
+                "elapsed_time_seconds": elapsed_time,
+                "timestamp": time.time(),
             }
             if additional_info:
                 metrics.update(additional_info)
@@ -95,8 +104,7 @@ def test_core_components():
         time.sleep(0.1)  # Simulate work
 
         metrics = log_performance_metrics(
-            start_time, "test_operation",
-            {'test_param': 'test_value', 'test_count': 42}
+            start_time, "test_operation", {"test_param": "test_value", "test_count": 42}
         )
 
         print("✅ Performance metrics logged:")
@@ -113,19 +121,12 @@ def test_core_components():
     try:
         # Create test config file
         test_config = {
-            "hmm": {
-                "n_states": 5,
-                "covariance_type": "full",
-                "n_iter": 200
-            },
-            "processing": {
-                "engine_type": "dask",
-                "chunk_size": 50000
-            }
+            "hmm": {"n_states": 5, "covariance_type": "full", "n_iter": 200},
+            "processing": {"engine_type": "dask", "chunk_size": 50000},
         }
 
         test_config_path = Path("test_config.json")
-        with open(test_config_path, 'w') as f:
+        with open(test_config_path, "w") as f:
             json.dump(test_config, f, indent=2)
 
         print(f"✅ Test configuration created: {test_config_path}")
@@ -156,7 +157,7 @@ def test_core_components():
 def test_orchestration_logic():
     """Test CLI orchestration logic."""
     print("\n🧪 Testing CLI Orchestration Logic")
-    print("="*50)
+    print("=" * 50)
 
     try:
         # Test pipeline orchestration simulation
@@ -200,13 +201,13 @@ def test_orchestration_logic():
         test_configs = [
             {"n_states": 3, "engine": "streaming"},
             {"n_states": 5, "engine": "dask"},
-            {"n_states": 4, "engine": "daft"}
+            {"n_states": 4, "engine": "daft"},
         ]
 
         for i, config in enumerate(test_configs):
-            print(f"   Testing configuration {i+1}: {config}")
+            print(f"   Testing configuration {i + 1}: {config}")
             time.sleep(0.02)  # Simulate processing
-            print(f"   ✅ Configuration {i+1} processed")
+            print(f"   ✅ Configuration {i + 1} processed")
 
         return True
 
@@ -218,7 +219,7 @@ def test_orchestration_logic():
 def test_progress_monitoring():
     """Test progress monitoring functionality."""
     print("\n🧪 Testing Progress Monitoring")
-    print("="*50)
+    print("=" * 50)
 
     try:
         # Simple progress bar simulation
@@ -230,8 +231,8 @@ def test_progress_monitoring():
                 progress = (i + 1) / total_steps * 100
                 bar_length = 20
                 filled_length = int(bar_length * progress / 100)
-                bar = '█' * filled_length + '░' * (bar_length - filled_length)
-                print(f"\r   [{bar}] {progress:.0f}% ({i+1}/{total_steps})", end='')
+                bar = "█" * filled_length + "░" * (bar_length - filled_length)
+                print(f"\r   [{bar}] {progress:.0f}% ({i + 1}/{total_steps})", end="")
             print()
 
         # Test 1: Basic progress bar
@@ -254,7 +255,7 @@ def test_progress_monitoring():
 def run_core_tests():
     """Run all core CLI tests."""
     print("🚀 Running Core CLI Integration Tests")
-    print("="*60)
+    print("=" * 60)
 
     tests = [
         ("Core Component Tests", test_core_components),
@@ -265,7 +266,7 @@ def run_core_tests():
     results = []
 
     for test_name, test_func in tests:
-        print(f"\n{'='*20} {test_name} {'='*20}")
+        print(f"\n{'=' * 20} {test_name} {'=' * 20}")
         try:
             success = test_func()
             results.append((test_name, success))
@@ -274,9 +275,9 @@ def run_core_tests():
             results.append((test_name, False))
 
     # Summary
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("📊 Core Test Results Summary")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     passed = sum(1 for _, success in results if success)
     total = len(results)

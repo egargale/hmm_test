@@ -16,6 +16,7 @@ logger = get_logger(__name__)
 
 class ProcessingMode(Enum):
     """CSV processing modes."""
+
     STREAMING = "streaming"
     MEMORY = "memory"
     HYBRID = "hybrid"
@@ -23,6 +24,7 @@ class ProcessingMode(Enum):
 
 class ErrorRecoveryMode(Enum):
     """Error recovery strategies."""
+
     SKIP = "skip"
     RETRY = "retry"
     ABORT = "abort"
@@ -31,6 +33,7 @@ class ErrorRecoveryMode(Enum):
 
 class OutlierDetectionMethod(Enum):
     """Outlier detection methods."""
+
     IQR = "iqr"
     ZSCORE = "zscore"
     ISOLATION_FOREST = "isolation_forest"
@@ -39,6 +42,7 @@ class OutlierDetectionMethod(Enum):
 @dataclass
 class FormatProfile:
     """Predefined configuration for common data sources."""
+
     name: str
     delimiter: str
     encoding: str = "utf-8"
@@ -53,6 +57,7 @@ class FormatProfile:
 @dataclass
 class ValidationRule:
     """Custom validation rule definition."""
+
     name: str
     column: Optional[str] = None
     rule_type: str = "range"  # range, pattern, custom
@@ -75,11 +80,19 @@ class EnhancedCSVConfig:
 
     # Format Detection
     auto_detect_format: bool = True
-    supported_formats: List[str] = field(default_factory=lambda: [
-        'standard_ohlcv', 'split_datetime', 'tradingview', 'yahoo_finance',
-        'alpha_vantage', 'iso_8601', 'unix_timestamp', 'multi_asset'
-    ])
-    fallback_format: str = 'standard_ohlcv'
+    supported_formats: List[str] = field(
+        default_factory=lambda: [
+            "standard_ohlcv",
+            "split_datetime",
+            "tradingview",
+            "yahoo_finance",
+            "alpha_vantage",
+            "iso_8601",
+            "unix_timestamp",
+            "multi_asset",
+        ]
+    )
+    fallback_format: str = "standard_ohlcv"
     confidence_threshold: float = 0.7
 
     # Performance Settings
@@ -118,7 +131,9 @@ class EnhancedCSVConfig:
     target_timezone: str = "UTC"
     standardize_column_names: bool = True
     fill_missing_values: bool = False
-    missing_value_strategy: str = "interpolate"  # interpolate, forward_fill, backward_fill, mean, drop
+    missing_value_strategy: str = (
+        "interpolate"  # interpolate, forward_fill, backward_fill, mean, drop
+    )
     remove_duplicates: bool = True
     sort_by_datetime: bool = True
 
@@ -153,70 +168,89 @@ class EnhancedCSVConfig:
     def _setup_default_format_profiles(self) -> None:
         """Setup default format profiles for common data sources."""
         default_profiles = {
-            'yahoo_finance': FormatProfile(
-                name='yahoo_finance',
-                delimiter=',',
-                encoding='utf-8',
+            "yahoo_finance": FormatProfile(
+                name="yahoo_finance",
+                delimiter=",",
+                encoding="utf-8",
                 column_mapping={
-                    'Date': 'datetime',
-                    'Open': 'open',
-                    'High': 'high',
-                    'Low': 'low',
-                    'Close': 'close',
-                    'Adj Close': 'adj_close',
-                    'Volume': 'volume'
+                    "Date": "datetime",
+                    "Open": "open",
+                    "High": "high",
+                    "Low": "low",
+                    "Close": "close",
+                    "Adj Close": "adj_close",
+                    "Volume": "volume",
                 },
-                required_columns=['Date', 'Open', 'High', 'Low', 'Close', 'Volume']
+                required_columns=["Date", "Open", "High", "Low", "Close", "Volume"],
             ),
-
-            'tradingview': FormatProfile(
-                name='tradingview',
-                delimiter='\t',
-                encoding='utf-8',
+            "tradingview": FormatProfile(
+                name="tradingview",
+                delimiter="\t",
+                encoding="utf-8",
                 column_mapping={
-                    'Date': 'datetime',
-                    'Time': 'time',
-                    'Open': 'open',
-                    'High': 'high',
-                    'Low': 'low',
-                    'Close': 'close',
-                    'Volume': 'volume'
+                    "Date": "datetime",
+                    "Time": "time",
+                    "Open": "open",
+                    "High": "high",
+                    "Low": "low",
+                    "Close": "close",
+                    "Volume": "volume",
                 },
-                required_columns=['Date', 'Time', 'Open', 'High', 'Low', 'Close', 'Volume']
+                required_columns=[
+                    "Date",
+                    "Time",
+                    "Open",
+                    "High",
+                    "Low",
+                    "Close",
+                    "Volume",
+                ],
             ),
-
-            'alpha_vantage': FormatProfile(
-                name='alpha_vantage',
-                delimiter=',',
-                encoding='utf-8',
+            "alpha_vantage": FormatProfile(
+                name="alpha_vantage",
+                delimiter=",",
+                encoding="utf-8",
                 column_mapping={
-                    'timestamp': 'datetime',
-                    'open': 'open',
-                    'high': 'high',
-                    'low': 'low',
-                    'close': 'close',
-                    'volume': 'volume'
+                    "timestamp": "datetime",
+                    "open": "open",
+                    "high": "high",
+                    "low": "low",
+                    "close": "close",
+                    "volume": "volume",
                 },
-                required_columns=['timestamp', 'open', 'high', 'low', 'close', 'volume']
+                required_columns=[
+                    "timestamp",
+                    "open",
+                    "high",
+                    "low",
+                    "close",
+                    "volume",
+                ],
             ),
-
-            'crypto_binance': FormatProfile(
-                name='crypto_binance',
-                delimiter=',',
-                encoding='utf-8',
+            "crypto_binance": FormatProfile(
+                name="crypto_binance",
+                delimiter=",",
+                encoding="utf-8",
                 column_mapping={
-                    'Open time': 'datetime',
-                    'Open': 'open',
-                    'High': 'high',
-                    'Low': 'low',
-                    'Close': 'close',
-                    'Volume': 'volume',
-                    'Close time': 'close_time',
-                    'Quote asset volume': 'quote_volume'
+                    "Open time": "datetime",
+                    "Open": "open",
+                    "High": "high",
+                    "Low": "low",
+                    "Close": "close",
+                    "Volume": "volume",
+                    "Close time": "close_time",
+                    "Quote asset volume": "quote_volume",
                 },
                 skip_rows=1,  # Skip header row
-                required_columns=['Open time', 'Open', 'High', 'Low', 'Close', 'Volume']
-            )
+                required_columns=[
+                    "Open time",
+                    "Open",
+                    "High",
+                    "Low",
+                    "Close",
+                    "Volume",
+                ],
+            ),
         }
 
         # Add default profiles if not already present
@@ -228,38 +262,35 @@ class EnhancedCSVConfig:
         """Setup default validation rules."""
         default_rules = [
             ValidationRule(
-                name='price_non_negative',
-                column=['open', 'high', 'low', 'close'],
-                rule_type='range',
-                parameters={'min_value': 0},
-                error_level='error',
-                description='Prices should not be negative'
+                name="price_non_negative",
+                column=["open", "high", "low", "close"],
+                rule_type="range",
+                parameters={"min_value": 0},
+                error_level="error",
+                description="Prices should not be negative",
             ),
-
             ValidationRule(
-                name='volume_non_negative',
-                column='volume',
-                rule_type='range',
-                parameters={'min_value': 0},
-                error_level='error',
-                description='Volume should not be negative'
+                name="volume_non_negative",
+                column="volume",
+                rule_type="range",
+                parameters={"min_value": 0},
+                error_level="error",
+                description="Volume should not be negative",
             ),
-
             ValidationRule(
-                name='ohlc_relationships',
-                rule_type='custom',
-                parameters={'check_high': True, 'check_low': True},
-                error_level='error',
-                description='High should be >= Open/Close, Low should be <= Open/Close'
+                name="ohlc_relationships",
+                rule_type="custom",
+                parameters={"check_high": True, "check_low": True},
+                error_level="error",
+                description="High should be >= Open/Close, Low should be <= Open/Close",
             ),
-
             ValidationRule(
-                name='datetime_continuity',
-                rule_type='custom',
-                parameters={'max_gap_minutes': 60},
-                error_level='warning',
-                description='Check for large gaps in datetime sequence'
-            )
+                name="datetime_continuity",
+                rule_type="custom",
+                parameters={"max_gap_minutes": 60},
+                error_level="warning",
+                description="Check for large gaps in datetime sequence",
+            ),
         ]
 
         # Add default rules if not already present
@@ -308,52 +339,60 @@ class EnhancedCSVConfig:
     def to_dict(self) -> Dict[str, Any]:
         """Convert configuration to dictionary."""
         return {
-            'auto_detect_format': self.auto_detect_format,
-            'supported_formats': self.supported_formats,
-            'processing_mode': self.processing_mode.value,
-            'enable_parallel_processing': self.enable_parallel_processing,
-            'max_workers': self.max_workers,
-            'chunk_size': self.chunk_size,
-            'adaptive_chunking': self.adaptive_chunking,
-            'memory_limit_mb': self.memory_limit_mb,
-            'enable_validation': self.enable_validation,
-            'strict_mode': self.strict_mode,
-            'error_recovery_mode': self.error_recovery_mode.value,
-            'enable_feature_engineering': self.enable_feature_engineering,
-            'feature_config': self.feature_config,
-            'validation_rules': [rule.__dict__ for rule in self.custom_validation_rules],
-            'format_profiles': {name: profile.__dict__ for name, profile in self.format_profiles.items()}
+            "auto_detect_format": self.auto_detect_format,
+            "supported_formats": self.supported_formats,
+            "processing_mode": self.processing_mode.value,
+            "enable_parallel_processing": self.enable_parallel_processing,
+            "max_workers": self.max_workers,
+            "chunk_size": self.chunk_size,
+            "adaptive_chunking": self.adaptive_chunking,
+            "memory_limit_mb": self.memory_limit_mb,
+            "enable_validation": self.enable_validation,
+            "strict_mode": self.strict_mode,
+            "error_recovery_mode": self.error_recovery_mode.value,
+            "enable_feature_engineering": self.enable_feature_engineering,
+            "feature_config": self.feature_config,
+            "validation_rules": [
+                rule.__dict__ for rule in self.custom_validation_rules
+            ],
+            "format_profiles": {
+                name: profile.__dict__ for name, profile in self.format_profiles.items()
+            },
         }
 
     @classmethod
-    def from_dict(cls, config_dict: Dict[str, Any]) -> 'EnhancedCSVConfig':
+    def from_dict(cls, config_dict: Dict[str, Any]) -> "EnhancedCSVConfig":
         """Create configuration from dictionary."""
         # Handle enum conversions
-        if 'processing_mode' in config_dict:
-            config_dict['processing_mode'] = ProcessingMode(config_dict['processing_mode'])
+        if "processing_mode" in config_dict:
+            config_dict["processing_mode"] = ProcessingMode(
+                config_dict["processing_mode"]
+            )
 
-        if 'error_recovery_mode' in config_dict:
-            config_dict['error_recovery_mode'] = ErrorRecoveryMode(config_dict['error_recovery_mode'])
+        if "error_recovery_mode" in config_dict:
+            config_dict["error_recovery_mode"] = ErrorRecoveryMode(
+                config_dict["error_recovery_mode"]
+            )
 
-        if 'outlier_detection_method' in config_dict:
-            config_dict['outlier_detection_method'] = OutlierDetectionMethod(
-                config_dict['outlier_detection_method']
+        if "outlier_detection_method" in config_dict:
+            config_dict["outlier_detection_method"] = OutlierDetectionMethod(
+                config_dict["outlier_detection_method"]
             )
 
         # Handle validation rules
-        if 'validation_rules' in config_dict:
+        if "validation_rules" in config_dict:
             rules = []
-            for rule_dict in config_dict['validation_rules']:
+            for rule_dict in config_dict["validation_rules"]:
                 rules.append(ValidationRule(**rule_dict))
-            config_dict['custom_validation_rules'] = rules
-            del config_dict['validation_rules']
+            config_dict["custom_validation_rules"] = rules
+            del config_dict["validation_rules"]
 
         # Handle format profiles
-        if 'format_profiles' in config_dict:
+        if "format_profiles" in config_dict:
             profiles = {}
-            for name, profile_dict in config_dict['format_profiles'].items():
+            for name, profile_dict in config_dict["format_profiles"].items():
                 profiles[name] = FormatProfile(**profile_dict)
-            config_dict['format_profiles'] = profiles
+            config_dict["format_profiles"] = profiles
 
         return cls(**config_dict)
 
@@ -395,37 +434,39 @@ class EnhancedCSVConfig:
         for rule in self.custom_validation_rules:
             if not rule.name:
                 issues.append("Validation rule must have a name")
-            if rule.error_level not in ['info', 'warning', 'error', 'critical']:
-                issues.append(f"Invalid error level in rule {rule.name}: {rule.error_level}")
+            if rule.error_level not in ["info", "warning", "error", "critical"]:
+                issues.append(
+                    f"Invalid error level in rule {rule.name}: {rule.error_level}"
+                )
 
         return issues
 
     def get_performance_profile(self, file_size_mb: float) -> Dict[str, Any]:
         """Get performance recommendations based on file size."""
         profile = {
-            'recommended_chunk_size': self.chunk_size,
-            'recommended_workers': self.max_workers,
-            'use_memory_mapping': self.enable_memory_mapping,
-            'use_parallel_processing': self.enable_parallel_processing
+            "recommended_chunk_size": self.chunk_size,
+            "recommended_workers": self.max_workers,
+            "use_memory_mapping": self.enable_memory_mapping,
+            "use_parallel_processing": self.enable_parallel_processing,
         }
 
         # Adjust recommendations based on file size
         if file_size_mb > 100:  # Large file
-            profile['recommended_chunk_size'] = 50000
-            profile['use_memory_mapping'] = True
-            profile['use_parallel_processing'] = True
+            profile["recommended_chunk_size"] = 50000
+            profile["use_memory_mapping"] = True
+            profile["use_parallel_processing"] = True
             if self.max_workers is None:
-                profile['recommended_workers'] = min(4, self._get_cpu_count())
+                profile["recommended_workers"] = min(4, self._get_cpu_count())
 
         elif file_size_mb > 10:  # Medium file
-            profile['recommended_chunk_size'] = 25000
-            profile['use_memory_mapping'] = True
-            profile['use_parallel_processing'] = True
+            profile["recommended_chunk_size"] = 25000
+            profile["use_memory_mapping"] = True
+            profile["use_parallel_processing"] = True
 
         else:  # Small file
-            profile['recommended_chunk_size'] = min(len(self.chunk_size), 10000)
-            profile['use_memory_mapping'] = False
-            profile['use_parallel_processing'] = False
+            profile["recommended_chunk_size"] = min(len(self.chunk_size), 10000)
+            profile["use_memory_mapping"] = False
+            profile["use_parallel_processing"] = False
 
         return profile
 
@@ -433,42 +474,43 @@ class EnhancedCSVConfig:
         """Get number of CPU cores."""
         try:
             import multiprocessing
+
             return multiprocessing.cpu_count()
-        except:
+        except Exception:
             return 2  # Conservative default
 
     def create_processing_summary(self) -> Dict[str, Any]:
         """Create a summary of current configuration."""
         return {
-            'format_detection': {
-                'auto_detect': self.auto_detect_format,
-                'supported_formats': len(self.supported_formats),
-                'confidence_threshold': self.confidence_threshold
+            "format_detection": {
+                "auto_detect": self.auto_detect_format,
+                "supported_formats": len(self.supported_formats),
+                "confidence_threshold": self.confidence_threshold,
             },
-            'performance': {
-                'processing_mode': self.processing_mode.value,
-                'parallel_processing': self.enable_parallel_processing,
-                'chunk_size': self.chunk_size,
-                'memory_limit_mb': self.memory_limit_mb,
-                'memory_mapping': self.enable_memory_mapping
+            "performance": {
+                "processing_mode": self.processing_mode.value,
+                "parallel_processing": self.enable_parallel_processing,
+                "chunk_size": self.chunk_size,
+                "memory_limit_mb": self.memory_limit_mb,
+                "memory_mapping": self.enable_memory_mapping,
             },
-            'validation': {
-                'enabled': self.enable_validation,
-                'strict_mode': self.strict_mode,
-                'validation_rules': len(self.custom_validation_rules),
-                'outlier_detection': self.detect_outliers,
-                'outlier_method': self.outlier_detection_method.value
+            "validation": {
+                "enabled": self.enable_validation,
+                "strict_mode": self.strict_mode,
+                "validation_rules": len(self.custom_validation_rules),
+                "outlier_detection": self.detect_outliers,
+                "outlier_method": self.outlier_detection_method.value,
             },
-            'features': {
-                'feature_engineering': self.enable_feature_engineering,
-                'feature_selection': self.apply_feature_selection,
-                'feature_categories': list(self.feature_config.keys())
+            "features": {
+                "feature_engineering": self.enable_feature_engineering,
+                "feature_selection": self.apply_feature_selection,
+                "feature_categories": list(self.feature_config.keys()),
             },
-            'error_handling': {
-                'recovery_mode': self.error_recovery_mode.value,
-                'max_retries': self.max_retries,
-                'skip_error_rows': self.skip_error_rows
-            }
+            "error_handling": {
+                "recovery_mode": self.error_recovery_mode.value,
+                "max_retries": self.max_retries,
+                "skip_error_rows": self.skip_error_rows,
+            },
         }
 
 

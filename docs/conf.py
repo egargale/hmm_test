@@ -6,6 +6,12 @@ list see the documentation:
 https://www.sphinx-doc.org/en/master/usage/configuration.html
 """
 
+import os
+import sys
+
+# Add source directory to Python path for autodoc
+sys.path.insert(0, os.path.abspath("../src"))
+
 # -- Project information -----------------------------------------------------
 project = "HMM Futures Analysis"
 copyright = "2024, HMM Analysis Team"
@@ -37,12 +43,6 @@ html_theme_options = {
         "color-brand-content": "#004d40",
     },
 }
-
-# Add source directory to Python path for autodoc
-import os
-import sys
-
-sys.path.insert(0, os.path.abspath("../src"))
 
 # -- Extension configuration -------------------------------------------------
 # Napoleon settings

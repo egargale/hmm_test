@@ -20,6 +20,7 @@ import numpy as np
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
+
 def create_test_model():
     """Create a trained HMM model for testing persistence."""
     np.random.seed(42)
@@ -46,17 +47,14 @@ def create_test_model():
     from utils.config import HMMConfig
 
     config = HMMConfig(
-        n_states=3,
-        covariance_type="diag",
-        max_iter=50,
-        random_state=42,
-        num_restarts=2
+        n_states=3, covariance_type="diag", max_iter=50, random_state=42, num_restarts=2
     )
 
     model, scaler, score = train_model(features, config)
     print(f"  ✓ Trained test model: score={score:.4f}")
 
     return model, scaler, config, features
+
 
 def test_basic_save_load():
     """Test basic save and load functionality."""
@@ -72,7 +70,7 @@ def test_basic_save_load():
         model, scaler, config, original_features = create_test_model()
 
         # Create temporary file
-        with tempfile.NamedTemporaryFile(suffix='.pkl', delete=False) as temp_file:
+        with tempfile.NamedTemporaryFile(suffix=".pkl", delete=False) as temp_file:
             temp_path = temp_file.name
 
         try:
@@ -84,14 +82,16 @@ def test_basic_save_load():
                 config=config,
                 path=temp_path,
                 include_metadata=True,
-                overwrite=True
+                overwrite=True,
             )
             print(f"    ✓ Model saved: {temp_path}")
-            print(f"    ✓ Metadata: {metadata.n_states} states, {metadata.n_features} features")
+            print(
+                f"    ✓ Metadata: {metadata.n_states} states, {metadata.n_features} features"
+            )
 
             # Test model info before loading
             info = get_model_info(temp_path)
-            if 'n_states' in info:
+            if "n_states" in info:
                 print(f"    ✓ Model info accessible: {info['n_states']} states")
             else:
                 print("    ✗ Model info not accessible")
@@ -100,9 +100,7 @@ def test_basic_save_load():
             # Test load model
             print("  Testing load_model...")
             loaded_model, loaded_scaler, loaded_config, loaded_metadata = load_model(
-                path=temp_path,
-                validate_integrity=True,
-                validate_functionality=True
+                path=temp_path, validate_integrity=True, validate_functionality=True
             )
             print(f"    ✓ Model loaded: {loaded_model.n_components} states")
 
@@ -110,19 +108,25 @@ def test_basic_save_load():
             if loaded_model.n_components == model.n_components:
                 print(f"    ✓ States match: {loaded_model.n_components}")
             else:
-                print(f"    ✗ States mismatch: {loaded_model.n_components} != {model.n_components}")
+                print(
+                    f"    ✗ States mismatch: {loaded_model.n_components} != {model.n_components}"
+                )
                 return False
 
             if loaded_scaler.n_features_in_ == scaler.n_features_in_:
                 print(f"    ✓ Scaler features match: {loaded_scaler.n_features_in_}")
             else:
-                print(f"    ✗ Scaler features mismatch: {loaded_scaler.n_features_in_} != {scaler.n_features_in_}")
+                print(
+                    f"    ✗ Scaler features mismatch: {loaded_scaler.n_features_in_} != {scaler.n_features_in_}"
+                )
                 return False
 
             if loaded_config.n_states == config.n_states:
                 print(f"    ✓ Config states match: {loaded_config.n_states}")
             else:
-                print(f"    ✗ Config states mismatch: {loaded_config.n_states} != {config.n_states}")
+                print(
+                    f"    ✗ Config states mismatch: {loaded_config.n_states} != {config.n_states}"
+                )
                 return False
 
             # Test functional equivalence
@@ -135,13 +139,17 @@ def test_basic_save_load():
             original_states_tuple = predict_states(model, original_features, scaler)
             original_states = original_states_tuple[0]  # Get just the state sequence
 
-            loaded_states_tuple = predict_states(loaded_model, original_features, loaded_scaler)
+            loaded_states_tuple = predict_states(
+                loaded_model, original_features, loaded_scaler
+            )
             loaded_states = loaded_states_tuple[0]  # Get just the state sequence
 
             if np.array_equal(original_states, loaded_states):
                 print(f"    ✓ Predictions identical: {len(original_states)} states")
             else:
-                print(f"    ✗ Predictions differ: {np.sum(original_states != loaded_states)} differences")
+                print(
+                    f"    ✗ Predictions differ: {np.sum(original_states != loaded_states)} differences"
+                )
                 return False
 
             return True
@@ -154,8 +162,10 @@ def test_basic_save_load():
     except Exception as e:
         print(f"  ✗ Basic save/load test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 def test_integrity_validation():
     """Test integrity validation mechanisms."""
@@ -174,7 +184,7 @@ def test_integrity_validation():
         original_hash = generate_model_hash(model, scaler)
         print(f"  ✓ Original model hash: {original_hash[:16]}...")
 
-        with tempfile.NamedTemporaryFile(suffix='.pkl', delete=False) as temp_file:
+        with tempfile.NamedTemporaryFile(suffix=".pkl", delete=False) as temp_file:
             temp_path = temp_file.name
 
             try:
@@ -192,15 +202,16 @@ def test_integrity_validation():
 
                 # Load and corrupt the data
                 import pickle
-                with open(temp_path, 'rb') as f:
+
+                with open(temp_path, "rb") as f:
                     data = pickle.load(f)
 
                 # Remove a required key
                 corrupted_data = data.copy()
-                del corrupted_data['scaler']
+                del corrupted_data["scaler"]
 
                 # Save corrupted data
-                with open(temp_path, 'wb') as f:
+                with open(temp_path, "wb") as f:
                     pickle.dump(corrupted_data, f)
 
                 # Try to load corrupted file
@@ -226,6 +237,7 @@ def test_integrity_validation():
         print(f"  ✗ Integrity validation test failed: {e}")
         return False
 
+
 def test_error_handling():
     """Test error handling for edge cases."""
     print("\n🔍 Testing Error Handling")
@@ -250,12 +262,12 @@ def test_error_handling():
 
         # Test loading invalid file
         print("  Testing invalid file format...")
-        with tempfile.NamedTemporaryFile(suffix='.txt', delete=False) as temp_file:
+        with tempfile.NamedTemporaryFile(suffix=".txt", delete=False) as temp_file:
             temp_path = temp_file.name
 
             try:
                 # Write invalid data
-                with open(temp_path, 'w') as f:
+                with open(temp_path, "w") as f:
                     f.write("This is not a pickle file")
 
                 try:
@@ -279,9 +291,9 @@ def test_error_handling():
 
         # Test copy to existing file without overwrite
         print("  Testing copy without overwrite...")
-        with tempfile.NamedTemporaryFile(suffix='.pkl', delete=False) as temp_file1:
+        with tempfile.NamedTemporaryFile(suffix=".pkl", delete=False):
             temp_path1 = temp_file.name
-            with tempfile.NamedTemporaryFile(suffix='.pkl', delete=False) as temp_file2:
+            with tempfile.NamedTemporaryFile(suffix=".pkl", delete=False) as temp_file2:
                 temp_path2 = temp_file2.name
 
                 try:
@@ -290,6 +302,7 @@ def test_error_handling():
 
                     # Try to copy to existing file without overwrite
                     from model_training.model_persistence import copy_model
+
                     copy_model(temp_path1, temp_path2, overwrite=False)
                     print("    ✗ Should have raised FileExistsError")
                     return False
@@ -306,6 +319,7 @@ def test_error_handling():
         print(f"  ✗ Error handling test failed: {e}")
         return False
 
+
 def test_metadata_functionality():
     """Test metadata functionality."""
     print("\n🔍 Testing Metadata Functionality")
@@ -320,24 +334,37 @@ def test_metadata_functionality():
 
         model, scaler, config, features = create_test_model()
 
-        with tempfile.NamedTemporaryFile(suffix='.pkl', delete=False) as temp_file:
+        with tempfile.NamedTemporaryFile(suffix=".pkl", delete=False) as temp_file:
             temp_path = temp_file.name
 
             try:
                 # Save with metadata
                 print("  Testing save with metadata...")
-                metadata = save_model(model, scaler, config, temp_path, include_metadata=True, overwrite=True)
+                metadata = save_model(
+                    model,
+                    scaler,
+                    config,
+                    temp_path,
+                    include_metadata=True,
+                    overwrite=True,
+                )
 
                 if isinstance(metadata, ModelMetadata):
                     print(f"    ✓ Metadata object created: {metadata.model_type}")
-                    print(f"    ✓ Metadata fields: {metadata.n_states} states, {metadata.n_features} features")
-                    print(f"    ✓ Library versions: {list(metadata.library_versions.keys())}")
+                    print(
+                        f"    ✓ Metadata fields: {metadata.n_states} states, {metadata.n_features} features"
+                    )
+                    print(
+                        f"    ✓ Library versions: {list(metadata.library_versions.keys())}"
+                    )
                 else:
                     print("    ✗ Metadata not properly created")
                     return False
 
                 # Test load without metadata
-                loaded_model, loaded_scaler, loaded_config, loaded_metadata = load_model(temp_path)
+                loaded_model, loaded_scaler, loaded_config, loaded_metadata = (
+                    load_model(temp_path)
+                )
 
                 if loaded_metadata is not None:
                     print(f"    ✓ Metadata loaded: {loaded_metadata.n_states} states")
@@ -346,17 +373,21 @@ def test_metadata_functionality():
 
                 # Test model info
                 info = get_model_info(temp_path)
-                if 'metadata' in info and info['metadata'] is not None:
-                    print(f"    ✓ Info contains metadata: {info['metadata']['model_type']}")
+                if "metadata" in info and info["metadata"] is not None:
+                    print(
+                        f"    ✓ Info contains metadata: {info['metadata']['model_type']}"
+                    )
                 else:
                     print("    ⚠ No metadata in info (file might not have metadata)")
 
                 # Test saving without metadata
-                temp_path_no_meta = temp_path.replace('.pkl', '_no_meta.pkl')
-                save_model(model, scaler, config, temp_path_no_meta, include_metadata=False)
+                temp_path_no_meta = temp_path.replace(".pkl", "_no_meta.pkl")
+                save_model(
+                    model, scaler, config, temp_path_no_meta, include_metadata=False
+                )
 
                 info_no_meta = get_model_info(temp_path_no_meta)
-                if info_no_meta.get('has_metadata') is False:
+                if info_no_meta.get("has_metadata") is False:
                     print("    ✓ No metadata flag set correctly")
                 else:
                     print("    ✗ Metadata flag incorrect")
@@ -375,6 +406,7 @@ def test_metadata_functionality():
     except Exception as e:
         print(f"  ✗ Metadata functionality test failed: {e}")
         return False
+
 
 def test_file_management():
     """Test file management utilities."""
@@ -404,7 +436,7 @@ def test_file_management():
                     covariance_type="diag",
                     max_iter=30,
                     random_state=42 + i,
-                    num_restarts=1
+                    num_restarts=1,
                 )
 
                 file_path = temp_dir_path / f"model_{i}.pkl"
@@ -424,12 +456,16 @@ def test_file_management():
 
             # Verify all models in list
             for model_path_str, model_info in models_list.items():
-                if 'metadata' in model_info and model_info['metadata'] is not None:
-                    metadata = model_info['metadata']
-                    if hasattr(metadata, 'n_states'):
-                        print(f"    ✓ Model {Path(model_path_str).name}: {metadata.n_states} states")
+                if "metadata" in model_info and model_info["metadata"] is not None:
+                    metadata = model_info["metadata"]
+                    if hasattr(metadata, "n_states"):
+                        print(
+                            f"    ✓ Model {Path(model_path_str).name}: {metadata.n_states} states"
+                        )
                     else:
-                        print(f"    ⚠ Model {Path(model_path_str).name}: Metadata has no n_states attribute")
+                        print(
+                            f"    ⚠ Model {Path(model_path_str).name}: Metadata has no n_states attribute"
+                        )
                 else:
                     print(f"    ⚠ Model {Path(model_path_str).name}: No metadata")
 
@@ -462,7 +498,9 @@ def test_file_management():
             if len(remaining_models) == 3:  # Original models should still exist
                 print(f"    ✓ Original models preserved: {len(remaining_models)}")
             else:
-                print(f"    ✗ Original models missing: expected 3, found {len(remaining_models)}")
+                print(
+                    f"    ✗ Original models missing: expected 3, found {len(remaining_models)}"
+                )
                 return False
 
             return True
@@ -470,6 +508,7 @@ def test_file_management():
     except Exception as e:
         print(f"  ✗ File management test failed: {e}")
         return False
+
 
 def test_library_versions():
     """Test library version tracking."""
@@ -482,7 +521,7 @@ def test_library_versions():
         print(f"  ✓ Library versions retrieved: {len(versions)} libraries")
 
         # Check for expected libraries
-        expected_libraries = ['numpy', 'sklearn']
+        expected_libraries = ["numpy", "sklearn"]
         found_libraries = []
         for lib in expected_libraries:
             if lib in versions:
@@ -491,7 +530,7 @@ def test_library_versions():
             else:
                 print(f"    ⚠ {lib}: not found")
 
-        if 'hmmlearn' in versions:
+        if "hmmlearn" in versions:
             print(f"    ✓ hmmlearn: {versions['hmmlearn']}")
 
         if len(found_libraries) >= 2:
@@ -504,6 +543,7 @@ def test_library_versions():
     except Exception as e:
         print(f"  ✗ Library version test failed: {e}")
         return False
+
 
 def test_end_to_end_workflow():
     """Test complete end-to-end workflow."""
@@ -525,44 +565,58 @@ def test_end_to_end_workflow():
 
         # Step 2: Perform inference
         print("  Step 2: Performing inference...")
-        original_result = predict_states_comprehensive(original_model, original_scaler, features)
+        original_result = predict_states_comprehensive(
+            original_model, original_scaler, features
+        )
         print(f"    ✓ Inference completed: {original_result.n_samples} samples")
 
         # Step 3: Save model
         print("  Step 3: Saving model...")
-        with tempfile.NamedTemporaryFile(suffix='.pkl', delete=False) as temp_file:
+        with tempfile.NamedTemporaryFile(suffix=".pkl", delete=False) as temp_file:
             temp_path = temp_file.name
 
             try:
-                metadata = save_model(original_model, original_scaler, config, temp_path, overwrite=True)
+                save_model(
+                    original_model, original_scaler, config, temp_path, overwrite=True
+                )
                 print(f"    ✓ Model saved: {temp_path}")
 
                 # Step 4: Load model
                 print("  Step 4: Loading model...")
-                loaded_model, loaded_scaler, loaded_config, loaded_metadata = load_model(
-                    temp_path,
-                    validate_integrity=True,
-                    validate_functionality=True
+                loaded_model, loaded_scaler, loaded_config, loaded_metadata = (
+                    load_model(
+                        temp_path, validate_integrity=True, validate_functionality=True
+                    )
                 )
                 print(f"    ✓ Model loaded: {loaded_model.n_components} states")
 
                 # Step 5: Verify inference consistency
                 print("  Step 5: Verifying inference consistency...")
-                loaded_result = predict_states_comprehensive(loaded_model, loaded_scaler, features)
+                loaded_result = predict_states_comprehensive(
+                    loaded_model, loaded_scaler, features
+                )
 
                 if np.array_equal(original_result.states, loaded_result.states):
-                    print(f"    ✓ Inference results identical: {len(original_result.states)} states")
+                    print(
+                        f"    ✓ Inference results identical: {len(original_result.states)} states"
+                    )
                 else:
-                    print(f"    ✗ Inference results differ: {np.sum(original_result.states != loaded_result.states)} differences")
+                    print(
+                        f"    ✗ Inference results differ: {np.sum(original_result.states != loaded_result.states)} differences"
+                    )
                     return False
 
                 # Step 6: Verify metadata
                 print("  Step 6: Verifying metadata...")
                 if loaded_metadata is not None:
                     if loaded_metadata.n_states == original_model.n_components:
-                        print(f"    ✓ Metadata consistent: {loaded_metadata.n_states} states")
+                        print(
+                            f"    ✓ Metadata consistent: {loaded_metadata.n_states} states"
+                        )
                     else:
-                        print(f"    ✗ Metadata inconsistent: {loaded_metadata.n_states} != {original_model.n_components}")
+                        print(
+                            f"    ✗ Metadata inconsistent: {loaded_metadata.n_states} != {original_model.n_components}"
+                        )
                         return False
                 else:
                     print("    ⚠ No metadata available")
@@ -577,8 +631,10 @@ def test_end_to_end_workflow():
     except Exception as e:
         print(f"  ✗ End-to-end workflow test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 def main():
     """Run all model persistence tests."""
@@ -634,6 +690,7 @@ def main():
     else:
         print("❌ Some test suites failed")
         return 1
+
 
 if __name__ == "__main__":
     exit(main())

@@ -3,7 +3,6 @@
 Unit tests for the HMM futures program.
 """
 
-
 # Add the src directory to the path so we can import the main module
 import sys
 import tempfile
@@ -19,22 +18,23 @@ from main import add_features, perf_metrics, simple_backtest, stream_features
 
 
 class TestHMMFutures(unittest.TestCase):
-
     def setUp(self):
         """Set up test data."""
-        self.test_data = pd.DataFrame({
-            'DateTime': pd.date_range('2023-01-01', periods=20, freq='H'),
-            'Open': np.linspace(100, 119, 20),
-            'High': np.linspace(101, 120, 20),
-            'Low': np.linspace(99, 118, 20),
-            'Close': np.linspace(100.5, 119.5, 20),
-            'Volume': np.linspace(1000, 1190, 20)
-        })
-        self.test_data.set_index('DateTime', inplace=True)
+        self.test_data = pd.DataFrame(
+            {
+                "DateTime": pd.date_range("2023-01-01", periods=20, freq="H"),
+                "Open": np.linspace(100, 119, 20),
+                "High": np.linspace(101, 120, 20),
+                "Low": np.linspace(99, 118, 20),
+                "Close": np.linspace(100.5, 119.5, 20),
+                "Volume": np.linspace(1000, 1190, 20),
+            }
+        )
+        self.test_data.set_index("DateTime", inplace=True)
 
         # Create a temporary CSV file for testing
         self.temp_dir = tempfile.TemporaryDirectory()
-        self.temp_csv = Path(self.temp_dir.name) / 'test_data.csv'
+        self.temp_csv = Path(self.temp_dir.name) / "test_data.csv"
         self.test_data.to_csv(self.temp_csv)
 
     def tearDown(self):
@@ -47,7 +47,16 @@ class TestHMMFutures(unittest.TestCase):
         result = add_features(self.test_data)
 
         # Check that the result has the expected columns
-        expected_cols = ['Open', 'High', 'Low', 'Close', 'Volume', 'log_ret', 'atr', 'roc']
+        expected_cols = [
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "log_ret",
+            "atr",
+            "roc",
+        ]
         for col in expected_cols:
             self.assertIn(col, result.columns)
 
@@ -63,7 +72,16 @@ class TestHMMFutures(unittest.TestCase):
         result = stream_features(self.temp_csv)
 
         # Check that the result has the expected columns
-        expected_cols = ['Open', 'High', 'Low', 'Close', 'Volume', 'log_ret', 'atr', 'roc']
+        expected_cols = [
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "log_ret",
+            "atr",
+            "roc",
+        ]
         for col in expected_cols:
             self.assertIn(col, result.columns)
 
@@ -100,5 +118,6 @@ class TestHMMFutures(unittest.TestCase):
         self.assertIsInstance(sharpe, (int, float))
         self.assertIsInstance(max_dd, (int, float))
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

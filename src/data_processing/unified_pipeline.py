@@ -13,6 +13,7 @@ from typing import Any, Dict, List, Optional, Union
 import pandas as pd
 
 from utils.logging_config import get_logger
+
 from .input_manager import DataInputManager, InputData
 from .output_manager import OutputManager
 from .pipeline_config import InputSourceType, PipelineConfig
@@ -34,6 +35,7 @@ logger = get_logger(__name__)
 @dataclass
 class PipelineResult:
     """Result of unified pipeline execution."""
+
     success: bool
     data: Optional[pd.DataFrame] = None
     metadata: Dict[str, Any] = None
@@ -88,10 +90,7 @@ class UnifiedDataPipeline:
         # Initialize pipeline stages
         self.stages = self._initialize_stages()
         self.context = PipelineContext(
-            config=self.config.to_dict(),
-            metadata={},
-            metrics={},
-            processing_history=[]
+            config=self.config.to_dict(), metadata={}, metrics={}, processing_history=[]
         )
 
         # Pipeline state
@@ -110,19 +109,21 @@ class UnifiedDataPipeline:
             stages.append(format_stage)
 
         # Stage 2: Data Loading and Standardization
-        loading_stage = DataLoadingStage({
-            'encoding': self.config.encoding
-        })
+        loading_stage = DataLoadingStage({"encoding": self.config.encoding})
         stages.append(loading_stage)
 
         # Stage 3: Data Validation (if enabled)
         if self.config.validation_config.enable_validation:
-            validation_stage = DataValidationStage(self.config.validation_config.__dict__)
+            validation_stage = DataValidationStage(
+                self.config.validation_config.__dict__
+            )
             stages.append(validation_stage)
 
         # Stage 4: Feature Engineering (if enabled)
         if self.config.feature_config.enable_features:
-            feature_stage = FeatureEngineeringStage(self.config.feature_config.indicator_params)
+            feature_stage = FeatureEngineeringStage(
+                self.config.feature_config.indicator_params
+            )
             stages.append(feature_stage)
 
         # Stage 5: Final Quality Assessment
@@ -132,8 +133,9 @@ class UnifiedDataPipeline:
         self.logger.info(f"Initialized {len(stages)} pipeline stages")
         return stages
 
-    def process(self, input_source: Union[str, Path, pd.DataFrame],
-                save_output: bool = False) -> PipelineResult:
+    def process(
+        self, input_source: Union[str, Path, pd.DataFrame], save_output: bool = False
+    ) -> PipelineResult:
         """
         Process data through the complete unified pipeline.
 
@@ -158,12 +160,14 @@ class UnifiedDataPipeline:
                 return self._create_error_result(
                     "Input validation failed",
                     validation_result.issues,
-                    (datetime.now() - start_time).total_seconds()
+                    (datetime.now() - start_time).total_seconds(),
                 )
 
             # Initialize context with input metadata
-            self.context.metadata.update(self.input_manager.get_input_metadata(input_data))
-            self.context.metadata['input_validation'] = validation_result.__dict__
+            self.context.metadata.update(
+                self.input_manager.get_input_metadata(input_data)
+            )
+            self.context.metadata["input_validation"] = validation_result.__dict__
 
             # Process through pipeline stages
             current_data = input_data.data
@@ -175,8 +179,8 @@ class UnifiedDataPipeline:
                     # Stage failed
                     return self._create_error_result(
                         f"Pipeline failed at stage: {stage.name}",
-                        self.context.processing_history[-1]['issues'],
-                        (datetime.now() - start_time).total_seconds()
+                        self.context.processing_history[-1]["issues"],
+                        (datetime.now() - start_time).total_seconds(),
                     )
 
             # Generate final results
@@ -187,19 +191,27 @@ class UnifiedDataPipeline:
                 success=True,
                 input_metadata=self.context.metadata,
                 output_metadata=self._get_output_metadata(current_data),
-                quality_metrics=self.context.metrics
+                quality_metrics=self.context.metrics,
             )
 
             # Generate reports
-            quality_report = self.metrics_reporter.generate_quality_report(pipeline_metrics)
-            performance_metrics = self.metrics_reporter.generate_performance_report(pipeline_metrics)
+            quality_report = self.metrics_reporter.generate_quality_report(
+                pipeline_metrics
+            )
+            performance_metrics = self.metrics_reporter.generate_performance_report(
+                pipeline_metrics
+            )
 
             # Create output package if requested
             if save_output:
-                self._save_output_package(current_data, pipeline_metrics, quality_report)
+                self._save_output_package(
+                    current_data, pipeline_metrics, quality_report
+                )
 
             # Generate recommendations
-            recommendations = self._generate_recommendations(pipeline_metrics, quality_report)
+            recommendations = self._generate_recommendations(
+                pipeline_metrics, quality_report
+            )
 
             result = PipelineResult(
                 success=True,
@@ -208,12 +220,18 @@ class UnifiedDataPipeline:
                 quality_report=quality_report,
                 processing_log=self.context.processing_history,
                 performance_metrics=performance_metrics,
-                issues=[issue for history in self.context.processing_history for issue in history['issues']],
+                issues=[
+                    issue
+                    for history in self.context.processing_history
+                    for issue in history["issues"]
+                ],
                 recommendations=recommendations,
-                execution_time=execution_time
+                execution_time=execution_time,
             )
 
-            self.logger.info(f"Pipeline completed successfully in {execution_time:.2f} seconds")
+            self.logger.info(
+                f"Pipeline completed successfully in {execution_time:.2f} seconds"
+            )
             return result
 
         except Exception as e:
@@ -235,8 +253,8 @@ class UnifiedDataPipeline:
         input_data = self.input_manager.load_from_source(input_source)
 
         # Update context with input information
-        self.context.metadata['input_source'] = str(input_source)
-        self.context.metadata['input_type'] = input_data.source_type.value
+        self.context.metadata["input_source"] = str(input_source)
+        self.context.metadata["input_type"] = input_data.source_type.value
 
         return input_data
 
@@ -267,7 +285,7 @@ class UnifiedDataPipeline:
                 success=stage_result.success,
                 output_metadata=stage_result.metadata,
                 issues=stage_result.issues,
-                custom_metrics={'profile': profile}
+                custom_metrics={"profile": profile},
             )
 
             # Update context
@@ -275,32 +293,36 @@ class UnifiedDataPipeline:
             self.context.metadata.update(stage_result.metadata)
 
             if stage_result.success:
-                self.logger.info(f"Stage '{stage.name}' completed successfully "
-                               f"in {stage_result.processing_time:.3f}s")
+                self.logger.info(
+                    f"Stage '{stage.name}' completed successfully "
+                    f"in {stage_result.processing_time:.3f}s"
+                )
                 return stage_result.data
             else:
                 self.logger.error(f"Stage '{stage.name}' failed: {stage_result.issues}")
-                raise RuntimeError(f"Stage '{stage.name}' failed: {stage_result.issues}")
+                raise RuntimeError(
+                    f"Stage '{stage.name}' failed: {stage_result.issues}"
+                )
 
         except Exception as e:
             # End metrics collection with failure
-            self.metrics_collector.end_stage(
-                success=False,
-                issues=[str(e)]
-            )
+            self.metrics_collector.end_stage(success=False, issues=[str(e)])
 
             # End performance profiling
             self.profiler.end_profiling(profile)
 
             # Update context with failure
-            self.context.add_stage_result(stage.name, StageResult(
-                success=False,
-                data=None,
-                metadata={},
-                issues=[str(e)],
-                processing_time=0.0,
-                stage_name=stage.name
-            ))
+            self.context.add_stage_result(
+                stage.name,
+                StageResult(
+                    success=False,
+                    data=None,
+                    metadata={},
+                    issues=[str(e)],
+                    processing_time=0.0,
+                    stage_name=stage.name,
+                ),
+            )
 
             raise
 
@@ -308,31 +330,36 @@ class UnifiedDataPipeline:
         """Get metadata from data object."""
         if isinstance(data, pd.DataFrame):
             return {
-                'rows': len(data),
-                'columns': len(data.columns),
-                'memory_usage_mb': data.memory_usage(deep=True).sum() / (1024 * 1024)
+                "rows": len(data),
+                "columns": len(data.columns),
+                "memory_usage_mb": data.memory_usage(deep=True).sum() / (1024 * 1024),
             }
         else:
-            return {'type': str(type(data))}
+            return {"type": str(type(data))}
 
     def _get_output_metadata(self, data: Any) -> Dict[str, Any]:
         """Get output metadata from processed data."""
         metadata = self._get_data_metadata(data)
 
         if isinstance(data, pd.DataFrame):
-            metadata.update({
-                'column_names': data.columns.tolist(),
-                'data_types': data.dtypes.to_dict(),
-                'has_datetime_index': isinstance(data.index, pd.DatetimeIndex)
-            })
+            metadata.update(
+                {
+                    "column_names": data.columns.tolist(),
+                    "data_types": data.dtypes.to_dict(),
+                    "has_datetime_index": isinstance(data.index, pd.DatetimeIndex),
+                }
+            )
 
         return metadata
 
-    def _save_output_package(self, data: pd.DataFrame, pipeline_metrics: Any,
-                            quality_report: Dict[str, Any]) -> None:
+    def _save_output_package(
+        self, data: pd.DataFrame, pipeline_metrics: Any, quality_report: Dict[str, Any]
+    ) -> None:
         """Save complete output package to files."""
         if not self.config.output_config.save_path:
-            self.logger.warning("No save path specified in configuration, skipping output save")
+            self.logger.warning(
+                "No save path specified in configuration, skipping output save"
+            )
             return
 
         # Create output package
@@ -341,7 +368,7 @@ class UnifiedDataPipeline:
             metadata=pipeline_metrics.__dict__,
             quality_report=quality_report,
             processing_log=self.context.processing_history,
-            pipeline_summary=pipeline_metrics.get_summary()
+            pipeline_summary=pipeline_metrics.get_summary(),
         )
 
         # Determine output format
@@ -353,46 +380,58 @@ class UnifiedDataPipeline:
             base_path=self.config.output_config.save_path,
             data_format=output_format,
             include_metadata=self.config.output_config.include_metadata,
-            include_quality_report=self.config.output_config.include_quality_report
+            include_quality_report=self.config.output_config.include_quality_report,
         )
 
         # Log save results
         successful_saves = sum(1 for result in save_results.values() if result.success)
-        self.logger.info(f"Output package saved: {successful_saves}/{len(save_results)} components")
+        self.logger.info(
+            f"Output package saved: {successful_saves}/{len(save_results)} components"
+        )
 
-    def _generate_recommendations(self, pipeline_metrics: Any,
-                                quality_report: Dict[str, Any]) -> List[str]:
+    def _generate_recommendations(
+        self, pipeline_metrics: Any, quality_report: Dict[str, Any]
+    ) -> List[str]:
         """Generate improvement recommendations."""
         recommendations = []
 
         # Performance recommendations
-        performance_rec = pipeline_metrics.performance_metrics.get('recommendations', [])
+        performance_rec = pipeline_metrics.performance_metrics.get(
+            "recommendations", []
+        )
         recommendations.extend(performance_rec)
 
         # Quality recommendations
-        quality_rec = quality_report.get('improvement_suggestions', [])
+        quality_rec = quality_report.get("improvement_suggestions", [])
         recommendations.extend(quality_rec)
 
         # Add pipeline-specific recommendations
         if pipeline_metrics.total_processing_time > 30:
-            recommendations.append("Consider using high-performance mode for large datasets")
+            recommendations.append(
+                "Consider using high-performance mode for large datasets"
+            )
 
-        if quality_report.get('overall_score', 1) < 0.8:
-            recommendations.append("Consider using high-quality mode for better data validation")
+        if quality_report.get("overall_score", 1) < 0.8:
+            recommendations.append(
+                "Consider using high-quality mode for better data validation"
+            )
 
         return recommendations
 
-    def _create_error_result(self, error_message: str, issues: List[str],
-                          execution_time: float) -> PipelineResult:
+    def _create_error_result(
+        self, error_message: str, issues: List[str], execution_time: float
+    ) -> PipelineResult:
         """Create error result."""
         return PipelineResult(
             success=False,
             issues=[error_message] + issues,
             execution_time=execution_time,
-            processing_log=self.context.processing_history.copy()
+            processing_log=self.context.processing_history.copy(),
         )
 
-    def add_custom_stage(self, stage: PipelineStage, position: Optional[int] = None) -> None:
+    def add_custom_stage(
+        self, stage: PipelineStage, position: Optional[int] = None
+    ) -> None:
         """
         Add custom stage to pipeline.
 
@@ -427,18 +466,26 @@ class UnifiedDataPipeline:
     def get_pipeline_info(self) -> Dict[str, Any]:
         """Get comprehensive pipeline information."""
         return {
-            'pipeline_name': self.config.name,
-            'mode': self.config.mode.value,
-            'execution_count': self.execution_count,
-            'total_stages': len(self.stages),
-            'stage_names': [stage.name for stage in self.stages],
-            'configuration': self.config.get_summary(),
-            'capabilities': {
-                'format_detection': any(isinstance(stage, FormatDetectionStage) for stage in self.stages),
-                'data_validation': any(isinstance(stage, DataValidationStage) for stage in self.stages),
-                'feature_engineering': any(isinstance(stage, FeatureEngineeringStage) for stage in self.stages),
-                'quality_assessment': any(isinstance(stage, QualityAssessmentStage) for stage in self.stages)
-            }
+            "pipeline_name": self.config.name,
+            "mode": self.config.mode.value,
+            "execution_count": self.execution_count,
+            "total_stages": len(self.stages),
+            "stage_names": [stage.name for stage in self.stages],
+            "configuration": self.config.get_summary(),
+            "capabilities": {
+                "format_detection": any(
+                    isinstance(stage, FormatDetectionStage) for stage in self.stages
+                ),
+                "data_validation": any(
+                    isinstance(stage, DataValidationStage) for stage in self.stages
+                ),
+                "feature_engineering": any(
+                    isinstance(stage, FeatureEngineeringStage) for stage in self.stages
+                ),
+                "quality_assessment": any(
+                    isinstance(stage, QualityAssessmentStage) for stage in self.stages
+                ),
+            },
         }
 
     def get_stage_info(self, stage_name: str) -> Optional[Dict[str, Any]]:
@@ -454,11 +501,11 @@ class UnifiedDataPipeline:
 
         # Adjust based on pipeline mode
         mode_multipliers = {
-            'high_performance': 0.5,
-            'standard': 1.0,
-            'high_quality': 2.0,
-            'streaming': 0.3,
-            'development': 1.5
+            "high_performance": 0.5,
+            "standard": 1.0,
+            "high_quality": 2.0,
+            "streaming": 0.3,
+            "development": 1.5,
         }
 
         multiplier = mode_multipliers.get(self.config.mode.value, 1.0)
@@ -471,20 +518,22 @@ class UnifiedDataPipeline:
         estimated_time = data_size_rows * base_time_per_row * total_multiplier
 
         return {
-            'estimated_time_seconds': estimated_time,
-            'estimated_time_minutes': estimated_time / 60,
-            'rows_per_second': data_size_rows / estimated_time if estimated_time > 0 else 0,
-            'mode_multiplier': multiplier,
-            'stage_count': stage_count,
-            'assumptions': [
+            "estimated_time_seconds": estimated_time,
+            "estimated_time_minutes": estimated_time / 60,
+            "rows_per_second": data_size_rows / estimated_time
+            if estimated_time > 0
+            else 0,
+            "mode_multiplier": multiplier,
+            "stage_count": stage_count,
+            "assumptions": [
                 "Base rate: 10,000 rows/second",
                 f"Mode multiplier: {multiplier:.2f}x ({self.config.mode.value})",
-                f"Stage multiplier: {stage_multiplier:.2f}x ({stage_count} stages)"
-            ]
+                f"Stage multiplier: {stage_multiplier:.2f}x ({stage_count} stages)",
+            ],
         }
 
     @classmethod
-    def from_config_file(cls, config_path: Path) -> 'UnifiedDataPipeline':
+    def from_config_file(cls, config_path: Path) -> "UnifiedDataPipeline":
         """Create pipeline from configuration file."""
         from .pipeline_config import load_config_from_file
 
@@ -492,19 +541,19 @@ class UnifiedDataPipeline:
         return cls(config)
 
     @classmethod
-    def create_high_performance(cls, **kwargs) -> 'UnifiedDataPipeline':
+    def create_high_performance(cls, **kwargs) -> "UnifiedDataPipeline":
         """Create high-performance pipeline."""
         config = PipelineConfig.create_high_performance(**kwargs)
         return cls(config)
 
     @classmethod
-    def create_high_quality(cls, **kwargs) -> 'UnifiedDataPipeline':
+    def create_high_quality(cls, **kwargs) -> "UnifiedDataPipeline":
         """Create high-quality pipeline."""
         config = PipelineConfig.create_high_quality(**kwargs)
         return cls(config)
 
     @classmethod
-    def create_streaming(cls, **kwargs) -> 'UnifiedDataPipeline':
+    def create_streaming(cls, **kwargs) -> "UnifiedDataPipeline":
         """Create streaming pipeline."""
         config = PipelineConfig.create_streaming(**kwargs)
         return cls(config)

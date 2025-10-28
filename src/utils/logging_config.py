@@ -14,12 +14,14 @@ from typing import Optional
 
 try:
     from loguru import logger
+
     LOGURU_AVAILABLE = True
 except ImportError:
     LOGURU_AVAILABLE = False
 
 try:
     import structlog
+
     STRUCTLOG_AVAILABLE = True
 except ImportError:
     STRUCTLOG_AVAILABLE = False
@@ -37,7 +39,7 @@ def setup_logging(
     backup_count: int = 5,
     enable_rotation: bool = True,
     use_structured: bool = False,
-    use_loguru: bool = True
+    use_loguru: bool = True,
 ) -> logging.Logger:
     """
     Setup logging configuration for the application.
@@ -62,9 +64,11 @@ def setup_logging(
     """
 
     # Validate logging level
-    valid_levels = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
+    valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
     if level.upper() not in valid_levels:
-        raise ValueError(f"Invalid logging level: {level}. Must be one of {valid_levels}")
+        raise ValueError(
+            f"Invalid logging level: {level}. Must be one of {valid_levels}"
+        )
 
     # Try to use loguru if requested and available
     if use_loguru and LOGURU_AVAILABLE:
@@ -76,7 +80,7 @@ def setup_logging(
             max_file_size=max_file_size,
             backup_count=backup_count,
             enable_rotation=enable_rotation,
-            use_structured=use_structured
+            use_structured=use_structured,
         )
 
     # Fall back to standard logging
@@ -88,7 +92,7 @@ def setup_logging(
         max_file_size=max_file_size,
         backup_count=backup_count,
         enable_rotation=enable_rotation,
-        use_structured=use_structured
+        use_structured=use_structured,
     )
 
 
@@ -100,7 +104,7 @@ def _setup_loguru_logging(
     max_file_size: str,
     backup_count: int,
     enable_rotation: bool,
-    use_structured: bool
+    use_structured: bool,
 ) -> logging.Logger:
     """Setup logging using loguru."""
 
@@ -110,7 +114,9 @@ def _setup_loguru_logging(
     # Default format
     if format_string is None:
         if use_structured and STRUCTLOG_AVAILABLE:
-            format_string = "{extra[timestamp]} | {level} | {name}:{function}:{line} | {message}"
+            format_string = (
+                "{extra[timestamp]} | {level} | {name}:{function}:{line} | {message}"
+            )
         else:
             format_string = "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>"
 
@@ -123,7 +129,9 @@ def _setup_loguru_logging(
         if max_file_size.endswith("MB"):
             rotation_size = int(max_file_size.replace("MB", "").strip()) * 1024 * 1024
         elif max_file_size.endswith("GB"):
-            rotation_size = int(max_file_size.replace("GB", "").strip()) * 1024 * 1024 * 1024
+            rotation_size = (
+                int(max_file_size.replace("GB", "").strip()) * 1024 * 1024 * 1024
+            )
         else:
             rotation_size = int(max_file_size)
     except ValueError:
@@ -136,7 +144,7 @@ def _setup_loguru_logging(
         level=level,
         colorize=True,
         backtrace=True,
-        diagnose=True
+        diagnose=True,
     )
 
     # File handler
@@ -153,7 +161,7 @@ def _setup_loguru_logging(
                 retention=backup_count,
                 compression="zip",
                 backtrace=True,
-                diagnose=True
+                diagnose=True,
             )
         else:
             logger.add(
@@ -161,7 +169,7 @@ def _setup_loguru_logging(
                 format=format_string,
                 level=level,
                 backtrace=True,
-                diagnose=True
+                diagnose=True,
             )
 
     return logger
@@ -175,7 +183,7 @@ def _setup_standard_logging(
     max_file_size: str,
     backup_count: int,
     enable_rotation: bool,
-    use_structured: bool
+    use_structured: bool,
 ) -> logging.Logger:
     """Setup logging using Python's standard logging module."""
 
@@ -210,7 +218,7 @@ def _setup_standard_logging(
                 structlog.processors.StackInfoRenderer(),
                 structlog.processors.format_exc_info,
                 structlog.processors.UnicodeDecoder(),
-                structlog.processors.JSONRenderer()
+                structlog.processors.JSONRenderer(),
             ],
             context_class=dict,
             logger_factory=structlog.stdlib.LoggerFactory(),
@@ -238,9 +246,16 @@ def _setup_standard_logging(
             # Parse max file size
             try:
                 if max_file_size.endswith("MB"):
-                    max_bytes = int(max_file_size.replace("MB", "").strip()) * 1024 * 1024
+                    max_bytes = (
+                        int(max_file_size.replace("MB", "").strip()) * 1024 * 1024
+                    )
                 elif max_file_size.endswith("GB"):
-                    max_bytes = int(max_file_size.replace("GB", "").strip()) * 1024 * 1024 * 1024
+                    max_bytes = (
+                        int(max_file_size.replace("GB", "").strip())
+                        * 1024
+                        * 1024
+                        * 1024
+                    )
                 else:
                     max_bytes = int(max_file_size)
             except ValueError:
@@ -250,10 +265,10 @@ def _setup_standard_logging(
                 file_path,
                 maxBytes=max_bytes,
                 backupCount=backup_count,
-                encoding='utf-8'
+                encoding="utf-8",
             )
         else:
-            file_handler = logging.FileHandler(file_path, encoding='utf-8')
+            file_handler = logging.FileHandler(file_path, encoding="utf-8")
 
         file_handler.setLevel(getattr(logging, level.upper()))
         file_handler.setFormatter(formatter if not use_structured else None)
@@ -262,7 +277,9 @@ def _setup_standard_logging(
     return logger
 
 
-def setup_logging_from_config(config: LoggingConfig, use_loguru: bool = True) -> logging.Logger:
+def setup_logging_from_config(
+    config: LoggingConfig, use_loguru: bool = True
+) -> logging.Logger:
     """
     Setup logging from a LoggingConfig object.
 
@@ -275,13 +292,17 @@ def setup_logging_from_config(config: LoggingConfig, use_loguru: bool = True) ->
     """
     return setup_logging(
         level=config.level,
-        format_string=config.format if config.format != "%(asctime)s [%(levelname)s] %(name)s: %(message)s" else None,
-        date_format=config.date_format if config.date_format != "%Y-%m-%d %H:%M:%S" else None,
+        format_string=config.format
+        if config.format != "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+        else None,
+        date_format=config.date_format
+        if config.date_format != "%Y-%m-%d %H:%M:%S"
+        else None,
         file_path=config.file_path,
         max_file_size=config.max_file_size,
         backup_count=config.backup_count,
         enable_rotation=config.enable_rotation,
-        use_loguru=use_loguru
+        use_loguru=use_loguru,
     )
 
 
@@ -324,7 +345,8 @@ def log_system_info() -> None:
     # Log installed packages
     try:
         import pkg_resources
-        packages = ['pandas', 'numpy', 'pydantic', 'hmmlearn', 'scikit-learn']
+
+        packages = ["pandas", "numpy", "pydantic", "hmmlearn", "scikit-learn"]
         logger.info("=== Package Versions ===")
         for package in packages:
             try:
@@ -338,6 +360,7 @@ def log_system_info() -> None:
 
 # Create a default logger instance
 default_logger = None
+
 
 def initialize_default_logging() -> logging.Logger:
     """Initialize default logging configuration."""

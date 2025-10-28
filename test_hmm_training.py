@@ -10,7 +10,7 @@ import sys
 import numpy as np
 
 # Add src to path
-sys.path.insert(0, 'src')
+sys.path.insert(0, "src")
 
 from model_training.hmm_trainer import (
     evaluate_model,
@@ -23,7 +23,9 @@ from model_training.hmm_trainer import (
 from utils import HMMConfig
 
 
-def create_synthetic_features(n_samples=1000, n_features=8, n_states=3, random_state=42):
+def create_synthetic_features(
+    n_samples=1000, n_features=8, n_states=3, random_state=42
+):
     """
     Create synthetic feature data for HMM testing.
 
@@ -44,12 +46,12 @@ def create_synthetic_features(n_samples=1000, n_features=8, n_states=3, random_s
 
     # Define different regimes with different characteristics
     regimes = [
-        {'mean': 0.0, 'std': 1.0, 'trend': 0.01},      # Bull market
-        {'mean': 0.0, 'std': 2.0, 'trend': -0.005},   # Bear market
-        {'mean': 0.0, 'std': 0.5, 'trend': 0.002}     # Sideways market
+        {"mean": 0.0, "std": 1.0, "trend": 0.01},  # Bull market
+        {"mean": 0.0, "std": 2.0, "trend": -0.005},  # Bear market
+        {"mean": 0.0, "std": 0.5, "trend": 0.002},  # Sideways market
     ]
 
-    for i in range(n_samples):
+    for _i in range(n_samples):
         # Switch states occasionally (Poisson process)
         if np.random.random() < 0.02:  # 2% chance of regime change
             current_state = np.random.randint(0, n_states)
@@ -61,13 +63,13 @@ def create_synthetic_features(n_samples=1000, n_features=8, n_states=3, random_s
 
         for j in range(n_features):
             if j == 0:  # Returns
-                value = np.random.normal(regime['mean'], regime['std'])
+                value = np.random.normal(regime["mean"], regime["std"])
             elif j == 1:  # Volatility
-                value = abs(np.random.normal(0, regime['std']))
+                value = abs(np.random.normal(0, regime["std"]))
             elif j == 2:  # Trend
-                value = regime['trend'] + np.random.normal(0, 0.1)
+                value = regime["trend"] + np.random.normal(0, 0.1)
             elif j == 3:  # Momentum
-                value = np.random.normal(0, 1) * regime['std']
+                value = np.random.normal(0, 1) * regime["std"]
             elif j == 4:  # Volume indicator
                 value = abs(np.random.normal(1, 0.5))
             elif j == 5:  # Price position
@@ -75,13 +77,14 @@ def create_synthetic_features(n_samples=1000, n_features=8, n_states=3, random_s
             elif j == 6:  # High-low ratio
                 value = np.random.normal(1.02, 0.01)
             elif j == 7:  # Moving average deviation
-                value = np.random.normal(0, regime['std'] * 0.5)
+                value = np.random.normal(0, regime["std"] * 0.5)
 
             feature_vector.append(value)
 
         features.append(feature_vector)
 
     return np.array(features)
+
 
 def test_hmm_basic_training():
     """Test basic HMM training functionality."""
@@ -93,6 +96,7 @@ def test_hmm_basic_training():
         # Check HMM availability
         try:
             from hmmlearn import hmm
+
             print("✓ HMMlearn is available")
         except ImportError:
             print("✗ HMMlearn is not available")
@@ -110,9 +114,11 @@ def test_hmm_basic_training():
             max_iter=50,
             random_state=42,
             tol=1e-3,
-            num_restarts=3
+            num_restarts=3,
         )
-        print(f"✓ Created HMM config: {config.n_states} states, {config.num_restarts} restarts")
+        print(
+            f"✓ Created HMM config: {config.n_states} states, {config.num_restarts} restarts"
+        )
 
         # Test basic training
         print("\nTesting basic HMM training...")
@@ -129,7 +135,9 @@ def test_hmm_basic_training():
         # Test prediction
         print("\nTesting state prediction...")
         states, posterior = predict_states(model, features, scaler)
-        print(f"✓ State prediction completed: {states.shape} states, {posterior.shape} posterior probabilities")
+        print(
+            f"✓ State prediction completed: {states.shape} states, {posterior.shape} posterior probabilities"
+        )
 
         # Evaluate model
         print("\nTesting model evaluation...")
@@ -148,8 +156,10 @@ def test_hmm_basic_training():
     except Exception as e:
         print(f"✗ Basic HMM training test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 def test_hmm_multiple_restarts():
     """Test HMM training with multiple restarts."""
@@ -169,7 +179,7 @@ def test_hmm_multiple_restarts():
             max_iter=30,
             random_state=42,
             tol=1e-3,
-            num_restarts=5
+            num_restarts=5,
         )
 
         print(f"Training HMM with {config.num_restarts} restarts...")
@@ -187,15 +197,19 @@ def test_hmm_multiple_restarts():
 
         # Validate that we got good results
         if result.n_successful_restarts < config.num_restarts * 0.6:
-            print(f"⚠ Warning: Low success rate ({result.n_successful_restarts}/{config.num_restarts})")
+            print(
+                f"⚠ Warning: Low success rate ({result.n_successful_restarts}/{config.num_restarts})"
+            )
 
         return True
 
     except Exception as e:
         print(f"✗ Multiple restarts test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 def test_hmm_numerical_stability():
     """Test HMM numerical stability handling."""
@@ -224,7 +238,7 @@ def test_hmm_numerical_stability():
             covariance_type="diag",
             max_iter=20,
             random_state=42,
-            num_restarts=2
+            num_restarts=2,
         )
 
         # Test with numerical stability enabled
@@ -251,7 +265,9 @@ def test_hmm_numerical_stability():
 
         # At least one should succeed
         if model_stable is not None or model_unstable is not None:
-            print("✓ Numerical stability test passed (at least one configuration succeeded)")
+            print(
+                "✓ Numerical stability test passed (at least one configuration succeeded)"
+            )
             return True
         else:
             print("✗ Both stability configurations failed")
@@ -260,8 +276,10 @@ def test_hmm_numerical_stability():
     except Exception as e:
         print(f"✗ Numerical stability test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 def test_hmm_input_validation():
     """Test HMM input validation."""
@@ -282,7 +300,7 @@ def test_hmm_input_validation():
             (np.random.randn(0, 5), "zero rows"),
             (np.random.randn(100, 0), "zero columns"),
             (np.array([[np.nan, 1], [2, 3]]), "NaN values"),
-            (np.array([[np.inf, 1], [2, 3]]), "infinite values")
+            (np.array([[np.inf, 1], [2, 3]]), "infinite values"),
         ]
 
         for invalid_features, case_name in invalid_cases:
@@ -299,7 +317,7 @@ def test_hmm_input_validation():
         invalid_configs = [
             HMMConfig(n_states=0),  # Invalid number of states
             HMMConfig(max_iter=0),  # Invalid max iterations
-            HMMConfig(tol=-0.1),    # Invalid tolerance
+            HMMConfig(tol=-0.1),  # Invalid tolerance
             HMMConfig(num_restarts=0),  # Invalid number of restarts
         ]
 
@@ -318,8 +336,10 @@ def test_hmm_input_validation():
     except Exception as e:
         print(f"✗ Input validation test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 def test_hmm_different_configurations():
     """Test HMM with different configurations."""
@@ -346,10 +366,7 @@ def test_hmm_different_configurations():
             print(f"\nTesting {name} configuration...")
 
             config = HMMConfig(
-                max_iter=30,
-                random_state=42,
-                num_restarts=2,
-                **config_params
+                max_iter=30, random_state=42, num_restarts=2, **config_params
             )
 
             try:
@@ -362,11 +379,13 @@ def test_hmm_different_configurations():
                     "score": score,
                     "converged": eval_results["converged"],
                     "iterations": eval_results["n_iterations"],
-                    "transition_entropy": eval_results["transition_entropy"]
+                    "transition_entropy": eval_results["transition_entropy"],
                 }
                 results.append(result)
 
-                print(f"✓ {name}: score={score:.4f}, converged={eval_results['converged']}")
+                print(
+                    f"✓ {name}: score={score:.4f}, converged={eval_results['converged']}"
+                )
 
             except Exception as e:
                 print(f"✗ {name}: FAILED - {e}")
@@ -379,15 +398,19 @@ def test_hmm_different_configurations():
 
         if successful:
             best_result = max(successful, key=lambda x: x["score"])
-            print(f"  - Best configuration: {best_result['name']} (score: {best_result['score']:.4f})")
+            print(
+                f"  - Best configuration: {best_result['name']} (score: {best_result['score']:.4f})"
+            )
 
         return len(successful) > 0
 
     except Exception as e:
         print(f"✗ Configuration test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 def main():
     """Run all HMM training tests."""
@@ -400,13 +423,13 @@ def main():
         ("Multiple Restarts", test_hmm_multiple_restarts),
         ("Numerical Stability", test_hmm_numerical_stability),
         ("Input Validation", test_hmm_input_validation),
-        ("Different Configurations", test_hmm_different_configurations)
+        ("Different Configurations", test_hmm_different_configurations),
     ]
 
     results = {}
 
     for test_name, test_func in tests:
-        print(f"\n{'='*20} {test_name} {'='*20}")
+        print(f"\n{'=' * 20} {test_name} {'=' * 20}")
         try:
             results[test_name] = test_func()
         except Exception as e:
@@ -433,6 +456,7 @@ def main():
     else:
         print("❌ Some HMM training tests failed.")
         return False
+
 
 if __name__ == "__main__":
     success = main()

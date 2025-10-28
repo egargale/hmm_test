@@ -276,21 +276,21 @@ def validate_dataframe(
     if required_columns:
         for col in required_columns:
             if col in df.columns:
-                assert (
-                    not df[col].isna().all()
-                ), f"Column {col} contains only NaN values"
+                assert not df[col].isna().all(), (
+                    f"Column {col} contains only NaN values"
+                )
 
 
 def validate_hmm_model(model, n_states: int):
     """Utility to validate HMM model in tests."""
     assert hasattr(model, "n_components"), "Model missing n_components attribute"
-    assert (
-        model.n_components == n_states
-    ), f"Expected {n_states} states, got {model.n_components}"
+    assert model.n_components == n_states, (
+        f"Expected {n_states} states, got {model.n_components}"
+    )
     assert hasattr(model, "means_"), "Model appears not to be trained (missing means_)"
-    assert hasattr(
-        model, "covars_"
-    ), "Model appears not to be trained (missing covars_)"
+    assert hasattr(model, "covars_"), (
+        "Model appears not to be trained (missing covars_)"
+    )
 
 
 def measure_execution_time(func, *args, **kwargs):
@@ -320,7 +320,7 @@ def skip_if_no_internet():
 
         urllib.request.urlopen("http://www.google.com", timeout=1)
         return False
-    except:
+    except Exception:
         return True
 
 

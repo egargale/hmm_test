@@ -9,7 +9,8 @@ from pathlib import Path
 import numpy as np
 
 # Add src to path
-sys.path.insert(0, 'src')
+sys.path.insert(0, "src")
+
 
 def demo_working_features():
     """Demonstrate the working features of src modules."""
@@ -19,7 +20,7 @@ def demo_working_features():
     print("=" * 60)
 
     # Check if BTC.csv exists
-    if not Path('BTC.csv').exists():
+    if not Path("BTC.csv").exists():
         print("❌ BTC.csv not found!")
         return False
 
@@ -31,16 +32,24 @@ def demo_working_features():
         from data_processing import add_features, process_csv
 
         print("📁 Loading BTC futures data...")
-        data = process_csv('BTC.csv')
+        data = process_csv("BTC.csv")
         print(f"   ✅ Loaded {len(data):,} rows of OHLCV data")
-        print(f"   ✅ Date range: {data.index.min().date()} to {data.index.max().date()}")
+        print(
+            f"   ✅ Date range: {data.index.min().date()} to {data.index.max().date()}"
+        )
         print("   ✅ Frequency: Daily data spanning ~4 years")
-        print(f"   ✅ Price range: ${data['close'].min():,.0f} - ${data['close'].max():,.0f}")
+        print(
+            f"   ✅ Price range: ${data['close'].min():,.0f} - ${data['close'].max():,.0f}"
+        )
 
         print("\n⚙️ Advanced feature engineering...")
         features = add_features(data)
-        print(f"   ✅ Enhanced from {len(data.columns)} to {len(features.columns)} columns")
-        print(f"   ✅ Added {len(features.columns) - len(data.columns)} technical indicators")
+        print(
+            f"   ✅ Enhanced from {len(data.columns)} to {len(features.columns)} columns"
+        )
+        print(
+            f"   ✅ Added {len(features.columns) - len(data.columns)} technical indicators"
+        )
 
         # Show some engineered features
         new_features = [col for col in features.columns if col not in data.columns]
@@ -48,7 +57,7 @@ def demo_working_features():
 
         # Show sample of engineered data
         print("\n📊 Sample of engineered features:")
-        sample_cols = ['close', 'log_ret', 'simple_ret', 'sma_20', 'atr_14']
+        sample_cols = ["close", "log_ret", "simple_ret", "sma_20", "atr_14"]
         available_cols = [col for col in sample_cols if col in features.columns]
         if available_cols:
             sample = features[available_cols].head(3)
@@ -62,11 +71,21 @@ def demo_working_features():
 
         # Prepare features for HMM
         numeric_features = features.select_dtypes(include=[np.number])
-        feature_cols = [col for col in numeric_features.columns if numeric_features[col].notna().all()]
+        feature_cols = [
+            col
+            for col in numeric_features.columns
+            if numeric_features[col].notna().all()
+        ]
 
         # Select a subset of good features
-        selected_features = [col for col in feature_cols if any(ind in col.lower()
-                            for ind in ['ret', 'sma', 'atr', 'rsi', 'bb', 'momentum'])][:8]
+        selected_features = [
+            col
+            for col in feature_cols
+            if any(
+                ind in col.lower()
+                for ind in ["ret", "sma", "atr", "rsi", "bb", "momentum"]
+            )
+        ][:8]
 
         X = features[selected_features].dropna().values
 
@@ -80,7 +99,7 @@ def demo_working_features():
             covariance_type="diag",
             random_state=42,
             n_iter=100,
-            verbose=False
+            verbose=False,
         )
 
         print("📈 Fitting Hidden Markov Model...")
@@ -96,8 +115,10 @@ def demo_working_features():
             count = np.sum(states == state)
             percentage = count / len(states) * 100
             regime_names = ["Accumulation", "Trend", "Distribution"]
-            print(f"   Regime {state} ({regime_names[state] if state < 3 else f'State {state}'}): "
-                  f"{count:,} periods ({percentage:.1f}%)")
+            print(
+                f"   Regime {state} ({regime_names[state] if state < 3 else f'State {state}'}): "
+                f"{count:,} periods ({percentage:.1f}%)"
+            )
 
         # 3. Model Persistence Demo
         print("\n💾 MODEL PERSISTENCE")
@@ -121,21 +142,21 @@ def demo_working_features():
         print("-" * 30)
 
         # Analyze characteristics of each regime
-        aligned_data = features.iloc[:len(states)].copy()
-        aligned_data['regime'] = states
+        aligned_data = features.iloc[: len(states)].copy()
+        aligned_data["regime"] = states
 
         print("Regime Characteristics:")
         for state in sorted(np.unique(states)):
-            regime_data = aligned_data[aligned_data['regime'] == state]
-            if len(regime_data) > 0 and 'close' in regime_data.columns:
-                returns = regime_data['log_ret'].dropna()
+            regime_data = aligned_data[aligned_data["regime"] == state]
+            if len(regime_data) > 0 and "close" in regime_data.columns:
+                returns = regime_data["log_ret"].dropna()
                 avg_return = returns.mean() if len(returns) > 0 else 0
                 volatility = returns.std() if len(returns) > 0 else 0
                 sharpe = avg_return / volatility if volatility > 0 else 0
 
                 print(f"   Regime {state}:")
-                print(f"     Average daily return: {avg_return*100:.3f}%")
-                print(f"     Volatility: {volatility*100:.3f}%")
+                print(f"     Average daily return: {avg_return * 100:.3f}%")
+                print(f"     Volatility: {volatility * 100:.3f}%")
                 print(f"     Sharpe ratio: {sharpe:.2f}")
                 print(f"     Sample count: {len(regime_data):,}")
 
@@ -156,7 +177,7 @@ def demo_working_features():
         for i, obs in enumerate(recent_data):
             state = inference.infer_single_state(obs.reshape(1, -1))
             recent_states.append(state)
-            print(f"   Observation {i+1}: Regime {state}")
+            print(f"   Observation {i + 1}: Regime {state}")
 
         print(f"\n✅ Processed {len(recent_states)} observations in real-time")
 
@@ -180,13 +201,13 @@ def demo_working_features():
         # Check which engines are available
         engines_available = []
         try:
-            import dask
+
             engines_available.append("Dask")
         except ImportError:
             pass
 
         try:
-            import daft
+
             engines_available.append("Daft")
         except ImportError:
             pass
@@ -209,7 +230,9 @@ def demo_working_features():
 
         print("\n📊 PERFORMANCE METRICS:")
         print(f"  • Data processed: {len(data):,} rows")
-        print(f"  • Features engineered: +{len(features.columns) - len(data.columns)} indicators")
+        print(
+            f"  • Features engineered: +{len(features.columns) - len(data.columns)} indicators"
+        )
         print("  • HMM training time: <5 seconds")
         print("  • Memory usage: Efficient streaming processing")
         print("  • Model accuracy: Converged with high likelihood")
@@ -227,8 +250,10 @@ def demo_working_features():
     except Exception as e:
         print(f"❌ Demonstration failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 if __name__ == "__main__":
     success = demo_working_features()

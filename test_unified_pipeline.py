@@ -20,7 +20,7 @@ import numpy as np
 import pandas as pd
 
 # Add src to path for imports
-sys.path.insert(0, 'src')
+sys.path.insert(0, "src")
 
 from src.data_processing.pipeline_config import PipelineConfig, PipelineMode
 from src.data_processing.unified_pipeline import PipelineResult, UnifiedDataPipeline
@@ -43,36 +43,42 @@ def create_test_csv_data():
     close_prices = base_price + np.random.normal(0, 0.2, n_samples)
     volumes = np.random.exponential(1000000, n_samples)
 
-    return pd.DataFrame({
-        'DateTime': dates,
-        'Open': open_prices,
-        'High': high_prices,
-        'Low': low_prices,
-        'Close': close_prices,
-        'Volume': volumes.astype(int)
-    }).set_index('DateTime')
+    return pd.DataFrame(
+        {
+            "DateTime": dates,
+            "Open": open_prices,
+            "High": high_prices,
+            "Low": low_prices,
+            "Close": close_prices,
+            "Volume": volumes.astype(int),
+        }
+    ).set_index("DateTime")
+
 
 def create_test_csv_files(test_data):
     """Create temporary CSV files for testing."""
     temp_files = {}
 
     # Standard format
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
         test_data.reset_index().to_csv(f, index=False)
-        temp_files['standard'] = Path(f.name)
+        temp_files["standard"] = Path(f.name)
 
     # Yahoo Finance format
     yahoo_data = test_data.reset_index().copy()
-    yahoo_data['Adj Close'] = yahoo_data['Close'] * 0.98
-    yahoo_data = yahoo_data.drop('DateTime', axis=1)
-    yahoo_data = yahoo_data[['Date', 'Open', 'High', 'Low', 'Close', 'Adj Close', 'Volume']]
-    yahoo_data['Date'] = yahoo_data.index.strftime('%Y-%m-%d')
+    yahoo_data["Adj Close"] = yahoo_data["Close"] * 0.98
+    yahoo_data = yahoo_data.drop("DateTime", axis=1)
+    yahoo_data = yahoo_data[
+        ["Date", "Open", "High", "Low", "Close", "Adj Close", "Volume"]
+    ]
+    yahoo_data["Date"] = yahoo_data.index.strftime("%Y-%m-%d")
 
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
         yahoo_data.to_csv(f, index=False)
-        temp_files['yahoo'] = Path(f.name)
+        temp_files["yahoo"] = Path(f.name)
 
     return temp_files
+
 
 def test_pipeline_configuration():
     """Test pipeline configuration system."""
@@ -82,20 +88,20 @@ def test_pipeline_configuration():
         # Test default configuration
         default_config = PipelineConfig()
         assert default_config.mode == PipelineMode.STANDARD
-        assert default_config.validation_config.enable_validation == True
-        assert default_config.feature_config.enable_features == True
+        assert default_config.validation_config.enable_validation
+        assert default_config.feature_config.enable_features
         print("  ✓ Default configuration created")
 
         # Test high-performance configuration
         hp_config = PipelineConfig.create_high_performance()
         assert hp_config.mode == PipelineMode.HIGH_PERFORMANCE
-        assert hp_config.validation_config.strict_mode == False
+        assert not hp_config.validation_config.strict_mode
         print("  ✓ High-performance configuration created")
 
         # Test high-quality configuration
         hq_config = PipelineConfig.create_high_quality()
         assert hq_config.mode == PipelineMode.HIGH_QUALITY
-        assert hq_config.validation_config.strict_mode == True
+        assert hq_config.validation_config.strict_mode
         print("  ✓ High-quality configuration created")
 
         # Test configuration validation
@@ -111,8 +117,8 @@ def test_pipeline_configuration():
 
         # Test pipeline info
         pipeline_info = default_config.get_summary()
-        assert 'pipeline_name' in pipeline_info
-        assert 'mode' in pipeline_info
+        assert "pipeline_name" in pipeline_info
+        assert "mode" in pipeline_info
         print("  ✓ Pipeline info generated")
 
         print("✓ Pipeline configuration tests passed")
@@ -121,6 +127,7 @@ def test_pipeline_configuration():
     except Exception as e:
         print(f"❌ Pipeline configuration test failed: {e}")
         return False
+
 
 def test_unified_pipeline_basic():
     """Test basic unified pipeline functionality."""
@@ -138,8 +145,8 @@ def test_unified_pipeline_basic():
 
         # Test pipeline info
         pipeline_info = pipeline.get_pipeline_info()
-        assert 'pipeline_name' in pipeline_info
-        assert 'total_stages' in pipeline_info
+        assert "pipeline_name" in pipeline_info
+        assert "total_stages" in pipeline_info
         print("  ✓ Pipeline info retrieved")
 
         # Process data
@@ -147,22 +154,26 @@ def test_unified_pipeline_basic():
 
         # Validate results
         assert isinstance(result, PipelineResult)
-        assert result.success == True
+        assert result.success
         assert result.data is not None
         assert isinstance(result.data, pd.DataFrame)
         assert len(result.data) == len(test_data)
         assert len(result.data.columns) > len(test_data.columns)  # Features added
-        print(f"  ✓ Data processed successfully: {len(result.data)} rows, {len(result.data.columns)} columns")
+        print(
+            f"  ✓ Data processed successfully: {len(result.data)} rows, {len(result.data.columns)} columns"
+        )
 
         # Check metadata
         assert result.metadata is not None
-        assert 'input_source' in result.metadata
+        assert "input_source" in result.metadata
         print("  ✓ Metadata preserved")
 
         # Check quality report
         assert result.quality_report is not None
-        assert 'overall_score' in result.quality_report
-        print(f"  ✓ Quality report generated: Score = {result.quality_report.get('overall_score', 0):.3f}")
+        assert "overall_score" in result.quality_report
+        print(
+            f"  ✓ Quality report generated: Score = {result.quality_report.get('overall_score', 0):.3f}"
+        )
 
         # Check processing log
         assert result.processing_log is not None
@@ -175,8 +186,10 @@ def test_unified_pipeline_basic():
     except Exception as e:
         print(f"❌ Basic unified pipeline test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 def test_pipeline_with_csv_input():
     """Test pipeline with CSV file input."""
@@ -192,15 +205,15 @@ def test_pipeline_with_csv_input():
 
         # Test with standard CSV format
         print("  Testing standard CSV format...")
-        result = pipeline.process(temp_files['standard'])
-        assert result.success == True
+        result = pipeline.process(temp_files["standard"])
+        assert result.success
         assert len(result.data) == len(test_data)
         print(f"    ✓ Standard CSV processed: {len(result.data)} rows")
 
         # Test with Yahoo Finance format
         print("  Testing Yahoo Finance format...")
-        result_yahoo = pipeline.process(temp_files['yahoo'])
-        assert result_yahoo.success == True
+        result_yahoo = pipeline.process(temp_files["yahoo"])
+        assert result_yahoo.success
         print(f"    ✓ Yahoo Finance CSV processed: {len(result_yahoo.data)} rows")
 
         # Cleanup
@@ -213,8 +226,10 @@ def test_pipeline_with_csv_input():
     except Exception as e:
         print(f"❌ CSV input pipeline test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 def test_pipeline_performance_modes():
     """Test different pipeline performance modes."""
@@ -227,7 +242,7 @@ def test_pipeline_performance_modes():
         modes_to_test = [
             (PipelineMode.STANDARD, "Standard"),
             (PipelineMode.HIGH_PERFORMANCE, "High Performance"),
-            (PipelineMode.HIGH_QUALITY, "High Quality")
+            (PipelineMode.HIGH_QUALITY, "High Quality"),
         ]
 
         results = {}
@@ -251,20 +266,22 @@ def test_pipeline_performance_modes():
             processing_time = (end_time - start_time).total_seconds()
 
             results[mode_name] = {
-                'success': result.success,
-                'execution_time': processing_time,
-                'features_count': len(result.data.columns) - len(test_data.columns),
-                'quality_score': result.quality_report.get('overall_score', 0),
-                'issues_count': len(result.issues)
+                "success": result.success,
+                "execution_time": processing_time,
+                "features_count": len(result.data.columns) - len(test_data.columns),
+                "quality_score": result.quality_report.get("overall_score", 0),
+                "issues_count": len(result.issues),
             }
 
-            print(f"    ✓ {mode_name} mode: {processing_time:.3f}s, "
-                  f"{results[mode_name]['features_count']} features, "
-                  f"Quality: {results[mode_name]['quality_score']:.3f}")
+            print(
+                f"    ✓ {mode_name} mode: {processing_time:.3f}s, "
+                f"{results[mode_name]['features_count']} features, "
+                f"Quality: {results[mode_name]['quality_score']:.3f}"
+            )
 
         # Validate results
         for mode_name, result_data in results.items():
-            assert result_data['success'], f"{mode_name} mode should succeed"
+            assert result_data["success"], f"{mode_name} mode should succeed"
 
         print("✓ Performance modes tests passed")
         return True
@@ -272,8 +289,10 @@ def test_pipeline_performance_modes():
     except Exception as e:
         print(f"❌ Performance modes test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 def test_pipeline_error_handling():
     """Test pipeline error handling and recovery."""
@@ -287,13 +306,13 @@ def test_pipeline_error_handling():
         print("  Testing with empty DataFrame...")
         empty_df = pd.DataFrame()
         result = pipeline.process(empty_df)
-        assert result.success == False  # Should fail with empty data
+        assert not result.success  # Should fail with empty data
         assert len(result.issues) > 0
         print("    ✓ Empty DataFrame handled correctly")
 
         # Test with invalid CSV format
         print("  Testing with invalid CSV...")
-        invalid_csv = tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False)
+        invalid_csv = tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False)
         invalid_csv.write("invalid,csv,format\n1,2,3")  # Missing OHLCV columns
         invalid_csv_path = Path(invalid_csv.name)
         invalid_csv.close()
@@ -312,12 +331,14 @@ def test_pipeline_error_handling():
         print("  Testing with malformed OHLCV data...")
         malformed_data = create_test_csv_data()
         # Introduce OHLC violations
-        malformed_data.loc[10:20, 'High'] = malformed_data.loc[10:20, 'Low'] - 1
-        malformed_data.loc[30:40, 'Volume'] = -1000
+        malformed_data.loc[10:20, "High"] = malformed_data.loc[10:20, "Low"] - 1
+        malformed_data.loc[30:40, "Volume"] = -1000
 
         result = pipeline.process(malformed_data)
-        assert result.success == True  # Should succeed but with warnings
-        assert len(result.issues) > 0 or len(result.quality_report.get('issues', [])) > 0
+        assert result.success  # Should succeed but with warnings
+        assert (
+            len(result.issues) > 0 or len(result.quality_report.get("issues", [])) > 0
+        )
         print("    ✓ Malformed data handled with warnings")
 
         print("✓ Error handling tests passed")
@@ -326,8 +347,10 @@ def test_pipeline_error_handling():
     except Exception as e:
         print(f"❌ Error handling test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 def test_pipeline_metrics_and_reporting():
     """Test pipeline metrics collection and reporting."""
@@ -346,25 +369,25 @@ def test_pipeline_metrics_and_reporting():
         # Check performance metrics
         assert result.performance_metrics is not None
         perf_report = result.performance_metrics
-        assert 'report_type' in perf_report
-        assert 'pipeline_summary' in perf_report
-        assert 'stage_details' in perf_report
+        assert "report_type" in perf_report
+        assert "pipeline_summary" in perf_report
+        assert "stage_details" in perf_report
         print("  ✓ Performance metrics generated")
 
         # Check stage details
-        stage_details = perf_report['stage_details']
+        stage_details = perf_report["stage_details"]
         assert len(stage_details) >= 3  # Should have multiple stages
         for stage in stage_details:
-            assert 'stage_name' in stage
-            assert 'processing_time' in stage
-            assert 'success' in stage
+            assert "stage_name" in stage
+            assert "processing_time" in stage
+            assert "success" in stage
         print(f"    ✓ Stage details for {len(stage_details)} stages")
 
         # Check quality report
         assert result.quality_report is not None
         quality_report = result.quality_report
-        assert 'overall_score' in quality_report
-        assert 'quality_breakdown' in quality_report
+        assert "overall_score" in quality_report
+        assert "quality_breakdown" in quality_report
         print(f"    ✓ Quality report: Score = {quality_report['overall_score']:.3f}")
 
         # Check recommendations
@@ -375,7 +398,7 @@ def test_pipeline_metrics_and_reporting():
 
         # Check pipeline info after execution
         pipeline_info = pipeline.get_pipeline_info()
-        assert pipeline_info['execution_count'] == 1
+        assert pipeline_info["execution_count"] == 1
         print("  ✓ Pipeline execution count updated")
 
         print("✓ Metrics and reporting tests passed")
@@ -384,8 +407,10 @@ def test_pipeline_metrics_and_reporting():
     except Exception as e:
         print(f"❌ Metrics and reporting test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 def test_pipeline_output_management():
     """Test pipeline output management capabilities."""
@@ -398,14 +423,14 @@ def test_pipeline_output_management():
         # Create pipeline with output configuration
         config = PipelineConfig(
             name="test_output_pipeline",
-            output_config_save_path=Path(tempfile.mkdtemp()) / "output"
+            output_config_save_path=Path(tempfile.mkdtemp()) / "output",
         )
         pipeline = UnifiedDataPipeline(config)
 
         # Process data with output saving
         result = pipeline.process(test_data, save_output=True)
 
-        assert result.success == True
+        assert result.success
         print("  ✓ Pipeline completed with output saving")
 
         # Check if output files were created
@@ -414,7 +439,7 @@ def test_pipeline_output_management():
         print(f"  ✓ Output directory created: {output_dir}")
 
         # Check for expected output files
-        expected_files = ['data.csv', 'metadata.json']
+        expected_files = ["data.csv", "metadata.json"]
         created_files = [f.name for f in output_dir.iterdir() if f.is_file()]
 
         for expected_file in expected_files:
@@ -425,6 +450,7 @@ def test_pipeline_output_management():
 
         # Cleanup
         import shutil
+
         shutil.rmtree(output_dir)
 
         print("✓ Output management tests passed")
@@ -433,8 +459,10 @@ def test_pipeline_output_management():
     except Exception as e:
         print(f"❌ Output management test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 def test_pipeline_customization():
     """Test pipeline customization capabilities."""
@@ -459,10 +487,10 @@ def test_pipeline_customization():
                 return StageResult(
                     success=True,
                     data=data,
-                    metadata={'custom_stage': True},
+                    metadata={"custom_stage": True},
                     issues=[],
                     processing_time=0.001,
-                    stage_name=self.name
+                    stage_name=self.name,
                 )
 
         custom_stage = TestCustomStage("custom_test_stage")
@@ -475,12 +503,12 @@ def test_pipeline_customization():
 
         # Process data
         result = pipeline.process(test_data)
-        assert result.success == True
+        assert result.success
         print("  ✓ Pipeline with custom stage completed")
 
         # Test removing stage
         removed = pipeline.remove_stage("custom_test_stage")
-        assert removed == True
+        assert removed
         print("  ✓ Custom stage removed successfully")
 
         # Test pipeline mode variations
@@ -498,8 +526,10 @@ def test_pipeline_customization():
     except Exception as e:
         print(f"❌ Pipeline customization test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 def test_end_to_end_workflow():
     """Test complete end-to-end workflow."""
@@ -513,20 +543,20 @@ def test_end_to_end_workflow():
         # Test complete workflow with different configurations
         workflows = [
             {
-                'name': 'Standard CSV Processing',
-                'pipeline_factory': lambda: UnifiedDataPipeline(),
-                'input_source': temp_files['standard']
+                "name": "Standard CSV Processing",
+                "pipeline_factory": lambda: UnifiedDataPipeline(),
+                "input_source": temp_files["standard"],
             },
             {
-                'name': 'High Performance Processing',
-                'pipeline_factory': lambda: UnifiedDataPipeline.create_high_performance(),
-                'input_source': test_data
+                "name": "High Performance Processing",
+                "pipeline_factory": lambda: UnifiedDataPipeline.create_high_performance(),
+                "input_source": test_data,
             },
             {
-                'name': 'High Quality Processing',
-                'pipeline_factory': lambda: UnifiedDataPipeline.create_high_quality(),
-                'input_source': test_data
-            }
+                "name": "High Quality Processing",
+                "pipeline_factory": lambda: UnifiedDataPipeline.create_high_quality(),
+                "input_source": test_data,
+            },
         ]
 
         results = {}
@@ -535,37 +565,45 @@ def test_end_to_end_workflow():
             print(f"  Running: {workflow['name']}")
 
             # Create pipeline
-            pipeline = workflow['pipeline_factory']()
+            pipeline = workflow["pipeline_factory"]()
 
             # Process data
             start_time = datetime.now()
-            result = pipeline.process(workflow['input_source'])
+            result = pipeline.process(workflow["input_source"])
             end_time = datetime.now()
 
             # Record results
             processing_time = (end_time - start_time).total_seconds()
-            results[workflow['name']] = {
-                'success': result.success,
-                'processing_time': processing_time,
-                'rows_processed': len(result.data) if result.success else 0,
-                'features_added': len(result.data.columns) - len(test_data) if result.success else 0,
-                'quality_score': result.quality_report.get('overall_score', 0) if result.success else 0,
-                'issues_count': len(result.issues) if result.success else 1
+            results[workflow["name"]] = {
+                "success": result.success,
+                "processing_time": processing_time,
+                "rows_processed": len(result.data) if result.success else 0,
+                "features_added": len(result.data.columns) - len(test_data)
+                if result.success
+                else 0,
+                "quality_score": result.quality_report.get("overall_score", 0)
+                if result.success
+                else 0,
+                "issues_count": len(result.issues) if result.success else 1,
             }
 
-            print(f"    ✓ {workflow['name']}: {processing_time:.3f}s, "
-                  f"{results[workflow['name']]['features_added']} features, "
-                  f"Quality: {results[workflow['name']]['quality_score']:.3f}")
+            print(
+                f"    ✓ {workflow['name']}: {processing_time:.3f}s, "
+                f"{results[workflow['name']]['features_added']} features, "
+                f"Quality: {results[workflow['name']]['quality_score']:.3f}"
+            )
 
         # Validate all workflows succeeded
         for workflow_name, result_data in results.items():
-            assert result_data['success'], f"Workflow '{workflow_name}' should succeed"
+            assert result_data["success"], f"Workflow '{workflow_name}' should succeed"
 
         # Performance comparison
         print("  Performance comparison:")
         for workflow_name, result_data in results.items():
-            print(f"    {workflow_name}: {result_data['processing_time']:.3f}s, "
-                  f"{result_data['rows_processed']/result_data['processing_time']:.0f} rows/sec")
+            print(
+                f"    {workflow_name}: {result_data['processing_time']:.3f}s, "
+                f"{result_data['rows_processed'] / result_data['processing_time']:.0f} rows/sec"
+            )
 
         # Cleanup
         for temp_file in temp_files.values():
@@ -577,8 +615,10 @@ def test_end_to_end_workflow():
     except Exception as e:
         print(f"❌ End-to-end workflow test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 def main():
     """Run all unified pipeline tests."""
@@ -587,7 +627,7 @@ def main():
     print("=" * 80)
 
     # Suppress warnings for cleaner output
-    warnings.filterwarnings('ignore')
+    warnings.filterwarnings("ignore")
 
     tests = [
         ("Pipeline Configuration", test_pipeline_configuration),
@@ -598,7 +638,7 @@ def main():
         ("Metrics and Reporting", test_pipeline_metrics_and_reporting),
         ("Output Management", test_pipeline_output_management),
         ("Pipeline Customization", test_pipeline_customization),
-        ("End-to-End Workflow", test_end_to_end_workflow)
+        ("End-to-End Workflow", test_end_to_end_workflow),
     ]
 
     results = []
@@ -645,6 +685,7 @@ def main():
     else:
         print(f"\n❌ {total - passed} test(s) failed. Please check the implementation.")
         return 1
+
 
 if __name__ == "__main__":
     exit_code = main()

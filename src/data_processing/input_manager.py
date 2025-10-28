@@ -12,6 +12,7 @@ from typing import Any, Dict, List, Optional, Union
 import pandas as pd
 
 from utils.logging_config import get_logger
+
 from .pipeline_config import InputSourceType
 
 logger = get_logger(__name__)
@@ -20,6 +21,7 @@ logger = get_logger(__name__)
 @dataclass
 class InputData:
     """Container for input data with metadata."""
+
     data: Any
     source_type: InputSourceType
     source_path: Optional[Path] = None
@@ -34,6 +36,7 @@ class InputData:
 @dataclass
 class ValidationResult:
     """Result of input validation."""
+
     is_valid: bool
     issues: List[str]
     warnings: List[str]
@@ -57,8 +60,13 @@ class DataInputManager:
         self.default_encoding = default_encoding
         self.logger = get_logger(f"{__name__}.DataInputManager")
 
-    def load_from_csv(self, file_path: Union[str, Path], encoding: Optional[str] = None,
-                     sample_size: Optional[int] = None, **kwargs) -> InputData:
+    def load_from_csv(
+        self,
+        file_path: Union[str, Path],
+        encoding: Optional[str] = None,
+        sample_size: Optional[int] = None,
+        **kwargs,
+    ) -> InputData:
         """
         Load data from CSV file with automatic preprocessing.
 
@@ -87,13 +95,13 @@ class DataInputManager:
 
             # Load data with options
             read_kwargs = {
-                'encoding': encoding,
-                'dtype': str,  # Keep as string for format detection
-                **kwargs
+                "encoding": encoding,
+                "dtype": str,  # Keep as string for format detection
+                **kwargs,
             }
 
             if sample_size:
-                read_kwargs['nrows'] = sample_size
+                read_kwargs["nrows"] = sample_size
 
             # Read CSV data
             data = pd.read_csv(file_path, **read_kwargs)
@@ -101,22 +109,28 @@ class DataInputManager:
             # Extract metadata
             metadata = self._extract_file_metadata(file_path, data, encoding)
 
-            self.logger.info(f"CSV loaded successfully: {len(data)} rows, {len(data.columns)} columns")
+            self.logger.info(
+                f"CSV loaded successfully: {len(data)} rows, {len(data.columns)} columns"
+            )
 
             return InputData(
                 data=data,
                 source_type=InputSourceType.CSV_FILE,
                 source_path=file_path,
                 metadata=metadata,
-                encoding=encoding
+                encoding=encoding,
             )
 
         except Exception as e:
             self.logger.error(f"Failed to load CSV file {file_path}: {e}")
             raise
 
-    def load_from_dataframe(self, df: pd.DataFrame, source_name: Optional[str] = None,
-                           metadata: Optional[Dict[str, Any]] = None) -> InputData:
+    def load_from_dataframe(
+        self,
+        df: pd.DataFrame,
+        source_name: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> InputData:
         """
         Load data from pandas DataFrame.
 
@@ -129,7 +143,9 @@ class DataInputManager:
             InputData object with DataFrame and metadata
         """
         try:
-            self.logger.info(f"Loading DataFrame: {len(df)} rows, {len(df.columns)} columns")
+            self.logger.info(
+                f"Loading DataFrame: {len(df)} rows, {len(df.columns)} columns"
+            )
 
             # Validate DataFrame
             if df.empty:
@@ -137,21 +153,21 @@ class DataInputManager:
 
             # Extract basic metadata
             df_metadata = {
-                'rows': len(df),
-                'columns': len(df.columns),
-                'column_names': df.columns.tolist(),
-                'dtypes': df.dtypes.to_dict(),
-                'memory_usage_mb': df.memory_usage(deep=True).sum() / (1024 * 1024),
-                'source_name': source_name or "dataframe"
+                "rows": len(df),
+                "columns": len(df.columns),
+                "column_names": df.columns.tolist(),
+                "dtypes": df.dtypes.to_dict(),
+                "memory_usage_mb": df.memory_usage(deep=True).sum() / (1024 * 1024),
+                "source_name": source_name or "dataframe",
             }
 
             # Check for datetime index
             if isinstance(df.index, pd.DatetimeIndex):
-                df_metadata['has_datetime_index'] = True
-                df_metadata['date_range'] = {
-                    'start': df.index.min().isoformat(),
-                    'end': df.index.max().isoformat(),
-                    'duration_days': (df.index.max() - df.index.min()).days
+                df_metadata["has_datetime_index"] = True
+                df_metadata["date_range"] = {
+                    "start": df.index.min().isoformat(),
+                    "end": df.index.max().isoformat(),
+                    "duration_days": (df.index.max() - df.index.min()).days,
                 }
 
             # Merge with provided metadata
@@ -161,16 +177,19 @@ class DataInputManager:
             return InputData(
                 data=df.copy(),
                 source_type=InputSourceType.DATAFRAME,
-                metadata=df_metadata
+                metadata=df_metadata,
             )
 
         except Exception as e:
             self.logger.error(f"Failed to load DataFrame: {e}")
             raise
 
-    def load_from_source(self, source: Union[str, Path, pd.DataFrame],
-                        source_type: Optional[InputSourceType] = None,
-                        **kwargs) -> InputData:
+    def load_from_source(
+        self,
+        source: Union[str, Path, pd.DataFrame],
+        source_type: Optional[InputSourceType] = None,
+        **kwargs,
+    ) -> InputData:
         """
         Load data from various sources with automatic type detection.
 
@@ -215,7 +234,9 @@ class DataInputManager:
             # Basic data validation
             if data is None:
                 issues.append("Input data is None")
-                return ValidationResult(False, issues, warnings, recommendations, metadata)
+                return ValidationResult(
+                    False, issues, warnings, recommendations, metadata
+                )
 
             if isinstance(data, pd.DataFrame):
                 # DataFrame validation
@@ -238,28 +259,35 @@ class DataInputManager:
                     warnings.append("Very small dataset (less than 10 rows)")
 
                 # Check for OHLCV columns
-                ohlcv_cols = ['open', 'high', 'low', 'close', 'volume']
-                available_ohlcv = [col for col in ohlcv_cols if col in data.columns.str.lower()]
-                metadata['ohlcv_coverage'] = len(available_ohlcv) / len(ohlcv_cols)
+                ohlcv_cols = ["open", "high", "low", "close", "volume"]
+                available_ohlcv = [
+                    col for col in ohlcv_cols if col in data.columns.str.lower()
+                ]
+                metadata["ohlcv_coverage"] = len(available_ohlcv) / len(ohlcv_cols)
 
                 if len(available_ohlcv) < 3:
-                    recommendations.append("Consider adding more OHLCV columns for better analysis")
+                    recommendations.append(
+                        "Consider adding more OHLCV columns for better analysis"
+                    )
 
                 # Metadata extraction
-                metadata.update({
-                    'data_shape': data.shape,
-                    'column_count': len(data.columns),
-                    'row_count': len(data),
-                    'dtypes': data.dtypes.to_dict(),
-                    'memory_usage_mb': data.memory_usage(deep=True).sum() / (1024 * 1024)
-                })
+                metadata.update(
+                    {
+                        "data_shape": data.shape,
+                        "column_count": len(data.columns),
+                        "row_count": len(data),
+                        "dtypes": data.dtypes.to_dict(),
+                        "memory_usage_mb": data.memory_usage(deep=True).sum()
+                        / (1024 * 1024),
+                    }
+                )
 
             else:
                 warnings.append(f"Data type not fully validated: {type(data)}")
 
             # Check encoding for file sources
             if input_data.source_type == InputSourceType.CSV_FILE:
-                metadata['encoding'] = input_data.encoding
+                metadata["encoding"] = input_data.encoding
 
             is_valid = len(issues) == 0
 
@@ -268,7 +296,7 @@ class DataInputManager:
                 issues=issues,
                 warnings=warnings,
                 recommendations=recommendations,
-                metadata=metadata
+                metadata=metadata,
             )
 
         except Exception as e:
@@ -281,7 +309,7 @@ class DataInputManager:
                 issues=issues,
                 warnings=warnings,
                 recommendations=recommendations,
-                metadata=metadata
+                metadata=metadata,
             )
 
     def get_input_metadata(self, input_data: InputData) -> Dict[str, Any]:
@@ -295,43 +323,50 @@ class DataInputManager:
             Dictionary with comprehensive metadata
         """
         metadata = input_data.metadata.copy()
-        metadata.update({
-            'source_type': input_data.source_type.value,
-            'encoding': input_data.encoding,
-            'source_path': str(input_data.source_path) if input_data.source_path else None
-        })
+        metadata.update(
+            {
+                "source_type": input_data.source_type.value,
+                "encoding": input_data.encoding,
+                "source_path": str(input_data.source_path)
+                if input_data.source_path
+                else None,
+            }
+        )
 
         # Add data-specific metadata
         if isinstance(input_data.data, pd.DataFrame):
             df = input_data.data
 
             # Data shape and size
-            metadata['data_shape'] = df.shape
-            metadata['total_cells'] = df.shape[0] * df.shape[1]
+            metadata["data_shape"] = df.shape
+            metadata["total_cells"] = df.shape[0] * df.shape[1]
 
             # Missing data statistics
             missing_data = df.isnull().sum()
-            metadata['missing_data'] = {
-                'total_missing': missing_data.sum(),
-                'missing_percentage': (missing_data.sum() / metadata['total_cells']) * 100,
-                'columns_with_missing': missing_data[missing_data > 0].to_dict()
+            metadata["missing_data"] = {
+                "total_missing": missing_data.sum(),
+                "missing_percentage": (missing_data.sum() / metadata["total_cells"])
+                * 100,
+                "columns_with_missing": missing_data[missing_data > 0].to_dict(),
             }
 
             # Column statistics
-            metadata['column_statistics'] = {
-                'numeric_columns': len(df.select_dtypes(include=['number']).columns),
-                'datetime_columns': len(df.select_dtypes(include=['datetime64']).columns),
-                'object_columns': len(df.select_dtypes(include=['object']).columns),
-                'all_columns': df.columns.tolist()
+            metadata["column_statistics"] = {
+                "numeric_columns": len(df.select_dtypes(include=["number"]).columns),
+                "datetime_columns": len(
+                    df.select_dtypes(include=["datetime64"]).columns
+                ),
+                "object_columns": len(df.select_dtypes(include=["object"]).columns),
+                "all_columns": df.columns.tolist(),
             }
 
             # Index information
             if isinstance(df.index, pd.DatetimeIndex):
-                metadata['index_info'] = {
-                    'type': 'datetime',
-                    'start': df.index.min().isoformat(),
-                    'end': df.index.max().isoformat(),
-                    'frequency': self._detect_frequency(df.index)
+                metadata["index_info"] = {
+                    "type": "datetime",
+                    "start": df.index.min().isoformat(),
+                    "end": df.index.max().isoformat(),
+                    "frequency": self._detect_frequency(df.index),
                 }
 
         return metadata
@@ -341,41 +376,46 @@ class DataInputManager:
         try:
             import chardet
 
-            with open(file_path, 'rb') as f:
+            with open(file_path, "rb") as f:
                 raw_data = f.read(10000)  # Read first 10KB
                 result = chardet.detect(raw_data)
-                encoding = result.get('encoding', 'utf-8')
+                encoding = result.get("encoding", "utf-8")
 
-            self.logger.debug(f"Detected encoding: {encoding} (confidence: {result.get('confidence', 0):.2f})")
+            self.logger.debug(
+                f"Detected encoding: {encoding} (confidence: {result.get('confidence', 0):.2f})"
+            )
             return encoding
 
         except ImportError:
             self.logger.warning("chardet not available, using default encoding")
             return self.default_encoding
         except Exception as e:
-            self.logger.warning(f"Encoding detection failed: {e}, using default encoding")
+            self.logger.warning(
+                f"Encoding detection failed: {e}, using default encoding"
+            )
             return self.default_encoding
 
-    def _extract_file_metadata(self, file_path: Path, data: pd.DataFrame, encoding: str) -> Dict[str, Any]:
+    def _extract_file_metadata(
+        self, file_path: Path, data: pd.DataFrame, encoding: str
+    ) -> Dict[str, Any]:
         """Extract metadata from file and data."""
         try:
-
             # File metadata
             stat = file_path.stat()
             file_metadata = {
-                'file_name': file_path.name,
-                'file_size_bytes': stat.st_size,
-                'file_size_mb': stat.st_size / (1024 * 1024),
-                'modified_time': stat.st_mtime,
-                'encoding': encoding
+                "file_name": file_path.name,
+                "file_size_bytes": stat.st_size,
+                "file_size_mb": stat.st_size / (1024 * 1024),
+                "modified_time": stat.st_mtime,
+                "encoding": encoding,
             }
 
             # Data metadata
             data_metadata = {
-                'rows': len(data),
-                'columns': len(data.columns),
-                'column_names': data.columns.tolist(),
-                'data_types': data.dtypes.to_dict()
+                "rows": len(data),
+                "columns": len(data.columns),
+                "column_names": data.columns.tolist(),
+                "data_types": data.dtypes.to_dict(),
             }
 
             # Combine metadata
@@ -384,10 +424,12 @@ class DataInputManager:
             # Check for datetime patterns in columns
             datetime_candidates = []
             for col in data.columns:
-                if any(pattern in col.lower() for pattern in ['date', 'time', 'datetime']):
+                if any(
+                    pattern in col.lower() for pattern in ["date", "time", "datetime"]
+                ):
                     datetime_candidates.append(col)
 
-            metadata['datetime_column_candidates'] = datetime_candidates
+            metadata["datetime_column_candidates"] = datetime_candidates
 
             return metadata
 
@@ -401,7 +443,7 @@ class DataInputManager:
             return InputSourceType.DATAFRAME
         elif isinstance(source, (str, Path)):
             path = Path(source)
-            if path.exists() and path.suffix.lower() == '.csv':
+            if path.exists() and path.suffix.lower() == ".csv":
                 return InputSourceType.CSV_FILE
             else:
                 raise ValueError(f"Cannot determine source type for: {source}")
@@ -452,22 +494,22 @@ class DataInputManager:
 
             if isinstance(data, pd.DataFrame):
                 preview = {
-                    'head': data.head(n_rows).to_dict('records'),
-                    'columns': data.columns.tolist(),
-                    'dtypes': data.dtypes.to_dict(),
-                    'shape': data.shape,
-                    'index_sample': list(data.head(n_rows).index)
+                    "head": data.head(n_rows).to_dict("records"),
+                    "columns": data.columns.tolist(),
+                    "dtypes": data.dtypes.to_dict(),
+                    "shape": data.shape,
+                    "index_sample": list(data.head(n_rows).index),
                 }
 
                 # Add basic statistics for numeric columns
-                numeric_cols = data.select_dtypes(include=['number']).columns
+                numeric_cols = data.select_dtypes(include=["number"]).columns
                 if len(numeric_cols) > 0:
-                    preview['numeric_summary'] = data[numeric_cols].describe().to_dict()
+                    preview["numeric_summary"] = data[numeric_cols].describe().to_dict()
 
                 return preview
             else:
-                return {'type': str(type(data)), 'preview': str(data)[:500]}
+                return {"type": str(type(data)), "preview": str(data)[:500]}
 
         except Exception as e:
             self.logger.error(f"Failed to generate data preview: {e}")
-            return {'error': str(e)}
+            return {"error": str(e)}

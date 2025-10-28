@@ -12,14 +12,14 @@ from .strategy_engine import backtest_strategy
 from .utils import calculate_transaction_costs, validate_backtest_inputs
 
 __all__ = [
-    'backtest_strategy',
-    'analyze_performance',
-    'calculate_performance',
-    'infer_trading_frequency',
-    'detect_lookahead_bias',
-    'validate_backtest_realism',
-    'validate_backtest_inputs',
-    'calculate_transaction_costs'
+    "backtest_strategy",
+    "analyze_performance",
+    "calculate_performance",
+    "infer_trading_frequency",
+    "detect_lookahead_bias",
+    "validate_backtest_realism",
+    "validate_backtest_inputs",
+    "calculate_transaction_costs",
 ]
 
 # Version information

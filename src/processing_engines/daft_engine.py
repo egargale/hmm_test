@@ -15,6 +15,7 @@ try:
     import daft
     import pyarrow as pa
     import pyarrow.compute as pc
+
     DAFT_AVAILABLE = True
 except ImportError:
     DAFT_AVAILABLE = False
@@ -34,7 +35,7 @@ def process_daft(
     npartitions: Optional[int] = None,
     memory_limit: Optional[str] = "2GB",
     show_progress: bool = True,
-    use_accelerators: bool = True
+    use_accelerators: bool = True,
 ) -> "daft.DataFrame":
     """
     Process CSV file using Daft for modern distributed computing.
@@ -63,7 +64,9 @@ def process_daft(
         raise FileNotFoundError(f"CSV file not found: {csv_path}")
 
     logger.info(f"Starting Daft processing of {csv_path}")
-    logger.info(f"Configuration: engine={config.engine_type}, npartitions={npartitions}")
+    logger.info(
+        f"Configuration: engine={config.engine_type}, npartitions={npartitions}"
+    )
 
     try:
         # Load CSV with Daft
@@ -99,7 +102,9 @@ def process_daft(
             logger.info("Computing basic statistics...")
             try:
                 row_count = df.count_rows()
-                logger.info(f"Processed {row_count} rows with {len(df.columns)} columns")
+                logger.info(
+                    f"Processed {row_count} rows with {len(df.columns)} columns"
+                )
             except Exception as e:
                 logger.warning(f"Could not compute statistics: {e}")
 
@@ -129,6 +134,7 @@ def _auto_detect_partitions_daft(df: "daft.DataFrame", csv_path: Path) -> int:
 
     # Adjust based on available cores
     import multiprocessing
+
     cpu_count = multiprocessing.cpu_count()
 
     # Daft can handle more partitions efficiently
@@ -143,8 +149,10 @@ def _auto_detect_partitions_daft(df: "daft.DataFrame", csv_path: Path) -> int:
     optimal_partitions = max(1, optimal_partitions)
     optimal_partitions = min(optimal_partitions, 50)  # Cap at 50 partitions
 
-    logger.debug(f"Auto-detected Daft partitions: {optimal_partitions} "
-                 f"(file: {file_size_mb:.1f}MB, cores: {cpu_count})")
+    logger.debug(
+        f"Auto-detected Daft partitions: {optimal_partitions} "
+        f"(file: {file_size_mb:.1f}MB, cores: {cpu_count})"
+    )
 
     return optimal_partitions
 
@@ -192,11 +200,21 @@ def _detect_ohlcv_columns_daft(columns: List[str]) -> Dict[str, str]:
 
     # Common column name variations
     ohlcv_patterns = {
-        'open': ['open', 'Open', 'OPEN', 'o', 'O', 'price_open', 'Price_Open'],
-        'high': ['high', 'High', 'HIGH', 'h', 'H', 'price_high', 'Price_High'],
-        'low': ['low', 'Low', 'LOW', 'l', 'L', 'price_low', 'Price_Low'],
-        'close': ['close', 'Close', 'CLOSE', 'c', 'C', 'price_close', 'Price_Close', 'last', 'Last'],
-        'volume': ['volume', 'Volume', 'VOLUME', 'v', 'V', 'vol', 'Vol', 'trades']
+        "open": ["open", "Open", "OPEN", "o", "O", "price_open", "Price_Open"],
+        "high": ["high", "High", "HIGH", "h", "H", "price_high", "Price_High"],
+        "low": ["low", "Low", "LOW", "l", "L", "price_low", "Price_Low"],
+        "close": [
+            "close",
+            "Close",
+            "CLOSE",
+            "c",
+            "C",
+            "price_close",
+            "Price_Close",
+            "last",
+            "Last",
+        ],
+        "volume": ["volume", "Volume", "VOLUME", "v", "V", "vol", "Vol", "trades"],
     }
 
     column_mapping = {}
@@ -210,7 +228,9 @@ def _detect_ohlcv_columns_daft(columns: List[str]) -> Dict[str, str]:
     return column_mapping
 
 
-def _apply_feature_engineering_daft(df: "daft.DataFrame", config: ProcessingConfig) -> "daft.DataFrame":
+def _apply_feature_engineering_daft(
+    df: "daft.DataFrame", config: ProcessingConfig
+) -> "daft.DataFrame":
     """
     Apply feature engineering to Daft DataFrame.
 
@@ -231,9 +251,7 @@ def _apply_feature_engineering_daft(df: "daft.DataFrame", config: ProcessingConf
 
         # Apply feature engineering using existing pandas function
         pandas_df = add_features(
-            pandas_df,
-            indicator_config=config.indicators,
-            downcast_floats=True
+            pandas_df, indicator_config=config.indicators, downcast_floats=True
         )
 
         # Convert back to Daft
@@ -249,7 +267,9 @@ def _apply_feature_engineering_daft(df: "daft.DataFrame", config: ProcessingConf
         return df
 
 
-def _process_datetime_columns_daft_expressions(df: "daft.DataFrame") -> "daft.DataFrame":
+def _process_datetime_columns_daft_expressions(
+    df: "daft.DataFrame",
+) -> "daft.DataFrame":
     """
     Process datetime columns using Daft expressions for better performance.
 
@@ -259,8 +279,8 @@ def _process_datetime_columns_daft_expressions(df: "daft.DataFrame") -> "daft.Da
     Returns:
         daft.DataFrame: DataFrame with processed datetime columns
     """
-    date_columns = ['date', 'Date', 'datetime', 'DateTime', 'timestamp', 'Timestamp']
-    time_columns = ['time', 'Time', 'datetime', 'DateTime', 'timestamp', 'Timestamp']
+    date_columns = ["date", "Date", "datetime", "DateTime", "timestamp", "Timestamp"]
+    time_columns = ["time", "Time", "datetime", "DateTime", "timestamp", "Timestamp"]
 
     # Find date column
     date_col = None
@@ -285,13 +305,19 @@ def _process_datetime_columns_daft_expressions(df: "daft.DataFrame") -> "daft.Da
             datetime_col = "datetime"
             df = df.with_column(
                 datetime_col,
-                daft.col(date_col).cast(daft.DataType.string()) + daft.lit(" ") + daft.col(time_col).cast(daft.DataType.string())
+                daft.col(date_col).cast(daft.DataType.string())
+                + daft.lit(" ")
+                + daft.col(time_col).cast(daft.DataType.string()),
             )
-            df = df.with_column(datetime_col, daft.col(datetime_col).cast(daft.DataType.timestamp("us")))
+            df = df.with_column(
+                datetime_col, daft.col(datetime_col).cast(daft.DataType.timestamp("us"))
+            )
             df = df.exclude(date_col, time_col)
         else:
             # Convert date column to datetime
-            df = df.with_column(date_col, daft.col(date_col).cast(daft.DataType.timestamp("us")))
+            df = df.with_column(
+                date_col, daft.col(date_col).cast(daft.DataType.timestamp("us"))
+            )
             datetime_col = date_col
 
         # Set datetime as index
@@ -315,7 +341,7 @@ def _clean_numeric_data_daft_expressions(df: "daft.DataFrame") -> "daft.DataFram
     Returns:
         daft.DataFrame: DataFrame with cleaned numeric data
     """
-    numeric_columns = ['open', 'high', 'low', 'close', 'volume']
+    numeric_columns = ["open", "high", "low", "close", "volume"]
 
     for col in numeric_columns:
         if col in df.column_names:
@@ -323,7 +349,7 @@ def _clean_numeric_data_daft_expressions(df: "daft.DataFrame") -> "daft.DataFram
             df = df.with_column(col, daft.col(col).cast(daft.DataType.float32()))
 
             # Remove rows with null in price columns (but not volume)
-            if col != 'volume':
+            if col != "volume":
                 df = df.filter(daft.col(col).not_null())
 
     return df
@@ -351,7 +377,7 @@ def _apply_validation_daft(df: "daft.DataFrame") -> "daft.DataFrame":
             outlier_detection=True,
             outlier_method="iqr",
             outlier_threshold=1.5,
-            missing_value_strategy="forward_fill"
+            missing_value_strategy="forward_fill",
         )
 
         logger.info(f"Validation completed: {validation_report}")
@@ -368,7 +394,9 @@ def _apply_validation_daft(df: "daft.DataFrame") -> "daft.DataFrame":
         return df
 
 
-def compute_daft_with_progress(df: "daft.DataFrame", show_progress: bool = True) -> "pd.DataFrame":
+def compute_daft_with_progress(
+    df: "daft.DataFrame", show_progress: bool = True
+) -> "pd.DataFrame":
     """
     Compute Daft DataFrame with optional progress reporting.
 
@@ -392,15 +420,16 @@ def compute_daft_with_progress(df: "daft.DataFrame", show_progress: bool = True)
     end_time = time.time()
     processing_time = end_time - start_time
 
-    logger.info(f"Daft computation completed: {len(result)} rows, {len(result.columns)} columns")
+    logger.info(
+        f"Daft computation completed: {len(result)} rows, {len(result.columns)} columns"
+    )
     logger.info(f"Computation time: {processing_time:.2f}s")
 
     return result
 
 
 def optimize_daft_performance(
-    use_accelerators: bool = True,
-    memory_fraction: float = 0.8
+    use_accelerators: bool = True, memory_fraction: float = 0.8
 ) -> Dict[str, Any]:
     """
     Optimize Daft performance settings.
@@ -418,7 +447,7 @@ def optimize_daft_performance(
         # Configure Daft settings
         try:
             # Memory optimization
-            settings['memory_fraction'] = memory_fraction
+            settings["memory_fraction"] = memory_fraction
             logger.info(f"Configured Daft memory fraction: {memory_fraction}")
 
             # Accelerator optimization
@@ -426,14 +455,15 @@ def optimize_daft_performance(
                 # Check if GPU is available
                 try:
                     import torch
+
                     if torch.cuda.is_available():
-                        settings['gpu_available'] = True
+                        settings["gpu_available"] = True
                         logger.info("GPU acceleration available for Daft")
                     else:
-                        settings['gpu_available'] = False
+                        settings["gpu_available"] = False
                         logger.info("GPU not available, using CPU")
                 except ImportError:
-                    settings['gpu_available'] = False
+                    settings["gpu_available"] = False
                     logger.info("PyTorch not available, using CPU")
 
             # Set Daft configuration if available
@@ -450,9 +480,7 @@ def optimize_daft_performance(
 
 
 def benchmark_daft_engine(
-    csv_path: str,
-    partition_counts: List[int] = None,
-    use_accelerators: bool = True
+    csv_path: str, partition_counts: List[int] = None, use_accelerators: bool = True
 ) -> Dict[str, Any]:
     """
     Benchmark different Daft configurations for performance testing.
@@ -468,7 +496,7 @@ def benchmark_daft_engine(
     if partition_counts is None:
         partition_counts = [1, 2, 4]
     if not DAFT_AVAILABLE:
-        return {'error': 'Daft is not available'}
+        return {"error": "Daft is not available"}
 
     logger.info("Starting Daft benchmarking...")
 
@@ -484,10 +512,7 @@ def benchmark_daft_engine(
             start_time = time.time()
 
             # Create temporary config
-            config = ProcessingConfig(
-                engine_type="daft",
-                chunk_size=1000
-            )
+            config = ProcessingConfig(engine_type="daft", chunk_size=1000)
 
             # Process with Daft
             df = process_daft(
@@ -495,7 +520,7 @@ def benchmark_daft_engine(
                 config=config,
                 npartitions=npartitions,
                 show_progress=False,
-                use_accelerators=use_accelerators
+                use_accelerators=use_accelerators,
             )
 
             # Compute the result
@@ -506,23 +531,25 @@ def benchmark_daft_engine(
 
             # Record results
             results[config_key] = {
-                'time': processing_time,
-                'rows': len(result),
-                'columns': len(result.columns),
-                'partitions': npartitions,
-                'memory_mb': result.memory_usage(deep=True).sum() / (1024 * 1024),
-                'success': True
+                "time": processing_time,
+                "rows": len(result),
+                "columns": len(result.columns),
+                "partitions": npartitions,
+                "memory_mb": result.memory_usage(deep=True).sum() / (1024 * 1024),
+                "success": True,
             }
 
-            logger.info(f"  Daft {npartitions} partitions - {processing_time:.2f}s, "
-                       f"{len(result)} rows, {results[config_key]['memory_mb']:.2f}MB")
+            logger.info(
+                f"  Daft {npartitions} partitions - {processing_time:.2f}s, "
+                f"{len(result)} rows, {results[config_key]['memory_mb']:.2f}MB"
+            )
 
         except Exception as e:
             logger.error(f"  Daft {npartitions} partitions - FAILED: {e}")
             results[config_key] = {
-                'error': str(e),
-                'success': False,
-                'partitions': npartitions
+                "error": str(e),
+                "success": False,
+                "partitions": npartitions,
             }
 
     return results
@@ -536,34 +563,35 @@ def get_daft_cluster_info() -> Dict[str, Any]:
         Dict with Daft environment information
     """
     info = {
-        'daft_available': DAFT_AVAILABLE,
-        'version': None,
-        'execution_backend': None,
-        'accelerators': False
+        "daft_available": DAFT_AVAILABLE,
+        "version": None,
+        "execution_backend": None,
+        "accelerators": False,
     }
 
     if DAFT_AVAILABLE:
         try:
-            info['version'] = daft.__version__
+            info["version"] = daft.__version__
             logger.info(f"Daft version: {info['version']}")
 
             # Check execution backend
             # Note: This is a simplified check - Daft's backend detection is more complex
             try:
                 import torch
+
                 if torch.cuda.is_available():
-                    info['accelerators'] = True
-                    info['execution_backend'] = 'GPU'
+                    info["accelerators"] = True
+                    info["execution_backend"] = "GPU"
                 else:
-                    info['execution_backend'] = 'CPU'
+                    info["execution_backend"] = "CPU"
             except ImportError:
-                info['execution_backend'] = 'CPU'
+                info["execution_backend"] = "CPU"
 
             logger.info(f"Daft execution backend: {info['execution_backend']}")
             logger.info(f"Daft accelerators available: {info['accelerators']}")
 
         except Exception as e:
             logger.error(f"Failed to get Daft info: {e}")
-            info['error'] = str(e)
+            info["error"] = str(e)
 
     return info

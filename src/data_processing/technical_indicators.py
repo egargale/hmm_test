@@ -5,8 +5,9 @@ Provides functions for calculating technical indicators and managing
 indicator configurations for financial market data.
 """
 
-import pandas as pd
 from typing import Any, Dict, List
+
+import pandas as pd
 
 from utils import get_logger
 
@@ -23,7 +24,7 @@ def validate_ohlcv_columns(df: pd.DataFrame) -> None:
     Raises:
         ValueError: If required columns are missing
     """
-    required_columns = ['open', 'high', 'low', 'close', 'volume']
+    required_columns = ["open", "high", "low", "close", "volume"]
     missing_columns = [col for col in required_columns if col not in df.columns]
 
     if missing_columns:
@@ -49,7 +50,7 @@ def get_default_indicator_config() -> Dict[str, Dict[str, Any]]:
         "roc": {"length": 10},
         "stochastic": {"k": 14, "d": 3},
         "adx": {"length": 14},
-        "volume_sma": {"length": 20}
+        "volume_sma": {"length": 20},
     }
 
 
@@ -65,7 +66,7 @@ def get_available_indicators() -> Dict[str, List[str]]:
         "momentum": ["rsi", "roc", "stochastic"],
         "volatility": ["atr", "bollinger_bands"],
         "volume": ["volume_sma", "obv"],
-        "price": ["price_patterns", "custom"]
+        "price": ["price_patterns", "custom"],
     }
 
 
@@ -89,19 +90,25 @@ def validate_indicator_config(config: Dict[str, Any]) -> bool:
             return False
 
         # Common validation for length parameters
-        if 'length' in params:
-            if not isinstance(params['length'], int) or params['length'] <= 0:
-                logger.error(f"Invalid length parameter for {indicator}: {params['length']}")
+        if "length" in params:
+            if not isinstance(params["length"], int) or params["length"] <= 0:
+                logger.error(
+                    f"Invalid length parameter for {indicator}: {params['length']}"
+                )
                 return False
 
         # Validate MACD parameters
         if indicator == "macd":
             required_params = ["fast", "slow", "signal"]
             for param in required_params:
-                if param not in params or not isinstance(params[param], int) or params[param] <= 0:
+                if (
+                    param not in params
+                    or not isinstance(params[param], int)
+                    or params[param] <= 0
+                ):
                     logger.error(f"Invalid or missing {param} parameter for MACD")
                     return False
-            if params['fast'] >= params['slow']:
+            if params["fast"] >= params["slow"]:
                 logger.error("MACD fast period must be less than slow period")
                 return False
 

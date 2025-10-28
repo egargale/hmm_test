@@ -36,7 +36,7 @@ class BaseHMMModel(BaseEstimator, abc.ABC):
         random_state: Optional[int] = None,
         max_iter: int = 100,
         tol: float = 1e-6,
-        verbose: bool = False
+        verbose: bool = False,
     ):
         """
         Initialize base HMM model.
@@ -82,8 +82,8 @@ class BaseHMMModel(BaseEstimator, abc.ABC):
         self,
         X: Union[pd.DataFrame, np.ndarray],
         y: Optional[np.ndarray] = None,
-        feature_columns: Optional[List[str]] = None
-    ) -> 'BaseHMMModel':
+        feature_columns: Optional[List[str]] = None,
+    ) -> "BaseHMMModel":
         """
         Fit the HMM model to the training data.
 
@@ -95,7 +95,9 @@ class BaseHMMModel(BaseEstimator, abc.ABC):
         Returns:
             self: Fitted model
         """
-        logger.info(f"Fitting {self.__class__.__name__} with {self.n_components} states")
+        logger.info(
+            f"Fitting {self.__class__.__name__} with {self.n_components} states"
+        )
         start_time = time.time()
 
         # Store feature names if DataFrame
@@ -111,7 +113,9 @@ class BaseHMMModel(BaseEstimator, abc.ABC):
 
         # Validate input
         if len(X_array) < self.n_components:
-            raise ValueError(f"Not enough data points ({len(X_array)}) for {self.n_components} states")
+            raise ValueError(
+                f"Not enough data points ({len(X_array)}) for {self.n_components} states"
+            )
 
         # Create and fit model
         self.model_ = self._create_model()
@@ -122,23 +126,26 @@ class BaseHMMModel(BaseEstimator, abc.ABC):
 
             # Record training history
             self.training_history_ = {
-                'n_samples': len(X_array),
-                'n_features': X_array.shape[1],
-                'training_time': time.time() - start_time,
-                'converged': getattr(self.model_, 'monitor_', None) and getattr(self.model_.monitor_, 'converged', False)
+                "n_samples": len(X_array),
+                "n_features": X_array.shape[1],
+                "training_time": time.time() - start_time,
+                "converged": getattr(self.model_, "monitor_", None)
+                and getattr(self.model_.monitor_, "converged", False),
             }
 
             # Store convergence info if available
-            if hasattr(self.model_, 'monitor_'):
+            if hasattr(self.model_, "monitor_"):
                 monitor = self.model_.monitor_
                 self.convergence_info_ = {
-                    'converged': monitor.converged,
-                    'n_iter': monitor.iter,
-                    'history': getattr(monitor, 'history', [])
+                    "converged": monitor.converged,
+                    "n_iter": monitor.iter,
+                    "history": getattr(monitor, "history", []),
                 }
 
             self.is_fitted_ = True
-            logger.info(f"Model fitted successfully in {self.training_history_['training_time']:.2f}s")
+            logger.info(
+                f"Model fitted successfully in {self.training_history_['training_time']:.2f}s"
+            )
 
         except Exception as e:
             logger.error(f"Failed to fit HMM model: {e}")
@@ -252,7 +259,9 @@ class BaseHMMModel(BaseEstimator, abc.ABC):
 
         return state_sequence, logprob
 
-    def sample(self, n_samples: int = 1, random_state: Optional[int] = None) -> Tuple[np.ndarray, np.ndarray]:
+    def sample(
+        self, n_samples: int = 1, random_state: Optional[int] = None
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Generate random samples from the model.
 
@@ -282,14 +291,16 @@ class BaseHMMModel(BaseEstimator, abc.ABC):
             raise ValueError("Model must be fitted before getting parameters")
 
         params = self._extract_parameters()
-        params.update({
-            'n_components': self.n_components,
-            'covariance_type': self.covariance_type,
-            'is_fitted': self.is_fitted_,
-            'feature_names': self.feature_names_,
-            'training_history': self.training_history_,
-            'convergence_info': self.convergence_info_
-        })
+        params.update(
+            {
+                "n_components": self.n_components,
+                "covariance_type": self.covariance_type,
+                "is_fitted": self.is_fitted_,
+                "feature_names": self.feature_names_,
+                "training_history": self.training_history_,
+                "convergence_info": self.convergence_info_,
+            }
+        )
 
         return params
 
@@ -321,7 +332,7 @@ class BaseHMMModel(BaseEstimator, abc.ABC):
         self,
         X: Union[pd.DataFrame, np.ndarray],
         cv: int = 5,
-        scoring: str = 'neg_log_loss'
+        scoring: str = "neg_log_loss",
     ) -> Dict[str, Any]:
         """
         Perform cross-validation on the model.
@@ -351,18 +362,22 @@ class BaseHMMModel(BaseEstimator, abc.ABC):
         )
 
         cv_results = {
-            'scores': scores,
-            'mean_score': scores.mean(),
-            'std_score': scores.std(),
-            'scoring': scoring,
-            'n_folds': cv
+            "scores": scores,
+            "mean_score": scores.mean(),
+            "std_score": scores.std(),
+            "scoring": scoring,
+            "n_folds": cv,
         }
 
-        logger.info(f"CV {scoring}: {cv_results['mean_score']:.4f} ± {cv_results['std_score']:.4f}")
+        logger.info(
+            f"CV {scoring}: {cv_results['mean_score']:.4f} ± {cv_results['std_score']:.4f}"
+        )
 
         return cv_results
 
-    def evaluate_model_quality(self, X: Union[pd.DataFrame, np.ndarray]) -> Dict[str, Any]:
+    def evaluate_model_quality(
+        self, X: Union[pd.DataFrame, np.ndarray]
+    ) -> Dict[str, Any]:
         """
         Evaluate model quality using various metrics.
 
@@ -385,24 +400,31 @@ class BaseHMMModel(BaseEstimator, abc.ABC):
 
         # Calculate metrics
         quality_metrics = {
-            'total_log_likelihood': self.score(X_array),
-            'mean_log_likelihood': np.mean(log_likelihoods),
-            'std_log_likelihood': np.std(log_likelihoods),
-            'min_log_likelihood': np.min(log_likelihoods),
-            'max_log_likelihood': np.max(log_likelihoods),
-            'n_samples': len(X_array),
-            'state_distribution': np.bincount(states, minlength=self.n_components) / len(states),
-            'mean_state_probabilities': np.mean(probabilities, axis=0),
-            'state_entropy': -np.sum(np.mean(probabilities, axis=0) * np.log(np.mean(probabilities, axis=0) + 1e-10))
+            "total_log_likelihood": self.score(X_array),
+            "mean_log_likelihood": np.mean(log_likelihoods),
+            "std_log_likelihood": np.std(log_likelihoods),
+            "min_log_likelihood": np.min(log_likelihoods),
+            "max_log_likelihood": np.max(log_likelihoods),
+            "n_samples": len(X_array),
+            "state_distribution": np.bincount(states, minlength=self.n_components)
+            / len(states),
+            "mean_state_probabilities": np.mean(probabilities, axis=0),
+            "state_entropy": -np.sum(
+                np.mean(probabilities, axis=0)
+                * np.log(np.mean(probabilities, axis=0) + 1e-10)
+            ),
         }
 
         # Calculate BIC and AIC if possible
         n_params = self._count_parameters()
-        quality_metrics.update({
-            'bic': -2 * quality_metrics['total_log_likelihood'] + n_params * np.log(len(X_array)),
-            'aic': -2 * quality_metrics['total_log_likelihood'] + 2 * n_params,
-            'n_parameters': n_params
-        })
+        quality_metrics.update(
+            {
+                "bic": -2 * quality_metrics["total_log_likelihood"]
+                + n_params * np.log(len(X_array)),
+                "aic": -2 * quality_metrics["total_log_likelihood"] + 2 * n_params,
+                "n_parameters": n_params,
+            }
+        )
 
         return quality_metrics
 
@@ -442,25 +464,25 @@ class BaseHMMModel(BaseEstimator, abc.ABC):
 
         # Save model parameters and state
         model_data = {
-            'model': self.model_,
-            'feature_names': self.feature_names_,
-            'training_history': self.training_history_,
-            'convergence_info': self.convergence_info_,
-            'hyperparameters': {
-                'n_components': self.n_components,
-                'covariance_type': self.covariance_type,
-                'random_state': self.random_state,
-                'max_iter': self.max_iter,
-                'tol': self.tol
-            }
+            "model": self.model_,
+            "feature_names": self.feature_names_,
+            "training_history": self.training_history_,
+            "convergence_info": self.convergence_info_,
+            "hyperparameters": {
+                "n_components": self.n_components,
+                "covariance_type": self.covariance_type,
+                "random_state": self.random_state,
+                "max_iter": self.max_iter,
+                "tol": self.tol,
+            },
         }
 
-        with open(filepath, 'wb') as f:
+        with open(filepath, "wb") as f:
             pickle.dump(model_data, f)
 
         logger.info(f"Model saved to {filepath}")
 
-    def load_model(self, filepath: Union[str, Path]) -> 'BaseHMMModel':
+    def load_model(self, filepath: Union[str, Path]) -> "BaseHMMModel":
         """
         Load a trained model from disk.
 
@@ -475,22 +497,22 @@ class BaseHMMModel(BaseEstimator, abc.ABC):
         if not filepath.exists():
             raise FileNotFoundError(f"Model file not found: {filepath}")
 
-        with open(filepath, 'rb') as f:
+        with open(filepath, "rb") as f:
             model_data = pickle.load(f)
 
         # Restore model state
-        self.model_ = model_data['model']
-        self.feature_names_ = model_data['feature_names']
-        self.training_history_ = model_data['training_history']
-        self.convergence_info_ = model_data['convergence_info']
+        self.model_ = model_data["model"]
+        self.feature_names_ = model_data["feature_names"]
+        self.training_history_ = model_data["training_history"]
+        self.convergence_info_ = model_data["convergence_info"]
 
         # Restore hyperparameters
-        hyperparams = model_data['hyperparameters']
-        self.n_components = hyperparams['n_components']
-        self.covariance_type = hyperparams['covariance_type']
-        self.random_state = hyperparams['random_state']
-        self.max_iter = hyperparams['max_iter']
-        self.tol = hyperparams['tol']
+        hyperparams = model_data["hyperparameters"]
+        self.n_components = hyperparams["n_components"]
+        self.covariance_type = hyperparams["covariance_type"]
+        self.random_state = hyperparams["random_state"]
+        self.max_iter = hyperparams["max_iter"]
+        self.tol = hyperparams["tol"]
 
         self.is_fitted_ = True
 

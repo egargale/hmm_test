@@ -16,7 +16,7 @@ import numpy as np
 from tqdm import tqdm
 
 # Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent / 'src'))
+sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 from backtesting.performance_analyzer import PerformanceAnalyzer
 from backtesting.strategy_engine import StrategyEngine
@@ -51,16 +51,14 @@ signal.signal(signal.SIGTERM, signal_handler)
 
 @click.group()
 @click.version_option(version="1.0.0", prog_name="hmm-analysis")
-@click.option('--log-level',
-              type=click.Choice(['DEBUG', 'INFO', 'WARNING', 'ERROR'], case_sensitive=False),
-              default='INFO',
-              help='Set logging level (default: INFO)')
-@click.option('--quiet', '-q',
-              is_flag=True,
-              help='Suppress output except errors')
-@click.option('--verbose', '-v',
-              is_flag=True,
-              help='Enable verbose output')
+@click.option(
+    "--log-level",
+    type=click.Choice(["DEBUG", "INFO", "WARNING", "ERROR"], case_sensitive=False),
+    default="INFO",
+    help="Set logging level (default: INFO)",
+)
+@click.option("--quiet", "-q", is_flag=True, help="Suppress output except errors")
+@click.option("--verbose", "-v", is_flag=True, help="Enable verbose output")
 @click.pass_context
 def cli(ctx, log_level, quiet, verbose):
     """
@@ -81,9 +79,9 @@ def cli(ctx, log_level, quiet, verbose):
 
     # Set up logging
     if quiet:
-        log_level = 'ERROR'
+        log_level = "ERROR"
     elif verbose:
-        log_level = 'DEBUG'
+        log_level = "DEBUG"
 
     setup_logging(level=log_level.upper())
     logger = get_logger(__name__)
@@ -92,69 +90,106 @@ def cli(ctx, log_level, quiet, verbose):
     logger.debug(f"Log level: {log_level}")
 
     # Store global config in context
-    ctx.obj['log_level'] = log_level
-    ctx.obj['quiet'] = quiet
-    ctx.obj['verbose'] = verbose
-    ctx.obj['logger'] = logger
+    ctx.obj["log_level"] = log_level
+    ctx.obj["quiet"] = quiet
+    ctx.obj["verbose"] = verbose
+    ctx.obj["logger"] = logger
 
 
 @cli.command()
-@click.option('--input-csv', '-i',
-              type=click.Path(exists=True, path_type=Path),
-              required=True,
-              help='Input CSV file with futures data (OHLCV format)')
-@click.option('--output-dir', '-o',
-              type=click.Path(path_type=Path),
-              default=Path('./output'),
-              help='Output directory for results (default: ./output)')
-@click.option('--n-states', '-n',
-              type=click.IntRange(min=2, max=10),
-              default=3,
-              help='Number of HMM states (default: 3)')
-@click.option('--engine',
-              type=click.Choice(['streaming', 'dask', 'daft'], case_sensitive=False),
-              default='streaming',
-              help='Processing engine to use (default: streaming)')
-@click.option('--target-column',
-              type=str,
-              default='close',
-              help='Target column for HMM training (default: close)')
-@click.option('--test-size',
-              type=click.FloatRange(min=0.1, max=0.5),
-              default=0.2,
-              help='Proportion of data for testing (default: 0.2)')
-@click.option('--lookahead-days',
-              type=click.IntRange(min=0, max=10),
-              default=1,
-              help='Days for lookahead bias prevention (default: 1)')
-@click.option('--n-restarts',
-              type=click.IntRange(min=1, max=20),
-              default=10,
-              help='Number of HMM training restarts (default: 10)')
-@click.option('--random-seed',
-              type=int,
-              default=42,
-              help='Random seed for reproducibility (default: 42)')
-@click.option('--save-model',
-              is_flag=True,
-              default=True,
-              help='Save trained HMM model')
-@click.option('--generate-charts',
-              is_flag=True,
-              default=True,
-              help='Generate visualization charts')
-@click.option('--generate-dashboard',
-              is_flag=True,
-              default=True,
-              help='Generate interactive dashboard')
-@click.option('--generate-report',
-              is_flag=True,
-              default=True,
-              help='Generate detailed HTML report')
+@click.option(
+    "--input-csv",
+    "-i",
+    type=click.Path(exists=True, path_type=Path),
+    required=True,
+    help="Input CSV file with futures data (OHLCV format)",
+)
+@click.option(
+    "--output-dir",
+    "-o",
+    type=click.Path(path_type=Path),
+    default=Path("./output"),
+    help="Output directory for results (default: ./output)",
+)
+@click.option(
+    "--n-states",
+    "-n",
+    type=click.IntRange(min=2, max=10),
+    default=3,
+    help="Number of HMM states (default: 3)",
+)
+@click.option(
+    "--engine",
+    type=click.Choice(["streaming", "dask", "daft"], case_sensitive=False),
+    default="streaming",
+    help="Processing engine to use (default: streaming)",
+)
+@click.option(
+    "--target-column",
+    type=str,
+    default="close",
+    help="Target column for HMM training (default: close)",
+)
+@click.option(
+    "--test-size",
+    type=click.FloatRange(min=0.1, max=0.5),
+    default=0.2,
+    help="Proportion of data for testing (default: 0.2)",
+)
+@click.option(
+    "--lookahead-days",
+    type=click.IntRange(min=0, max=10),
+    default=1,
+    help="Days for lookahead bias prevention (default: 1)",
+)
+@click.option(
+    "--n-restarts",
+    type=click.IntRange(min=1, max=20),
+    default=10,
+    help="Number of HMM training restarts (default: 10)",
+)
+@click.option(
+    "--random-seed",
+    type=int,
+    default=42,
+    help="Random seed for reproducibility (default: 42)",
+)
+@click.option("--save-model", is_flag=True, default=True, help="Save trained HMM model")
+@click.option(
+    "--generate-charts",
+    is_flag=True,
+    default=True,
+    help="Generate visualization charts",
+)
+@click.option(
+    "--generate-dashboard",
+    is_flag=True,
+    default=True,
+    help="Generate interactive dashboard",
+)
+@click.option(
+    "--generate-report",
+    is_flag=True,
+    default=True,
+    help="Generate detailed HTML report",
+)
 @click.pass_context
-def analyze(ctx, input_csv, output_dir, n_states, engine, target_column,
-            test_size, lookahead_days, n_restarts, random_seed, save_model,
-            generate_charts, generate_dashboard, generate_report):
+def analyze(
+    ctx,
+    input_csv,
+    output_dir,
+    n_states,
+    engine,
+    target_column,
+    test_size,
+    lookahead_days,
+    n_restarts,
+    random_seed,
+    save_model,
+    generate_charts,
+    generate_dashboard,
+    generate_report,
+):
     """
     Run complete HMM analysis pipeline.
 
@@ -170,8 +205,8 @@ def analyze(ctx, input_csv, output_dir, n_states, engine, target_column,
     Example:
         hmm-analysis analyze -i data/futures.csv -o results/ -n 4 --engine dask
     """
-    logger = ctx.obj['logger']
-    quiet = ctx.obj['quiet']
+    logger = ctx.obj["logger"]
+    quiet = ctx.obj["quiet"]
 
     try:
         # Validate inputs
@@ -198,14 +233,16 @@ def analyze(ctx, input_csv, output_dir, n_states, engine, target_column,
             data = process_csv(str(input_csv))
             validation_result = validate_data(data)
 
-            if not validation_result['is_valid']:
-                raise ValueError(f"Data validation failed: {validation_result['errors']}")
+            if not validation_result["is_valid"]:
+                raise ValueError(
+                    f"Data validation failed: {validation_result['errors']}"
+                )
 
             logger.info(f"✅ Loaded {len(data)} rows of data")
 
         except Exception as e:
             logger.error(f"❌ Data loading failed: {e}")
-            raise click.ClickException(f"Failed to load data: {e}")
+            raise click.ClickException(f"Failed to load data: {e}") from e
 
         # Step 2: Feature engineering
         logger.info("⚙️  Step 2: Feature engineering...")
@@ -220,16 +257,17 @@ def analyze(ctx, input_csv, output_dir, n_states, engine, target_column,
 
             # Initialize feature engineering configuration
             indicator_config = {
-                'returns': {'periods': [1, 5, 10]},
-                'moving_averages': {'periods': [5, 10, 20]},
-                'volatility': {'periods': [14]},
-                'momentum': {'periods': [14]},
-                'volume': {'enabled': True}
+                "returns": {"periods": [1, 5, 10]},
+                "moving_averages": {"periods": [5, 10, 20]},
+                "volatility": {"periods": [14]},
+                "momentum": {"periods": [14]},
+                "volume": {"enabled": True},
             }
 
             # Apply feature engineering using selected engine
-            if engine == 'dask':
+            if engine == "dask":
                 import dask.dataframe as dd
+
                 ddf = dd.from_pandas(data, npartitions=4)
 
                 with tqdm(total=4, desc="Processing features", disable=quiet) as pbar:
@@ -237,17 +275,15 @@ def analyze(ctx, input_csv, output_dir, n_states, engine, target_column,
                     def apply_features(df):
                         return add_features(df, config=indicator_config)
 
-                    features_dd = processing_engine.process(
-                        ddf,
-                        apply_features
-                    )
+                    features_dd = processing_engine.process(ddf, apply_features)
                     pbar.update(1)
 
                     features = features_dd.compute()
                     pbar.update(3)
 
-            elif engine == 'daft':
+            elif engine == "daft":
                 import daft
+
                 df = daft.from_pandas(data)
 
                 with tqdm(total=2, desc="Processing features", disable=quiet) as pbar:
@@ -255,10 +291,7 @@ def analyze(ctx, input_csv, output_dir, n_states, engine, target_column,
                     def apply_features(df):
                         return add_features(df, config=indicator_config)
 
-                    features_df = processing_engine.process(
-                        df,
-                        apply_features
-                    )
+                    features_df = processing_engine.process(df, apply_features)
                     pbar.update(1)
 
                     features = features_df.to_pandas()
@@ -271,19 +304,19 @@ def analyze(ctx, input_csv, output_dir, n_states, engine, target_column,
                         return add_features(df, config=indicator_config)
 
                     features = processing_engine.process(
-                        data,
-                        apply_features,
-                        progress_callback=lambda x: pbar.update(x)
+                        data, apply_features, progress_callback=lambda x: pbar.update(x)
                     )
 
             # Handle NaN values in features
-            features = features.fillna(method='ffill').fillna(method='bfill').fillna(0)
+            features = features.fillna(method="ffill").fillna(method="bfill").fillna(0)
 
-            logger.info(f"✅ Feature engineering completed. Generated {len(features.columns)} features")
+            logger.info(
+                f"✅ Feature engineering completed. Generated {len(features.columns)} features"
+            )
 
         except Exception as e:
             logger.error(f"❌ Feature engineering failed: {e}")
-            raise click.ClickException(f"Feature engineering failed: {e}")
+            raise click.ClickException(f"Feature engineering failed: {e}") from e
 
         # Step 3: HMM Training
         logger.info("🧠 Step 3: HMM model training...")
@@ -294,10 +327,10 @@ def analyze(ctx, input_csv, output_dir, n_states, engine, target_column,
         try:
             trainer = HMMTrainer(
                 n_states=n_states,
-                covariance_type='full',
+                covariance_type="full",
                 n_iter=100,
                 random_state=random_seed,
-                tol=1e-4
+                tol=1e-4,
             )
 
             # Prepare training data
@@ -309,22 +342,25 @@ def analyze(ctx, input_csv, output_dir, n_states, engine, target_column,
                 model, metadata = trainer.train_with_restarts(
                     train_data,
                     n_restarts=n_restarts,
-                    progress_callback=lambda x: pbar.update(1)
+                    progress_callback=lambda x: pbar.update(1),
                 )
 
-            logger.info(f"✅ HMM training completed. Best log-likelihood: {metadata['log_likelihood']:.2f}")
+            logger.info(
+                f"✅ HMM training completed. Best log-likelihood: {metadata['log_likelihood']:.2f}"
+            )
 
             # Save model if requested
             if save_model:
                 model_path = output_dir / f"hmm_model_{n_states}states.pkl"
                 import pickle
-                with open(model_path, 'wb') as f:
-                    pickle.dump({'model': model, 'metadata': metadata}, f)
+
+                with open(model_path, "wb") as f:
+                    pickle.dump({"model": model, "metadata": metadata}, f)
                 logger.info(f"💾 Model saved to {model_path}")
 
         except Exception as e:
             logger.error(f"❌ HMM training failed: {e}")
-            raise click.ClickException(f"HMM training failed: {e}")
+            raise click.ClickException(f"HMM training failed: {e}") from e
 
         # Step 4: State inference
         logger.info("🔍 Step 4: State inference...")
@@ -339,14 +375,16 @@ def analyze(ctx, input_csv, output_dir, n_states, engine, target_column,
             with tqdm(total=100, desc="Inferring states", disable=quiet) as pbar:
                 states = inference.infer_states(
                     features[target_column].values,
-                    progress_callback=lambda x: pbar.update(x)
+                    progress_callback=lambda x: pbar.update(x),
                 )
 
-            logger.info(f"✅ State inference completed. Found {len(np.unique(states))} unique states")
+            logger.info(
+                f"✅ State inference completed. Found {len(np.unique(states))} unique states"
+            )
 
         except Exception as e:
             logger.error(f"❌ State inference failed: {e}")
-            raise click.ClickException(f"State inference failed: {e}")
+            raise click.ClickException(f"State inference failed: {e}") from e
 
         # Step 5: Backtesting
         logger.info("💰 Step 5: Regime-based backtesting...")
@@ -359,9 +397,9 @@ def analyze(ctx, input_csv, output_dir, n_states, engine, target_column,
             backtest_config = BacktestConfig(
                 initial_capital=100000.0,
                 commission=0.001,  # 0.1%
-                slippage=0.0001,   # 0.01%
+                slippage=0.0001,  # 0.01%
                 lookahead_bias_prevention=True,
-                lookahead_days=lookahead_days
+                lookahead_days=lookahead_days,
             )
 
             # Initialize strategy engine
@@ -383,14 +421,16 @@ def analyze(ctx, input_csv, output_dir, n_states, engine, target_column,
                     data=data,
                     states=states,
                     state_mapping=state_mapping,
-                    progress_callback=lambda x: pbar.update(x)
+                    progress_callback=lambda x: pbar.update(x),
                 )
 
-            logger.info(f"✅ Backtesting completed. Generated {len(backtest_result.trades)} trades")
+            logger.info(
+                f"✅ Backtesting completed. Generated {len(backtest_result.trades)} trades"
+            )
 
         except Exception as e:
             logger.error(f"❌ Backtesting failed: {e}")
-            raise click.ClickException(f"Backtesting failed: {e}")
+            raise click.ClickException(f"Backtesting failed: {e}") from e
 
         # Step 6: Performance analysis
         logger.info("📈 Step 6: Performance analysis...")
@@ -405,15 +445,17 @@ def analyze(ctx, input_csv, output_dir, n_states, engine, target_column,
                 metrics = analyzer.calculate_performance(
                     backtest_result.equity_curve,
                     backtest_result.positions,
-                    benchmark=data['close'].pct_change(),
-                    progress_callback=lambda x: pbar.update(x)
+                    benchmark=data["close"].pct_change(),
+                    progress_callback=lambda x: pbar.update(x),
                 )
 
-            logger.info(f"✅ Performance analysis completed. Sharpe ratio: {metrics.sharpe_ratio:.2f}")
+            logger.info(
+                f"✅ Performance analysis completed. Sharpe ratio: {metrics.sharpe_ratio:.2f}"
+            )
 
         except Exception as e:
             logger.error(f"❌ Performance analysis failed: {e}")
-            raise click.ClickException(f"Performance analysis failed: {e}")
+            raise click.ClickException(f"Performance analysis failed: {e}") from e
 
         # Step 7: Visualization and reporting
         logger.info("📊 Step 7: Generating visualizations and reports...")
@@ -431,7 +473,7 @@ def analyze(ctx, input_csv, output_dir, n_states, engine, target_column,
                         states=states,
                         indicators=features,
                         output_path=str(chart_path),
-                        show_plot=False
+                        show_plot=False,
                     )
                     pbar.update(1)
 
@@ -439,18 +481,17 @@ def analyze(ctx, input_csv, output_dir, n_states, engine, target_column,
                     timeline_path = output_dir / "regime_timeline.png"
                     create_regime_timeline_plot(
                         states=states,
-                        price_data=data['close'],
-                        output_path=str(timeline_path)
+                        price_data=data["close"],
+                        output_path=str(timeline_path),
                     )
                     pbar.update(1)
 
                     # State distributions
                     from visualization.chart_generator import plot_state_distribution
+
                     dist_path = output_dir / "state_distributions.png"
                     plot_state_distribution(
-                        states=states,
-                        indicators=features,
-                        output_path=str(dist_path)
+                        states=states, indicators=features, output_path=str(dist_path)
                     )
                     pbar.update(1)
 
@@ -467,7 +508,7 @@ def analyze(ctx, input_csv, output_dir, n_states, engine, target_column,
                         metrics=metrics,
                         states=states,
                         progress_callback=lambda x: pbar.update(x),
-                        output_path=str(dashboard_path)
+                        output_path=str(dashboard_path),
                     )
 
                 logger.info("✅ Dashboard generated successfully")
@@ -484,7 +525,7 @@ def analyze(ctx, input_csv, output_dir, n_states, engine, target_column,
                         states=states,
                         indicators=features,
                         progress_callback=lambda x: pbar.update(x),
-                        output_path=str(report_path)
+                        output_path=str(report_path),
                     )
 
                 logger.info("✅ Report generated successfully")
@@ -501,9 +542,9 @@ def analyze(ctx, input_csv, output_dir, n_states, engine, target_column,
         logger.info(f"⏱️  Total execution time: {total_time:.2f} seconds")
 
         if not quiet:
-            click.echo("\n" + "="*60)
+            click.echo("\n" + "=" * 60)
             click.echo("🎉 HMM ANALYSIS COMPLETED SUCCESSFULLY!")
-            click.echo("="*60)
+            click.echo("=" * 60)
             click.echo(f"📂 Results saved to: {output_dir}")
             click.echo(f"📊 Data processed: {len(data)} rows")
             click.echo(f"🔢 HMM states: {n_states}")
@@ -524,23 +565,25 @@ def analyze(ctx, input_csv, output_dir, n_states, engine, target_column,
         logger.error(f"❌ Analysis pipeline failed: {e}")
         if not quiet:
             click.echo(f"\n❌ Error: {e}", err=True)
-            if ctx.obj['verbose']:
+            if ctx.obj["verbose"]:
                 click.echo(traceback.format_exc(), err=True)
-        raise click.ClickException(f"Analysis failed: {e}")
+        raise click.ClickException(f"Analysis failed: {e}") from e
 
 
 @cli.command()
-@click.option('--input-csv', '-i',
-              type=click.Path(exists=True, path_type=Path),
-              required=True,
-              help='Input CSV file to validate')
+@click.option(
+    "--input-csv",
+    "-i",
+    type=click.Path(exists=True, path_type=Path),
+    required=True,
+    help="Input CSV file to validate",
+)
 def validate(input_csv):
     """
     Validate input data format and structure.
 
     Checks for required OHLCV columns, data types, and common issues.
     """
-    logger = get_logger(__name__)
 
     try:
         click.echo(f"Validating {input_csv}...")
@@ -549,14 +592,14 @@ def validate(input_csv):
         data = process_csv(str(input_csv))
         validation_result = validate_data(data)
 
-        if validation_result['is_valid']:
+        if validation_result["is_valid"]:
             click.echo("✅ Data validation passed!")
             click.echo(f"📊 {len(data)} rows of data")
             click.echo(f"📅 Date range: {data.index.min()} to {data.index.max()}")
             click.echo(f"📈 Columns: {list(data.columns)}")
         else:
             click.echo("❌ Data validation failed:", err=True)
-            for error in validation_result['errors']:
+            for error in validation_result["errors"]:
                 click.echo(f"  • {error}", err=True)
             sys.exit(1)
 
@@ -572,5 +615,5 @@ def version():
     click.echo("© 2024 - Advanced Regime Detection System")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     cli()

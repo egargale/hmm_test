@@ -9,6 +9,7 @@ from pathlib import Path
 # Add src to Python path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
+
 def test_multi_engine_framework():
     """Test the complete multi-engine processing framework."""
     print("🧪 Testing Multi-Engine Processing Framework...")
@@ -31,7 +32,7 @@ def test_multi_engine_framework():
         config = ProcessingConfig(
             engine_type="streaming",  # Use valid engine type
             chunk_size=1000,
-            memory_limit_gb=2.0
+            memory_limit_gb=2.0,
         )
 
         # Test 1: Processing Engine Factory
@@ -49,8 +50,10 @@ def test_multi_engine_framework():
         engine_info = factory.get_engine_info()
         print("   ✅ Engine info retrieved")
         print(f"   ✅ Available engines: {engine_info['available_engines']}")
-        for engine, details in engine_info['engine_details'].items():
-            print(f"   ✅ {engine}: {details['type']} - Best for: {details['best_for']}")
+        for engine, details in engine_info["engine_details"].items():
+            print(
+                f"   ✅ {engine}: {details['type']} - Best for: {details['best_for']}"
+            )
 
         # Test 3: Individual Engines
         print("\n🚀 Testing Individual Engines...")
@@ -62,14 +65,16 @@ def test_multi_engine_framework():
                 "BTC.csv",
                 config=config,
                 chunk_size=500,  # Small chunks for testing
-                show_progress=False
+                show_progress=False,
             )
-            print(f"      ✅ Streaming: {len(streaming_result)} rows, {len(streaming_result.columns)} columns")
+            print(
+                f"      ✅ Streaming: {len(streaming_result)} rows, {len(streaming_result.columns)} columns"
+            )
         except Exception as e:
             print(f"      ❌ Streaming failed: {e}")
 
         # Test Dask Engine (if available)
-        if 'dask' in factory.get_available_engines():
+        if "dask" in factory.get_available_engines():
             print("\n   ⚡ Testing Dask Engine...")
             try:
                 dask_result = process_dask(
@@ -77,23 +82,22 @@ def test_multi_engine_framework():
                     config=config,
                     scheduler="threads",
                     npartitions=2,
-                    show_progress=False
+                    show_progress=False,
                 )
-                print(f"      ✅ Dask: {dask_result.npartitions} partitions, {len(dask_result.columns)} columns")
+                print(
+                    f"      ✅ Dask: {dask_result.npartitions} partitions, {len(dask_result.columns)} columns"
+                )
             except Exception as e:
                 print(f"      ❌ Dask failed: {e}")
         else:
             print("\n   ⚡ Dask Engine not available")
 
         # Test Daft Engine (if available)
-        if 'daft' in factory.get_available_engines():
+        if "daft" in factory.get_available_engines():
             print("\n   🌟 Testing Daft Engine...")
             try:
-                daft_result = process_daft(
-                    "BTC.csv",
-                    config=config,
-                    npartitions=1,
-                    show_progress=False
+                process_daft(
+                    "BTC.csv", config=config, npartitions=1, show_progress=False
                 )
                 print("      ✅ Daft: Processing successful")
             except Exception as e:
@@ -109,9 +113,11 @@ def test_multi_engine_framework():
                 "BTC.csv",
                 config=config,
                 engine=None,  # Auto-select
-                show_progress=False
+                show_progress=False,
             )
-            print(f"   ✅ Auto-selected engine: {len(auto_result)} rows, {len(auto_result.columns)} columns")
+            print(
+                f"   ✅ Auto-selected engine: {len(auto_result)} rows, {len(auto_result.columns)} columns"
+            )
         except Exception as e:
             print(f"   ❌ Auto-selected engine failed: {e}")
 
@@ -121,9 +127,11 @@ def test_multi_engine_framework():
                 "BTC.csv",
                 config=config,
                 engine="streaming",  # Force streaming
-                show_progress=False
+                show_progress=False,
             )
-            print(f"   ✅ Specific engine (streaming): {len(specific_result)} rows, {len(specific_result.columns)} columns")
+            print(
+                f"   ✅ Specific engine (streaming): {len(specific_result)} rows, {len(specific_result.columns)} columns"
+            )
         except Exception as e:
             print(f"   ❌ Specific engine failed: {e}")
 
@@ -131,14 +139,15 @@ def test_multi_engine_framework():
         print("\n⚙️ Testing Result Computation...")
         try:
             # Create a Dask DataFrame for testing computation
-            if 'dask' in factory.get_available_engines():
+            if "dask" in factory.get_available_engines():
                 from processing_engines.dask_engine import process_dask
+
                 dask_df = process_dask(
                     "BTC.csv",
                     config=config,
                     scheduler="threads",
                     npartitions=2,
-                    show_progress=False
+                    show_progress=False,
                 )
                 computed_result = factory.compute_result(dask_df, show_progress=False)
                 print(f"   ✅ Computed Dask result: {len(computed_result)} rows")
@@ -154,12 +163,14 @@ def test_multi_engine_framework():
             benchmark_results = factory.benchmark_engines(
                 "BTC.csv",
                 engines=["streaming"],  # Only test streaming for speed
-                cache_results=True
+                cache_results=True,
             )
             print("   ✅ Benchmark completed")
             for engine, result in benchmark_results.items():
-                if result.get('success'):
-                    print(f"   ✅ {engine}: {result['time']:.2f}s, {result['rows']} rows")
+                if result.get("success"):
+                    print(
+                        f"   ✅ {engine}: {result['time']:.2f}s, {result['rows']} rows"
+                    )
                 else:
                     print(f"   ❌ {engine}: {result.get('error', 'Unknown error')}")
         except Exception as e:
@@ -169,12 +180,25 @@ def test_multi_engine_framework():
         print("\n📋 Sample Processed Data:")
         try:
             # Use the streaming result for sample display
-            sample_cols = ['open', 'high', 'low', 'close', 'volume', 'log_ret', 'obv', 'vwap']
-            available_cols = [col for col in sample_cols if col in streaming_result.columns]
+            sample_cols = [
+                "open",
+                "high",
+                "low",
+                "close",
+                "volume",
+                "log_ret",
+                "obv",
+                "vwap",
+            ]
+            available_cols = [
+                col for col in sample_cols if col in streaming_result.columns
+            ]
             if available_cols:
                 print(streaming_result[available_cols].tail(3))
             else:
-                print(f"   ℹ️ Feature columns not found. Available: {list(streaming_result.columns)[:10]}...")
+                print(
+                    f"   ℹ️ Feature columns not found. Available: {list(streaming_result.columns)[:10]}..."
+                )
         except Exception as e:
             print(f"   ❌ Sample display failed: {e}")
 
@@ -184,8 +208,10 @@ def test_multi_engine_framework():
     except Exception as e:
         print(f"\n❌ Multi-Engine Framework test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 if __name__ == "__main__":
     success = test_multi_engine_framework()

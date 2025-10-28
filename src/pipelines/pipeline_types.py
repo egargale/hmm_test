@@ -15,6 +15,7 @@ import numpy as np
 
 class PipelineStage(Enum):
     """Pipeline processing stages"""
+
     INITIALIZATION = "initialization"
     DATA_LOADING = "data_loading"
     FEATURE_ENGINEERING = "feature_engineering"
@@ -28,6 +29,7 @@ class PipelineStage(Enum):
 
 class PipelineStatus(Enum):
     """Pipeline execution status"""
+
     PENDING = "pending"
     RUNNING = "running"
     COMPLETED = "completed"
@@ -37,9 +39,10 @@ class PipelineStatus(Enum):
 
 class ProcessingMode(Enum):
     """Data processing modes"""
+
     STREAMING = "streaming"  # Process large files in chunks
-    MEMORY = "memory"       # Load entire dataset into memory
-    HYBRID = "hybrid"       # Use streaming for large, memory for small datasets
+    MEMORY = "memory"  # Load entire dataset into memory
+    HYBRID = "hybrid"  # Use streaming for large, memory for small datasets
 
 
 @dataclass
@@ -193,10 +196,16 @@ class BacktestConfig:
     financing_cost: float = 0.0
 
     # Metrics
-    metrics: List[str] = field(default_factory=lambda: [
-        "sharpe_ratio", "max_drawdown", "total_return",
-        "win_rate", "profit_factor", "calmar_ratio"
-    ])
+    metrics: List[str] = field(
+        default_factory=lambda: [
+            "sharpe_ratio",
+            "max_drawdown",
+            "total_return",
+            "win_rate",
+            "profit_factor",
+            "calmar_ratio",
+        ]
+    )
 
     # Benchmarking
     benchmark: Optional[str] = None  # "buy_and_hold", "random", custom path
@@ -245,20 +254,21 @@ class PipelineConfig:
     def to_dict(self) -> Dict[str, Any]:
         """Convert configuration to dictionary"""
         import dataclasses
+
         return dataclasses.asdict(self)
 
     @classmethod
-    def from_dict(cls, config_dict: Dict[str, Any]) -> 'PipelineConfig':
+    def from_dict(cls, config_dict: Dict[str, Any]) -> "PipelineConfig":
         """Create configuration from dictionary"""
         # Handle nested dataclasses
-        features = FeatureConfig(**config_dict.get('features', {}))
-        training = TrainingConfig(**config_dict.get('training', {}))
-        persistence = PersistenceConfig(**config_dict.get('persistence', {}))
-        streaming = StreamingConfig(**config_dict.get('streaming', {}))
+        features = FeatureConfig(**config_dict.get("features", {}))
+        training = TrainingConfig(**config_dict.get("training", {}))
+        persistence = PersistenceConfig(**config_dict.get("persistence", {}))
+        streaming = StreamingConfig(**config_dict.get("streaming", {}))
 
         backtesting = None
-        if 'backtesting' in config_dict and config_dict['backtesting']:
-            backtesting = BacktestConfig(**config_dict['backtesting'])
+        if "backtesting" in config_dict and config_dict["backtesting"]:
+            backtesting = BacktestConfig(**config_dict["backtesting"])
 
         return cls(
             features=features,
@@ -266,8 +276,18 @@ class PipelineConfig:
             persistence=persistence,
             streaming=streaming,
             backtesting=backtesting,
-            **{k: v for k, v in config_dict.items()
-               if k not in ['features', 'training', 'persistence', 'streaming', 'backtesting']}
+            **{
+                k: v
+                for k, v in config_dict.items()
+                if k
+                not in [
+                    "features",
+                    "training",
+                    "persistence",
+                    "streaming",
+                    "backtesting",
+                ]
+            },
         )
 
 
@@ -348,4 +368,5 @@ class ProcessingStats:
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary"""
         import dataclasses
+
         return dataclasses.asdict(self)

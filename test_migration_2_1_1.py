@@ -16,7 +16,7 @@ import numpy as np
 import pandas as pd
 
 # Add src to path for imports
-sys.path.insert(0, 'src')
+sys.path.insert(0, "src")
 
 from src.compatibility.main_adapter import HMMPipeline
 from src.pipelines.pipeline_types import (
@@ -32,26 +32,26 @@ def create_test_data(n_samples=1000):
     np.random.seed(42)
 
     # Generate synthetic OHLCV data
-    dates = pd.date_range('2021-01-01', periods=n_samples, freq='H')
+    dates = pd.date_range("2021-01-01", periods=n_samples, freq="H")
 
     # Base price with trend and noise
     base_price = 100 + np.cumsum(np.random.normal(0, 1, n_samples))
 
     # Generate OHLCV data
     data = {
-        'DateTime': dates,
-        'Open': base_price + np.random.normal(0, 0.5, n_samples),
-        'High': base_price + np.abs(np.random.normal(1, 0.5, n_samples)),
-        'Low': base_price - np.abs(np.random.normal(1, 0.5, n_samples)),
-        'Close': base_price + np.random.normal(0, 0.5, n_samples),
-        'Volume': np.random.exponential(1000000, n_samples)
+        "DateTime": dates,
+        "Open": base_price + np.random.normal(0, 0.5, n_samples),
+        "High": base_price + np.abs(np.random.normal(1, 0.5, n_samples)),
+        "Low": base_price - np.abs(np.random.normal(1, 0.5, n_samples)),
+        "Close": base_price + np.random.normal(0, 0.5, n_samples),
+        "Volume": np.random.exponential(1000000, n_samples),
     }
 
     df = pd.DataFrame(data)
 
     # Ensure High >= max(Open, Close) and Low <= min(Open, Close)
-    df['High'] = np.maximum(df['High'], np.maximum(df['Open'], df['Close']))
-    df['Low'] = np.minimum(df['Low'], np.minimum(df['Open'], df['Close']))
+    df["High"] = np.maximum(df["High"], np.maximum(df["Open"], df["Close"]))
+    df["Low"] = np.minimum(df["Low"], np.minimum(df["Open"], df["Close"]))
 
     return df
 
@@ -63,7 +63,7 @@ async def test_backward_compatibility():
     # Create test data
     test_df = create_test_data(500)
 
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
         test_df.to_csv(f.name, index=False)
         test_csv_path = f.name
 
@@ -74,10 +74,12 @@ async def test_backward_compatibility():
         parser = create_legacy_parser()
         test_args = [
             test_csv_path,
-            '--n_states', '3',
-            '--max_iter', '50',  # Reduced for test speed
-            '--backtest',
-            '--plot'
+            "--n_states",
+            "3",
+            "--max_iter",
+            "50",  # Reduced for test speed
+            "--backtest",
+            "--plot",
         ]
 
         args = parser.parse_args(test_args)
@@ -85,8 +87,8 @@ async def test_backward_compatibility():
         # Validate argument conversion
         assert args.n_states == 3
         assert args.max_iter == 50
-        assert args.backtest == True
-        assert args.plot == True
+        assert args.backtest
+        assert args.plot
 
         print("✓ Legacy argument parsing works correctly")
 
@@ -145,9 +147,17 @@ def test_legacy_function_wrappers():
 
             # Check that features were added
             expected_features = [
-                'log_ret', 'atr', 'roc', 'rsi', 'bb_width',
-                'bb_position', 'adx', 'stoch', 'sma_5_ratio',
-                'hl_ratio', 'volume_ratio'
+                "log_ret",
+                "atr",
+                "roc",
+                "rsi",
+                "bb_width",
+                "bb_position",
+                "adx",
+                "stoch",
+                "sma_5_ratio",
+                "hl_ratio",
+                "volume_ratio",
             ]
 
             for feature in expected_features:
@@ -201,27 +211,17 @@ def test_configuration_mapping():
         # Test PipelineConfig creation
         config = PipelineConfig(
             features=FeatureConfig(
-                enable_atr=True,
-                enable_rsi=True,
-                atr_window=5,
-                rsi_window=10
+                enable_atr=True, enable_rsi=True, atr_window=5, rsi_window=10
             ),
-            training=TrainingConfig(
-                n_states=4,
-                n_iter=200,
-                random_state=123
-            ),
-            streaming=StreamingConfig(
-                chunk_size=50000,
-                show_progress=False
-            )
+            training=TrainingConfig(n_states=4, n_iter=200, random_state=123),
+            streaming=StreamingConfig(chunk_size=50000, show_progress=False),
         )
 
         # Test to_dict conversion
         config_dict = config.to_dict()
-        assert 'features' in config_dict
-        assert 'training' in config_dict
-        assert 'streaming' in config_dict
+        assert "features" in config_dict
+        assert "training" in config_dict
+        assert "streaming" in config_dict
 
         # Test from_dict conversion
         recreated_config = PipelineConfig.from_dict(config_dict)
@@ -247,7 +247,7 @@ async def main():
     tests = [
         ("Backward Compatibility", test_backward_compatibility),
         ("Legacy Function Wrappers", test_legacy_function_wrappers),
-        ("Configuration Mapping", test_configuration_mapping)
+        ("Configuration Mapping", test_configuration_mapping),
     ]
 
     results = []
@@ -282,7 +282,9 @@ async def main():
         print("\n🎉 All tests passed! Migration Phase 2.1.1 is successful.")
         return 0
     else:
-        print(f"\n❌ {total - passed} test(s) failed. Please fix issues before proceeding.")
+        print(
+            f"\n❌ {total - passed} test(s) failed. Please fix issues before proceeding."
+        )
         return 1
 
 

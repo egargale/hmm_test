@@ -24,7 +24,7 @@ def validate_data(
     outlier_method: str = "iqr",
     outlier_threshold: float = 1.5,
     missing_value_strategy: str = "forward_fill",
-    generate_report: bool = True
+    generate_report: bool = True,
 ) -> Tuple[pd.DataFrame, Dict[str, Any]]:
     """
     Perform comprehensive data validation and quality checks.
@@ -44,20 +44,22 @@ def validate_data(
     Raises:
         ValueError: If required OHLCV columns are missing
     """
-    logger.info(f"Starting data validation for DataFrame with {len(df)} rows, {len(df.columns)} columns")
+    logger.info(
+        f"Starting data validation for DataFrame with {len(df)} rows, {len(df.columns)} columns"
+    )
 
     # Set default OHLCV columns if not provided
     if ohlcv_columns is None:
-        ohlcv_columns = ['open', 'high', 'low', 'close', 'volume']
+        ohlcv_columns = ["open", "high", "low", "close", "volume"]
 
     # Initialize validation report
     report = {
-        'validation_timestamp': datetime.now().isoformat(),
-        'original_shape': df.shape,
-        'issues_found': [],
-        'cleaning_actions': [],
-        'statistics': {},
-        'quality_score': None
+        "validation_timestamp": datetime.now().isoformat(),
+        "original_shape": df.shape,
+        "issues_found": [],
+        "cleaning_actions": [],
+        "statistics": {},
+        "quality_score": None,
     }
 
     # Create a copy to avoid modifying original
@@ -65,74 +67,86 @@ def validate_data(
 
     # 1. Validate required columns
     df_clean, column_issues = _validate_columns(df_clean, ohlcv_columns)
-    report['issues_found'].extend(column_issues)
+    report["issues_found"].extend(column_issues)
 
     # 2. Validate data types
     df_clean, type_issues = _validate_data_types(df_clean, ohlcv_columns)
-    report['issues_found'].extend(type_issues)
+    report["issues_found"].extend(type_issues)
 
     # 3. Validate OHLCV consistency
     df_clean, consistency_issues = _validate_ohlcv_consistency(df_clean)
-    report['issues_found'].extend(consistency_issues)
+    report["issues_found"].extend(consistency_issues)
 
     # 4. Handle missing values
-    df_clean, missing_issues = _handle_missing_values(df_clean, missing_value_strategy, ohlcv_columns)
-    report['issues_found'].extend(missing_issues)
+    df_clean, missing_issues = _handle_missing_values(
+        df_clean, missing_value_strategy, ohlcv_columns
+    )
+    report["issues_found"].extend(missing_issues)
 
     # 5. Detect and handle outliers
     if outlier_detection:
         df_clean, outlier_issues = _handle_outliers(
             df_clean, ohlcv_columns, outlier_method, outlier_threshold
         )
-        report['issues_found'].extend(outlier_issues)
+        report["issues_found"].extend(outlier_issues)
 
     # 6. Validate datetime index
     df_clean, datetime_issues = _validate_datetime_index(df_clean)
-    report['issues_found'].extend(datetime_issues)
+    report["issues_found"].extend(datetime_issues)
 
     # 7. Generate statistics
-    report['statistics'] = _generate_statistics(df_clean, ohlcv_columns)
+    report["statistics"] = _generate_statistics(df_clean, ohlcv_columns)
 
     # 8. Calculate quality score
-    report['quality_score'] = _calculate_quality_score(report)
+    report["quality_score"] = _calculate_quality_score(report)
 
     # 9. Final shape
-    report['final_shape'] = df_clean.shape
+    report["final_shape"] = df_clean.shape
 
     logger.info(f"Validation completed. Quality score: {report['quality_score']:.2f}")
-    logger.info(f"Issues found: {len(report['issues_found'])}, Actions taken: {len(report['cleaning_actions'])}")
+    logger.info(
+        f"Issues found: {len(report['issues_found'])}, Actions taken: {len(report['cleaning_actions'])}"
+    )
 
     return df_clean, report
 
 
-def _validate_columns(df: pd.DataFrame, required_columns: List[str]) -> Tuple[pd.DataFrame, List[Dict[str, Any]]]:
+def _validate_columns(
+    df: pd.DataFrame, required_columns: List[str]
+) -> Tuple[pd.DataFrame, List[Dict[str, Any]]]:
     """Validate required columns exist."""
     issues = []
 
     missing_columns = [col for col in required_columns if col not in df.columns]
     if missing_columns:
-        issues.append({
-            'type': 'missing_columns',
-            'severity': 'critical',
-            'description': f"Missing required columns: {missing_columns}",
-            'columns': missing_columns
-        })
+        issues.append(
+            {
+                "type": "missing_columns",
+                "severity": "critical",
+                "description": f"Missing required columns: {missing_columns}",
+                "columns": missing_columns,
+            }
+        )
         raise ValueError(f"Missing required OHLCV columns: {missing_columns}")
 
     # Check for duplicate columns
     duplicate_columns = df.columns[df.columns.duplicated()].tolist()
     if duplicate_columns:
-        issues.append({
-            'type': 'duplicate_columns',
-            'severity': 'warning',
-            'description': f"Duplicate columns found: {duplicate_columns}",
-            'columns': duplicate_columns
-        })
+        issues.append(
+            {
+                "type": "duplicate_columns",
+                "severity": "warning",
+                "description": f"Duplicate columns found: {duplicate_columns}",
+                "columns": duplicate_columns,
+            }
+        )
 
     return df, issues
 
 
-def _validate_data_types(df: pd.DataFrame, ohlcv_columns: List[str]) -> Tuple[pd.DataFrame, List[Dict[str, Any]]]:
+def _validate_data_types(
+    df: pd.DataFrame, ohlcv_columns: List[str]
+) -> Tuple[pd.DataFrame, List[Dict[str, Any]]]:
     """Validate and correct data types."""
     issues = []
 
@@ -140,82 +154,94 @@ def _validate_data_types(df: pd.DataFrame, ohlcv_columns: List[str]) -> Tuple[pd
     for col in ohlcv_columns:
         if col in df.columns and not pd.api.types.is_numeric_dtype(df[col]):
             try:
-                df[col] = pd.to_numeric(df[col], errors='coerce')
-                issues.append({
-                    'type': 'type_conversion',
-                    'severity': 'info',
-                    'description': f"Converted {col} to numeric",
-                    'column': col
-                })
+                df[col] = pd.to_numeric(df[col], errors="coerce")
+                issues.append(
+                    {
+                        "type": "type_conversion",
+                        "severity": "info",
+                        "description": f"Converted {col} to numeric",
+                        "column": col,
+                    }
+                )
             except Exception as e:
-                issues.append({
-                    'type': 'type_conversion_error',
-                    'severity': 'error',
-                    'description': f"Failed to convert {col} to numeric: {e}",
-                    'column': col
-                })
+                issues.append(
+                    {
+                        "type": "type_conversion_error",
+                        "severity": "error",
+                        "description": f"Failed to convert {col} to numeric: {e}",
+                        "column": col,
+                    }
+                )
 
     return df, issues
 
 
-def _validate_ohlcv_consistency(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[Dict[str, Any]]]:
+def _validate_ohlcv_consistency(
+    df: pd.DataFrame,
+) -> Tuple[pd.DataFrame, List[Dict[str, Any]]]:
     """Validate OHLCV data consistency."""
     issues = []
 
     # Check for negative prices
-    price_columns = ['open', 'high', 'low', 'close']
+    price_columns = ["open", "high", "low", "close"]
     for col in price_columns:
         if col in df.columns:
             negative_count = (df[col] <= 0).sum()
             if negative_count > 0:
-                issues.append({
-                    'type': 'negative_prices',
-                    'severity': 'warning',
-                    'description': f"Found {negative_count} non-positive values in {col}",
-                    'column': col,
-                    'count': negative_count
-                })
+                issues.append(
+                    {
+                        "type": "negative_prices",
+                        "severity": "warning",
+                        "description": f"Found {negative_count} non-positive values in {col}",
+                        "column": col,
+                        "count": negative_count,
+                    }
+                )
 
     # Check OHLC consistency
-    if all(col in df.columns for col in ['open', 'high', 'low', 'close']):
+    if all(col in df.columns for col in ["open", "high", "low", "close"]):
         # High should be >= open,close
-        high_violations = (df['high'] < df[['open', 'close']].max(axis=1)).sum()
+        high_violations = (df["high"] < df[["open", "close"]].max(axis=1)).sum()
         if high_violations > 0:
-            issues.append({
-                'type': 'ohlcv_consistency',
-                'severity': 'warning',
-                'description': f"Found {high_violations} rows where high < max(open,close)",
-                'count': high_violations
-            })
+            issues.append(
+                {
+                    "type": "ohlcv_consistency",
+                    "severity": "warning",
+                    "description": f"Found {high_violations} rows where high < max(open,close)",
+                    "count": high_violations,
+                }
+            )
 
         # Low should be <= open,close
-        low_violations = (df['low'] > df[['open', 'close']].min(axis=1)).sum()
+        low_violations = (df["low"] > df[["open", "close"]].min(axis=1)).sum()
         if low_violations > 0:
-            issues.append({
-                'type': 'ohlcv_consistency',
-                'severity': 'warning',
-                'description': f"Found {low_violations} rows where low > min(open,close)",
-                'count': low_violations
-            })
+            issues.append(
+                {
+                    "type": "ohlcv_consistency",
+                    "severity": "warning",
+                    "description": f"Found {low_violations} rows where low > min(open,close)",
+                    "count": low_violations,
+                }
+            )
 
     # Check for negative volume
-    if 'volume' in df.columns:
-        negative_volume = (df['volume'] < 0).sum()
+    if "volume" in df.columns:
+        negative_volume = (df["volume"] < 0).sum()
         if negative_volume > 0:
-            issues.append({
-                'type': 'negative_volume',
-                'severity': 'warning',
-                'description': f"Found {negative_volume} negative volume values",
-                'count': negative_volume
-            })
+            issues.append(
+                {
+                    "type": "negative_volume",
+                    "severity": "warning",
+                    "description": f"Found {negative_volume} negative volume values",
+                    "count": negative_volume,
+                }
+            )
 
     return df, issues
 
 
 def _handle_missing_values(
-    df: pd.DataFrame,
-    strategy: str,
-    ohlcv_columns: List[str]
+    df: pd.DataFrame, strategy: str, ohlcv_columns: List[str]
 ) -> Tuple[pd.DataFrame, List[Dict[str, Any]]]:
     """Handle missing values in the dataset."""
     issues = []
@@ -227,12 +253,14 @@ def _handle_missing_values(
     if total_missing == 0:
         return df, issues
 
-    issues.append({
-        'type': 'missing_values',
-        'severity': 'info',
-        'description': f"Found {total_missing} missing values in dataset",
-        'missing_counts': missing_counts[missing_counts > 0].to_dict()
-    })
+    issues.append(
+        {
+            "type": "missing_values",
+            "severity": "info",
+            "description": f"Found {total_missing} missing values in dataset",
+            "missing_counts": missing_counts[missing_counts > 0].to_dict(),
+        }
+    )
 
     original_shape = df.shape
 
@@ -240,35 +268,41 @@ def _handle_missing_values(
     if strategy == "drop":
         # Drop rows with missing values in OHLCV columns
         df = df.dropna(subset=ohlcv_columns)
-        issues.append({
-            'type': 'missing_values_handled',
-            'severity': 'info',
-            'description': f"Dropped {original_shape[0] - len(df)} rows with missing values",
-            'strategy': strategy
-        })
+        issues.append(
+            {
+                "type": "missing_values_handled",
+                "severity": "info",
+                "description": f"Dropped {original_shape[0] - len(df)} rows with missing values",
+                "strategy": strategy,
+            }
+        )
 
     elif strategy == "forward_fill":
         # Forward fill missing values
-        df = df.fillna(method='ffill')
+        df = df.ffill()
         # Backward fill any remaining NaNs
-        df = df.fillna(method='bfill')
-        issues.append({
-            'type': 'missing_values_handled',
-            'severity': 'info',
-            'description': "Applied forward fill and backward fill for missing values",
-            'strategy': strategy
-        })
+        df = df.bfill()
+        issues.append(
+            {
+                "type": "missing_values_handled",
+                "severity": "info",
+                "description": "Applied forward fill and backward fill for missing values",
+                "strategy": strategy,
+            }
+        )
 
     elif strategy == "interpolate":
         # Interpolate missing values
         for col in df.select_dtypes(include=[np.number]).columns:
-            df[col] = df[col].interpolate(method='linear')
-        issues.append({
-            'type': 'missing_values_handled',
-            'severity': 'info',
-            'description': "Applied linear interpolation for missing values",
-            'strategy': strategy
-        })
+            df[col] = df[col].interpolate(method="linear")
+        issues.append(
+            {
+                "type": "missing_values_handled",
+                "severity": "info",
+                "description": "Applied linear interpolation for missing values",
+                "strategy": strategy,
+            }
+        )
 
     else:
         raise ValueError(f"Unknown missing value strategy: {strategy}")
@@ -277,10 +311,7 @@ def _handle_missing_values(
 
 
 def _handle_outliers(
-    df: pd.DataFrame,
-    ohlcv_columns: List[str],
-    method: str,
-    threshold: float
+    df: pd.DataFrame, ohlcv_columns: List[str], method: str, threshold: float
 ) -> Tuple[pd.DataFrame, List[Dict[str, Any]]]:
     """Detect and handle outliers in the data."""
     issues = []
@@ -306,17 +337,19 @@ def _handle_outliers(
             total_outliers += outlier_count
 
     if total_outliers > 0:
-        issues.append({
-            'type': 'outliers_detected',
-            'severity': 'warning',
-            'description': f"Detected {total_outliers} outliers using {method} method",
-            'method': method,
-            'threshold': threshold,
-            'outlier_counts': outlier_counts
-        })
+        issues.append(
+            {
+                "type": "outliers_detected",
+                "severity": "warning",
+                "description": f"Detected {total_outliers} outliers using {method} method",
+                "method": method,
+                "threshold": threshold,
+                "outlier_counts": outlier_counts,
+            }
+        )
 
         # Flag outliers in a new column instead of removing them
-        df['is_outlier'] = False
+        df["is_outlier"] = False
         for col, _count in outlier_counts.items():
             if method == "iqr":
                 outliers = _detect_outliers_iqr(df[col], threshold)
@@ -325,14 +358,16 @@ def _handle_outliers(
             elif method == "isolation_forest":
                 outliers = _detect_outliers_isolation_forest(df[col])
 
-            df.loc[outliers, 'is_outlier'] = True
+            df.loc[outliers, "is_outlier"] = True
 
-        issues.append({
-            'type': 'outliers_flagged',
-            'severity': 'info',
-            'description': f"Flagged {total_outliers} outliers in 'is_outlier' column",
-            'action': 'flagged'
-        })
+        issues.append(
+            {
+                "type": "outliers_flagged",
+                "severity": "info",
+                "description": f"Flagged {total_outliers} outliers in 'is_outlier' column",
+                "action": "flagged",
+            }
+        )
 
     return df, issues
 
@@ -371,35 +406,43 @@ def _detect_outliers_isolation_forest(series: pd.Series) -> pd.Series:
         return _detect_outliers_iqr(series)
 
 
-def _validate_datetime_index(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[Dict[str, Any]]]:
+def _validate_datetime_index(
+    df: pd.DataFrame,
+) -> Tuple[pd.DataFrame, List[Dict[str, Any]]]:
     """Validate datetime index."""
     issues = []
 
     if not isinstance(df.index, pd.DatetimeIndex):
         try:
             df.index = pd.to_datetime(df.index)
-            issues.append({
-                'type': 'datetime_conversion',
-                'severity': 'info',
-                'description': "Converted index to datetime"
-            })
+            issues.append(
+                {
+                    "type": "datetime_conversion",
+                    "severity": "info",
+                    "description": "Converted index to datetime",
+                }
+            )
         except Exception as e:
-            issues.append({
-                'type': 'datetime_conversion_error',
-                'severity': 'error',
-                'description': f"Failed to convert index to datetime: {e}"
-            })
+            issues.append(
+                {
+                    "type": "datetime_conversion_error",
+                    "severity": "error",
+                    "description": f"Failed to convert index to datetime: {e}",
+                }
+            )
 
     # Check for duplicate timestamps
     if isinstance(df.index, pd.DatetimeIndex):
         duplicates = df.index.duplicated().sum()
         if duplicates > 0:
-            issues.append({
-                'type': 'duplicate_timestamps',
-                'severity': 'warning',
-                'description': f"Found {duplicates} duplicate timestamps",
-                'count': duplicates
-            })
+            issues.append(
+                {
+                    "type": "duplicate_timestamps",
+                    "severity": "warning",
+                    "description": f"Found {duplicates} duplicate timestamps",
+                    "count": duplicates,
+                }
+            )
 
     return df, issues
 
@@ -407,9 +450,9 @@ def _validate_datetime_index(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[Dict[
 def _generate_statistics(df: pd.DataFrame, ohlcv_columns: List[str]) -> Dict[str, Any]:
     """Generate statistics for the validation report."""
     stats = {
-        'shape': df.shape,
-        'column_types': df.dtypes.astype(str).to_dict(),
-        'memory_usage_mb': df.memory_usage(deep=True).sum() / (1024 * 1024)
+        "shape": df.shape,
+        "column_types": df.dtypes.astype(str).to_dict(),
+        "memory_usage_mb": df.memory_usage(deep=True).sum() / (1024 * 1024),
     }
 
     # OHLCV statistics
@@ -419,24 +462,26 @@ def _generate_statistics(df: pd.DataFrame, ohlcv_columns: List[str]) -> Dict[str
             series = df[col].dropna()
             if len(series) > 0:
                 ohlcv_stats[col] = {
-                    'count': len(series),
-                    'mean': float(series.mean()),
-                    'std': float(series.std()),
-                    'min': float(series.min()),
-                    'max': float(series.max()),
-                    'missing_count': df[col].isnull().sum()
+                    "count": len(series),
+                    "mean": float(series.mean()),
+                    "std": float(series.std()),
+                    "min": float(series.min()),
+                    "max": float(series.max()),
+                    "missing_count": df[col].isnull().sum(),
                 }
 
-    stats['ohlcv_statistics'] = ohlcv_stats
+    stats["ohlcv_statistics"] = ohlcv_stats
 
     # Feature statistics
-    feature_columns = [col for col in df.columns if col not in ohlcv_columns and col != 'is_outlier']
+    feature_columns = [
+        col for col in df.columns if col not in ohlcv_columns and col != "is_outlier"
+    ]
     if feature_columns:
         feature_stats = {
-            'total_features': len(feature_columns),
-            'feature_types': df[feature_columns].dtypes.astype(str).to_dict()
+            "total_features": len(feature_columns),
+            "feature_types": df[feature_columns].dtypes.astype(str).to_dict(),
         }
-        stats['feature_statistics'] = feature_stats
+        stats["feature_statistics"] = feature_stats
 
     return stats
 
@@ -446,24 +491,26 @@ def _calculate_quality_score(report: Dict[str, Any]) -> float:
     base_score = 100.0
 
     # Deduct points for issues
-    for issue in report['issues_found']:
-        severity = issue.get('severity', 'info')
-        if severity == 'critical':
+    for issue in report["issues_found"]:
+        severity = issue.get("severity", "info")
+        if severity == "critical":
             base_score -= 20
-        elif severity == 'error':
+        elif severity == "error":
             base_score -= 10
-        elif severity == 'warning':
+        elif severity == "warning":
             base_score -= 5
-        elif severity == 'info':
+        elif severity == "info":
             base_score -= 1
 
     # Deduct points for missing data
-    if 'statistics' in report and 'ohlcv_statistics' in report['statistics']:
+    if "statistics" in report and "ohlcv_statistics" in report["statistics"]:
         total_values = sum(
-            stats['count'] for stats in report['statistics']['ohlcv_statistics'].values()
+            stats["count"]
+            for stats in report["statistics"]["ohlcv_statistics"].values()
         )
         total_missing = sum(
-            stats['missing_count'] for stats in report['statistics']['ohlcv_statistics'].values()
+            stats["missing_count"]
+            for stats in report["statistics"]["ohlcv_statistics"].values()
         )
         if total_values > 0:
             missing_ratio = total_missing / total_values
@@ -483,23 +530,27 @@ def print_validation_report(report: Dict[str, Any]) -> None:
     print(f"Final Shape: {report['final_shape']}")
     print(f"Quality Score: {report['quality_score']:.2f}/100")
 
-    if report['issues_found']:
+    if report["issues_found"]:
         print(f"\nIssues Found ({len(report['issues_found'])}):")
-        for i, issue in enumerate(report['issues_found'], 1):
+        for i, issue in enumerate(report["issues_found"], 1):
             severity_icon = {
-                'critical': '🚨',
-                'error': '❌',
-                'warning': '⚠️',
-                'info': 'ℹ️'
-            }.get(issue.get('severity', 'info'), 'ℹ️')
-            print(f"  {i}. {severity_icon} [{issue.get('severity', 'info').upper()}] {issue['description']}")
+                "critical": "🚨",
+                "error": "❌",
+                "warning": "⚠️",
+                "info": "ℹ️",
+            }.get(issue.get("severity", "info"), "ℹ️")
+            print(
+                f"  {i}. {severity_icon} [{issue.get('severity', 'info').upper()}] {issue['description']}"
+            )
 
-    if report['statistics']:
+    if report["statistics"]:
         print("\nStatistics:")
         print(f"  - Memory Usage: {report['statistics']['memory_usage_mb']:.2f} MB")
-        if 'ohlcv_statistics' in report['statistics']:
+        if "ohlcv_statistics" in report["statistics"]:
             print(f"  - OHLCV Columns: {len(report['statistics']['ohlcv_statistics'])}")
-        if 'feature_statistics' in report['statistics']:
-            print(f"  - Feature Columns: {report['statistics']['feature_statistics']['total_features']}")
+        if "feature_statistics" in report["statistics"]:
+            print(
+                f"  - Feature Columns: {report['statistics']['feature_statistics']['total_features']}"
+            )
 
     print("=" * 60)

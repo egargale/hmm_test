@@ -9,6 +9,7 @@ from pathlib import Path
 # Add src to Python path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
+
 def test_dask_engine():
     """Test the dask_engine functionality."""
     print("🧪 Testing Dask Engine...")
@@ -27,9 +28,7 @@ def test_dask_engine():
 
         # Create test configuration
         config = ProcessingConfig(
-            engine_type="dask",
-            chunk_size=1000,
-            memory_limit_gb=2.0
+            engine_type="dask", chunk_size=1000, memory_limit_gb=2.0
         )
 
         # Test Dask processing
@@ -39,7 +38,7 @@ def test_dask_engine():
             config=config,
             scheduler="threads",
             npartitions=4,
-            show_progress=True
+            show_progress=True,
         )
         print(f"   ✅ Dask DataFrame created with {ddf.npartitions} partitions")
         print(f"   ✅ Columns: {len(ddf.columns)}")
@@ -49,18 +48,29 @@ def test_dask_engine():
         df = compute_with_progress(ddf, show_progress=True)
         print("   ✅ Computation completed")
         print(f"   ✅ Result: {len(df)} rows with {len(df.columns)} columns")
-        print(f"   ✅ Memory usage: {df.memory_usage(deep=True).sum() / (1024*1024):.2f} MB")
+        print(
+            f"   ✅ Memory usage: {df.memory_usage(deep=True).sum() / (1024 * 1024):.2f} MB"
+        )
 
         # Display sample data
         print("\n📋 Sample computed data:")
-        sample_cols = ['open', 'high', 'low', 'close', 'volume', 'log_ret', 'obv', 'vwap']
+        sample_cols = [
+            "open",
+            "high",
+            "low",
+            "close",
+            "volume",
+            "log_ret",
+            "obv",
+            "vwap",
+        ]
         available_cols = [col for col in sample_cols if col in df.columns]
         print(df[available_cols].tail(3))
 
         # Test cluster monitoring
         print("\n🖥️ Testing cluster monitoring...")
         cluster_info = get_dask_cluster_info()
-        if 'error' not in cluster_info:
+        if "error" not in cluster_info:
             print("   ✅ Dask cluster info retrieved")
             print(f"   ✅ Workers: {cluster_info.get('workers', 'N/A')}")
             print(f"   ✅ Total cores: {cluster_info.get('total_cores', 'N/A')}")
@@ -71,7 +81,10 @@ def test_dask_engine():
         # Test optimization
         print("\n⚡ Testing Dask optimization...")
         from processing_engines.dask_engine import optimize_dask_performance
-        opt_settings = optimize_dask_performance(scheduler="threads", memory_limit="1GB")
+
+        opt_settings = optimize_dask_performance(
+            scheduler="threads", memory_limit="1GB"
+        )
         print(f"   ✅ Dask optimization applied: {opt_settings}")
 
         print("\n✅ Dask engine test completed successfully!")
@@ -80,8 +93,10 @@ def test_dask_engine():
     except Exception as e:
         print(f"\n❌ Dask engine test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 if __name__ == "__main__":
     success = test_dask_engine()

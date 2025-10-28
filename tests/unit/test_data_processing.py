@@ -5,7 +5,6 @@ Tests the CSV parsing, data validation, and feature engineering
 components that prepare data for HMM analysis.
 """
 
-
 import numpy as np
 import pandas as pd
 import pytest
@@ -118,7 +117,9 @@ class TestDataValidation:
 
         assert isinstance(data_clean, pd.DataFrame)
         assert isinstance(validation_result, dict)
-        assert validation_result["quality_score"] >= 90.0  # High quality score for clean data
+        assert (
+            validation_result["quality_score"] >= 90.0
+        )  # High quality score for clean data
         assert "issues_found" in validation_result
 
     def test_validate_data_with_missing_values(self):
@@ -231,10 +232,12 @@ class TestFeatureEngineering:
         features = add_features(sample_ohlcv_data, config)
 
         # Check that some features were added (volatility is included in default features)
-        volatility_columns = [col for col in features.columns if 'volatility' in col or 'atr' in col]
+        volatility_columns = [
+            col for col in features.columns if "volatility" in col or "atr" in col
+        ]
 
         # At minimum, basic features should be added
-        assert 'log_ret' in features.columns
+        assert "log_ret" in features.columns
         assert len(features.columns) > 5  # More than just OHLCV
 
         # Check if we have any volatility-related features
@@ -248,16 +251,22 @@ class TestFeatureEngineering:
         features = add_features(sample_ohlcv_data, config)
 
         # Check that basic features are present and some momentum-related features exist
-        assert 'log_ret' in features.columns
+        assert "log_ret" in features.columns
         assert len(features.columns) > 5  # More than just OHLCV
 
         # Check for any momentum-related features
-        momentum_keywords = ['momentum', 'roc', 'rsi', 'macd']
-        momentum_columns = [col for col in features.columns if any(keyword in col for keyword in momentum_keywords)]
+        momentum_keywords = ["momentum", "roc", "rsi", "macd"]
+        momentum_columns = [
+            col
+            for col in features.columns
+            if any(keyword in col for keyword in momentum_keywords)
+        ]
         if len(momentum_columns) > 0:
             print(f"Found momentum features: {momentum_columns}")
         else:
-            print("No specific momentum features found, but basic features were added successfully")
+            print(
+                "No specific momentum features found, but basic features were added successfully"
+            )
 
     def test_add_features_volume(self, sample_ohlcv_data):
         """Test volume-based features."""
@@ -271,15 +280,21 @@ class TestFeatureEngineering:
         features = add_features(sample_ohlcv_data, config)
 
         # Check that basic features are present
-        assert 'log_ret' in features.columns
+        assert "log_ret" in features.columns
         assert len(features.columns) > 5  # More than just OHLCV
 
         # Check for volume-related features
-        volume_columns = [col for col in features.columns if 'volume' in col.lower() or 'obv' in col.lower() or 'vwap' in col.lower()]
+        volume_columns = [
+            col
+            for col in features.columns
+            if "volume" in col.lower() or "obv" in col.lower() or "vwap" in col.lower()
+        ]
         if len(volume_columns) > 0:
             print(f"Found volume features: {volume_columns}")
         else:
-            print("Basic volume features may not be present, but default features were added")
+            print(
+                "Basic volume features may not be present, but default features were added"
+            )
 
     def test_add_features_custom(self, sample_ohlcv_data):
         """Test custom indicator features."""
@@ -295,7 +310,7 @@ class TestFeatureEngineering:
         features = add_features(sample_ohlcv_data, config)
 
         # Check that basic features are present
-        assert 'log_ret' in features.columns
+        assert "log_ret" in features.columns
         assert len(features.columns) > 5  # More than just OHLCV
 
         # Check for custom features (may or may not be present based on implementation)
@@ -317,7 +332,7 @@ class TestFeatureEngineering:
         features = add_features(sample_ohlcv_data, {})
 
         # Should still add basic features
-        assert 'log_ret' in features.columns
+        assert "log_ret" in features.columns
         assert len(features.columns) > 5  # More than just OHLCV
 
     def test_add_features_handle_missing_columns(self):
@@ -329,7 +344,7 @@ class TestFeatureEngineering:
 
         # Should handle missing columns gracefully (but it actually throws an error)
         with pytest.raises(ValueError, match="Missing required OHLCV columns"):
-            features = add_features(incomplete_data, {})
+            add_features(incomplete_data, {})
 
     def test_add_features_data_types(self, sample_ohlcv_data):
         """Test that feature addition maintains correct data types."""

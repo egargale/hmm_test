@@ -660,7 +660,7 @@
         "description": "Resolve over 80 ruff linting violations and all mypy type-checking errors across the codebase, and modernize configurations for ruff and Pydantic V2.",
         "details": "This task involves a comprehensive code quality overhaul. The primary goal is to eliminate all reported issues from `ruff` and `mypy`, bringing the codebase to a higher standard of maintainability and correctness.\n\n1.  **Update `pyproject.toml` Configuration**:\n    *   Migrate the `[tool.ruff]` configuration to the modern format. The existing settings should be moved into new tables like `[tool.ruff.lint]` and `[tool.ruff.format]`. \n    *   Add `types-PyYAML` to the development dependencies (e.g., under `[project.optional-dependencies.dev]`) to provide type stubs for the PyYAML library, which will resolve a class of `mypy` errors.\n\n2.  **Migrate Pydantic V1 Validators to V2**:\n    *   Search the codebase for Pydantic models using the deprecated `@validator` decorator.\n    *   Update them to use the Pydantic V2 `@field_validator` decorator. This also involves updating the validator function signature.\n    *   Example Migration:\n        *   **V1 (Before):**\n          ```python\n          from pydantic import BaseModel, validator\n          class MyModel(BaseModel):\n              value: int\n              @validator('value')\n              def check_value(cls, v):\n                  if v < 0: raise ValueError('value must be non-negative')\n                  return v\n          ```\n        *   **V2 (After):**\n          ```python\n          from pydantic import BaseModel, field_validator\n          class MyModel(BaseModel):\n              value: int\n              @field_validator('value')\n              @classmethod\n              def check_value(cls, v: int) -> int:\n                  if v < 0: raise ValueError('value must be non-negative')\n                  return v\n          ```\n\n3.  **Resolve Ruff Linting Errors (81+)**:\n    *   Run `ruff check . --add-select I --fix` to automatically fix as many issues as possible, including import order problems.\n    *   Manually address the remaining errors:\n        *   **Unused Variables (F841):** Remove the variable or prefix it with an underscore (e.g., `_unused_var`) if it's intentionally unused.\n        *   **Bare Excepts (E722):** Replace generic `except:` clauses with `except Exception as e:` to avoid catching `SystemExit` and `KeyboardInterrupt`.\n        *   **Other Import Issues:** Manually resolve any remaining import-related warnings that the auto-fix could not handle.\n\n4.  **Fix Mypy Type-Checking Failures**:\n    *   Run `mypy src tests` to get a list of all type errors.\n    *   Systematically add missing type hints to function arguments, return values, and variables until `mypy` passes without errors.",
         "testStrategy": "The success of this task will be validated by static analysis tools and the existing test suite to ensure no regressions were introduced.\n\n1.  **Linter Verification**: Run `ruff check .` from the project root. The command must complete successfully with zero reported errors.\n\n2.  **Formatter Verification**: Run `ruff format . --check`. The command must report that all files are formatted correctly.\n\n3.  **Type-Checking Verification**: Run `mypy src tests`. The command must complete with the message 'Success: no issues found'.\n\n4.  **Regression Testing**: Execute the full test suite using `pytest`. All tests must pass to confirm that the code quality improvements have not broken existing functionality.\n\n5.  **CLI Sanity Check**: After the fixes are applied, run a basic command like `hmm-analyze --help` to ensure the application's entry point is still functioning correctly.",
-        "status": "in-progress",
+        "status": "done",
         "dependencies": [
           11,
           12,
@@ -685,7 +685,7 @@
               1
             ],
             "details": "Use a codebase search tool (like grep or an IDE feature) to find all occurrences of `@validator`. For each instance, replace it with `@field_validator` and add the `@classmethod` decorator. Update the function signature to include type hints, e.g., `def check_value(cls, v: int) -> int:`. Ensure all models using these validators are correctly imported from `pydantic`.",
-            "status": "in-progress",
+            "status": "done",
             "testStrategy": "Run the project's existing test suite to ensure that the Pydantic model validation logic still works as expected after the migration. Manually inspect the models to confirm the new decorators are correctly applied."
           },
           {
@@ -696,7 +696,7 @@
               1
             ],
             "details": "First, run `ruff check . --add-select I --fix` to automatically correct import order issues and other simple violations. Afterward, run `ruff check .` again. Manually fix remaining errors: for `F841` (unused variable), delete the variable or rename it to `_variable`. For `E722` (bare except), change `except:` to `except Exception:`. Continue until the command reports zero errors.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "The primary verification is to run `ruff check .` from the project root. The command must exit with a status code of 0, indicating no linting errors remain."
           },
           {
@@ -709,7 +709,7 @@
               3
             ],
             "details": "Run the command `mypy src tests`. For each reported error, navigate to the specified file and line. Add the necessary type annotations to function arguments (`def my_func(arg: str)`), return values (`-> bool:`), and variables. Repeat the process until the `mypy` command runs successfully with no errors found.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Verification is complete when running `mypy src tests` from the project root produces the output 'Success: no issues found in X source files'."
           }
         ]
@@ -771,7 +771,7 @@
         "description": "Refactor the entire codebase to use consistent, absolute import paths relative to the 'src' directory and reorganize key modules to improve logical cohesion and maintainability.",
         "details": "Following the major code quality cleanup, this task will enforce a single, consistent import strategy across the project. Currently, the codebase may contain a mix of absolute and relative imports. Standardizing on absolute imports improves code readability and maintainability, especially in a `src`-layout project.\n\n1.  **Enforce Absolute Imports:** Systematically refactor all Python files in both `src/hmm_trading/` and `tests/` to use absolute imports. For example, an import in a test file should change from a relative path to `from hmm_trading.data_processing import file_utils`.\n\n2.  **Update Ruff Configuration:** Modify the `[tool.ruff.lint]` section in `pyproject.toml` to enforce this new convention. Add the `I002` (banned-relative-import) rule to the list of checked rules to prevent future relative imports.\n\n3.  **Module Cohesion Review:** Analyze the modules within `src/hmm_trading`, particularly large files like `utils.py` or `validation.py`. If these modules contain loosely related functions, refactor them by splitting them into smaller, more focused modules (e.g., `config_utils.py`, `data_validators.py`).\n\n4.  **Standardize `__init__.py`:** Ensure `src/hmm_trading/__init__.py` and other package `__init__.py` files are used consistently, either for defining a public API for the package or for namespace purposes, and document the chosen approach.",
         "testStrategy": "Verification will focus on ensuring the refactoring did not introduce regressions and that the new standards are correctly applied.\n\n1.  **Static Analysis Pass:** Run `make lint` from the project root. The command must complete with zero errors, specifically confirming that the newly enabled `I002` rule in ruff reports no violations.\n\n2.  **Full Test Suite Execution:** Execute the complete test suite by running `pytest` or `make test`. All existing tests must pass, proving that the changes to import paths and module structure have not broken any functionality.\n\n3.  **CLI Functionality Check:** Verify that the command-line entry points remain functional after the refactoring. Run `hmm-analyze --help` and `hmm-futures --help` to ensure they execute without import errors.\n\n4.  **Manual Code Review:** Conduct a spot-check of several files in both `src/` and `tests/` to manually confirm that relative imports have been eliminated and the new module structure is logical.",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           12,
           13,
@@ -785,7 +785,7 @@
             "description": "Systematically review all Python files in `src/hmm_trading/` and `tests/` and convert any relative imports (e.g., `from ..utils import config`) to absolute imports (e.g., `from hmm_trading.utils import config`).",
             "dependencies": [],
             "details": "Use an IDE's refactoring tools or a script to find and replace all relative imports starting with '.' with absolute paths relative to the `src` directory. For example, an import `from .performance_metrics import calculate_metrics` in `strategy_engine.py` should become `from hmm_trading.backtesting.performance_metrics import calculate_metrics`.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Run the full test suite using `pytest`. All tests must pass, specifically checking for any `ImportError` or `ModuleNotFoundError` exceptions that would indicate a failure in the refactoring process."
           },
           {
@@ -796,7 +796,7 @@
               1
             ],
             "details": "In `pyproject.toml`, locate the `[tool.ruff.lint]` section. Add `\"I002\"` to the `select` or `extend-select` list. After this change, run `ruff check .` to confirm that the new rule is active and that no violations remain in the codebase.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Run the project's linting command (e.g., `make lint` or `ruff check .`). The command must complete with zero errors, confirming that the configuration correctly enforces the no-relative-imports rule."
           },
           {
@@ -807,7 +807,7 @@
               1
             ],
             "details": "Create a new module `src/hmm_trading/data_processing/validation.py`. Move functions related to data validation and cleaning from `feature_engineering.py` into this new file. Update all call sites across the codebase to use the new absolute import path for these moved functions.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Execute the full test suite, paying close attention to tests for data processing and model training. Ensure that data pipelines execute correctly and that features are calculated as expected. If necessary, create a new test file `tests/test_validation.py` for the new module."
           },
           {
@@ -819,7 +819,7 @@
               3
             ],
             "details": "Adopt a single convention for defining the public API in `__init__.py` files. Either use `from .module import ClassOrFunction` to promote key components to the package level or define `__all__ = [\"ClassOrFunction\"]`. Apply this convention consistently to all `__init__.py` files in `src/hmm_trading/` and its subdirectories. Add a module-level docstring to each `__init__.py` explaining the package's role.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "After refactoring, perform a static analysis pass with `mypy` to catch any import-related type errors. Run the full test suite to confirm that module imports at the package level (e.g., `from hmm_trading.data_processing import process_csv`) work correctly and have not introduced regressions."
           }
         ]
@@ -830,19 +830,62 @@
         "description": "Correct pytest configuration by registering all test markers, fixing integration test setup, ensuring test coverage reporting functions correctly, and adding missing test dependencies to support the complete test suite.",
         "details": "This task addresses several configuration issues that are currently hampering the project's testing capabilities. A stable test environment is critical before further refactoring or feature development.\n\n1.  **Register Pytest Markers**: The test suite uses custom markers (e.g., `@pytest.mark.integration`) which cause warnings or errors if not registered. Add all custom markers to the `pyproject.toml` file under the `[tool.pytest.ini_options]` section to ensure `pytest --strict-markers` passes.\n    Example for `pyproject.toml`:\n    ```toml\n    [tool.pytest.ini_options]\n    markers = [\n        \"slow: marks tests as slow (deselect with -m 'not slow')\",\n        \"integration: marks integration tests\",\n        \"e2e: marks end-to-end tests\"\n    ]\n    ```\n\n2.  **Add Missing Test Dependencies**: The full test suite requires packages that are not yet listed as development dependencies. Identify and add these packages (e.g., `pytest-mock`, `freezegun`, `test-data-loader`) to the `[project.optional-dependencies.test]` group in `pyproject.toml`.\n\n3.  **Verify Coverage Configuration**: The coverage reporting defined in Task #10 needs to be validated. Ensure the `pytest-cov` configuration, likely managed via `[tool.coverage.run]` in `pyproject.toml`, correctly targets the `src/` directory for analysis and excludes the `tests/` directory from the report.\n\n4.  **Fix Integration Test Configuration**: The integration tests may have unique setup requirements (e.g., file path assumptions, specific fixtures) that are failing due to recent project structure changes. Investigate and fix the `tests/integration/conftest.py` or individual test files to align with the `src`-layout and ensure they can run independently and as part of the full suite.",
         "testStrategy": "Verification will focus on confirming that the entire testing toolchain operates without configuration errors.\n\n1.  **Marker Verification**: From the project root, run `pytest --strict-markers`. The command must complete without any warnings or errors related to unregistered markers.\n\n2.  **Dependency Verification**: In a clean virtual environment, run `pip install -e .[test]`. Then execute the full test suite via `pytest`. The suite should run without any `ModuleNotFoundError` or `ImportError` related to test-specific packages.\n\n3.  **Coverage Report Verification**: Run `pytest --cov=src/hmm_trading --cov-report=term-missing`. The command must execute successfully and produce a coverage report. Verify that the report only includes modules from within the `src/hmm_trading` directory.\n\n4.  **Integration Test Execution**: Run the integration test suite in isolation using `pytest tests/integration/`. All tests within this subdirectory must pass without errors.",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           10,
           13,
           14
         ],
         "priority": "medium",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Register Custom Pytest Markers in pyproject.toml",
+            "description": "Update the `pyproject.toml` file to register all custom pytest markers used in the test suite, such as 'integration', 'slow', and 'e2e', to eliminate warnings and enable strict marker enforcement.",
+            "dependencies": [],
+            "details": "Locate the `[tool.pytest.ini_options]` section in `pyproject.toml`. Add a `markers` key with an array of strings, where each string defines a marker and its description (e.g., 'integration: marks integration tests'). This will allow `pytest --strict-markers` to run without errors.",
+            "status": "done",
+            "testStrategy": "Run `pytest --strict-markers` from the project root. The command must complete without any `PytestUnknownMarkWarning` warnings or errors related to unregistered markers."
+          },
+          {
+            "id": 2,
+            "title": "Add Missing Test Dependencies to pyproject.toml",
+            "description": "Identify and add required testing packages like `pytest-mock`, `freezegun`, and `test-data-loader` to the `[project.optional-dependencies.test]` section in `pyproject.toml` to ensure the test suite has all necessary dependencies.",
+            "dependencies": [
+              1
+            ],
+            "details": "Edit the `pyproject.toml` file. Under the `[project.optional-dependencies]` table, find the `test` key and append the missing packages such as 'pytest-mock', 'freezegun', and any others identified as necessary for the full test suite to run.",
+            "status": "done",
+            "testStrategy": "After updating the file, create a clean virtual environment and install the project with test dependencies via `pip install -e '.[test]'`. Running `pytest` should not produce any `ModuleNotFoundError` errors related to test packages."
+          },
+          {
+            "id": 3,
+            "title": "Verify and Correct Test Coverage Configuration",
+            "description": "Review and correct the test coverage configuration in `pyproject.toml` to ensure `pytest-cov` correctly targets the `src/` directory for analysis and explicitly excludes the `tests/` directory from the report.",
+            "dependencies": [
+              2
+            ],
+            "details": "Inspect the `[tool.coverage.run]` and `[tool.coverage.report]` sections in `pyproject.toml`. Ensure that `source = ['src']` or an equivalent configuration is present to target the source directory. Add `omit = ['tests/*']` to explicitly exclude test files from the coverage metrics.",
+            "status": "done",
+            "testStrategy": "Run the test suite with coverage reporting: `pytest --cov=src --cov-report=term`. The generated report summary should only include modules from within the `src/` directory and must not list any files from `tests/`."
+          },
+          {
+            "id": 4,
+            "title": "Fix Integration Test Pathing and Fixture Setup",
+            "description": "Investigate and resolve failures in the integration test suite caused by incorrect file path assumptions or fixture misconfigurations, ensuring all integration tests align with the current `src`-layout project structure.",
+            "dependencies": [
+              3
+            ],
+            "details": "Examine `tests/integration/conftest.py` and individual integration test files. Identify any hardcoded relative paths (e.g., '../src') and replace them with correct package imports. Update or fix any fixtures that rely on old path structures to locate test data or modules.",
+            "status": "done",
+            "testStrategy": "Run the integration tests specifically using `pytest tests/integration`. All tests within this directory must pass without any `FileNotFoundError`, `ModuleNotFoundError`, or fixture-related errors."
+          }
+        ]
       }
     ],
     "metadata": {
       "created": "2025-10-19T08:32:45.168Z",
-      "updated": "2025-10-27T11:39:51.671Z",
+      "updated": "2025-10-28T11:25:21.769Z",
       "description": "Tasks for master context"
     }
   }

@@ -24,8 +24,6 @@ class TestBaseHMMModel:
     def test_base_hmm_model_interface(self):
         """Test that base HMM model defines correct interface."""
         # The base class should define the interface that all HMM models must implement
-        required_methods = ["fit", "predict", "score", "get_model_info"]
-
         # Test that these are abstract methods (can't instantiate base class)
         with pytest.raises(TypeError):
             BaseHMMModel()

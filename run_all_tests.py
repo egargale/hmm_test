@@ -11,7 +11,9 @@ from pathlib import Path
 def run_test(name, cmd):
     """Run a test and report the result."""
     print(f"Running {name}...")
-    result = subprocess.run(cmd, shell=True, capture_output=True, text=True, cwd=Path(__file__).parent)
+    result = subprocess.run(
+        cmd, shell=True, capture_output=True, text=True, cwd=Path(__file__).parent
+    )
     if result.returncode == 0:
         print(f"  ✓ {name} passed")
         return True
@@ -19,6 +21,7 @@ def run_test(name, cmd):
         print(f"  ✗ {name} failed")
         print(f"    Error: {result.stderr}")
         return False
+
 
 def main():
     """Run all tests."""
@@ -50,5 +53,6 @@ def main():
         print("❌ Some tests failed. Please check the output above.")
         return 1
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     sys.exit(main())

@@ -19,15 +19,15 @@ from .pipeline_types import (
 )
 
 __all__ = [
-    'HMMPipeline',
-    'PipelineConfig',
-    'PipelineResult',
-    'PipelineStage',
-    'PipelineStatus',
-    'ProcessingMode',
-    'FeatureConfig',
-    'TrainingConfig',
-    'PersistenceConfig',
-    'StreamingConfig',
-    'BacktestConfig'
+    "HMMPipeline",
+    "PipelineConfig",
+    "PipelineResult",
+    "PipelineStage",
+    "PipelineStatus",
+    "ProcessingMode",
+    "FeatureConfig",
+    "TrainingConfig",
+    "PersistenceConfig",
+    "StreamingConfig",
+    "BacktestConfig",
 ]

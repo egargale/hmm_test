@@ -12,6 +12,7 @@ import pandas as pd
 # Add src to Python path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
+
 def generate_test_data(n_samples=1000, n_features=5, random_state=42):
     """Generate synthetic test data for HMM testing."""
     np.random.seed(random_state)
@@ -22,7 +23,7 @@ def generate_test_data(n_samples=1000, n_features=5, random_state=42):
 
     # Generate returns with different characteristics per regime
     data = []
-    for i, state in enumerate(state_sequence):
+    for _i, state in enumerate(state_sequence):
         if state == 0:  # Bull market
             returns = np.random.normal(0.001, 0.015, n_features)
         elif state == 1:  # Bear market
@@ -35,10 +36,11 @@ def generate_test_data(n_samples=1000, n_features=5, random_state=42):
     data = np.array(data)
 
     # Create DataFrame with realistic column names
-    feature_names = ['log_ret', 'volatility', 'volume_change', 'momentum', 'rsi']
+    feature_names = ["log_ret", "volatility", "volume_change", "momentum", "rsi"]
     df = pd.DataFrame(data, columns=feature_names)
 
     return df, state_sequence
+
 
 def test_hmm_models():
     """Test the HMM model implementations."""
@@ -55,7 +57,9 @@ def test_hmm_models():
         # Generate test data
         print("\n📊 Generating test data...")
         X, true_states = generate_test_data(n_samples=1000, n_features=5)
-        print(f"   ✅ Generated test data: {X.shape} matrix with {len(np.unique(true_states))} true states")
+        print(
+            f"   ✅ Generated test data: {X.shape} matrix with {len(np.unique(true_states))} true states"
+        )
 
         # Test 1: Gaussian HMM Model
         print("\n🔢 Testing Gaussian HMM Model...")
@@ -66,7 +70,7 @@ def test_hmm_models():
                 covariance_type="full",
                 random_state=42,
                 n_iter=50,  # Reduce for testing
-                verbose=False
+                verbose=False,
             )
 
             print("   📈 Fitting Gaussian HMM...")
@@ -84,7 +88,9 @@ def test_hmm_models():
 
             # Test model quality
             quality = gaussian_model.evaluate_model_quality(X)
-            print(f"   ✅ Model quality - Log-likelihood: {quality['total_log_likelihood']:.2f}")
+            print(
+                f"   ✅ Model quality - Log-likelihood: {quality['total_log_likelihood']:.2f}"
+            )
             print(f"   ✅ Model quality - BIC: {quality['bic']:.2f}")
 
             # Test state descriptions
@@ -92,12 +98,13 @@ def test_hmm_models():
             print(f"   ✅ Generated descriptions for {len(descriptions)} states")
 
             # Test transition analysis
-            transitions = gaussian_model.analyze_state_transitions(X)
+            gaussian_model.analyze_state_transitions(X)
             print("   ✅ Analyzed state transitions")
 
         except Exception as e:
             print(f"   ❌ Gaussian HMM test failed: {e}")
             import traceback
+
             traceback.print_exc()
 
         # Test 2: GMM HMM Model
@@ -110,7 +117,7 @@ def test_hmm_models():
                 covariance_type="full",
                 random_state=42,
                 n_iter=50,  # Reduce for testing
-                verbose=False
+                verbose=False,
             )
 
             print("   📈 Fitting GMM HMM...")
@@ -124,22 +131,27 @@ def test_hmm_models():
 
             # Test model quality
             quality = gmm_model.evaluate_model_quality(X)
-            print(f"   ✅ Model quality - Log-likelihood: {quality['total_log_likelihood']:.2f}")
+            print(
+                f"   ✅ Model quality - Log-likelihood: {quality['total_log_likelihood']:.2f}"
+            )
             print(f"   ✅ Model quality - BIC: {quality['bic']:.2f}")
 
             # Test state descriptions
             descriptions = gmm_model.get_state_descriptions(X)
             print(f"   ✅ Generated descriptions for {len(descriptions)} states")
             for state_id, desc in descriptions.items():
-                print(f"      State {state_id}: {desc['n_mixtures']} mixture components")
+                print(
+                    f"      State {state_id}: {desc['n_mixtures']} mixture components"
+                )
 
             # Test mixture analysis
-            mixture_analysis = gmm_model.analyze_mixture_separation()
+            gmm_model.analyze_mixture_separation()
             print("   ✅ Analyzed mixture separation")
 
         except Exception as e:
             print(f"   ❌ GMM HMM test failed: {e}")
             import traceback
+
             traceback.print_exc()
 
         # Test 3: HMM Factory
@@ -147,27 +159,25 @@ def test_hmm_models():
         try:
             # Test model creation
             factory_model = HMMModelFactory.create_model(
-                model_type='gaussian',
+                model_type="gaussian",
                 n_components=3,
                 n_samples=len(X),
-                n_features=X.shape[1]
+                n_features=X.shape[1],
             )
             print(f"   ✅ Factory created model: {type(factory_model).__name__}")
 
             # Test auto-selection
             recommended_type = HMMModelFactory.auto_select_model_type(
-                n_samples=len(X),
-                n_features=X.shape[1],
-                data_complexity='moderate'
+                n_samples=len(X), n_features=X.shape[1], data_complexity="moderate"
             )
             print(f"   ✅ Auto-selected model type: {recommended_type}")
 
             # Test ensemble creation
             ensemble = HMMModelFactory.create_model_ensemble(
-                model_types=['gaussian'],
+                model_types=["gaussian"],
                 n_components_range=[2, 3],
                 n_samples=len(X),
-                n_features=X.shape[1]
+                n_features=X.shape[1],
             )
             print(f"   ✅ Created ensemble of {len(ensemble)} models")
 
@@ -178,6 +188,7 @@ def test_hmm_models():
         except Exception as e:
             print(f"   ❌ Factory test failed: {e}")
             import traceback
+
             traceback.print_exc()
 
         # Test 4: Model Persistence
@@ -203,6 +214,7 @@ def test_hmm_models():
         except Exception as e:
             print(f"   ❌ Persistence test failed: {e}")
             import traceback
+
             traceback.print_exc()
 
         # Test 5: Cross-validation
@@ -210,11 +222,14 @@ def test_hmm_models():
         try:
             cv_results = gaussian_model.cross_validate(X, cv=3)
             print("   ✅ Cross-validation completed")
-            print(f"   ✅ Mean CV score: {cv_results['mean_score']:.4f} ± {cv_results['std_score']:.4f}")
+            print(
+                f"   ✅ Mean CV score: {cv_results['mean_score']:.4f} ± {cv_results['std_score']:.4f}"
+            )
 
         except Exception as e:
             print(f"   ❌ Cross-validation test failed: {e}")
             import traceback
+
             traceback.print_exc()
 
         print("\n✅ HMM Model tests completed successfully!")
@@ -223,8 +238,10 @@ def test_hmm_models():
     except Exception as e:
         print(f"\n❌ HMM Model tests failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 if __name__ == "__main__":
     success = test_hmm_models()

@@ -74,12 +74,12 @@ class TestBTCDataProcessing:
         # Check for key feature categories
         feature_columns = set(features.columns) - set(raw_data.columns)
         assert any("ret" in col for col in feature_columns), "Missing return features"
-        assert any(
-            "sma_" in col or "ema_" in col for col in feature_columns
-        ), "Missing MA features"
-        assert any(
-            "rsi" in col or "atr" in col for col in feature_columns
-        ), "Missing technical indicators"
+        assert any("sma_" in col or "ema_" in col for col in feature_columns), (
+            "Missing MA features"
+        )
+        assert any("rsi" in col or "atr" in col for col in feature_columns), (
+            "Missing technical indicators"
+        )
 
     def test_btc_data_validation(self, btc_data):
         """Test BTC data validation."""
@@ -111,9 +111,9 @@ class TestBTCDataProcessing:
 
         # Check for NaN values
         nan_counts = btc_features.isna().sum()
-        assert (
-            nan_counts.sum() == 0
-        ), f"Found NaN values: {nan_counts[nan_counts > 0].to_dict()}"
+        assert nan_counts.sum() == 0, (
+            f"Found NaN values: {nan_counts[nan_counts > 0].to_dict()}"
+        )
 
 
 class TestBTCHMMTraining:
@@ -310,9 +310,9 @@ class TestBTCIntegrationPipeline:
             total_predictions = len(states)
             for state_idx, count in zip(unique_states, state_counts):
                 proportion = count / total_predictions
-                assert (
-                    0.01 <= proportion <= 0.99
-                ), f"State {state_idx} has unusual proportion: {proportion}"
+                assert 0.01 <= proportion <= 0.99, (
+                    f"State {state_idx} has unusual proportion: {proportion}"
+                )
 
         except Exception as e:
             pytest.skip(f"End-to-end pipeline failed: {e}")
@@ -399,4 +399,6 @@ if __name__ == "__main__":
     is_suitable, message = check_btc_data_quality()
     print(f"BTC Data Quality Check: {message}")
     if not is_suitable:
-        warnings.warn(f"BTC integration tests may not work properly: {message}")
+        warnings.warn(
+            f"BTC integration tests may not work properly: {message}", stacklevel=2
+        )

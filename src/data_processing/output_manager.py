@@ -15,6 +15,7 @@ from typing import Any, Dict, List, Optional
 import pandas as pd
 
 from utils.logging_config import get_logger
+
 from .pipeline_config import OutputFormat
 
 logger = get_logger(__name__)
@@ -23,6 +24,7 @@ logger = get_logger(__name__)
 @dataclass
 class OutputPackage:
     """Complete output package with data, metadata, and reports."""
+
     data: Any
     metadata: Dict[str, Any]
     quality_report: Optional[Dict[str, Any]] = None
@@ -33,6 +35,7 @@ class OutputPackage:
 @dataclass
 class OutputResult:
     """Result of output operation."""
+
     success: bool
     output_path: Optional[Path] = None
     format: Optional[str] = None
@@ -63,8 +66,14 @@ class OutputManager:
         self.default_format = default_format
         self.logger = get_logger(f"{__name__}.OutputManager")
 
-    def save_dataframe(self, df: pd.DataFrame, path: Path, format: str = "csv",
-                      compression: Optional[str] = None, **kwargs) -> OutputResult:
+    def save_dataframe(
+        self,
+        df: pd.DataFrame,
+        path: Path,
+        format: str = "csv",
+        compression: Optional[str] = None,
+        **kwargs,
+    ) -> OutputResult:
         """
         Save DataFrame to specified format.
 
@@ -103,7 +112,9 @@ class OutputManager:
             file_size_mb = path.stat().st_size / (1024 * 1024)
             processing_time = (datetime.now() - start_time).total_seconds()
 
-            self.logger.info(f"Successfully saved {len(df)} rows to {path} ({file_size_mb:.2f} MB)")
+            self.logger.info(
+                f"Successfully saved {len(df)} rows to {path} ({file_size_mb:.2f} MB)"
+            )
 
             return OutputResult(
                 success=True,
@@ -111,7 +122,7 @@ class OutputManager:
                 format=format,
                 size_mb=file_size_mb,
                 processing_time=processing_time,
-                issues=issues
+                issues=issues,
             )
 
         except Exception as e:
@@ -121,13 +132,12 @@ class OutputManager:
             issues.append(error_msg)
 
             return OutputResult(
-                success=False,
-                processing_time=processing_time,
-                issues=issues
+                success=False, processing_time=processing_time, issues=issues
             )
 
-    def save_metadata(self, metadata: Dict[str, Any], path: Path,
-                     format: str = "json") -> bool:
+    def save_metadata(
+        self, metadata: Dict[str, Any], path: Path, format: str = "json"
+    ) -> bool:
         """
         Save metadata to file.
 
@@ -146,10 +156,10 @@ class OutputManager:
             path.parent.mkdir(parents=True, exist_ok=True)
 
             if format.lower() == "json":
-                with open(path, 'w') as f:
+                with open(path, "w") as f:
                     json.dump(metadata, f, indent=2, default=str)
             elif format.lower() == "pickle":
-                with open(path, 'wb') as f:
+                with open(path, "wb") as f:
                     pickle.dump(metadata, f)
             else:
                 raise ValueError(f"Unsupported metadata format: {format}")
@@ -179,7 +189,7 @@ class OutputManager:
             path.parent.mkdir(parents=True, exist_ok=True)
 
             # Save as JSON with formatting
-            with open(path, 'w') as f:
+            with open(path, "w") as f:
                 json.dump(quality_report, f, indent=2, default=str)
 
             self.logger.info(f"Quality report saved successfully to {path}")
@@ -189,10 +199,14 @@ class OutputManager:
             self.logger.error(f"Failed to save quality report to {path}: {e}")
             return False
 
-    def create_output_package(self, result_data: Any, metadata: Dict[str, Any],
-                           quality_report: Optional[Dict[str, Any]] = None,
-                           processing_log: Optional[List[Dict[str, Any]]] = None,
-                           pipeline_summary: Optional[Dict[str, Any]] = None) -> OutputPackage:
+    def create_output_package(
+        self,
+        result_data: Any,
+        metadata: Dict[str, Any],
+        quality_report: Optional[Dict[str, Any]] = None,
+        processing_log: Optional[List[Dict[str, Any]]] = None,
+        pipeline_summary: Optional[Dict[str, Any]] = None,
+    ) -> OutputPackage:
         """
         Create a complete output package.
 
@@ -211,12 +225,17 @@ class OutputManager:
             metadata=metadata,
             quality_report=quality_report,
             processing_log=processing_log,
-            pipeline_summary=pipeline_summary
+            pipeline_summary=pipeline_summary,
         )
 
-    def save_output_package(self, package: OutputPackage, base_path: Path,
-                          data_format: str = "csv", include_metadata: bool = True,
-                          include_quality_report: bool = True) -> Dict[str, OutputResult]:
+    def save_output_package(
+        self,
+        package: OutputPackage,
+        base_path: Path,
+        data_format: str = "csv",
+        include_metadata: bool = True,
+        include_quality_report: bool = True,
+    ) -> Dict[str, OutputResult]:
         """
         Save complete output package to files.
 
@@ -242,7 +261,7 @@ class OutputManager:
             if isinstance(package.data, pd.DataFrame):
                 data_path = base_path / f"data.{data_format}"
                 data_result = self.save_dataframe(package.data, data_path, data_format)
-                results['data'] = data_result
+                results["data"] = data_result
             else:
                 self.logger.warning("Main data is not a DataFrame, skipping data save")
 
@@ -250,40 +269,60 @@ class OutputManager:
             if include_metadata and package.metadata:
                 metadata_path = base_path / "metadata.json"
                 metadata_saved = self.save_metadata(package.metadata, metadata_path)
-                results['metadata'] = OutputResult(success=metadata_saved, output_path=metadata_path)
+                results["metadata"] = OutputResult(
+                    success=metadata_saved, output_path=metadata_path
+                )
 
             # Save quality report
             if include_quality_report and package.quality_report:
                 quality_path = base_path / "quality_report.json"
-                quality_saved = self.save_quality_report(package.quality_report, quality_path)
-                results['quality_report'] = OutputResult(success=quality_saved, output_path=quality_path)
+                quality_saved = self.save_quality_report(
+                    package.quality_report, quality_path
+                )
+                results["quality_report"] = OutputResult(
+                    success=quality_saved, output_path=quality_path
+                )
 
             # Save processing log
             if package.processing_log:
                 log_path = base_path / "processing_log.json"
-                log_saved = self.save_metadata({'processing_log': package.processing_log}, log_path)
-                results['processing_log'] = OutputResult(success=log_saved, output_path=log_path)
+                log_saved = self.save_metadata(
+                    {"processing_log": package.processing_log}, log_path
+                )
+                results["processing_log"] = OutputResult(
+                    success=log_saved, output_path=log_path
+                )
 
             # Save pipeline summary
             if package.pipeline_summary:
                 summary_path = base_path / "pipeline_summary.json"
-                summary_saved = self.save_metadata(package.pipeline_summary, summary_path)
-                results['pipeline_summary'] = OutputResult(success=summary_saved, output_path=summary_path)
+                summary_saved = self.save_metadata(
+                    package.pipeline_summary, summary_path
+                )
+                results["pipeline_summary"] = OutputResult(
+                    success=summary_saved, output_path=summary_path
+                )
 
             successful_saves = sum(1 for result in results.values() if result.success)
-            self.logger.info(f"Output package saved: {successful_saves}/{len(results)} components successful")
+            self.logger.info(
+                f"Output package saved: {successful_saves}/{len(results)} components successful"
+            )
 
             return results
 
         except Exception as e:
             self.logger.error(f"Failed to save output package: {e}")
             error_result = OutputResult(success=False, issues=[str(e)])
-            return {'error': error_result}
+            return {"error": error_result}
 
-    def format_output_data(self, data: Any, output_format: OutputFormat,
-                          column_prefix: Optional[str] = None,
-                          index_column: Optional[str] = None,
-                          date_format: str = "%Y-%m-%d %H:%M:%S") -> Any:
+    def format_output_data(
+        self,
+        data: Any,
+        output_format: OutputFormat,
+        column_prefix: Optional[str] = None,
+        index_column: Optional[str] = None,
+        date_format: str = "%Y-%m-%d %H:%M:%S",
+    ) -> Any:
         """
         Format data according to output specifications.
 
@@ -312,7 +351,7 @@ class OutputManager:
                 df = df.set_index(index_column)
 
             # Format datetime columns
-            datetime_cols = df.select_dtypes(include=['datetime64']).columns
+            datetime_cols = df.select_dtypes(include=["datetime64"]).columns
             for col in datetime_cols:
                 df[col] = df[col].dt.strftime(date_format)
 
@@ -322,7 +361,7 @@ class OutputManager:
             elif output_format == OutputFormat.CSV:
                 return df
             elif output_format == OutputFormat.JSON:
-                return df.to_dict('records')
+                return df.to_dict("records")
             elif output_format == OutputFormat.PARQUET:
                 return df
             elif output_format == OutputFormat.PICKLE:
@@ -345,53 +384,57 @@ class OutputManager:
             Summary dictionary
         """
         summary = {
-            'generated_at': datetime.now().isoformat(),
-            'package_components': [],
-            'data_summary': {},
-            'quality_summary': {},
-            'processing_summary': {}
+            "generated_at": datetime.now().isoformat(),
+            "package_components": [],
+            "data_summary": {},
+            "quality_summary": {},
+            "processing_summary": {},
         }
 
         # Data summary
         if isinstance(package.data, pd.DataFrame):
-            summary['data_summary'] = {
-                'rows': len(package.data),
-                'columns': len(package.data.columns),
-                'memory_usage_mb': package.data.memory_usage(deep=True).sum() / (1024 * 1024),
-                'column_types': package.data.dtypes.value_counts().to_dict(),
-                'has_datetime_index': isinstance(package.data.index, pd.DatetimeIndex)
+            summary["data_summary"] = {
+                "rows": len(package.data),
+                "columns": len(package.data.columns),
+                "memory_usage_mb": package.data.memory_usage(deep=True).sum()
+                / (1024 * 1024),
+                "column_types": package.data.dtypes.value_counts().to_dict(),
+                "has_datetime_index": isinstance(package.data.index, pd.DatetimeIndex),
             }
 
         # Package components
         if package.metadata:
-            summary['package_components'].append('metadata')
+            summary["package_components"].append("metadata")
         if package.quality_report:
-            summary['package_components'].append('quality_report')
+            summary["package_components"].append("quality_report")
         if package.processing_log:
-            summary['package_components'].append('processing_log')
+            summary["package_components"].append("processing_log")
         if package.pipeline_summary:
-            summary['package_components'].append('pipeline_summary')
+            summary["package_components"].append("pipeline_summary")
 
         # Quality summary
         if package.quality_report:
-            summary['quality_summary'] = {
-                'overall_score': package.quality_report.get('overall_score'),
-                'total_issues': len(package.quality_report.get('issues', [])),
-                'recommendations_count': len(package.quality_report.get('recommendations', []))
+            summary["quality_summary"] = {
+                "overall_score": package.quality_report.get("overall_score"),
+                "total_issues": len(package.quality_report.get("issues", [])),
+                "recommendations_count": len(
+                    package.quality_report.get("recommendations", [])
+                ),
             }
 
         # Processing summary
         if package.pipeline_summary:
-            summary['processing_summary'] = {
-                'pipeline_name': package.pipeline_summary.get('pipeline_name'),
-                'total_stages': len(package.pipeline_summary.get('stages', [])),
-                'total_time': package.pipeline_summary.get('total_processing_time')
+            summary["processing_summary"] = {
+                "pipeline_name": package.pipeline_summary.get("pipeline_name"),
+                "total_stages": len(package.pipeline_summary.get("stages", [])),
+                "total_time": package.pipeline_summary.get("total_processing_time"),
             }
 
         return summary
 
-    def create_output_filename(self, base_name: str, output_format: OutputFormat,
-                             timestamp: bool = True) -> str:
+    def create_output_filename(
+        self, base_name: str, output_format: OutputFormat, timestamp: bool = True
+    ) -> str:
         """
         Generate output filename with appropriate extension.
 
@@ -416,7 +459,7 @@ class OutputManager:
             OutputFormat.CSV: "csv",
             OutputFormat.PARQUET: "parquet",
             OutputFormat.JSON: "json",
-            OutputFormat.PICKLE: "pkl"
+            OutputFormat.PICKLE: "pkl",
         }
 
         extension = extensions.get(output_format, "csv")
@@ -451,7 +494,7 @@ class OutputManager:
             # Check write permissions
             try:
                 # Test write permission by creating a temporary file
-                test_file = path.with_suffix('.tmp')
+                test_file = path.with_suffix(".tmp")
                 test_file.touch()
                 test_file.unlink()
             except Exception as e:
@@ -462,7 +505,9 @@ class OutputManager:
 
         return issues
 
-    def get_output_size_estimate(self, data: Any, output_format: OutputFormat) -> Dict[str, float]:
+    def get_output_size_estimate(
+        self, data: Any, output_format: OutputFormat
+    ) -> Dict[str, float]:
         """
         Estimate output file size for different formats.
 
@@ -474,7 +519,7 @@ class OutputManager:
             Size estimates in MB
         """
         if not isinstance(data, pd.DataFrame):
-            return {'estimated_mb': 0.0}
+            return {"estimated_mb": 0.0}
 
         try:
             # Calculate memory usage
@@ -482,22 +527,22 @@ class OutputManager:
 
             # Estimate compression ratios by format
             compression_ratios = {
-                OutputFormat.DATAFRAME: 1.0,      # Pickle (no compression)
-                OutputFormat.CSV: 0.8,            # CSV (text)
-                OutputFormat.PARQUET: 0.3,        # Parquet (compressed)
-                OutputFormat.JSON: 1.2,           # JSON (text, verbose)
-                OutputFormat.PICKLE: 1.0          # Pickle (no compression)
+                OutputFormat.DATAFRAME: 1.0,  # Pickle (no compression)
+                OutputFormat.CSV: 0.8,  # CSV (text)
+                OutputFormat.PARQUET: 0.3,  # Parquet (compressed)
+                OutputFormat.JSON: 1.2,  # JSON (text, verbose)
+                OutputFormat.PICKLE: 1.0,  # Pickle (no compression)
             }
 
             ratio = compression_ratios.get(output_format, 1.0)
             estimated_mb = memory_mb * ratio
 
             return {
-                'memory_mb': memory_mb,
-                'estimated_mb': estimated_mb,
-                'compression_ratio': ratio
+                "memory_mb": memory_mb,
+                "estimated_mb": estimated_mb,
+                "compression_ratio": ratio,
             }
 
         except Exception as e:
             self.logger.warning(f"Failed to estimate output size: {e}")
-            return {'estimated_mb': 0.0}
+            return {"estimated_mb": 0.0}

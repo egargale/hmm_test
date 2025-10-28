@@ -16,6 +16,7 @@ import pandas as pd
 @dataclass
 class FuturesData:
     """Data class for futures OHLCV data."""
+
     timestamp: datetime
     open: float
     high: float
@@ -36,6 +37,7 @@ class FuturesData:
 @dataclass
 class HMMState:
     """Data class for HMM state information."""
+
     state_id: int
     state_name: Optional[str] = None
     probability: Optional[float] = None
@@ -53,6 +55,7 @@ class HMMState:
 @dataclass
 class Trade:
     """Data class for individual trades."""
+
     entry_time: datetime
     entry_price: float
     exit_time: Optional[datetime] = None
@@ -75,6 +78,7 @@ class Trade:
 @dataclass
 class BacktestResult:
     """Data class for backtest results."""
+
     equity_curve: pd.Series
     positions: pd.Series
     trades: List[Trade]
@@ -94,6 +98,7 @@ class BacktestResult:
 @dataclass
 class PerformanceMetrics:
     """Data class for performance metrics."""
+
     total_return: float
     annualized_return: float
     annualized_volatility: float
@@ -119,6 +124,7 @@ class PerformanceMetrics:
 @dataclass
 class BacktestConfig:
     """Data class for backtest configuration."""
+
     initial_capital: float = 100000.0
     commission_per_trade: float = 0.0
     slippage_bps: float = 0.0
@@ -144,6 +150,7 @@ class BacktestConfig:
 @dataclass
 class CSVFormat:
     """Data class for CSV format information."""
+
     format_type: str  # "datetime" or "date_time"
     columns: List[str]
     required_columns: List[str]
@@ -165,6 +172,7 @@ class CSVFormat:
 @dataclass
 class ProcessingStats:
     """Data class for processing statistics."""
+
     total_rows: int = 0
     processed_rows: int = 0
     dropped_rows: int = 0

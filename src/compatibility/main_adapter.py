@@ -25,7 +25,7 @@ def emit_deprecation_warning():
         "Using main.py directly is deprecated. Please migrate to the new CLI interface. "
         "Run 'python -m src.cli.hmm_commands --help' for the new interface.",
         DeprecationWarning,
-        stacklevel=3
+        stacklevel=3,
     )
 
 
@@ -106,8 +106,7 @@ def main(args=None):
 
     # Set up logging to match main.py
     logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(levelname)s] %(message)s"
+        level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
     )
 
     # Convert to async main
@@ -210,11 +209,11 @@ def _log_legacy_results(result, args):
     if result.model:
         # Try to get model information
         try:
-            converged = getattr(result.model, 'monitor_', None)
-            if converged and hasattr(converged, 'converged'):
+            converged = getattr(result.model, "monitor_", None)
+            if converged and hasattr(converged, "converged"):
                 logger.info(f"Model converged: {converged.converged}")
 
-            if hasattr(result.model, 'score_'):
+            if hasattr(result.model, "score_"):
                 logger.info(f"Log-likelihood: {result.model.score_:.2f}")
         except Exception:
             pass  # Don't fail for logging issues
@@ -224,13 +223,13 @@ def _log_legacy_results(result, args):
         perf = result.performance_metrics
 
         # Map new metrics to legacy format
-        if 'equity_curve' in perf:
+        if "equity_curve" in perf:
             logger.info(f"Final Equity: {perf['equity_curve']:.4f}")
 
-        if 'sharpe_ratio' in perf:
+        if "sharpe_ratio" in perf:
             logger.info(f"Sharpe Ratio: {perf['sharpe_ratio']:.2f}")
 
-        if 'max_drawdown' in perf:
+        if "max_drawdown" in perf:
             logger.info(f"Max Drawdown: {perf['max_drawdown']:.4f}")
 
 
@@ -244,7 +243,7 @@ def add_features(df):
     warnings.warn(
         "add_features() is deprecated. Use FeatureEngineer.add_features() instead.",
         DeprecationWarning,
-        stacklevel=2
+        stacklevel=2,
     )
 
     from data_processing.feature_engineering import FeatureEngineer
@@ -263,7 +262,7 @@ def stream_features(csv_path, chunksize=100_000):
     warnings.warn(
         "stream_features() is deprecated. Use StreamingDataProcessor.process_stream() instead.",
         DeprecationWarning,
-        stacklevel=2
+        stacklevel=2,
     )
 
     from data_processing.feature_engineering import FeatureEngineer
@@ -277,8 +276,7 @@ def stream_features(csv_path, chunksize=100_000):
     # Create configuration
     features = FeatureConfig()
     streaming = StreamingConfig(
-        chunk_size=chunksize,
-        processing_mode=ProcessingMode.STREAMING
+        chunk_size=chunksize, processing_mode=ProcessingMode.STREAMING
     )
 
     # Create processor and engineer
@@ -287,6 +285,7 @@ def stream_features(csv_path, chunksize=100_000):
 
     # Run synchronously for compatibility
     import asyncio
+
     return asyncio.run(processor.process_stream(csv_path, engineer))
 
 
@@ -299,7 +298,7 @@ def simple_backtest(df, states):
     warnings.warn(
         "simple_backtest() is deprecated. Use StrategyEngine.generate_positions() instead.",
         DeprecationWarning,
-        stacklevel=2
+        stacklevel=2,
     )
 
     from backtesting.strategy_engine import StrategyEngine
@@ -309,7 +308,7 @@ def simple_backtest(df, states):
     config = BacktestConfig(
         strategy_type="state_based",
         long_states=[0],  # long low-vol up
-        short_states=[2]  # short high-vol down
+        short_states=[2],  # short high-vol down
     )
 
     engine = StrategyEngine(config)
@@ -328,7 +327,7 @@ def perf_metrics(series):
     warnings.warn(
         "perf_metrics() is deprecated. Use PerformanceAnalyzer.analyze() instead.",
         DeprecationWarning,
-        stacklevel=2
+        stacklevel=2,
     )
 
     from backtesting.performance_analyzer import PerformanceAnalyzer

@@ -9,7 +9,8 @@ from pathlib import Path
 import numpy as np
 
 # Add src to path
-sys.path.insert(0, 'src')
+sys.path.insert(0, "src")
+
 
 def test_data_processing():
     """Test data processing modules with BTC.csv."""
@@ -26,7 +27,7 @@ def test_data_processing():
 
         # Test CSV processing
         print("📁 Testing CSV processing...")
-        data = process_csv('BTC.csv')
+        data = process_csv("BTC.csv")
         print(f"✅ Loaded BTC.csv: {len(data)} rows, {len(data.columns)} columns")
         print(f"✅ Date range: {data.index.min()} to {data.index.max()}")
         print(f"✅ Columns: {list(data.columns)}")
@@ -34,7 +35,7 @@ def test_data_processing():
         # Test data validation
         print("\n🔍 Testing data validation...")
         validation_result = validate_data(data)
-        if validation_result['is_valid']:
+        if validation_result["is_valid"]:
             print("✅ Data validation passed")
         else:
             print(f"⚠️ Data validation warnings: {validation_result['errors']}")
@@ -43,7 +44,9 @@ def test_data_processing():
         print("\n⚙️ Testing feature engineering...")
         features = add_features(data)
         print(f"✅ Features added: {len(features.columns)} total columns")
-        print(f"✅ New features: {len(features.columns) - len(data.columns)} indicators")
+        print(
+            f"✅ New features: {len(features.columns) - len(data.columns)} indicators"
+        )
 
         # Show some sample features
         feature_cols = [col for col in features.columns if col not in data.columns][:5]
@@ -54,8 +57,10 @@ def test_data_processing():
     except Exception as e:
         print(f"❌ Data processing test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False, None
+
 
 def test_hmm_models(features):
     """Test HMM models with real BTC features."""
@@ -71,8 +76,19 @@ def test_hmm_models(features):
         setup_logging(level="INFO")
 
         # Prepare feature data
-        feature_cols = ['log_ret', 'atr', 'roc', 'rsi', 'bb_width', 'bb_position',
-                       'adx', 'stoch', 'sma_5_ratio', 'hl_ratio', 'volume_ratio']
+        feature_cols = [
+            "log_ret",
+            "atr",
+            "roc",
+            "rsi",
+            "bb_width",
+            "bb_position",
+            "adx",
+            "stoch",
+            "sma_5_ratio",
+            "hl_ratio",
+            "volume_ratio",
+        ]
 
         # Find available columns
         available_cols = [col for col in feature_cols if col in features.columns]
@@ -88,7 +104,7 @@ def test_hmm_models(features):
             covariance_type="diag",
             random_state=42,
             n_iter=50,
-            verbose=False
+            verbose=False,
         )
 
         print("📈 Training HMM...")
@@ -103,10 +119,10 @@ def test_hmm_models(features):
         # Test model factory
         print("\n🏭 Testing HMM Factory...")
         factory_model = HMMModelFactory.create_model(
-            model_type='gaussian',
+            model_type="gaussian",
             n_components=3,
             n_samples=len(X),
-            n_features=X.shape[1]
+            n_features=X.shape[1],
         )
         print(f"✅ Factory created: {type(factory_model).__name__}")
 
@@ -130,8 +146,10 @@ def test_hmm_models(features):
     except Exception as e:
         print(f"❌ HMM model test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False, None
+
 
 def test_backtesting_engine(features, states):
     """Test backtesting engine with BTC data and HMM states."""
@@ -145,22 +163,26 @@ def test_backtesting_engine(features, states):
         from utils.data_types import BacktestConfig
 
         # Prepare price data
-        prices = features['Close'] if 'Close' in features.columns else features.iloc[:, 3]
+        prices = (
+            features["Close"] if "Close" in features.columns else features.iloc[:, 3]
+        )
 
         # Align states and prices
         min_len = min(len(states), len(prices))
         states_aligned = states[:min_len]
         prices_aligned = prices.iloc[:min_len]
 
-        print(f"📊 Aligned data: {len(prices_aligned)} price points, {len(states_aligned)} states")
+        print(
+            f"📊 Aligned data: {len(prices_aligned)} price points, {len(states_aligned)} states"
+        )
 
         # Create backtest configuration
         config = BacktestConfig(
             initial_capital=100000.0,
             commission=0.001,  # 0.1%
-            slippage=0.0001,   # 0.01%
+            slippage=0.0001,  # 0.01%
             lookahead_bias_prevention=True,
-            lookahead_days=1
+            lookahead_days=1,
         )
 
         # Create state-to-position mapping
@@ -182,7 +204,7 @@ def test_backtesting_engine(features, states):
         backtest_result = strategy_engine.backtest_strategy(
             data=features.iloc[:min_len],
             states=states_aligned,
-            state_mapping=state_mapping
+            state_mapping=state_mapping,
         )
 
         print("✅ Backtest completed:")
@@ -195,7 +217,7 @@ def test_backtesting_engine(features, states):
         metrics = analyzer.calculate_performance(
             backtest_result.equity_curve,
             backtest_result.positions,
-            benchmark=prices_aligned.pct_change()
+            benchmark=prices_aligned.pct_change(),
         )
 
         print("✅ Performance metrics:")
@@ -211,8 +233,10 @@ def test_backtesting_engine(features, states):
     except Exception as e:
         print(f"❌ Backtesting test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 def test_inference_engine(features):
     """Test state inference engine."""
@@ -225,8 +249,19 @@ def test_inference_engine(features):
         from model_training.inference_engine import StateInference
 
         # Prepare features
-        feature_cols = ['log_ret', 'atr', 'roc', 'rsi', 'bb_width', 'bb_position',
-                       'adx', 'stoch', 'sma_5_ratio', 'hl_ratio', 'volume_ratio']
+        feature_cols = [
+            "log_ret",
+            "atr",
+            "roc",
+            "rsi",
+            "bb_width",
+            "bb_position",
+            "adx",
+            "stoch",
+            "sma_5_ratio",
+            "hl_ratio",
+            "volume_ratio",
+        ]
         available_cols = [col for col in feature_cols if col in features.columns]
         X = features[available_cols].dropna().values
 
@@ -246,7 +281,7 @@ def test_inference_engine(features):
         print("🌊 Testing streaming inference...")
         online_states = []
         for i in range(min(100, len(X))):
-            state = inference.infer_single_state(X[i:i+1])
+            state = inference.infer_single_state(X[i : i + 1])
             online_states.append(state)
 
         print(f"✅ Streaming inference: {len(online_states)} states inferred")
@@ -261,8 +296,10 @@ def test_inference_engine(features):
     except Exception as e:
         print(f"❌ Inference engine test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 def main():
     """Run comprehensive test suite with BTC.csv."""
@@ -270,7 +307,7 @@ def main():
     print("=" * 60)
 
     # Check if BTC.csv exists
-    if not Path('BTC.csv').exists():
+    if not Path("BTC.csv").exists():
         print("❌ BTC.csv not found in current directory")
         return False
 
@@ -279,19 +316,19 @@ def main():
 
     # Test 1: Data Processing
     success, features = test_data_processing()
-    results['Data Processing'] = success
+    results["Data Processing"] = success
 
     if success and features is not None:
         # Test 2: HMM Models
         success, states = test_hmm_models(features)
-        results['HMM Models'] = success
+        results["HMM Models"] = success
 
         if success and states is not None:
             # Test 3: Backtesting
-            results['Backtesting'] = test_backtesting_engine(features, states)
+            results["Backtesting"] = test_backtesting_engine(features, states)
 
             # Test 4: Inference Engine
-            results['Inference Engine'] = test_inference_engine(features)
+            results["Inference Engine"] = test_inference_engine(features)
 
     # Summary
     print("\n" + "=" * 60)
@@ -314,6 +351,7 @@ def main():
     else:
         print("❌ Some module tests failed.")
         return False
+
 
 if __name__ == "__main__":
     success = main()

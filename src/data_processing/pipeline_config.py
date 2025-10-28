@@ -13,6 +13,7 @@ from typing import Any, Dict, List, Optional, Union
 import pandas as pd
 
 from utils.logging_config import get_logger
+
 from .enhanced_csv_config import EnhancedCSVConfig, create_high_performance_config
 from .performance_optimizer import PerformanceConfig
 
@@ -21,6 +22,7 @@ logger = get_logger(__name__)
 
 class InputSourceType(Enum):
     """Supported input source types."""
+
     CSV_FILE = "csv_file"
     DATAFRAME = "dataframe"
     DATABASE = "database"
@@ -29,6 +31,7 @@ class InputSourceType(Enum):
 
 class OutputFormat(Enum):
     """Supported output formats."""
+
     DATAFRAME = "dataframe"
     CSV = "csv"
     PARQUET = "parquet"
@@ -38,32 +41,37 @@ class OutputFormat(Enum):
 
 class PipelineMode(Enum):
     """Pipeline execution modes."""
-    STANDARD = "standard"          # Balanced performance and quality
+
+    STANDARD = "standard"  # Balanced performance and quality
     HIGH_PERFORMANCE = "high_performance"  # Optimized for speed
     HIGH_QUALITY = "high_quality"  # Optimized for data quality
-    STREAMING = "streaming"        # For large datasets
-    DEVELOPMENT = "development"    # For testing and debugging
+    STREAMING = "streaming"  # For large datasets
+    DEVELOPMENT = "development"  # For testing and debugging
 
 
 @dataclass
 class ValidationConfig:
     """Configuration for data validation."""
+
     enable_validation: bool = True
     strict_mode: bool = False
     validate_ohlc_consistency: bool = True
     detect_outliers: bool = True
-    outlier_detection_method: str = 'iqr'
+    outlier_detection_method: str = "iqr"
     outlier_threshold: float = 1.5
     validate_ranges: bool = True
     check_duplicates: bool = True
     analyze_missing_data: bool = True
-    missing_data_strategy: str = "interpolate"  # interpolate, forward_fill, backward_fill, mean, drop
+    missing_data_strategy: str = (
+        "interpolate"  # interpolate, forward_fill, backward_fill, mean, drop
+    )
     quality_threshold: float = 0.5
 
 
 @dataclass
 class FeatureConfig:
     """Configuration for feature engineering."""
+
     enable_features: bool = True
     basic_indicators: bool = True
     enhanced_momentum: bool = True
@@ -81,46 +89,49 @@ class FeatureConfig:
         """Set default indicator parameters."""
         if not self.indicator_params:
             self.indicator_params = {
-                'basic_indicators': {
-                    'enabled': True
+                "basic_indicators": {"enabled": True},
+                "enhanced_momentum": {
+                    "williams_r": {"length": 14},
+                    "cci": {"length": 20},
+                    "mfi": {"length": 14},
+                    "mtm": {"period": 10},
+                    "proc": {"period": 14},
                 },
-                'enhanced_momentum': {
-                    'williams_r': {'length': 14},
-                    'cci': {'length': 20},
-                    'mfi': {'length': 14},
-                    'mtm': {'period': 10},
-                    'proc': {'period': 14}
+                "enhanced_volatility": {
+                    "historical_volatility": {"window": 20},
+                    "keltner_channels": {
+                        "ema_period": 20,
+                        "atr_period": 10,
+                        "atr_multiplier": 2.0,
+                    },
+                    "donchian_channels": {"period": 20},
                 },
-                'enhanced_volatility': {
-                    'historical_volatility': {'window': 20},
-                    'keltner_channels': {'ema_period': 20, 'atr_period': 10, 'atr_multiplier': 2.0},
-                    'donchian_channels': {'period': 20}
+                "enhanced_trend": {
+                    "tma": {"period": 20},
+                    "wma": {"period": 10},
+                    "hma": {"period": 16},
+                    "aroon": {"period": 14},
+                    "dmi": {"period": 14},
                 },
-                'enhanced_trend': {
-                    'tma': {'period': 20},
-                    'wma': {'period': 10},
-                    'hma': {'period': 16},
-                    'aroon': {'period': 14},
-                    'dmi': {'period': 14}
+                "enhanced_volume": {
+                    "adl": {"enabled": True},
+                    "vpt": {"enabled": True},
+                    "eom": {"period": 14},
+                    "volume_roc": {"period": 10},
                 },
-                'enhanced_volume': {
-                    'adl': {'enabled': True},
-                    'vpt': {'enabled': True},
-                    'eom': {'period': 14},
-                    'volume_roc': {'period': 10}
+                "time_features": {
+                    "calendar_features": True,
+                    "cyclical_features": True,
+                    "intraday_features": True,
+                    "weekend_effects": True,
                 },
-                'time_features': {
-                    'calendar_features': True,
-                    'cyclical_features': True,
-                    'intraday_features': True,
-                    'weekend_effects': True
-                }
             }
 
 
 @dataclass
 class OutputConfig:
     """Configuration for pipeline output."""
+
     format: OutputFormat = OutputFormat.DATAFRAME
     save_path: Optional[Path] = None
     include_metadata: bool = True
@@ -217,7 +228,10 @@ class PipelineConfig:
             issues.append("Input source must be specified for CSV file input")
 
         # Validate output configuration
-        if self.output_config.save_path is None and self.output_config.format != OutputFormat.DATAFRAME:
+        if (
+            self.output_config.save_path is None
+            and self.output_config.format != OutputFormat.DATAFRAME
+        ):
             issues.append("Save path must be specified for file output formats")
 
         # Validate performance settings
@@ -225,69 +239,74 @@ class PipelineConfig:
             issues.append("Chunk size must be positive")
 
         # Validate feature configuration
-        if self.feature_config.feature_quality_threshold < 0 or self.feature_config.feature_quality_threshold > 1:
+        if (
+            self.feature_config.feature_quality_threshold < 0
+            or self.feature_config.feature_quality_threshold > 1
+        ):
             issues.append("Feature quality threshold must be between 0 and 1")
 
         if issues:
             logger.warning(f"Configuration validation issues: {issues}")
 
     @classmethod
-    def from_mode(cls, mode: PipelineMode, **kwargs) -> 'PipelineConfig':
+    def from_mode(cls, mode: PipelineMode, **kwargs) -> "PipelineConfig":
         """Create configuration from pipeline mode."""
         config = cls(mode=mode, **kwargs)
         return config
 
     @classmethod
-    def create_high_performance(cls, **kwargs) -> 'PipelineConfig':
+    def create_high_performance(cls, **kwargs) -> "PipelineConfig":
         """Create high-performance configuration."""
         return cls(mode=PipelineMode.HIGH_PERFORMANCE, **kwargs)
 
     @classmethod
-    def create_high_quality(cls, **kwargs) -> 'PipelineConfig':
+    def create_high_quality(cls, **kwargs) -> "PipelineConfig":
         """Create high-quality configuration."""
         return cls(mode=PipelineMode.HIGH_QUALITY, **kwargs)
 
     @classmethod
-    def create_streaming(cls, **kwargs) -> 'PipelineConfig':
+    def create_streaming(cls, **kwargs) -> "PipelineConfig":
         """Create streaming configuration."""
         return cls(mode=PipelineMode.STREAMING, **kwargs)
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert configuration to dictionary."""
         return {
-            'name': self.name,
-            'mode': self.mode.value,
-            'description': self.description,
-            'input_source': str(self.input_source) if self.input_source else None,
-            'input_type': self.input_type.value,
-            'encoding': self.encoding,
-            'csv_config': self.csv_config.to_dict(),
-            'validation_config': {
-                'enable_validation': self.validation_config.enable_validation,
-                'strict_mode': self.validation_config.strict_mode,
-                'detect_outliers': self.validation_config.detect_outliers,
-                'quality_threshold': self.validation_config.quality_threshold
+            "name": self.name,
+            "mode": self.mode.value,
+            "description": self.description,
+            "input_source": str(self.input_source) if self.input_source else None,
+            "input_type": self.input_type.value,
+            "encoding": self.encoding,
+            "csv_config": self.csv_config.to_dict(),
+            "validation_config": {
+                "enable_validation": self.validation_config.enable_validation,
+                "strict_mode": self.validation_config.strict_mode,
+                "detect_outliers": self.validation_config.detect_outliers,
+                "quality_threshold": self.validation_config.quality_threshold,
             },
-            'feature_config': {
-                'enable_features': self.feature_config.enable_features,
-                'feature_selection': self.feature_config.feature_selection,
-                'feature_quality_threshold': self.feature_config.feature_quality_threshold,
-                'indicator_params': self.feature_config.indicator_params
+            "feature_config": {
+                "enable_features": self.feature_config.enable_features,
+                "feature_selection": self.feature_config.feature_selection,
+                "feature_quality_threshold": self.feature_config.feature_quality_threshold,
+                "indicator_params": self.feature_config.indicator_params,
             },
-            'performance_config': {
-                'enable_parallel_processing': self.performance_config.enable_parallel_processing,
-                'chunk_size': self.performance_config.chunk_size,
-                'memory_limit_mb': self.performance_config.memory_limit_mb
+            "performance_config": {
+                "enable_parallel_processing": self.performance_config.enable_parallel_processing,
+                "chunk_size": self.performance_config.chunk_size,
+                "memory_limit_mb": self.performance_config.memory_limit_mb,
             },
-            'output_config': {
-                'format': self.output_config.format.value,
-                'save_path': str(self.output_config.save_path) if self.output_config.save_path else None,
-                'include_metadata': self.output_config.include_metadata,
-                'include_quality_report': self.output_config.include_quality_report
+            "output_config": {
+                "format": self.output_config.format.value,
+                "save_path": str(self.output_config.save_path)
+                if self.output_config.save_path
+                else None,
+                "include_metadata": self.output_config.include_metadata,
+                "include_quality_report": self.output_config.include_quality_report,
             },
-            'enable_caching': self.enable_caching,
-            'parallel_stages': self.parallel_stages,
-            'log_level': self.log_level
+            "enable_caching": self.enable_caching,
+            "parallel_stages": self.parallel_stages,
+            "log_level": self.log_level,
         }
 
     def update(self, **kwargs) -> None:
@@ -306,15 +325,15 @@ class PipelineConfig:
     def get_summary(self) -> Dict[str, Any]:
         """Get configuration summary."""
         return {
-            'pipeline_name': self.name,
-            'mode': self.mode.value,
-            'input_type': self.input_type.value,
-            'output_format': self.output_config.format.value,
-            'validation_enabled': self.validation_config.enable_validation,
-            'features_enabled': self.feature_config.enable_features,
-            'parallel_processing': self.performance_config.enable_parallel_processing,
-            'estimated_memory_mb': self.performance_config.memory_limit_mb,
-            'chunk_size': self.performance_config.chunk_size
+            "pipeline_name": self.name,
+            "mode": self.mode.value,
+            "input_type": self.input_type.value,
+            "output_format": self.output_config.format.value,
+            "validation_enabled": self.validation_config.enable_validation,
+            "features_enabled": self.feature_config.enable_features,
+            "parallel_processing": self.performance_config.enable_parallel_processing,
+            "estimated_memory_mb": self.performance_config.memory_limit_mb,
+            "chunk_size": self.performance_config.chunk_size,
         }
 
     def get_feature_categories(self) -> List[str]:
@@ -322,17 +341,17 @@ class PipelineConfig:
         categories = []
 
         if self.feature_config.basic_indicators:
-            categories.append('basic_indicators')
+            categories.append("basic_indicators")
         if self.feature_config.enhanced_momentum:
-            categories.append('enhanced_momentum')
+            categories.append("enhanced_momentum")
         if self.feature_config.enhanced_volatility:
-            categories.append('enhanced_volatility')
+            categories.append("enhanced_volatility")
         if self.feature_config.enhanced_trend:
-            categories.append('enhanced_trend')
+            categories.append("enhanced_trend")
         if self.feature_config.enhanced_volume:
-            categories.append('enhanced_volume')
+            categories.append("enhanced_volume")
         if self.feature_config.time_features:
-            categories.append('time_features')
+            categories.append("time_features")
 
         return categories
 
@@ -348,6 +367,7 @@ class PipelineConfig:
 
         elif self.input_type == InputSourceType.DATAFRAME:
             import pandas as pd
+
             if not isinstance(data_source, pd.DataFrame):
                 issues.append("DataFrame input requires pandas DataFrame object")
 
@@ -380,38 +400,42 @@ class PipelineConfig:
             estimated_time_seconds *= 1.2
 
         return {
-            'estimated_memory_mb': estimated_data_mb * 2,  # 2x for processing overhead
-            'estimated_time_seconds': estimated_time_seconds,
-            'estimated_time_minutes': estimated_time_seconds / 60,
-            'recommended_chunk_size': min(self.performance_config.chunk_size, data_size_rows // 10),
-            'parallel_processing_recommended': data_size_rows > 50000
+            "estimated_memory_mb": estimated_data_mb * 2,  # 2x for processing overhead
+            "estimated_time_seconds": estimated_time_seconds,
+            "estimated_time_minutes": estimated_time_seconds / 60,
+            "recommended_chunk_size": min(
+                self.performance_config.chunk_size, data_size_rows // 10
+            ),
+            "parallel_processing_recommended": data_size_rows > 50000,
         }
 
     def create_pipeline_metadata(self) -> Dict[str, Any]:
         """Create pipeline metadata for tracking."""
         return {
-            'pipeline_name': self.name,
-            'mode': self.mode.value,
-            'created_at': pd.Timestamp.now().isoformat(),
-            'configuration_hash': hash(str(self.to_dict())),
-            'feature_categories': self.get_feature_categories(),
-            'validation_enabled': self.validation_config.enable_validation,
-            'performance_optimization': self.performance_config.enable_parallel_processing,
-            'output_format': self.output_config.format.value
+            "pipeline_name": self.name,
+            "mode": self.mode.value,
+            "created_at": pd.Timestamp.now().isoformat(),
+            "configuration_hash": hash(str(self.to_dict())),
+            "feature_categories": self.get_feature_categories(),
+            "validation_enabled": self.validation_config.enable_validation,
+            "performance_optimization": self.performance_config.enable_parallel_processing,
+            "output_format": self.output_config.format.value,
         }
 
 
 def create_config_from_template(template_name: str, **kwargs) -> PipelineConfig:
     """Create configuration from predefined template."""
     templates = {
-        'default': PipelineConfig,
-        'high_performance': PipelineConfig.create_high_performance,
-        'high_quality': PipelineConfig.create_high_quality,
-        'streaming': PipelineConfig.create_streaming
+        "default": PipelineConfig,
+        "high_performance": PipelineConfig.create_high_performance,
+        "high_quality": PipelineConfig.create_high_quality,
+        "streaming": PipelineConfig.create_streaming,
     }
 
     if template_name not in templates:
-        raise ValueError(f"Unknown template: {template_name}. Available: {list(templates.keys())}")
+        raise ValueError(
+            f"Unknown template: {template_name}. Available: {list(templates.keys())}"
+        )
 
     config_creator = templates[template_name]
     return config_creator(**kwargs)
@@ -426,11 +450,11 @@ def load_config_from_file(config_path: Path) -> PipelineConfig:
             config_dict = json.load(f)
 
         # Convert string enums back to enum objects
-        if 'mode' in config_dict:
-            config_dict['mode'] = PipelineMode(config_dict['mode'])
+        if "mode" in config_dict:
+            config_dict["mode"] = PipelineMode(config_dict["mode"])
 
-        if 'input_type' in config_dict:
-            config_dict['input_type'] = InputSourceType(config_dict['input_type'])
+        if "input_type" in config_dict:
+            config_dict["input_type"] = InputSourceType(config_dict["input_type"])
 
         # Reconstruct nested configurations
         # This is a simplified version - in practice, you'd want more robust reconstruction
@@ -448,7 +472,7 @@ def save_config_to_file(config: PipelineConfig, config_path: Path) -> bool:
     try:
         config_dict = config.to_dict()
 
-        with open(config_path, 'w') as f:
+        with open(config_path, "w") as f:
             json.dump(config_dict, f, indent=2, default=str)
 
         logger.info(f"Configuration saved to {config_path}")

@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 
 # Add src to path
-sys.path.insert(0, 'src')
+sys.path.insert(0, "src")
 
 from visualization.chart_generator import plot_states
 from visualization.dashboard_builder import build_dashboard
@@ -21,7 +21,7 @@ from visualization.report_generator import generate_regime_report
 
 def create_simple_ohlcv_data(n_samples=100):
     """Create simple OHLCV data for testing."""
-    dates = pd.date_range('2020-01-01', periods=n_samples, freq='D')
+    dates = pd.date_range("2020-01-01", periods=n_samples, freq="D")
 
     # Generate synthetic price data
     np.random.seed(42)
@@ -33,15 +33,19 @@ def create_simple_ohlcv_data(n_samples=100):
     high_spread = np.random.uniform(0.005, 0.02, n_samples)
     low_spread = np.random.uniform(0.005, 0.02, n_samples)
 
-    data = pd.DataFrame({
-        'open': close_prices,
-        'high': close_prices * (1 + high_spread),
-        'low': close_prices * (1 - low_spread),
-        'close': close_prices,
-        'volume': np.random.uniform(1000, 5000, n_samples)
-    }, index=dates)
+    data = pd.DataFrame(
+        {
+            "open": close_prices,
+            "high": close_prices * (1 + high_spread),
+            "low": close_prices * (1 - low_spread),
+            "close": close_prices,
+            "volume": np.random.uniform(1000, 5000, n_samples),
+        },
+        index=dates,
+    )
 
     return data
+
 
 def test_basic_state_visualization():
     """Test basic state visualization with simple data."""
@@ -55,7 +59,9 @@ def test_basic_state_visualization():
         prices = create_simple_ohlcv_data(50)
         states = np.random.choice([0, 1, 2], 50)
 
-        print(f"✓ Created {len(prices)} data points with {len(np.unique(states))} states")
+        print(
+            f"✓ Created {len(prices)} data points with {len(np.unique(states))} states"
+        )
 
         # Test basic visualization without indicators
         print("\nTesting basic visualization...")
@@ -63,9 +69,9 @@ def test_basic_state_visualization():
             output_path = Path(temp_dir) / "basic_test.png"
 
             config = {
-                'title': 'Basic HMM State Test',
-                'show_volume': True,
-                'mav': [],  # No moving averages to avoid panel conflicts
+                "title": "Basic HMM State Test",
+                "show_volume": True,
+                "mav": [],  # No moving averages to avoid panel conflicts
             }
 
             result_path = plot_states(
@@ -74,7 +80,7 @@ def test_basic_state_visualization():
                 indicators=None,  # No indicators
                 config=config,
                 output_path=str(output_path),
-                show_plot=False
+                show_plot=False,
             )
 
             if Path(result_path).exists():
@@ -87,8 +93,10 @@ def test_basic_state_visualization():
     except Exception as e:
         print(f"✗ Basic visualization test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 def test_simple_dashboard():
     """Test simple dashboard generation."""
@@ -106,24 +114,24 @@ def test_simple_dashboard():
         from utils.data_types import BacktestResult, PerformanceMetrics, Trade
 
         # Simple equity curve
-        equity_curve = prices['close'] * 10  # Scale to represent portfolio value
+        equity_curve = prices["close"] * 10  # Scale to represent portfolio value
 
         # Create basic trades
         trades = []
         for i in range(5):
-            entry_price = prices['close'].iloc[i*10]
-            exit_price = prices['close'].iloc[i*10+5]
+            entry_price = prices["close"].iloc[i * 10]
+            exit_price = prices["close"].iloc[i * 10 + 5]
             pnl = (exit_price - entry_price) * 1.0
 
             trade = Trade(
-                entry_time=prices.index[i*10],
-                exit_time=prices.index[i*10+5],
+                entry_time=prices.index[i * 10],
+                exit_time=prices.index[i * 10 + 5],
                 entry_price=entry_price,
                 exit_price=exit_price,
                 size=1.0,
                 pnl=pnl,
                 commission=5.0,
-                slippage=2.0
+                slippage=2.0,
             )
             trades.append(trade)
 
@@ -135,7 +143,7 @@ def test_simple_dashboard():
             positions=pd.Series(positions, index=prices.index),
             trades=trades,
             start_date=prices.index[0],
-            end_date=prices.index[-1]
+            end_date=prices.index[-1],
         )
 
         # Create performance metrics
@@ -150,7 +158,7 @@ def test_simple_dashboard():
             win_rate=0.6,
             loss_rate=0.4,
             profit_factor=1.2,
-            sortino_ratio=1.1
+            sortino_ratio=1.1,
         )
 
         print(f"✓ Created backtest result: {len(trades)} trades")
@@ -161,10 +169,10 @@ def test_simple_dashboard():
             output_path = Path(temp_dir) / "simple_dashboard.html"
 
             config = {
-                'title': 'Simple HMM Dashboard Test',
-                'include_regime_analysis': False,  # Disable complex features
-                'include_monthly_heatmap': False,
-                'include_distribution': False
+                "title": "Simple HMM Dashboard Test",
+                "include_regime_analysis": False,  # Disable complex features
+                "include_monthly_heatmap": False,
+                "include_distribution": False,
             }
 
             result_path = build_dashboard(
@@ -172,7 +180,7 @@ def test_simple_dashboard():
                 metrics=metrics,
                 states=states,
                 config=config,
-                output_path=str(output_path)
+                output_path=str(output_path),
             )
 
             if Path(result_path).exists():
@@ -180,7 +188,7 @@ def test_simple_dashboard():
                 with open(result_path) as f:
                     content = f.read()
 
-                if 'HMM Dashboard' in content and len(content) > 1000:
+                if "HMM Dashboard" in content and len(content) > 1000:
                     print(f"✓ Simple dashboard generated: {result_path}")
                     print(f"  - File size: {len(content)} characters")
                     return True
@@ -194,8 +202,10 @@ def test_simple_dashboard():
     except Exception as e:
         print(f"✗ Simple dashboard test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 def test_html_report():
     """Test HTML report generation."""
@@ -210,15 +220,18 @@ def test_html_report():
         states = np.random.choice([0, 1, 2], 50)
 
         # Create indicators
-        indicators = pd.DataFrame({
-            'RSI_14': np.random.uniform(20, 80, 50),
-            'volume': np.random.uniform(1000, 5000, 50)
-        }, index=prices.index)
+        indicators = pd.DataFrame(
+            {
+                "RSI_14": np.random.uniform(20, 80, 50),
+                "volume": np.random.uniform(1000, 5000, 50),
+            },
+            index=prices.index,
+        )
 
         # Create simple backtest result
         from utils.data_types import BacktestResult, PerformanceMetrics
 
-        equity_curve = prices['close'] * 10
+        equity_curve = prices["close"] * 10
         positions = np.array([1, 0, -1] * 17)[:50]  # 48 positions (16*3)
         trades = []
 
@@ -227,7 +240,7 @@ def test_html_report():
             positions=pd.Series(positions[:50], index=prices.index),
             trades=trades,
             start_date=prices.index[0],
-            end_date=prices.index[-1]
+            end_date=prices.index[-1],
         )
 
         metrics = PerformanceMetrics(
@@ -241,7 +254,7 @@ def test_html_report():
             win_rate=0.65,
             loss_rate=0.35,
             profit_factor=1.3,
-            sortino_ratio=1.2
+            sortino_ratio=1.2,
         )
 
         print("✓ Created report data")
@@ -252,8 +265,8 @@ def test_html_report():
             output_path = Path(temp_dir) / "simple_report.html"
 
             config = {
-                'title': 'Simple HMM Analysis Report',
-                'include_charts': False  # Disable charts to avoid matplotlib issues
+                "title": "Simple HMM Analysis Report",
+                "include_charts": False,  # Disable charts to avoid matplotlib issues
             }
 
             result_path = generate_regime_report(
@@ -263,7 +276,7 @@ def test_html_report():
                 indicators=indicators,
                 config=config,
                 output_path=str(output_path),
-                format='html'
+                format="html",
             )
 
             if Path(result_path).exists():
@@ -271,9 +284,11 @@ def test_html_report():
                 with open(result_path) as f:
                     content = f.read()
 
-                if ('Regime Analysis' in content and
-                    'Performance Metrics' in content and
-                    len(content) > 2000):
+                if (
+                    "Regime Analysis" in content
+                    and "Performance Metrics" in content
+                    and len(content) > 2000
+                ):
                     print(f"✓ HTML report generated: {result_path}")
                     print(f"  - File size: {len(content)} characters")
                     return True
@@ -287,8 +302,10 @@ def test_html_report():
     except Exception as e:
         print(f"✗ HTML report test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 def main():
     """Run simple visualization tests."""
@@ -299,13 +316,13 @@ def main():
     tests = [
         ("Basic State Visualization", test_basic_state_visualization),
         ("Simple Dashboard Generation", test_simple_dashboard),
-        ("HTML Report Generation", test_html_report)
+        ("HTML Report Generation", test_html_report),
     ]
 
     results = {}
 
     for test_name, test_func in tests:
-        print(f"\n{'='*20} {test_name} {'='*20}")
+        print(f"\n{'=' * 20} {test_name} {'=' * 20}")
         try:
             results[test_name] = test_func()
         except Exception as e:
@@ -333,6 +350,7 @@ def main():
     else:
         print("❌ Some visualization tests failed.")
         return False
+
 
 if __name__ == "__main__":
     success = main()

@@ -27,7 +27,7 @@ def process_csv(
     memory_limit_gb: float = 8.0,
     downcast_floats: bool = True,
     downcast_ints: bool = True,
-    **kwargs
+    **kwargs,
 ) -> pd.DataFrame:
     """
     Process and parse multi-format OHLCV CSV files with memory efficiency.
@@ -60,26 +60,54 @@ def process_csv(
 
     # Auto-detect date/time columns if not provided
     if date_columns is None:
-        date_columns = ['date', 'Date', 'datetime', 'DateTime', 'timestamp', 'Timestamp']
+        date_columns = [
+            "date",
+            "Date",
+            "datetime",
+            "DateTime",
+            "timestamp",
+            "Timestamp",
+        ]
 
     if time_columns is None:
-        time_columns = ['time', 'Time', 'datetime', 'DateTime', 'timestamp', 'Timestamp']
+        time_columns = [
+            "time",
+            "Time",
+            "datetime",
+            "DateTime",
+            "timestamp",
+            "Timestamp",
+        ]
 
     # Determine if we need chunked processing
     file_size_mb = file_path.stat().st_size / (1024 * 1024)
-    use_chunking = chunk_size is not None or file_size_mb > 100  # Use chunking for files > 100MB
+    use_chunking = (
+        chunk_size is not None or file_size_mb > 100
+    )  # Use chunking for files > 100MB
 
     if use_chunking:
         logger.info(f"Using chunked processing (file size: {file_size_mb:.1f}MB)")
         return _process_chunked(
-            file_path, date_columns, time_columns, symbol_filter,
-            chunk_size, memory_limit_gb, downcast_floats, downcast_ints, **kwargs
+            file_path,
+            date_columns,
+            time_columns,
+            symbol_filter,
+            chunk_size,
+            memory_limit_gb,
+            downcast_floats,
+            downcast_ints,
+            **kwargs,
         )
     else:
         logger.info(f"Using standard processing (file size: {file_size_mb:.1f}MB)")
         return _process_standard(
-            file_path, date_columns, time_columns, symbol_filter,
-            downcast_floats, downcast_ints, **kwargs
+            file_path,
+            date_columns,
+            time_columns,
+            symbol_filter,
+            downcast_floats,
+            downcast_ints,
+            **kwargs,
         )
 
 
@@ -90,7 +118,7 @@ def _process_standard(
     symbol_filter: Optional[str],
     downcast_floats: bool,
     downcast_ints: bool,
-    **kwargs
+    **kwargs,
 ) -> pd.DataFrame:
     """Process CSV file using standard pandas read_csv."""
 
@@ -99,20 +127,19 @@ def _process_standard(
     logger.debug(f"CSV columns detected: {list(sample_df.columns)}")
 
     # Detect delimiter if not specified
-    if 'sep' not in kwargs:
-        sample_text = file_path.read_text(encoding='utf-8')[:1000]
-        if ';' in sample_text and ',' not in sample_text[:100]:
-            kwargs['sep'] = ';'
+    if "sep" not in kwargs:
+        sample_text = file_path.read_text(encoding="utf-8")[:1000]
+        if ";" in sample_text and "," not in sample_text[:100]:
+            kwargs["sep"] = ";"
         else:
-            kwargs['sep'] = ','
+            kwargs["sep"] = ","
 
     # Read the full file
     df = pd.read_csv(file_path, **kwargs)
 
     # Process the dataframe
     df = _standardize_dataframe(
-        df, date_columns, time_columns, symbol_filter,
-        downcast_floats, downcast_ints
+        df, date_columns, time_columns, symbol_filter, downcast_floats, downcast_ints
     )
 
     logger.info(f"Processed {len(df)} rows of data")
@@ -128,7 +155,7 @@ def _process_chunked(
     memory_limit_gb: float,
     downcast_floats: bool,
     downcast_ints: bool,
-    **kwargs
+    **kwargs,
 ) -> pd.DataFrame:
     """Process CSV file in chunks for memory efficiency."""
 
@@ -141,24 +168,28 @@ def _process_chunked(
     logger.debug(f"CSV columns detected: {list(sample_df.columns)}")
 
     # Detect delimiter if not specified
-    if 'sep' not in kwargs:
-        sample_text = file_path.read_text(encoding='utf-8')[:1000]
-        if ';' in sample_text and ',' not in sample_text[:100]:
-            kwargs['sep'] = ';'
+    if "sep" not in kwargs:
+        sample_text = file_path.read_text(encoding="utf-8")[:1000]
+        if ";" in sample_text and "," not in sample_text[:100]:
+            kwargs["sep"] = ";"
         else:
-            kwargs['sep'] = ','
+            kwargs["sep"] = ","
 
     # Process chunks
     chunks = []
     total_rows = 0
 
     for i, chunk in enumerate(pd.read_csv(file_path, chunksize=chunk_size, **kwargs)):
-        logger.debug(f"Processing chunk {i+1} ({len(chunk)} rows)")
+        logger.debug(f"Processing chunk {i + 1} ({len(chunk)} rows)")
 
         # Standardize the chunk
         chunk = _standardize_dataframe(
-            chunk, date_columns, time_columns, symbol_filter,
-            downcast_floats, downcast_ints
+            chunk,
+            date_columns,
+            time_columns,
+            symbol_filter,
+            downcast_floats,
+            downcast_ints,
         )
 
         chunks.append(chunk)
@@ -169,11 +200,14 @@ def _process_chunked(
             gc.collect()
 
             # Estimate memory usage
-            current_memory = sum(len(chunk) * chunk.memory_usage(deep=True).sum()
-                              for chunk in chunks) / (1024**3)
+            current_memory = sum(
+                len(chunk) * chunk.memory_usage(deep=True).sum() for chunk in chunks
+            ) / (1024**3)
 
             if current_memory > memory_limit_gb * 0.8:  # 80% of limit
-                logger.warning(f"Memory usage approaching limit: {current_memory:.2f}GB")
+                logger.warning(
+                    f"Memory usage approaching limit: {current_memory:.2f}GB"
+                )
 
     # Combine all chunks
     logger.info(f"Combining {len(chunks)} chunks ({total_rows} total rows)")
@@ -192,7 +226,7 @@ def _standardize_dataframe(
     time_columns: List[str],
     symbol_filter: Optional[str],
     downcast_floats: bool,
-    downcast_ints: bool
+    downcast_ints: bool,
 ) -> pd.DataFrame:
     """Standardize dataframe column names, types, and format."""
 
@@ -200,18 +234,22 @@ def _standardize_dataframe(
     df.columns = df.columns.str.strip()
 
     # Filter by symbol if specified
-    if symbol_filter is not None and 'symbol' in df.columns:
+    if symbol_filter is not None and "symbol" in df.columns:
         original_len = len(df)
-        df = df[df['symbol'].str.contains(symbol_filter, case=False, na=False)]
-        logger.info(f"Filtered to {len(df)} rows by symbol '{symbol_filter}' "
-                   f"(from {original_len} rows)")
+        df = df[df["symbol"].str.contains(symbol_filter, case=False, na=False)]
+        logger.info(
+            f"Filtered to {len(df)} rows by symbol '{symbol_filter}' "
+            f"(from {original_len} rows)"
+        )
 
     # Detect and standardize OHLCV columns
     column_mapping = _detect_ohlcv_columns(df)
 
     if not column_mapping:
-        raise ValueError("Could not detect required OHLCV columns. "
-                        "Expected columns: open, high, low, close, volume (or similar)")
+        raise ValueError(
+            "Could not detect required OHLCV columns. "
+            "Expected columns: open, high, low, close, volume (or similar)"
+        )
 
     # Rename columns to standard names
     df = df.rename(columns=column_mapping)
@@ -220,7 +258,7 @@ def _standardize_dataframe(
     df = _process_datetime_columns(df, date_columns, time_columns)
 
     # Ensure required columns exist
-    required_columns = ['open', 'high', 'low', 'close', 'volume']
+    required_columns = ["open", "high", "low", "close", "volume"]
     missing_columns = [col for col in required_columns if col not in df.columns]
 
     if missing_columns:
@@ -237,7 +275,7 @@ def _standardize_dataframe(
         df = _downcast_ints(df)
 
     # Sort by datetime index if available
-    if hasattr(df.index, 'to_pydatetime'):
+    if hasattr(df.index, "to_pydatetime"):
         df = df.sort_index()
 
     # Validate OHLCV data integrity
@@ -251,11 +289,31 @@ def _detect_ohlcv_columns(df: pd.DataFrame) -> Dict[str, str]:
 
     # Common column name variations
     ohlcv_patterns = {
-        'open': ['open', 'Open', 'OPEN', 'o', 'O', 'price_open', 'Price_Open'],
-        'high': ['high', 'High', 'HIGH', 'h', 'H', 'price_high', 'Price_High'],
-        'low': ['low', 'Low', 'LOW', 'l', 'L', 'price_low', 'Price_Low'],
-        'close': ['close', 'Close', 'CLOSE', 'c', 'C', 'price_close', 'Price_Close', 'last', 'Last'],
-        'volume': ['volume', 'Volume', 'VOLUME', 'v', 'V', 'vol', 'Vol', 'Volume', 'trades']
+        "open": ["open", "Open", "OPEN", "o", "O", "price_open", "Price_Open"],
+        "high": ["high", "High", "HIGH", "h", "H", "price_high", "Price_High"],
+        "low": ["low", "Low", "LOW", "l", "L", "price_low", "Price_Low"],
+        "close": [
+            "close",
+            "Close",
+            "CLOSE",
+            "c",
+            "C",
+            "price_close",
+            "Price_Close",
+            "last",
+            "Last",
+        ],
+        "volume": [
+            "volume",
+            "Volume",
+            "VOLUME",
+            "v",
+            "V",
+            "vol",
+            "Vol",
+            "Volume",
+            "trades",
+        ],
     }
 
     column_mapping = {}
@@ -272,9 +330,7 @@ def _detect_ohlcv_columns(df: pd.DataFrame) -> Dict[str, str]:
 
 
 def _process_datetime_columns(
-    df: pd.DataFrame,
-    date_columns: List[str],
-    time_columns: List[str]
+    df: pd.DataFrame, date_columns: List[str], time_columns: List[str]
 ) -> pd.DataFrame:
     """Process and combine date/time columns into datetime index."""
 
@@ -302,19 +358,21 @@ def _process_datetime_columns(
             # Combine date and time columns
             datetime_col = f"{date_col}_{time_col}"
             df[datetime_col] = pd.to_datetime(
-                df[date_col].astype(str) + ' ' + df[time_col].astype(str),
+                df[date_col].astype(str) + " " + df[time_col].astype(str),
                 infer_datetime_format=True,
-                errors='coerce'
+                errors="coerce",
             )
             df = df.drop(columns=[date_col, time_col])
             date_col = datetime_col
         else:
             # Convert date column to datetime
-            df[date_col] = pd.to_datetime(df[date_col], infer_datetime_format=True, errors='coerce')
+            df[date_col] = pd.to_datetime(
+                df[date_col], infer_datetime_format=True, errors="coerce"
+            )
 
         # Set datetime as index
         df = df.set_index(date_col)
-        df.index.name = 'datetime'
+        df.index.name = "datetime"
 
         logger.info(f"Set datetime index with {len(df)} rows")
 
@@ -328,15 +386,15 @@ def _process_datetime_columns(
 def _clean_numeric_data(df: pd.DataFrame) -> pd.DataFrame:
     """Clean and standardize numeric data."""
 
-    numeric_columns = ['open', 'high', 'low', 'close', 'volume']
+    numeric_columns = ["open", "high", "low", "close", "volume"]
 
     for col in numeric_columns:
         if col in df.columns:
             # Convert to numeric, coercing errors to NaN
-            df[col] = pd.to_numeric(df[col], errors='coerce')
+            df[col] = pd.to_numeric(df[col], errors="coerce")
 
             # Remove rows with NaN in price columns
-            if col != 'volume' and df[col].isna().any():
+            if col != "volume" and df[col].isna().any():
                 na_count = df[col].isna().sum()
                 logger.warning(f"Found {na_count} NaN values in {col} column")
                 df = df.dropna(subset=[col])
@@ -347,16 +405,19 @@ def _clean_numeric_data(df: pd.DataFrame) -> pd.DataFrame:
 def _downcast_floats(df: pd.DataFrame) -> pd.DataFrame:
     """Downcast float64 columns to float32 for memory efficiency."""
 
-    float_columns = df.select_dtypes(include=['float64']).columns
+    float_columns = df.select_dtypes(include=["float64"]).columns
 
     for col in float_columns:
-        if df[col].dtype == 'float64':
+        if df[col].dtype == "float64":
             # Check if we can safely downcast to float32
             min_val = df[col].min()
             max_val = df[col].max()
 
-            if np.finfo(np.float32).min <= min_val and max_val <= np.finfo(np.float32).max:
-                df[col] = df[col].astype('float32')
+            if (
+                np.finfo(np.float32).min <= min_val
+                and max_val <= np.finfo(np.float32).max
+            ):
+                df[col] = df[col].astype("float32")
                 logger.debug(f"Downcasted {col} to float32")
 
     return df
@@ -365,22 +426,26 @@ def _downcast_floats(df: pd.DataFrame) -> pd.DataFrame:
 def _downcast_ints(df: pd.DataFrame) -> pd.DataFrame:
     """Downcast int64 columns to smaller integer types for memory efficiency."""
 
-    int_columns = df.select_dtypes(include=['int64']).columns
+    int_columns = df.select_dtypes(include=["int64"]).columns
 
     for col in int_columns:
-        if df[col].dtype == 'int64':
+        if df[col].dtype == "int64":
             # Find the smallest integer type that can hold the data
             min_val = df[col].min()
             max_val = df[col].max()
 
             if np.iinfo(np.int8).min <= min_val and max_val <= np.iinfo(np.int8).max:
-                df[col] = df[col].astype('int8')
+                df[col] = df[col].astype("int8")
                 logger.debug(f"Downcasted {col} to int8")
-            elif np.iinfo(np.int16).min <= min_val and max_val <= np.iinfo(np.int16).max:
-                df[col] = df[col].astype('int16')
+            elif (
+                np.iinfo(np.int16).min <= min_val and max_val <= np.iinfo(np.int16).max
+            ):
+                df[col] = df[col].astype("int16")
                 logger.debug(f"Downcasted {col} to int16")
-            elif np.iinfo(np.int32).min <= min_val and max_val <= np.iinfo(np.int32).max:
-                df[col] = df[col].astype('int32')
+            elif (
+                np.iinfo(np.int32).min <= min_val and max_val <= np.iinfo(np.int32).max
+            ):
+                df[col] = df[col].astype("int32")
                 logger.debug(f"Downcasted {col} to int32")
 
     return df
@@ -390,24 +455,28 @@ def _validate_ohlcv_data(df: pd.DataFrame) -> None:
     """Validate OHLCV data integrity."""
 
     # Check for negative prices
-    price_columns = ['open', 'high', 'low', 'close']
+    price_columns = ["open", "high", "low", "close"]
     for col in price_columns:
         if col in df.columns and (df[col] <= 0).any():
             negative_count = (df[col] <= 0).sum()
-            logger.warning(f"Found {negative_count} non-positive values in {col} column")
+            logger.warning(
+                f"Found {negative_count} non-positive values in {col} column"
+            )
 
     # Check for negative volume
-    if 'volume' in df.columns and (df['volume'] < 0).any():
-        negative_count = (df['volume'] < 0).sum()
+    if "volume" in df.columns and (df["volume"] < 0).any():
+        negative_count = (df["volume"] < 0).sum()
         logger.warning(f"Found {negative_count} negative values in volume column")
 
     # Check OHLC consistency (high should be >= open,close and low should be <= open,close)
-    if all(col in df.columns for col in ['open', 'high', 'low', 'close']):
-        inconsistent_high = (df['high'] < df[['open', 'close']].max(axis=1)).sum()
-        inconsistent_low = (df['low'] > df[['open', 'close']].min(axis=1)).sum()
+    if all(col in df.columns for col in ["open", "high", "low", "close"]):
+        inconsistent_high = (df["high"] < df[["open", "close"]].max(axis=1)).sum()
+        inconsistent_low = (df["low"] > df[["open", "close"]].min(axis=1)).sum()
 
         if inconsistent_high > 0:
-            logger.warning(f"Found {inconsistent_high} rows where high < max(open,close)")
+            logger.warning(
+                f"Found {inconsistent_high} rows where high < max(open,close)"
+            )
 
         if inconsistent_low > 0:
             logger.warning(f"Found {inconsistent_low} rows where low > min(open,close)")
@@ -431,34 +500,38 @@ def get_csv_info(file_path: Union[str, Path]) -> Dict[str, Any]:
         raise FileNotFoundError(f"CSV file not found: {file_path}")
 
     info = {
-        'file_path': str(file_path),
-        'file_size_mb': file_path.stat().st_size / (1024 * 1024),
-        'last_modified': datetime.fromtimestamp(file_path.stat().st_mtime)
+        "file_path": str(file_path),
+        "file_size_mb": file_path.stat().st_size / (1024 * 1024),
+        "last_modified": datetime.fromtimestamp(file_path.stat().st_mtime),
     }
 
     # Read first few rows to get column info
     try:
         sample_df = pd.read_csv(file_path, nrows=5)
-        info.update({
-            'columns': list(sample_df.columns),
-            'num_columns': len(sample_df.columns),
-            'sample_data': sample_df.head(3).to_dict('records')
-        })
+        info.update(
+            {
+                "columns": list(sample_df.columns),
+                "num_columns": len(sample_df.columns),
+                "sample_data": sample_df.head(3).to_dict("records"),
+            }
+        )
 
         # Try to estimate total rows
-        if info['file_size_mb'] < 100:  # Only for small files
+        if info["file_size_mb"] < 100:  # Only for small files
             try:
                 full_df = pd.read_csv(file_path)
-                info['estimated_rows'] = len(full_df)
-                info['memory_usage_mb'] = full_df.memory_usage(deep=True).sum() / (1024 * 1024)
+                info["estimated_rows"] = len(full_df)
+                info["memory_usage_mb"] = full_df.memory_usage(deep=True).sum() / (
+                    1024 * 1024
+                )
             except MemoryError:
-                info['estimated_rows'] = 'Unknown (too large to load)'
+                info["estimated_rows"] = "Unknown (too large to load)"
         else:
-            info['estimated_rows'] = 'Unknown (large file)'
+            info["estimated_rows"] = "Unknown (large file)"
 
     except Exception as e:
         logger.warning(f"Could not analyze CSV structure: {e}")
-        info['columns'] = []
-        info['num_columns'] = 0
+        info["columns"] = []
+        info["num_columns"] = 0
 
     return info

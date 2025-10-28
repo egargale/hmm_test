@@ -24,6 +24,7 @@ logger = get_logger(__name__)
 @dataclass
 class PerformanceConfig:
     """Performance optimization configuration."""
+
     # Processing
     enable_parallel_processing: bool = True
     max_workers: Optional[int] = None
@@ -47,6 +48,7 @@ class PerformanceConfig:
 @dataclass
 class PerformanceMetrics:
     """Performance measurement metrics."""
+
     processing_time: float
     memory_usage_mb: float
     rows_processed: int
@@ -80,10 +82,12 @@ class PerformanceOptimizer:
         # Memory tracking
         self.memory_usage_history = []
 
-        logger.info(f"Performance optimizer initialized with config: "
-                   f"parallel={self.config.enable_parallel_processing}, "
-                   f"workers={self.config.max_workers}, "
-                   f"chunk_size={self.config.chunk_size}")
+        logger.info(
+            f"Performance optimizer initialized with config: "
+            f"parallel={self.config.enable_parallel_processing}, "
+            f"workers={self.config.max_workers}, "
+            f"chunk_size={self.config.chunk_size}"
+        )
 
     def _setup_performance_config(self) -> None:
         """Setup performance configuration based on system capabilities."""
@@ -92,11 +96,14 @@ class PerformanceOptimizer:
             cpu_count = mp.cpu_count()
             # Use fewer workers to avoid memory pressure
             self.config.max_workers = min(cpu_count, 4)
-            logger.debug(f"Auto-detected optimal worker count: {self.config.max_workers}")
+            logger.debug(
+                f"Auto-detected optimal worker count: {self.config.max_workers}"
+            )
 
         # Adjust chunk size based on available memory
         try:
             import psutil
+
             available_memory_gb = psutil.virtual_memory().available / (1024**3)
 
             if self.config.adaptive_chunking:
@@ -108,8 +115,10 @@ class PerformanceOptimizer:
                 else:
                     self.config.chunk_size = 10000
 
-                logger.debug(f"Adaptive chunk size set to {self.config.chunk_size} "
-                           f"based on {available_memory_gb:.1f}GB available memory")
+                logger.debug(
+                    f"Adaptive chunk size set to {self.config.chunk_size} "
+                    f"based on {available_memory_gb:.1f}GB available memory"
+                )
         except ImportError:
             logger.debug("psutil not available, using default chunk size")
 
@@ -140,13 +149,16 @@ class PerformanceOptimizer:
         optimal_rows = min(memory_based_rows, file_based_rows)
         optimal_rows = max(1000, min(optimal_rows, 100000))  # Bounds: 1K - 100K rows
 
-        logger.debug(f"Optimized chunk size: {optimal_rows:.0f} rows "
-                    f"(memory: {memory_based_rows:.0f}, file: {file_based_rows:.0f})")
+        logger.debug(
+            f"Optimized chunk size: {optimal_rows:.0f} rows "
+            f"(memory: {memory_based_rows:.0f}, file: {file_based_rows:.0f})"
+        )
 
         return int(optimal_rows)
 
-    def apply_parallel_processing(self, processor_func: Callable, data: Any,
-                                 use_processes: bool = False) -> Any:
+    def apply_parallel_processing(
+        self, processor_func: Callable, data: Any, use_processes: bool = False
+    ) -> Any:
         """
         Apply parallel processing to a function.
 
@@ -165,8 +177,10 @@ class PerformanceOptimizer:
 
         try:
             with executor_class(max_workers=self.config.max_workers) as executor:
-                logger.debug(f"Starting parallel processing with {self.config.max_workers} workers "
-                           f"({'processes' if use_processes else 'threads'})")
+                logger.debug(
+                    f"Starting parallel processing with {self.config.max_workers} workers "
+                    f"({'processes' if use_processes else 'threads'})"
+                )
 
                 results = list(executor.map(processor_func, data))
 
@@ -174,7 +188,9 @@ class PerformanceOptimizer:
                 return results
 
         except Exception as e:
-            logger.warning(f"Parallel processing failed: {e}, falling back to sequential processing")
+            logger.warning(
+                f"Parallel processing failed: {e}, falling back to sequential processing"
+            )
             return [processor_func(item) for item in data]
 
     def enable_memory_mapping(self, file_path: Path) -> bool:
@@ -195,7 +211,9 @@ class PerformanceOptimizer:
 
             # Only use memory mapping for files larger than 10MB
             if file_size > 10 * 1024 * 1024:
-                logger.debug(f"Enabling memory mapping for {file_path} ({file_size / 1024 / 1024:.1f}MB)")
+                logger.debug(
+                    f"Enabling memory mapping for {file_path} ({file_size / 1024 / 1024:.1f}MB)"
+                )
                 return True
 
         except Exception as e:
@@ -222,38 +240,41 @@ class PerformanceOptimizer:
         df_optimized = df.copy()
 
         # Optimize numeric columns
-        for col in df_optimized.select_dtypes(include=['integer']).columns:
+        for col in df_optimized.select_dtypes(include=["integer"]).columns:
             col_series = df_optimized[col]
             if pd.api.types.is_integer_dtype(col_series):
                 # Downcast integers
-                df_optimized[col] = pd.to_numeric(col_series, downcast='integer')
+                df_optimized[col] = pd.to_numeric(col_series, downcast="integer")
 
-        for col in df_optimized.select_dtypes(include=['float']).columns:
+        for col in df_optimized.select_dtypes(include=["float"]).columns:
             col_series = df_optimized[col]
             # Downcast floats
-            df_optimized[col] = pd.to_numeric(col_series, downcast='float')
+            df_optimized[col] = pd.to_numeric(col_series, downcast="float")
 
         # Optimize object columns
-        for col in df_optimized.select_dtypes(include=['object']).columns:
+        for col in df_optimized.select_dtypes(include=["object"]).columns:
             col_series = df_optimized[col]
             try:
                 # Try to convert to categorical if cardinality is low
                 unique_ratio = col_series.nunique() / len(col_series)
                 if unique_ratio < 0.5:  # Less than 50% unique values
-                    df_optimized[col] = col_series.astype('category')
-            except:
+                    df_optimized[col] = col_series.astype("category")
+            except Exception:
                 pass
 
         optimized_memory = df_optimized.memory_usage(deep=True).sum()
         memory_reduction = (original_memory - optimized_memory) / original_memory * 100
 
-        logger.debug(f"Data type optimization: {original_memory / 1024 / 1024:.1f}MB -> "
-                    f"{optimized_memory / 1024 / 1024:.1f}MB ({memory_reduction:.1f}% reduction)")
+        logger.debug(
+            f"Data type optimization: {original_memory / 1024 / 1024:.1f}MB -> "
+            f"{optimized_memory / 1024 / 1024:.1f}MB ({memory_reduction:.1f}% reduction)"
+        )
 
         return df_optimized
 
-    def process_chunks_optimized(self, file_path: Path, processor_func: Callable,
-                                **kwargs) -> pd.DataFrame:
+    def process_chunks_optimized(
+        self, file_path: Path, processor_func: Callable, **kwargs
+    ) -> pd.DataFrame:
         """
         Process CSV file in optimized chunks.
 
@@ -268,15 +289,20 @@ class PerformanceOptimizer:
         file_size = file_path.stat().st_size
 
         # Calculate optimal chunk size
-        if 'chunk_size' not in kwargs:
+        if "chunk_size" not in kwargs:
             try:
                 import psutil
-                available_memory = psutil.virtual_memory().available
-                kwargs['chunk_size'] = self.optimize_chunk_size(file_size, available_memory)
-            except ImportError:
-                kwargs['chunk_size'] = self.config.chunk_size
 
-        logger.info(f"Processing {file_path} in optimized chunks of {kwargs['chunk_size']} rows")
+                available_memory = psutil.virtual_memory().available
+                kwargs["chunk_size"] = self.optimize_chunk_size(
+                    file_size, available_memory
+                )
+            except ImportError:
+                kwargs["chunk_size"] = self.config.chunk_size
+
+        logger.info(
+            f"Processing {file_path} in optimized chunks of {kwargs['chunk_size']} rows"
+        )
 
         # Enable memory mapping if appropriate
         use_mmap = self.enable_memory_mapping(file_path)
@@ -288,10 +314,12 @@ class PerformanceOptimizer:
         try:
             if use_mmap:
                 # Use memory mapping for large files
-                chunks = self._process_with_memory_mapping(file_path, processor_func, **kwargs)
+                chunks = self._process_with_memory_mapping(
+                    file_path, processor_func, **kwargs
+                )
             else:
                 # Use standard chunked reading
-                chunk_reader = pd.read_csv(file_path, chunksize=kwargs['chunk_size'])
+                chunk_reader = pd.read_csv(file_path, chunksize=kwargs["chunk_size"])
 
                 for chunk in chunk_reader:
                     processed_chunk = processor_func(chunk, **kwargs)
@@ -321,20 +349,21 @@ class PerformanceOptimizer:
 
         return result
 
-    def _process_with_memory_mapping(self, file_path: Path, processor_func: Callable,
-                                   **kwargs) -> list:
+    def _process_with_memory_mapping(
+        self, file_path: Path, processor_func: Callable, **kwargs
+    ) -> list:
         """Process file using memory mapping."""
         chunks = []
 
         try:
-            with open(file_path, encoding='utf-8') as f:
+            with open(file_path, encoding="utf-8") as f:
                 with mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as mm:
                     # Read header first
-                    header_line = mm.readline().decode('utf-8').strip()
-                    kwargs.get('delimiter', ',')
+                    header_line = mm.readline().decode("utf-8").strip()
+                    kwargs.get("delimiter", ",")
 
                     # Find line boundaries for chunking
-                    chunk_size_bytes = kwargs['chunk_size'] * 100  # Rough estimate
+                    chunk_size_bytes = kwargs["chunk_size"] * 100  # Rough estimate
                     position = len(header_line) + 1
 
                     while position < mm.size():
@@ -344,17 +373,20 @@ class PerformanceOptimizer:
                         # Find end of line to avoid splitting rows
                         if end_pos < mm.size():
                             mm.seek(end_pos)
-                            while mm.read(1) != b'\n' and mm.tell() < mm.size():
+                            while mm.read(1) != b"\n" and mm.tell() < mm.size():
                                 end_pos += 1
 
                         # Extract chunk
                         mm.seek(start_pos)
-                        chunk_data = mm.read(end_pos - start_pos).decode('utf-8')
+                        chunk_data = mm.read(end_pos - start_pos).decode("utf-8")
 
                         if chunk_data.strip():
                             # Convert to DataFrame
                             from io import StringIO
-                            chunk_df = pd.read_csv(StringIO(header_line + '\n' + chunk_data))
+
+                            chunk_df = pd.read_csv(
+                                StringIO(header_line + "\n" + chunk_data)
+                            )
 
                             # Process chunk
                             processed_chunk = processor_func(chunk_df, **kwargs)
@@ -364,9 +396,11 @@ class PerformanceOptimizer:
                         position = end_pos + 1
 
         except Exception as e:
-            logger.warning(f"Memory mapping processing failed: {e}, falling back to standard processing")
+            logger.warning(
+                f"Memory mapping processing failed: {e}, falling back to standard processing"
+            )
             # Fallback to standard processing
-            chunk_reader = pd.read_csv(file_path, chunksize=kwargs['chunk_size'])
+            chunk_reader = pd.read_csv(file_path, chunksize=kwargs["chunk_size"])
             for chunk in chunk_reader:
                 processed_chunk = processor_func(chunk, **kwargs)
                 if processed_chunk is not None and len(processed_chunk) > 0:
@@ -374,7 +408,9 @@ class PerformanceOptimizer:
 
         return chunks
 
-    def vectorized_operations(self, df: pd.DataFrame, operations: Dict[str, Callable]) -> pd.DataFrame:
+    def vectorized_operations(
+        self, df: pd.DataFrame, operations: Dict[str, Callable]
+    ) -> pd.DataFrame:
         """
         Apply vectorized operations to DataFrame for performance.
 
@@ -392,7 +428,7 @@ class PerformanceOptimizer:
         for col_name, operation in operations.items():
             try:
                 # Use numpy vectorization when possible
-                if hasattr(operation, '__array_ufunc__') or callable(operation):
+                if hasattr(operation, "__array_ufunc__") or callable(operation):
                     if col_name in result.columns:
                         result[col_name] = operation(result[col_name].values)
                     else:
@@ -403,7 +439,7 @@ class PerformanceOptimizer:
                 # Fallback to standard pandas operation
                 try:
                     result[col_name] = result.apply(operation, axis=1)
-                except:
+                except Exception:
                     logger.error(f"Failed to apply operation {col_name}")
 
         return result
@@ -414,6 +450,7 @@ class PerformanceOptimizer:
 
         try:
             import psutil
+
             process = psutil.Process()
             memory_usage = process.memory_info().rss / (1024 * 1024)
             self.memory_usage_history.append(memory_usage)
@@ -443,7 +480,9 @@ class PerformanceOptimizer:
         """Get cached result if available."""
         return self.result_cache.get(key)
 
-    def measure_performance(self, operation_func: Callable, *args, **kwargs) -> Tuple[Any, PerformanceMetrics]:
+    def measure_performance(
+        self, operation_func: Callable, *args, **kwargs
+    ) -> Tuple[Any, PerformanceMetrics]:
         """
         Measure performance of an operation.
 
@@ -456,11 +495,13 @@ class PerformanceOptimizer:
             Tuple of (result, performance_metrics)
         """
         import time
+
         start_time = time.time()
 
         # Get initial memory usage
         try:
             import psutil
+
             process = psutil.Process()
             initial_memory = process.memory_info().rss / (1024 * 1024)
         except ImportError:
@@ -477,12 +518,14 @@ class PerformanceOptimizer:
             try:
                 final_memory = process.memory_info().rss / (1024 * 1024)
                 memory_usage = final_memory - initial_memory
-            except:
+            except Exception:
                 memory_usage = 0
 
             # Estimate rows processed (if result is DataFrame)
-            rows_processed = len(result) if hasattr(result, '__len__') else 0
-            rows_per_second = rows_processed / processing_time if processing_time > 0 else 0
+            rows_processed = len(result) if hasattr(result, "__len__") else 0
+            rows_per_second = (
+                rows_processed / processing_time if processing_time > 0 else 0
+            )
 
             metrics = PerformanceMetrics(
                 processing_time=processing_time,
@@ -490,11 +533,13 @@ class PerformanceOptimizer:
                 rows_processed=rows_processed,
                 rows_per_second=rows_per_second,
                 cache_hit_rate=0.0,  # TODO: Implement cache hit tracking
-                parallel_efficiency=0.0  # TODO: Implement parallel efficiency calculation
+                parallel_efficiency=0.0,  # TODO: Implement parallel efficiency calculation
             )
 
-            logger.debug(f"Performance: {rows_processed} rows in {processing_time:.3f}s "
-                        f"({rows_per_second:.0f} rows/sec)")
+            logger.debug(
+                f"Performance: {rows_processed} rows in {processing_time:.3f}s "
+                f"({rows_per_second:.0f} rows/sec)"
+            )
 
             return result, metrics
 
@@ -512,31 +557,31 @@ class PerformanceOptimizer:
             max_memory = np.max(self.memory_usage_history)
 
             if avg_memory > self.config.memory_limit_mb * 0.8:
-                recommendations['memory'] = [
+                recommendations["memory"] = [
                     "Reduce memory usage by enabling data type optimization",
                     "Use smaller chunk sizes",
-                    "Enable memory mapping for large files"
+                    "Enable memory mapping for large files",
                 ]
 
             if max_memory > avg_memory * 1.5:
-                recommendations['memory_variance'] = [
+                recommendations["memory_variance"] = [
                     "Memory usage is variable, consider more consistent chunking"
                 ]
 
         # Processing recommendations
         if not self.config.enable_parallel_processing:
-            recommendations['parallel'] = [
+            recommendations["parallel"] = [
                 "Enable parallel processing for better performance",
-                f"Consider using {self.config.max_workers} workers"
+                f"Consider using {self.config.max_workers} workers",
             ]
 
         if not self.config.downcast_dtypes:
-            recommendations['data_types'] = [
+            recommendations["data_types"] = [
                 "Enable data type downcasting for memory efficiency"
             ]
 
         if not self.config.enable_memory_mapping:
-            recommendations['memory_mapping'] = [
+            recommendations["memory_mapping"] = [
                 "Enable memory mapping for large files (>10MB)"
             ]
 
@@ -545,21 +590,27 @@ class PerformanceOptimizer:
     def get_performance_summary(self) -> Dict[str, Any]:
         """Get current performance summary."""
         return {
-            'config': {
-                'parallel_processing': self.config.enable_parallel_processing,
-                'max_workers': self.config.max_workers,
-                'chunk_size': self.config.chunk_size,
-                'memory_limit_mb': self.config.memory_limit_mb,
-                'memory_mapping': self.config.enable_memory_mapping,
-                'downcast_dtypes': self.config.downcast_dtypes
+            "config": {
+                "parallel_processing": self.config.enable_parallel_processing,
+                "max_workers": self.config.max_workers,
+                "chunk_size": self.config.chunk_size,
+                "memory_limit_mb": self.config.memory_limit_mb,
+                "memory_mapping": self.config.enable_memory_mapping,
+                "downcast_dtypes": self.config.downcast_dtypes,
             },
-            'memory_usage': {
-                'current_mb': self.memory_usage_history[-1] if self.memory_usage_history else 0,
-                'average_mb': np.mean(self.memory_usage_history) if self.memory_usage_history else 0,
-                'peak_mb': np.max(self.memory_usage_history) if self.memory_usage_history else 0
+            "memory_usage": {
+                "current_mb": self.memory_usage_history[-1]
+                if self.memory_usage_history
+                else 0,
+                "average_mb": np.mean(self.memory_usage_history)
+                if self.memory_usage_history
+                else 0,
+                "peak_mb": np.max(self.memory_usage_history)
+                if self.memory_usage_history
+                else 0,
             },
-            'cache': {
-                'cached_items': len(self.result_cache),
-                'cache_enabled': self.config.cache_results
-            }
+            "cache": {
+                "cached_items": len(self.result_cache),
+                "cache_enabled": self.config.cache_results,
+            },
         }

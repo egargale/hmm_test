@@ -47,24 +47,25 @@ class ProcessingEngineFactory:
     def _check_engine_availability(self) -> Dict[str, bool]:
         """Check which processing engines are available."""
         status = {
-            'streaming': True,  # Always available (pandas)
+            "streaming": True,  # Always available (pandas)
         }
 
         # Check Dask availability
         try:
-            import dask
-            import dask.dataframe as dd
-            status['dask'] = True
-        except ImportError:
-            status['dask'] = False
+            import importlib.util
+
+            status["dask"] = importlib.util.find_spec("dask") is not None
+        except Exception:
+            status["dask"] = False
             logger.debug("Dask not available")
 
         # Check Daft availability
         try:
-            import daft
-            status['daft'] = True
-        except ImportError:
-            status['daft'] = False
+            import importlib.util
+
+            status["daft"] = importlib.util.find_spec("daft") is not None
+        except Exception:
+            status["daft"] = False
             logger.debug("Daft not available")
 
         return status
@@ -79,7 +80,7 @@ class ProcessingEngineFactory:
         memory_limit_gb: float = 8.0,
         prefer_speed: bool = True,
         prefer_memory_efficiency: bool = False,
-        require_distributed: bool = False
+        require_distributed: bool = False,
     ) -> str:
         """
         Recommend the best processing engine based on file characteristics and requirements.
@@ -103,54 +104,56 @@ class ProcessingEngineFactory:
 
         logger.info(f"Recommending engine for {file_size_mb:.1f}MB file")
         logger.info(f"Available engines: {available_engines}")
-        logger.info(f"Requirements: speed={prefer_speed}, memory_efficiency={prefer_memory_efficiency}, distributed={require_distributed}")
+        logger.info(
+            f"Requirements: speed={prefer_speed}, memory_efficiency={prefer_memory_efficiency}, distributed={require_distributed}"
+        )
 
         # Decision matrix
         if require_distributed:
             # Must use distributed engine
-            if 'dask' in available_engines:
-                recommendation = 'dask'
-            elif 'daft' in available_engines:
-                recommendation = 'daft'
+            if "dask" in available_engines:
+                recommendation = "dask"
+            elif "daft" in available_engines:
+                recommendation = "daft"
             else:
-                logger.warning("Distributed processing required but no distributed engines available")
-                recommendation = 'streaming'
+                logger.warning(
+                    "Distributed processing required but no distributed engines available"
+                )
+                recommendation = "streaming"
 
         elif file_size_mb < 100:  # Small files (< 100MB)
-            recommendation = 'streaming'
+            recommendation = "streaming"
             logger.info("Small file detected - recommending streaming engine")
 
         elif file_size_mb < 1000:  # Medium files (100MB - 1GB)
-            if prefer_speed and 'dask' in available_engines:
-                recommendation = 'dask'
-            elif prefer_memory_efficiency or 'dask' not in available_engines:
-                recommendation = 'streaming'
-            elif 'daft' in available_engines:
-                recommendation = 'daft'
+            if prefer_speed and "dask" in available_engines:
+                recommendation = "dask"
+            elif prefer_memory_efficiency or "dask" not in available_engines:
+                recommendation = "streaming"
+            elif "daft" in available_engines:
+                recommendation = "daft"
             else:
-                recommendation = 'streaming'
+                recommendation = "streaming"
             logger.info("Medium file detected - engine choice based on preferences")
 
         else:  # Large files (> 1GB)
             if prefer_memory_efficiency:
-                recommendation = 'streaming'
-            elif 'dask' in available_engines:
-                recommendation = 'dask'
-            elif 'daft' in available_engines:
-                recommendation = 'daft'
+                recommendation = "streaming"
+            elif "dask" in available_engines:
+                recommendation = "dask"
+            elif "daft" in available_engines:
+                recommendation = "daft"
             else:
-                recommendation = 'streaming'
-            logger.info("Large file detected - prioritizing distributed/memory-efficient engines")
+                recommendation = "streaming"
+            logger.info(
+                "Large file detected - prioritizing distributed/memory-efficient engines"
+            )
 
         logger.info(f"Recommended engine: {recommendation}")
         return recommendation
 
     def create_processor(
-        self,
-        engine: str,
-        csv_path: str,
-        config: ProcessingConfig,
-        **engine_kwargs
+        self, engine: str, csv_path: str, config: ProcessingConfig, **engine_kwargs
     ) -> Union[pd.DataFrame, "dask.dataframe.DataFrame", "daft.DataFrame"]:
         """
         Create a processor using the specified engine.
@@ -165,15 +168,17 @@ class ProcessingEngineFactory:
             Processed DataFrame (type depends on engine)
         """
         if engine not in self.get_available_engines():
-            raise ValueError(f"Engine '{engine}' is not available. Available: {self.get_available_engines()}")
+            raise ValueError(
+                f"Engine '{engine}' is not available. Available: {self.get_available_engines()}"
+            )
 
         logger.info(f"Creating processor with {engine} engine")
 
-        if engine == 'streaming':
+        if engine == "streaming":
             return self._create_streaming_processor(csv_path, config, **engine_kwargs)
-        elif engine == 'dask':
+        elif engine == "dask":
             return self._create_dask_processor(csv_path, config, **engine_kwargs)
-        elif engine == 'daft':
+        elif engine == "daft":
             return self._create_daft_processor(csv_path, config, **engine_kwargs)
         else:
             raise ValueError(f"Unknown engine: {engine}")
@@ -185,7 +190,7 @@ class ProcessingEngineFactory:
         chunk_size: Optional[int] = None,
         memory_limit_gb: float = 8.0,
         show_progress: bool = True,
-        **kwargs
+        **kwargs,
     ) -> pd.DataFrame:
         """Create streaming processor."""
         return process_streaming(
@@ -193,7 +198,7 @@ class ProcessingEngineFactory:
             config=config,
             chunk_size=chunk_size,
             memory_limit_gb=memory_limit_gb,
-            show_progress=show_progress
+            show_progress=show_progress,
         )
 
     def _create_dask_processor(
@@ -204,7 +209,7 @@ class ProcessingEngineFactory:
         npartitions: Optional[int] = None,
         memory_limit: str = "2GB",
         show_progress: bool = True,
-        **kwargs
+        **kwargs,
     ) -> "dask.dataframe.DataFrame":
         """Create Dask processor."""
         return process_dask(
@@ -213,7 +218,7 @@ class ProcessingEngineFactory:
             scheduler=scheduler,
             npartitions=npartitions,
             memory_limit=memory_limit,
-            show_progress=show_progress
+            show_progress=show_progress,
         )
 
     def _create_daft_processor(
@@ -224,7 +229,7 @@ class ProcessingEngineFactory:
         memory_limit: str = "2GB",
         show_progress: bool = True,
         use_accelerators: bool = True,
-        **kwargs
+        **kwargs,
     ) -> "daft.DataFrame":
         """Create Daft processor."""
         return process_daft(
@@ -233,13 +238,15 @@ class ProcessingEngineFactory:
             npartitions=npartitions,
             memory_limit=memory_limit,
             show_progress=show_progress,
-            use_accelerators=use_accelerators
+            use_accelerators=use_accelerators,
         )
 
     def compute_result(
         self,
-        processed_data: Union[pd.DataFrame, "dask.dataframe.DataFrame", "daft.DataFrame"],
-        show_progress: bool = True
+        processed_data: Union[
+            pd.DataFrame, "dask.dataframe.DataFrame", "daft.DataFrame"
+        ],
+        show_progress: bool = True,
     ) -> pd.DataFrame:
         """
         Compute the final result from processed data.
@@ -259,27 +266,33 @@ class ProcessingEngineFactory:
         # Check if it's a Dask DataFrame
         try:
             import dask.dataframe as dd
+
             if isinstance(processed_data, dd.DataFrame):
                 logger.info("Computing Dask DataFrame")
-                return compute_with_progress(processed_data, show_progress=show_progress)
+                return compute_with_progress(
+                    processed_data, show_progress=show_progress
+                )
         except ImportError:
             pass
 
         # Check if it's a Daft DataFrame
         try:
-            import daft
-            if hasattr(processed_data, 'to_pandas'):  # Daft DataFrame
+            if self._engine_status.get("daft") and hasattr(
+                processed_data, "to_pandas"
+            ):  # Daft DataFrame
                 logger.info("Computing Daft DataFrame")
-                return compute_daft_with_progress(processed_data, show_progress=show_progress)
-        except ImportError:
+                return compute_daft_with_progress(
+                    processed_data, show_progress=show_progress
+                )
+        except Exception:
             pass
 
         # Fallback: try to convert to pandas
         logger.warning("Unknown data type, attempting to convert to pandas")
         try:
-            if hasattr(processed_data, 'to_pandas'):
+            if hasattr(processed_data, "to_pandas"):
                 return processed_data.to_pandas()
-            elif hasattr(processed_data, 'compute'):
+            elif hasattr(processed_data, "compute"):
                 return processed_data.compute()
             else:
                 return pd.DataFrame(processed_data)
@@ -288,10 +301,7 @@ class ProcessingEngineFactory:
             raise
 
     def benchmark_engines(
-        self,
-        csv_path: str,
-        engines: Optional[list] = None,
-        cache_results: bool = True
+        self, csv_path: str, engines: Optional[list] = None, cache_results: bool = True
     ) -> Dict[str, Any]:
         """
         Benchmark all available engines for performance comparison.
@@ -319,7 +329,7 @@ class ProcessingEngineFactory:
         # Create test configuration
         config = ProcessingConfig(
             engine_type="auto",  # Will be overridden
-            chunk_size=1000
+            chunk_size=1000,
         )
 
         for engine in engines:
@@ -328,66 +338,83 @@ class ProcessingEngineFactory:
             try:
                 start_time = time.time()
 
-                if engine == 'streaming':
+                if engine == "streaming":
                     # Estimate processing time first
                     estimate = estimate_processing_time(csv_path)
-                    logger.info(f"Estimated streaming processing time: {estimate.get('estimated_total_time', 0):.2f}s")
+                    logger.info(
+                        f"Estimated streaming processing time: {estimate.get('estimated_total_time', 0):.2f}s"
+                    )
 
                     # Actually process
-                    result = self.create_processor(engine, csv_path, config, show_progress=False)
+                    result = self.create_processor(
+                        engine, csv_path, config, show_progress=False
+                    )
 
                     end_time = time.time()
                     processing_time = end_time - start_time
 
                     results[engine] = {
-                        'success': True,
-                        'time': processing_time,
-                        'rows': len(result),
-                        'columns': len(result.columns),
-                        'memory_mb': result.memory_usage(deep=True).sum() / (1024 * 1024),
-                        'estimated_time': estimate.get('estimated_total_time', 0)
+                        "success": True,
+                        "time": processing_time,
+                        "rows": len(result),
+                        "columns": len(result.columns),
+                        "memory_mb": result.memory_usage(deep=True).sum()
+                        / (1024 * 1024),
+                        "estimated_time": estimate.get("estimated_total_time", 0),
                     }
 
-                elif engine == 'dask':
+                elif engine == "dask":
                     # Use Dask benchmark function
-                    dask_results = benchmark_dask_engines(csv_path, schedulers=["threads"])
+                    dask_results = benchmark_dask_engines(
+                        csv_path, schedulers=["threads"]
+                    )
 
-                    if 'threads' in dask_results and 1000 in dask_results['threads']:
-                        dask_result = dask_results['threads'][1000]
+                    if "threads" in dask_results and 1000 in dask_results["threads"]:
+                        dask_result = dask_results["threads"][1000]
                         results[engine] = {
-                            'success': True,
-                            'time': dask_result['time'],
-                            'rows': dask_result['rows'],
-                            'columns': dask_result['columns'],
-                            'memory_mb': dask_result['memory_mb'],
-                            'partitions': 4  # Default
+                            "success": True,
+                            "time": dask_result["time"],
+                            "rows": dask_result["rows"],
+                            "columns": dask_result["columns"],
+                            "memory_mb": dask_result["memory_mb"],
+                            "partitions": 4,  # Default
                         }
                     else:
-                        results[engine] = {'success': False, 'error': 'Dask benchmark failed'}
+                        results[engine] = {
+                            "success": False,
+                            "error": "Dask benchmark failed",
+                        }
 
-                elif engine == 'daft':
+                elif engine == "daft":
                     # Use Daft benchmark function
                     daft_results = benchmark_daft_engine(csv_path, partition_counts=[1])
 
-                    if 'partitions_1' in daft_results and daft_results['partitions_1'].get('success'):
-                        daft_result = daft_results['partitions_1']
+                    if "partitions_1" in daft_results and daft_results[
+                        "partitions_1"
+                    ].get("success"):
+                        daft_result = daft_results["partitions_1"]
                         results[engine] = {
-                            'success': True,
-                            'time': daft_result['time'],
-                            'rows': daft_result['rows'],
-                            'columns': daft_result['columns'],
-                            'memory_mb': daft_result['memory_mb'],
-                            'partitions': 1
+                            "success": True,
+                            "time": daft_result["time"],
+                            "rows": daft_result["rows"],
+                            "columns": daft_result["columns"],
+                            "memory_mb": daft_result["memory_mb"],
+                            "partitions": 1,
                         }
                     else:
-                        results[engine] = {'success': False, 'error': 'Daft benchmark failed'}
+                        results[engine] = {
+                            "success": False,
+                            "error": "Daft benchmark failed",
+                        }
 
-                logger.info(f"  {engine}: {results[engine].get('time', 0):.2f}s, "
-                           f"{results[engine].get('rows', 0)} rows")
+                logger.info(
+                    f"  {engine}: {results[engine].get('time', 0):.2f}s, "
+                    f"{results[engine].get('rows', 0)} rows"
+                )
 
             except Exception as e:
                 logger.error(f"  {engine}: FAILED - {e}")
-                results[engine] = {'success': False, 'error': str(e)}
+                results[engine] = {"success": False, "error": str(e)}
 
         # Cache results
         if cache_results:
@@ -409,13 +436,15 @@ class ProcessingEngineFactory:
             ValueError: If engine type is not supported or not available
         """
         if engine_type not in self.get_available_engines():
-            raise ValueError(f"Engine '{engine_type}' is not available. Available: {self.get_available_engines()}")
+            raise ValueError(
+                f"Engine '{engine_type}' is not available. Available: {self.get_available_engines()}"
+            )
 
-        if engine_type == 'streaming':
+        if engine_type == "streaming":
             return process_streaming
-        elif engine_type == 'dask':
+        elif engine_type == "dask":
             return process_dask
-        elif engine_type == 'daft':
+        elif engine_type == "daft":
             return process_daft
         else:
             raise ValueError(f"Unknown engine type: {engine_type}")
@@ -427,7 +456,7 @@ class ProcessingEngineFactory:
         engine: Optional[str] = None,
         compute_result: bool = True,
         show_progress: bool = True,
-        **engine_kwargs
+        **engine_kwargs,
     ) -> pd.DataFrame:
         """
         Convenience function to process data with automatic or specified engine selection.
@@ -447,15 +476,19 @@ class ProcessingEngineFactory:
         if engine is None:
             engine = self.recommend_engine(
                 csv_path=csv_path,
-                memory_limit_gb=engine_kwargs.get('memory_limit_gb', 8.0),
-                prefer_speed=engine_kwargs.get('prefer_speed', True),
-                prefer_memory_efficiency=engine_kwargs.get('prefer_memory_efficiency', False)
+                memory_limit_gb=engine_kwargs.get("memory_limit_gb", 8.0),
+                prefer_speed=engine_kwargs.get("prefer_speed", True),
+                prefer_memory_efficiency=engine_kwargs.get(
+                    "prefer_memory_efficiency", False
+                ),
             )
 
         logger.info(f"Processing with {engine} engine")
 
         # Create processor
-        processed_data = self.create_processor(engine, csv_path, config, **engine_kwargs)
+        processed_data = self.create_processor(
+            engine, csv_path, config, **engine_kwargs
+        )
 
         # Compute result if requested
         if compute_result:
@@ -467,59 +500,65 @@ class ProcessingEngineFactory:
     def get_engine_info(self) -> Dict[str, Any]:
         """Get information about all available engines."""
         info = {
-            'available_engines': self.get_available_engines(),
-            'engine_status': self._engine_status,
-            'engine_details': {}
+            "available_engines": self.get_available_engines(),
+            "engine_status": self._engine_status,
+            "engine_details": {},
         }
 
         # Streaming engine info
-        info['engine_details']['streaming'] = {
-            'type': 'pandas',
-            'distributed': False,
-            'memory_efficient': True,
-            'best_for': ['small_files', 'medium_files', 'memory_constrained']
+        info["engine_details"]["streaming"] = {
+            "type": "pandas",
+            "distributed": False,
+            "memory_efficient": True,
+            "best_for": ["small_files", "medium_files", "memory_constrained"],
         }
 
         # Dask engine info
-        if self._engine_status.get('dask'):
+        if self._engine_status.get("dask"):
             try:
                 from .dask_engine import get_dask_cluster_info
+
                 cluster_info = get_dask_cluster_info()
-                info['engine_details']['dask'] = {
-                    'type': 'dask',
-                    'distributed': True,
-                    'memory_efficient': True,
-                    'best_for': ['large_files', 'distributed_processing', 'parallel_computation'],
-                    'cluster_info': cluster_info
+                info["engine_details"]["dask"] = {
+                    "type": "dask",
+                    "distributed": True,
+                    "memory_efficient": True,
+                    "best_for": [
+                        "large_files",
+                        "distributed_processing",
+                        "parallel_computation",
+                    ],
+                    "cluster_info": cluster_info,
                 }
-            except:
-                info['engine_details']['dask'] = {
-                    'type': 'dask',
-                    'distributed': True,
-                    'memory_efficient': True,
-                    'best_for': ['large_files', 'distributed_processing'],
-                    'cluster_info': 'Failed to retrieve'
+            except Exception:
+                info["engine_details"]["dask"] = {
+                    "type": "dask",
+                    "distributed": True,
+                    "memory_efficient": True,
+                    "best_for": ["large_files", "distributed_processing"],
+                    "cluster_info": "Failed to retrieve",
                 }
 
         # Daft engine info
-        if self._engine_status.get('daft'):
+        if self._engine_status.get("daft"):
             try:
                 from .daft_engine import get_daft_cluster_info
+
                 daft_info = get_daft_cluster_info()
-                info['engine_details']['daft'] = {
-                    'type': 'daft',
-                    'distributed': True,
-                    'memory_efficient': True,
-                    'best_for': ['large_files', 'cloud_native', 'gpu_acceleration'],
-                    'cluster_info': daft_info
+                info["engine_details"]["daft"] = {
+                    "type": "daft",
+                    "distributed": True,
+                    "memory_efficient": True,
+                    "best_for": ["large_files", "cloud_native", "gpu_acceleration"],
+                    "cluster_info": daft_info,
                 }
-            except:
-                info['engine_details']['daft'] = {
-                    'type': 'daft',
-                    'distributed': True,
-                    'memory_efficient': True,
-                    'best_for': ['large_files', 'cloud_native'],
-                    'cluster_info': 'Failed to retrieve'
+            except Exception:
+                info["engine_details"]["daft"] = {
+                    "type": "daft",
+                    "distributed": True,
+                    "memory_efficient": True,
+                    "best_for": ["large_files", "cloud_native"],
+                    "cluster_info": "Failed to retrieve",
                 }
 
         return info
@@ -543,7 +582,7 @@ def process_with_engine(
     engine: Optional[str] = None,
     compute_result: bool = True,
     show_progress: bool = True,
-    **engine_kwargs
+    **engine_kwargs,
 ) -> pd.DataFrame:
     """
     Convenience function to process data with automatic or specified engine selection.
@@ -565,9 +604,11 @@ def process_with_engine(
     if engine is None:
         engine = factory.recommend_engine(
             csv_path=csv_path,
-            memory_limit_gb=engine_kwargs.get('memory_limit_gb', 8.0),
-            prefer_speed=engine_kwargs.get('prefer_speed', True),
-            prefer_memory_efficiency=engine_kwargs.get('prefer_memory_efficiency', False)
+            memory_limit_gb=engine_kwargs.get("memory_limit_gb", 8.0),
+            prefer_speed=engine_kwargs.get("prefer_speed", True),
+            prefer_memory_efficiency=engine_kwargs.get(
+                "prefer_memory_efficiency", False
+            ),
         )
 
     logger.info(f"Processing with {engine} engine")

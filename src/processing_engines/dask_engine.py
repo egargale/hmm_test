@@ -28,7 +28,7 @@ def process_dask(
     scheduler: Optional[str] = "threads",
     npartitions: Optional[int] = None,
     memory_limit: Optional[str] = "2GB",
-    show_progress: bool = True
+    show_progress: bool = True,
 ) -> dd.DataFrame:
     """
     Process CSV file using Dask for distributed computing.
@@ -53,7 +53,9 @@ def process_dask(
         raise FileNotFoundError(f"CSV file not found: {csv_path}")
 
     logger.info(f"Starting Dask processing of {csv_path}")
-    logger.info(f"Configuration: engine={config.engine_type}, scheduler={scheduler}, npartitions={npartitions}")
+    logger.info(
+        f"Configuration: engine={config.engine_type}, scheduler={scheduler}, npartitions={npartitions}"
+    )
 
     # Setup Dask client
     client = None
@@ -62,7 +64,9 @@ def process_dask(
             client = Client(scheduler=scheduler)
             logger.info(f"Created Dask client with scheduler: {scheduler}")
         except Exception as e:
-            logger.warning(f"Failed to create Dask client with scheduler '{scheduler}': {e}")
+            logger.warning(
+                f"Failed to create Dask client with scheduler '{scheduler}': {e}"
+            )
             logger.info("Falling back to threaded scheduler")
             scheduler = "threads"
 
@@ -73,12 +77,12 @@ def process_dask(
             csv_path,
             blocksize="64MB",  # Default block size
             dtype={
-                'open': 'float32',
-                'high': 'float32',
-                'low': 'float32',
-                'close': 'float32',
-                'volume': 'float32'
-            }
+                "open": "float32",
+                "high": "float32",
+                "low": "float32",
+                "close": "float32",
+                "volume": "float32",
+            },
         )
 
         # Auto-detect partitions if not specified
@@ -88,7 +92,9 @@ def process_dask(
 
         # Repartition if needed
         if npartitions != ddf.npartitions:
-            logger.info(f"Repartitioning from {ddf.npartitions} to {npartitions} partitions")
+            logger.info(
+                f"Repartitioning from {ddf.npartitions} to {npartitions} partitions"
+            )
             ddf = ddf.repartition(npartitions=npartitions)
 
         logger.info(f"Created Dask DataFrame: {ddf.npartitions} partitions")
@@ -109,7 +115,9 @@ def process_dask(
         ddf = _apply_validation_dask(ddf)
 
         logger.info("Dask processing completed successfully")
-        logger.info(f"Final DataFrame: {ddf.npartitions} partitions, {len(ddf.columns)} columns")
+        logger.info(
+            f"Final DataFrame: {ddf.npartitions} partitions, {len(ddf.columns)} columns"
+        )
 
         return ddf
 
@@ -142,6 +150,7 @@ def _auto_detect_partitions(ddf: dd.DataFrame, csv_path: Path) -> int:
 
     # Adjust based on available cores
     import multiprocessing
+
     cpu_count = multiprocessing.cpu_count()
 
     # Don't create more partitions than CPU cores (unless file is very large)
@@ -156,13 +165,17 @@ def _auto_detect_partitions(ddf: dd.DataFrame, csv_path: Path) -> int:
     optimal_partitions = max(1, optimal_partitions)
     optimal_partitions = min(optimal_partitions, 100)  # Cap at 100 partitions
 
-    logger.debug(f"Auto-detected partitions: {optimal_partitions} "
-                   f"(file: {file_size_mb:.1f}MB, cores: {cpu_count})")
+    logger.debug(
+        f"Auto-detected partitions: {optimal_partitions} "
+        f"(file: {file_size_mb:.1f}MB, cores: {cpu_count})"
+    )
 
     return optimal_partitions
 
 
-def _apply_feature_engineering_dask(ddf: dd.DataFrame, config: ProcessingConfig) -> dd.DataFrame:
+def _apply_feature_engineering_dask(
+    ddf: dd.DataFrame, config: ProcessingConfig
+) -> dd.DataFrame:
     """
     Apply feature engineering to Dask DataFrame using map_partitions.
 
@@ -173,14 +186,11 @@ def _apply_feature_engineering_dask(ddf: dd.DataFrame, config: ProcessingConfig)
     Returns:
         dd.DataFrame: Dask DataFrame with features
     """
+
     def process_partition(df):
         """Process a single partition."""
         # Apply feature engineering
-        df = add_features(
-            df,
-            indicator_config=config.indicators,
-            downcast_floats=True
-        )
+        df = add_features(df, indicator_config=config.indicators, downcast_floats=True)
         return df
 
     # Clear divisions to ensure metadata doesn't interfere
@@ -198,23 +208,37 @@ def _apply_feature_engineering_dask(ddf: dd.DataFrame, config: ProcessingConfig)
 def _create_sample_meta_with_features() -> pd.DataFrame:
     """Create a sample DataFrame with expected feature columns for metadata."""
     # Basic OHLCV columns
-    meta = pd.DataFrame({
-        'open': pd.Series([], dtype='float32'),
-        'high': pd.Series([], dtype='float32'),
-        'low': pd.Series([], dtype='float32'),
-        'close': pd.Series([], dtype='float32'),
-        'volume': pd.Series([], dtype='float32')
-    })
+    meta = pd.DataFrame(
+        {
+            "open": pd.Series([], dtype="float32"),
+            "high": pd.Series([], dtype="float32"),
+            "low": pd.Series([], dtype="float32"),
+            "close": pd.Series([], dtype="float32"),
+            "volume": pd.Series([], dtype="float32"),
+        }
+    )
 
     # Add common feature columns that might be created
     common_features = [
-        'log_ret', 'volatility', 'rsi', 'macd', 'macd_signal', 'macd_histogram',
-        'bb_upper', 'bb_middle', 'bb_lower', 'sma_10', 'sma_20', 'ema_12',
-        'atr', 'obv', 'vwap'
+        "log_ret",
+        "volatility",
+        "rsi",
+        "macd",
+        "macd_signal",
+        "macd_histogram",
+        "bb_upper",
+        "bb_middle",
+        "bb_lower",
+        "sma_10",
+        "sma_20",
+        "ema_12",
+        "atr",
+        "obv",
+        "vwap",
     ]
 
     for feature in common_features:
-        meta[feature] = pd.Series([], dtype='float32')
+        meta[feature] = pd.Series([], dtype="float32")
 
     return meta
 
@@ -229,6 +253,7 @@ def _apply_csv_preprocessing_dask(ddf: dd.DataFrame) -> dd.DataFrame:
     Returns:
         dd.DataFrame: Preprocessed Dask DataFrame with standard OHLCV columns
     """
+
     def preprocess_partition(df):
         """Preprocess a single partition."""
         # Strip whitespace from column names
@@ -247,7 +272,7 @@ def _apply_csv_preprocessing_dask(ddf: dd.DataFrame) -> dd.DataFrame:
         df = _process_datetime_columns_dask(df)
 
         # Ensure required columns exist
-        required_columns = ['open', 'high', 'low', 'close', 'volume']
+        required_columns = ["open", "high", "low", "close", "volume"]
         missing_columns = [col for col in required_columns if col not in df.columns]
 
         if missing_columns:
@@ -271,13 +296,15 @@ def _apply_csv_preprocessing_dask(ddf: dd.DataFrame) -> dd.DataFrame:
 
 def _create_sample_meta_for_preprocessing() -> pd.DataFrame:
     """Create a sample DataFrame with expected OHLCV columns for metadata."""
-    return pd.DataFrame({
-        'open': pd.Series([], dtype='float32'),
-        'high': pd.Series([], dtype='float32'),
-        'low': pd.Series([], dtype='float32'),
-        'close': pd.Series([], dtype='float32'),
-        'volume': pd.Series([], dtype='float32')
-    })
+    return pd.DataFrame(
+        {
+            "open": pd.Series([], dtype="float32"),
+            "high": pd.Series([], dtype="float32"),
+            "low": pd.Series([], dtype="float32"),
+            "close": pd.Series([], dtype="float32"),
+            "volume": pd.Series([], dtype="float32"),
+        }
+    )
 
 
 def _update_dask_metadata(ddf: dd.DataFrame) -> dd.DataFrame:
@@ -298,10 +325,10 @@ def _update_dask_metadata(ddf: dd.DataFrame) -> dd.DataFrame:
         ddf = ddf.clear_divisions()
 
         # Update metadata based on actual computed sample
-        if hasattr(ddf, '_meta_assign'):
+        if hasattr(ddf, "_meta_assign"):
             # For newer Dask versions that support _meta_assign
             ddf._meta_assign(sample)
-        elif hasattr(ddf, '_meta'):
+        elif hasattr(ddf, "_meta"):
             # Try to update directly if possible
             try:
                 ddf._meta = sample
@@ -322,11 +349,31 @@ def _detect_ohlcv_columns_dask(df: pd.DataFrame) -> Dict[str, str]:
     """Detect OHLCV columns with various naming conventions for Dask partitions."""
     # Common column name variations
     ohlcv_patterns = {
-        'open': ['open', 'Open', 'OPEN', 'o', 'O', 'price_open', 'Price_Open'],
-        'high': ['high', 'High', 'HIGH', 'h', 'H', 'price_high', 'Price_High'],
-        'low': ['low', 'Low', 'LOW', 'l', 'L', 'price_low', 'Price_Low'],
-        'close': ['close', 'Close', 'CLOSE', 'c', 'C', 'price_close', 'Price_Close', 'last', 'Last'],
-        'volume': ['volume', 'Volume', 'VOLUME', 'v', 'V', 'vol', 'Vol', 'Volume', 'trades']
+        "open": ["open", "Open", "OPEN", "o", "O", "price_open", "Price_Open"],
+        "high": ["high", "High", "HIGH", "h", "H", "price_high", "Price_High"],
+        "low": ["low", "Low", "LOW", "l", "L", "price_low", "Price_Low"],
+        "close": [
+            "close",
+            "Close",
+            "CLOSE",
+            "c",
+            "C",
+            "price_close",
+            "Price_Close",
+            "last",
+            "Last",
+        ],
+        "volume": [
+            "volume",
+            "Volume",
+            "VOLUME",
+            "v",
+            "V",
+            "vol",
+            "Vol",
+            "Volume",
+            "trades",
+        ],
     }
 
     column_mapping = {}
@@ -343,8 +390,8 @@ def _detect_ohlcv_columns_dask(df: pd.DataFrame) -> Dict[str, str]:
 
 def _process_datetime_columns_dask(df: pd.DataFrame) -> pd.DataFrame:
     """Process and combine date/time columns into datetime index for Dask partitions."""
-    date_columns = ['date', 'Date', 'datetime', 'DateTime', 'timestamp', 'Timestamp']
-    time_columns = ['time', 'Time', 'datetime', 'DateTime', 'timestamp', 'Timestamp']
+    date_columns = ["date", "Date", "datetime", "DateTime", "timestamp", "Timestamp"]
+    time_columns = ["time", "Time", "datetime", "DateTime", "timestamp", "Timestamp"]
 
     date_col = None
     time_col = None
@@ -369,18 +416,18 @@ def _process_datetime_columns_dask(df: pd.DataFrame) -> pd.DataFrame:
             # Combine date and time columns
             datetime_col = f"{date_col}_{time_col}"
             df[datetime_col] = pd.to_datetime(
-                df[date_col].astype(str) + ' ' + df[time_col].astype(str),
-                errors='coerce'
+                df[date_col].astype(str) + " " + df[time_col].astype(str),
+                errors="coerce",
             )
             df = df.drop(columns=[date_col, time_col])
             date_col = datetime_col
         else:
             # Convert date column to datetime
-            df[date_col] = pd.to_datetime(df[date_col], errors='coerce')
+            df[date_col] = pd.to_datetime(df[date_col], errors="coerce")
 
         # Set datetime as index
         df = df.set_index(date_col)
-        df.index.name = 'datetime'
+        df.index.name = "datetime"
 
     except Exception as e:
         logger.warning(f"Failed to process datetime columns in Dask partition: {e}")
@@ -390,17 +437,19 @@ def _process_datetime_columns_dask(df: pd.DataFrame) -> pd.DataFrame:
 
 def _clean_numeric_data_dask(df: pd.DataFrame) -> pd.DataFrame:
     """Clean and standardize numeric data for Dask partitions."""
-    numeric_columns = ['open', 'high', 'low', 'close', 'volume']
+    numeric_columns = ["open", "high", "low", "close", "volume"]
 
     for col in numeric_columns:
         if col in df.columns:
             # Convert to numeric, coercing errors to NaN
-            df[col] = pd.to_numeric(df[col], errors='coerce')
+            df[col] = pd.to_numeric(df[col], errors="coerce")
 
             # Remove rows with NaN in price columns
-            if col != 'volume' and df[col].isna().any():
+            if col != "volume" and df[col].isna().any():
                 na_count = df[col].isna().sum()
-                logger.debug(f"Removed {na_count} NaN values from {col} column in Dask partition")
+                logger.debug(
+                    f"Removed {na_count} NaN values from {col} column in Dask partition"
+                )
                 df = df.dropna(subset=[col])
 
     return df
@@ -416,6 +465,7 @@ def _apply_validation_dask(ddf: dd.DataFrame) -> dd.DataFrame:
     Returns:
         dd.DataFrame: Validated Dask DataFrame
     """
+
     def validate_partition(df):
         """Validate a single partition."""
         # Apply data validation
@@ -424,7 +474,7 @@ def _apply_validation_dask(ddf: dd.DataFrame) -> dd.DataFrame:
             outlier_detection=True,
             outlier_method="iqr",
             outlier_threshold=1.5,
-            missing_value_strategy="forward_fill"
+            missing_value_strategy="forward_fill",
         )
         return df
 
@@ -439,7 +489,9 @@ def _apply_validation_dask(ddf: dd.DataFrame) -> dd.DataFrame:
     return ddf
 
 
-def compute_with_progress(ddf: dd.DataFrame, show_progress: bool = True) -> pd.DataFrame:
+def compute_with_progress(
+    ddf: dd.DataFrame, show_progress: bool = True
+) -> pd.DataFrame:
     """
     Compute Dask DataFrame with optional progress bar.
 
@@ -455,7 +507,7 @@ def compute_with_progress(ddf: dd.DataFrame, show_progress: bool = True) -> pd.D
     if show_progress:
         try:
             # Use Dask's built-in progress bar
-            with dask.config.set(scheduler='synchronous'):
+            with dask.config.set(scheduler="synchronous"):
                 with ProgressBar():
                     result = ddf.compute()
         except Exception as e:
@@ -470,7 +522,9 @@ def compute_with_progress(ddf: dd.DataFrame, show_progress: bool = True) -> pd.D
                     ddf_cleared = ddf.clear_divisions()
                     result = ddf_cleared.compute()
                 except Exception as e3:
-                    raise RuntimeError(f"Dask computation failed after multiple attempts: {e3}") from e3
+                    raise RuntimeError(
+                        f"Dask computation failed after multiple attempts: {e3}"
+                    ) from e3
     else:
         try:
             result = ddf.compute()
@@ -483,7 +537,9 @@ def compute_with_progress(ddf: dd.DataFrame, show_progress: bool = True) -> pd.D
             except Exception as e2:
                 raise RuntimeError(f"Dask computation failed: {e2}") from e2
 
-    logger.info(f"Computation completed: {len(result)} rows, {len(result.columns)} columns")
+    logger.info(
+        f"Computation completed: {len(result)} rows, {len(result.columns)} columns"
+    )
     return result
 
 
@@ -496,27 +552,34 @@ def monitor_dask_cluster() -> Dict[str, Any]:
     """
     try:
         from dask.distributed import Client
+
         client = Client()
 
         cluster_info = {
-            'scheduler_address': client.scheduler_address,
-            'workers': len(client.scheduler_info()['workers']),
-            'total_cores': sum(worker.get('ncores', 0) for worker in client.scheduler_info()['workers'].values()),
-            'total_memory': sum(worker.get('memory_limit', 0) for worker in client.scheduler_info()['workers'].values()),
-            'dashboard_link': client.dashboard_link
+            "scheduler_address": client.scheduler_address,
+            "workers": len(client.scheduler_info()["workers"]),
+            "total_cores": sum(
+                worker.get("ncores", 0)
+                for worker in client.scheduler_info()["workers"].values()
+            ),
+            "total_memory": sum(
+                worker.get("memory_limit", 0)
+                for worker in client.scheduler_info()["workers"].values()
+            ),
+            "dashboard_link": client.dashboard_link,
         }
 
         return cluster_info
 
     except Exception as e:
         logger.warning(f"Failed to monitor Dask cluster: {e}")
-        return {'error': str(e)}
+        return {"error": str(e)}
 
 
 def optimize_dask_performance(
     scheduler: str = "threads",
     memory_limit: str = "2GB",
-    pool_size: Optional[int] = None
+    pool_size: Optional[int] = None,
 ) -> Dict[str, Any]:
     """
     Optimize Dask performance settings.
@@ -534,30 +597,29 @@ def optimize_dask_performance(
     # Configure scheduler
     if scheduler == "threads":
         import multiprocessing
+
         if pool_size is None:
             pool_size = min(multiprocessing.cpu_count(), 8)
 
         dask.config.set(pool=pool_size)
-        settings['pool_size'] = pool_size
+        settings["pool_size"] = pool_size
         logger.info(f"Configured thread pool with {pool_size} workers")
 
     # Configure memory limits
-    dask.config.set({'distributed.worker.memory.target': False})
-    dask.config.set({'distributed.worker.memory.spill': False})
+    dask.config.set({"distributed.worker.memory.target": False})
+    dask.config.set({"distributed.worker.memory.spill": False})
 
-    settings['memory_limit'] = memory_limit
+    settings["memory_limit"] = memory_limit
     logger.info(f"Configured memory limit: {memory_limit}")
 
     # Optimize for performance
-    dask.config.set({'optimization.fuse.active': True})
+    dask.config.set({"optimization.fuse.active": True})
 
     return settings
 
 
 def benchmark_dask_engines(
-    csv_path: str,
-    chunk_sizes: List[int] = None,
-    schedulers: List[str] = None
+    csv_path: str, chunk_sizes: List[int] = None, schedulers: List[str] = None
 ) -> Dict[str, Any]:
     """
     Benchmark different Dask configurations for performance testing.
@@ -588,17 +650,11 @@ def benchmark_dask_engines(
                 start_time = time.time()
 
                 # Create temporary config
-                config = ProcessingConfig(
-                    engine_type="dask",
-                    chunk_size=chunk_size
-                )
+                config = ProcessingConfig(engine_type="dask", chunk_size=chunk_size)
 
                 # Process with Dask
                 ddf = process_dask(
-                    csv_path,
-                    config,
-                    scheduler=scheduler,
-                    show_progress=False
+                    csv_path, config, scheduler=scheduler, show_progress=False
                 )
 
                 # Compute the result
@@ -609,18 +665,20 @@ def benchmark_dask_engines(
 
                 # Record results
                 results[scheduler][chunk_size] = {
-                    'time': processing_time,
-                    'rows': len(result),
-                    'columns': len(result.columns),
-                    'memory_mb': result.memory_usage(deep=True).sum() / (1024 * 1024)
+                    "time": processing_time,
+                    "rows": len(result),
+                    "columns": len(result.columns),
+                    "memory_mb": result.memory_usage(deep=True).sum() / (1024 * 1024),
                 }
 
-                logger.info(f"  {scheduler}: {chunk_size} chunks - {processing_time:.2f}s, "
-                           f"{len(result)} rows, {results[scheduler][chunk_size]['memory_mb']:.2f}MB")
+                logger.info(
+                    f"  {scheduler}: {chunk_size} chunks - {processing_time:.2f}s, "
+                    f"{len(result)} rows, {results[scheduler][chunk_size]['memory_mb']:.2f}MB"
+                )
 
             except Exception as e:
                 logger.error(f"  {scheduler}: {chunk_size} chunks - FAILED: {e}")
-                results[scheduler][chunk_size] = {'error': str(e)}
+                results[scheduler][chunk_size] = {"error": str(e)}
 
     return results
 
@@ -634,41 +692,42 @@ def get_dask_cluster_info() -> Dict[str, Any]:
     """
     try:
         from dask.distributed import Client
+
         client = Client()
 
         # Get scheduler info
         scheduler_info = client.scheduler_info()
-        workers_info = scheduler_info.get('workers', {})
+        workers_info = scheduler_info.get("workers", {})
 
         cluster_info = {
-            'scheduler_address': client.scheduler_address,
-            'dashboard_link': client.dashboard_link,
-            'version': dask.__version__,
-            'workers': {},
-            'total_cores': 0,
-            'total_memory': 0,
-            'total_threads': 0
+            "scheduler_address": client.scheduler_address,
+            "dashboard_link": client.dashboard_link,
+            "version": dask.__version__,
+            "workers": {},
+            "total_cores": 0,
+            "total_memory": 0,
+            "total_threads": 0,
         }
 
         # Collect worker information
         for worker_addr, worker_info in workers_info.items():
             worker_data = {
-                'address': worker_addr,
-                'ncores': worker_info.get('ncores', 0),
-                'memory_limit': worker_info.get('memory_limit', 0),
-                'memory_used': worker_info.get('memory', 0),
-                'metrics': worker_info.get('metrics', {}),
-                'services': worker_info.get('services', {}),
-                'status': worker_info.get('status', 'unknown')
+                "address": worker_addr,
+                "ncores": worker_info.get("ncores", 0),
+                "memory_limit": worker_info.get("memory_limit", 0),
+                "memory_used": worker_info.get("memory", 0),
+                "metrics": worker_info.get("metrics", {}),
+                "services": worker_info.get("services", {}),
+                "status": worker_info.get("status", "unknown"),
             }
 
-            cluster_info['workers'][worker_addr] = worker_data
-            cluster_info['total_cores'] += worker_data['ncores']
-            cluster_info['total_memory'] += worker_data['memory_limit']
-            cluster_info['total_threads'] += worker_data['ncores']
+            cluster_info["workers"][worker_addr] = worker_data
+            cluster_info["total_cores"] += worker_data["ncores"]
+            cluster_info["total_memory"] += worker_data["memory_limit"]
+            cluster_info["total_threads"] += worker_data["ncores"]
 
         return cluster_info
 
     except Exception as e:
         logger.error(f"Failed to get Dask cluster info: {e}")
-        return {'error': str(e)}
+        return {"error": str(e)}

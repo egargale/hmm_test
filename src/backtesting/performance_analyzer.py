@@ -12,6 +12,7 @@ import pandas as pd
 
 from utils import get_logger
 from utils.data_types import BacktestResult, PerformanceMetrics
+
 from .performance_metrics import calculate_performance, calculate_returns
 
 
@@ -29,10 +30,13 @@ def calculate_drawdown(equity_curve: pd.Series) -> pd.Series:
     drawdown = (equity_curve - rolling_max) / rolling_max
     return drawdown
 
+
 logger = get_logger(__name__)
 
 
-def analyze_performance(result: BacktestResult, risk_free_rate: float = 0.02) -> PerformanceMetrics:
+def analyze_performance(
+    result: BacktestResult, risk_free_rate: float = 0.02
+) -> PerformanceMetrics:
     """
     Analyze backtest performance and calculate comprehensive metrics.
 
@@ -47,8 +51,7 @@ def analyze_performance(result: BacktestResult, risk_free_rate: float = 0.02) ->
 
     # Use the new core performance metrics calculation
     core_metrics = calculate_performance(
-        equity_curve=result.equity_curve,
-        risk_free_rate=risk_free_rate
+        equity_curve=result.equity_curve, risk_free_rate=risk_free_rate
     )
 
     # Extract trade-based metrics
@@ -63,14 +66,20 @@ def analyze_performance(result: BacktestResult, risk_free_rate: float = 0.02) ->
         # Profit factor
         total_wins = sum(t.pnl for t in winning_trades) if winning_trades else 0
         total_losses = abs(sum(t.pnl for t in losing_trades)) if losing_trades else 1
-        profit_factor = total_wins / total_losses if total_losses > 0 else float('inf')
+        profit_factor = total_wins / total_losses if total_losses > 0 else float("inf")
 
         # Sortino ratio (downside deviation)
         returns = calculate_returns(result.equity_curve)
         downside_returns = returns[returns < 0]
-        downside_deviation = downside_returns.std() * np.sqrt(252) if len(downside_returns) > 0 else 0
-        excess_returns = returns - risk_free_rate/252
-        sortino_ratio = excess_returns.mean() * np.sqrt(252) / downside_deviation if downside_deviation > 0 else 0
+        downside_deviation = (
+            downside_returns.std() * np.sqrt(252) if len(downside_returns) > 0 else 0
+        )
+        excess_returns = returns - risk_free_rate / 252
+        sortino_ratio = (
+            excess_returns.mean() * np.sqrt(252) / downside_deviation
+            if downside_deviation > 0
+            else 0
+        )
     else:
         win_rate = loss_rate = profit_factor = sortino_ratio = 0
 
@@ -86,7 +95,7 @@ def analyze_performance(result: BacktestResult, risk_free_rate: float = 0.02) ->
         win_rate=win_rate,
         loss_rate=loss_rate,
         profit_factor=profit_factor,
-        sortino_ratio=sortino_ratio
+        sortino_ratio=sortino_ratio,
     )
 
     logger.info("Comprehensive performance analysis completed:")
@@ -102,7 +111,9 @@ def analyze_performance(result: BacktestResult, risk_free_rate: float = 0.02) ->
     return complete_metrics
 
 
-def calculate_rolling_metrics(equity_curve: pd.Series, window: int = 252) -> pd.DataFrame:
+def calculate_rolling_metrics(
+    equity_curve: pd.Series, window: int = 252
+) -> pd.DataFrame:
     """
     Calculate rolling performance metrics.
 
@@ -118,22 +129,23 @@ def calculate_rolling_metrics(equity_curve: pd.Series, window: int = 252) -> pd.
     rolling_metrics = pd.DataFrame(index=equity_curve.index)
 
     # Rolling returns
-    rolling_metrics['rolling_return'] = equity_curve.pct_change(window)
+    rolling_metrics["rolling_return"] = equity_curve.pct_change(window)
 
     # Rolling volatility
-    rolling_metrics['rolling_volatility'] = returns.rolling(window).std() * np.sqrt(252)
+    rolling_metrics["rolling_volatility"] = returns.rolling(window).std() * np.sqrt(252)
 
     # Rolling Sharpe ratio
-    rolling_excess_returns = returns - 0.02/252  # Assuming 2% risk-free rate
-    rolling_metrics['rolling_sharpe'] = (
-        rolling_excess_returns.rolling(window).mean() /
-        returns.rolling(window).std() * np.sqrt(252)
+    rolling_excess_returns = returns - 0.02 / 252  # Assuming 2% risk-free rate
+    rolling_metrics["rolling_sharpe"] = (
+        rolling_excess_returns.rolling(window).mean()
+        / returns.rolling(window).std()
+        * np.sqrt(252)
     )
 
     # Rolling max drawdown
     rolling_max = equity_curve.rolling(window).max()
     rolling_drawdown = (equity_curve - rolling_max) / rolling_max
-    rolling_metrics['rolling_max_drawdown'] = rolling_drawdown.rolling(window).min()
+    rolling_metrics["rolling_max_drawdown"] = rolling_drawdown.rolling(window).min()
 
     return rolling_metrics
 
@@ -149,47 +161,49 @@ def analyze_trade_distribution(trades: list) -> Dict[str, Any]:
         Dictionary with trade distribution analysis
     """
     if not trades:
-        return {'error': 'No trades to analyze'}
+        return {"error": "No trades to analyze"}
 
     trade_pnls = [t.pnl for t in trades if t.pnl is not None]
 
     if not trade_pnls:
-        return {'error': 'No trades with P&L data'}
+        return {"error": "No trades with P&L data"}
 
     analysis = {}
 
     # Basic statistics
-    analysis['total_trades'] = len(trades)
-    analysis['positive_trades'] = len([pnl for pnl in trade_pnls if pnl > 0])
-    analysis['negative_trades'] = len([pnl for pnl in trade_pnls if pnl < 0])
-    analysis['breakeven_trades'] = len([pnl for pnl in trade_pnls if pnl == 0])
+    analysis["total_trades"] = len(trades)
+    analysis["positive_trades"] = len([pnl for pnl in trade_pnls if pnl > 0])
+    analysis["negative_trades"] = len([pnl for pnl in trade_pnls if pnl < 0])
+    analysis["breakeven_trades"] = len([pnl for pnl in trade_pnls if pnl == 0])
 
     # P&L statistics
-    analysis['total_pnl'] = sum(trade_pnls)
-    analysis['avg_pnl'] = np.mean(trade_pnls)
-    analysis['median_pnl'] = np.median(trade_pnls)
-    analysis['std_pnl'] = np.std(trade_pnls)
-    analysis['max_profit'] = max(trade_pnls)
-    analysis['max_loss'] = min(trade_pnls)
+    analysis["total_pnl"] = sum(trade_pnls)
+    analysis["avg_pnl"] = np.mean(trade_pnls)
+    analysis["median_pnl"] = np.median(trade_pnls)
+    analysis["std_pnl"] = np.std(trade_pnls)
+    analysis["max_profit"] = max(trade_pnls)
+    analysis["max_loss"] = min(trade_pnls)
 
     # Profit/loss analysis
     positive_pnls = [pnl for pnl in trade_pnls if pnl > 0]
     negative_pnls = [pnl for pnl in trade_pnls if pnl < 0]
 
     if positive_pnls:
-        analysis['avg_profit'] = np.mean(positive_pnls)
-        analysis['median_profit'] = np.median(positive_pnls)
-        analysis['max_profit'] = max(positive_pnls)
+        analysis["avg_profit"] = np.mean(positive_pnls)
+        analysis["median_profit"] = np.median(positive_pnls)
+        analysis["max_profit"] = max(positive_pnls)
 
     if negative_pnls:
-        analysis['avg_loss'] = np.mean(negative_pnls)
-        analysis['median_loss'] = np.median(negative_pnls)
-        analysis['max_loss'] = min(negative_pnls)
+        analysis["avg_loss"] = np.mean(negative_pnls)
+        analysis["median_loss"] = np.median(negative_pnls)
+        analysis["max_loss"] = min(negative_pnls)
 
     # Risk-reward ratios
     if positive_pnls and negative_pnls:
-        analysis['profit_factor'] = sum(positive_pnls) / abs(sum(negative_pnls))
-        analysis['avg_win_loss_ratio'] = analysis['avg_profit'] / abs(analysis['avg_loss'])
+        analysis["profit_factor"] = sum(positive_pnls) / abs(sum(negative_pnls))
+        analysis["avg_win_loss_ratio"] = analysis["avg_profit"] / abs(
+            analysis["avg_loss"]
+        )
 
     # Trade duration analysis
     trade_durations = []
@@ -199,15 +213,17 @@ def analyze_trade_distribution(trades: list) -> Dict[str, Any]:
             trade_durations.append(duration)
 
     if trade_durations:
-        analysis['avg_trade_duration_days'] = np.mean(trade_durations)
-        analysis['median_trade_duration_days'] = np.median(trade_durations)
-        analysis['max_trade_duration_days'] = max(trade_durations)
-        analysis['min_trade_duration_days'] = min(trade_durations)
+        analysis["avg_trade_duration_days"] = np.mean(trade_durations)
+        analysis["median_trade_duration_days"] = np.median(trade_durations)
+        analysis["max_trade_duration_days"] = max(trade_durations)
+        analysis["min_trade_duration_days"] = min(trade_durations)
 
     return analysis
 
 
-def create_performance_report(result: BacktestResult, metrics: PerformanceMetrics) -> Dict[str, Any]:
+def create_performance_report(
+    result: BacktestResult, metrics: PerformanceMetrics
+) -> Dict[str, Any]:
     """
     Create a comprehensive performance report.
 
@@ -219,42 +235,42 @@ def create_performance_report(result: BacktestResult, metrics: PerformanceMetric
         Dictionary with comprehensive performance report
     """
     report = {
-        'summary': {
-            'start_date': result.start_date.isoformat(),
-            'end_date': result.end_date.isoformat(),
-            'trading_days': len(result.equity_curve),
-            'total_trades': len(result.trades),
-            'initial_capital': result.equity_curve.iloc[0],
-            'final_equity': result.equity_curve.iloc[-1],
+        "summary": {
+            "start_date": result.start_date.isoformat(),
+            "end_date": result.end_date.isoformat(),
+            "trading_days": len(result.equity_curve),
+            "total_trades": len(result.trades),
+            "initial_capital": result.equity_curve.iloc[0],
+            "final_equity": result.equity_curve.iloc[-1],
         },
-        'returns': {
-            'total_return': metrics.total_return,
-            'annualized_return': metrics.annualized_return,
-            'total_return_pct': f"{metrics.total_return:.2%}",
-            'annualized_return_pct': f"{metrics.annualized_return:.2%}",
+        "returns": {
+            "total_return": metrics.total_return,
+            "annualized_return": metrics.annualized_return,
+            "total_return_pct": f"{metrics.total_return:.2%}",
+            "annualized_return_pct": f"{metrics.annualized_return:.2%}",
         },
-        'risk_metrics': {
-            'annualized_volatility': metrics.annualized_volatility,
-            'volatility_pct': f"{metrics.annualized_volatility:.2%}",
-            'sharpe_ratio': metrics.sharpe_ratio,
-            'sortino_ratio': metrics.sortino_ratio,
-            'max_drawdown': metrics.max_drawdown,
-            'max_drawdown_pct': f"{metrics.max_drawdown:.2%}",
-            'max_drawdown_duration': metrics.max_drawdown_duration,
-            'calmar_ratio': metrics.calmar_ratio,
+        "risk_metrics": {
+            "annualized_volatility": metrics.annualized_volatility,
+            "volatility_pct": f"{metrics.annualized_volatility:.2%}",
+            "sharpe_ratio": metrics.sharpe_ratio,
+            "sortino_ratio": metrics.sortino_ratio,
+            "max_drawdown": metrics.max_drawdown,
+            "max_drawdown_pct": f"{metrics.max_drawdown:.2%}",
+            "max_drawdown_duration": metrics.max_drawdown_duration,
+            "calmar_ratio": metrics.calmar_ratio,
         },
-        'trade_analysis': analyze_trade_distribution(result.trades)
+        "trade_analysis": analyze_trade_distribution(result.trades),
     }
 
     # Position analysis
     position_counts = result.positions.value_counts()
-    report['position_analysis'] = {
-        'long_periods': position_counts.get(1, 0),
-        'short_periods': position_counts.get(-1, 0),
-        'flat_periods': position_counts.get(0, 0),
-        'long_percentage': position_counts.get(1, 0) / len(result.positions) * 100,
-        'short_percentage': position_counts.get(-1, 0) / len(result.positions) * 100,
-        'flat_percentage': position_counts.get(0, 0) / len(result.positions) * 100,
+    report["position_analysis"] = {
+        "long_periods": position_counts.get(1, 0),
+        "short_periods": position_counts.get(-1, 0),
+        "flat_periods": position_counts.get(0, 0),
+        "long_percentage": position_counts.get(1, 0) / len(result.positions) * 100,
+        "short_percentage": position_counts.get(-1, 0) / len(result.positions) * 100,
+        "flat_percentage": position_counts.get(0, 0) / len(result.positions) * 100,
     }
 
     return report
@@ -263,7 +279,7 @@ def create_performance_report(result: BacktestResult, metrics: PerformanceMetric
 def benchmark_comparison(
     result: BacktestResult,
     benchmark_returns: pd.Series,
-    benchmark_name: str = "Benchmark"
+    benchmark_name: str = "Benchmark",
 ) -> Dict[str, Any]:
     """
     Compare strategy performance against a benchmark.
@@ -308,19 +324,23 @@ def benchmark_comparison(
 
     # Calculate information ratio
     excess_return = strategy_aligned - benchmark_aligned
-    information_ratio = excess_return.mean() / excess_return.std() * np.sqrt(252) if excess_return.std() > 0 else 0
+    information_ratio = (
+        excess_return.mean() / excess_return.std() * np.sqrt(252)
+        if excess_return.std() > 0
+        else 0
+    )
 
     comparison = {
-        'benchmark_name': benchmark_name,
-        'correlation': correlation,
-        'beta': beta,
-        'alpha': alpha,
-        'tracking_error': tracking_error,
-        'information_ratio': information_ratio,
-        'total_return_strategy': strategy_return,
-        'total_return_benchmark': benchmark_return,
-        'outperformance': strategy_return - benchmark_return,
-        'outperformance_pct': f"{(strategy_return - benchmark_return)*100:.2f}%"
+        "benchmark_name": benchmark_name,
+        "correlation": correlation,
+        "beta": beta,
+        "alpha": alpha,
+        "tracking_error": tracking_error,
+        "information_ratio": information_ratio,
+        "total_return_strategy": strategy_return,
+        "total_return_benchmark": benchmark_return,
+        "outperformance": strategy_return - benchmark_return,
+        "outperformance_pct": f"{(strategy_return - benchmark_return) * 100:.2f}%",
     }
 
     return comparison

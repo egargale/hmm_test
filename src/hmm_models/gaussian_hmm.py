@@ -12,12 +12,14 @@ import pandas as pd
 
 try:
     from hmmlearn import hmm
+
     HMMLEARN_AVAILABLE = True
 except ImportError:
     HMMLEARN_AVAILABLE = False
     hmm = None
 
 from utils import get_logger
+
 from .base import BaseHMMModel
 
 logger = get_logger(__name__)
@@ -41,7 +43,7 @@ class GaussianHMMModel(BaseHMMModel):
         verbose: bool = False,
         implementation: str = "log",
         params: str = "stmc",  # s=startprob, t=transmat, m=means, c=covars
-        init_params: str = "stmc"
+        init_params: str = "stmc",
     ):
         """
         Initialize Gaussian HMM model.
@@ -63,11 +65,13 @@ class GaussianHMMModel(BaseHMMModel):
             random_state=random_state,
             max_iter=n_iter,  # Keep max_iter for compatibility with base class
             tol=tol,
-            verbose=verbose
+            verbose=verbose,
         )
 
         if not HMMLEARN_AVAILABLE:
-            raise ImportError("hmmlearn is not installed. Install with: pip install hmmlearn")
+            raise ImportError(
+                "hmmlearn is not installed. Install with: pip install hmmlearn"
+            )
 
         self.implementation = implementation
         self.params = params
@@ -85,7 +89,7 @@ class GaussianHMMModel(BaseHMMModel):
             verbose=self.verbose,
             implementation=self.implementation,
             params=self.params,
-            init_params=self.init_params
+            init_params=self.init_params,
         )
         return model
 
@@ -103,14 +107,18 @@ class GaussianHMMModel(BaseHMMModel):
             # Handle missing values
             X_clean = X.dropna()
             if len(X_clean) < len(X):
-                logger.warning(f"Removed {len(X) - len(X_clean)} rows with missing values")
+                logger.warning(
+                    f"Removed {len(X) - len(X_clean)} rows with missing values"
+                )
 
             # Convert to numpy and ensure float64
             X_array = X_clean.values.astype(np.float64)
 
             # Optional: Standardize features for better convergence
             # This is a common practice for Gaussian HMM
-            X_array = (X_array - np.mean(X_array, axis=0)) / (np.std(X_array, axis=0) + 1e-8)
+            X_array = (X_array - np.mean(X_array, axis=0)) / (
+                np.std(X_array, axis=0) + 1e-8
+            )
 
         else:
             X_array = X.astype(np.float64)
@@ -119,7 +127,9 @@ class GaussianHMMModel(BaseHMMModel):
             X_array = X_array[mask]
 
             # Standardize
-            X_array = (X_array - np.mean(X_array, axis=0)) / (np.std(X_array, axis=0) + 1e-8)
+            X_array = (X_array - np.mean(X_array, axis=0)) / (
+                np.std(X_array, axis=0) + 1e-8
+            )
 
         return X_array
 
@@ -134,25 +144,27 @@ class GaussianHMMModel(BaseHMMModel):
             return {}
 
         params = {
-            'startprob_': self.model_.startprob_.copy(),
-            'transmat_': self.model_.transmat_.copy(),
-            'means_': self.model_.means_.copy(),
-            'covars_': self.model_.covars_.copy()
+            "startprob_": self.model_.startprob_.copy(),
+            "transmat_": self.model_.transmat_.copy(),
+            "means_": self.model_.means_.copy(),
+            "covars_": self.model_.covars_.copy(),
         }
 
         # Add parameter analysis
-        params['parameter_analysis'] = {
-            'startprob_entropy': -np.sum(self.model_.startprob_ * np.log(self.model_.startprob_ + 1e-10)),
-            'transmat_entropy': np.mean([
-                -np.sum(row * np.log(row + 1e-10)) for row in self.model_.transmat_
-            ]),
-            'mean_condition_numbers': [
+        params["parameter_analysis"] = {
+            "startprob_entropy": -np.sum(
+                self.model_.startprob_ * np.log(self.model_.startprob_ + 1e-10)
+            ),
+            "transmat_entropy": np.mean(
+                [-np.sum(row * np.log(row + 1e-10)) for row in self.model_.transmat_]
+            ),
+            "mean_condition_numbers": [
                 np.linalg.cond(cov) for cov in self.model_.covars_
             ],
-            'covariance_determinants': [
+            "covariance_determinants": [
                 np.linalg.det(cov) for cov in self.model_.covars_
             ],
-            'covariance_traces': [np.trace(cov) for cov in self.model_.covars_]
+            "covariance_traces": [np.trace(cov) for cov in self.model_.covars_],
         }
 
         return params
@@ -189,7 +201,9 @@ class GaussianHMMModel(BaseHMMModel):
 
         return n_means + n_covars
 
-    def get_state_descriptions(self, X: Union[pd.DataFrame, np.ndarray]) -> Dict[int, Dict[str, Any]]:
+    def get_state_descriptions(
+        self, X: Union[pd.DataFrame, np.ndarray]
+    ) -> Dict[int, Dict[str, Any]]:
         """
         Generate human-readable descriptions of each state.
 
@@ -218,21 +232,25 @@ class GaussianHMMModel(BaseHMMModel):
             state_prob = np.mean(state_mask)
 
             description = {
-                'state_id': state,
-                'frequency': state_prob,
-                'mean_values': params['means_'][state],
-                'covariance_matrix': params['covars_'][state],
-                'sample_count': np.sum(state_mask),
-                'volatility_level': np.sqrt(np.trace(params['covars_'][state])),
-                'dominant_features': self._get_dominant_features(params['means_'][state])
+                "state_id": state,
+                "frequency": state_prob,
+                "mean_values": params["means_"][state],
+                "covariance_matrix": params["covars_"][state],
+                "sample_count": np.sum(state_mask),
+                "volatility_level": np.sqrt(np.trace(params["covars_"][state])),
+                "dominant_features": self._get_dominant_features(
+                    params["means_"][state]
+                ),
             }
 
             # Add financial interpretation if feature names are available
             if self.feature_names_:
-                description['financial_interpretation'] = self._interpret_state_financially(
-                    params['means_'][state],
-                    params['covars_'][state],
-                    self.feature_names_
+                description["financial_interpretation"] = (
+                    self._interpret_state_financially(
+                        params["means_"][state],
+                        params["covars_"][state],
+                        self.feature_names_,
+                    )
                 )
 
             descriptions[state] = description
@@ -253,19 +271,14 @@ class GaussianHMMModel(BaseHMMModel):
             feature_importance = dict(zip(self.feature_names_, state_mean))
             # Sort by absolute value
             sorted_features = sorted(
-                feature_importance.items(),
-                key=lambda x: abs(x[1]),
-                reverse=True
+                feature_importance.items(), key=lambda x: abs(x[1]), reverse=True
             )
             return dict(sorted_features[:5])  # Top 5 features
         else:
             return {f"feature_{i}": val for i, val in enumerate(state_mean)}
 
     def _interpret_state_financially(
-        self,
-        mean: np.ndarray,
-        cov: np.ndarray,
-        feature_names: list
+        self, mean: np.ndarray, cov: np.ndarray, feature_names: list
     ) -> Dict[str, str]:
         """
         Provide financial interpretation of a state based on feature means.
@@ -284,53 +297,55 @@ class GaussianHMMModel(BaseHMMModel):
         feature_map = {name.lower(): i for i, name in enumerate(feature_names)}
 
         # Returns
-        if 'log_ret' in feature_map:
-            ret_idx = feature_map['log_ret']
+        if "log_ret" in feature_map:
+            ret_idx = feature_map["log_ret"]
             ret_mean = mean[ret_idx]
             if ret_mean > 0.001:
-                interpretation['return_regime'] = "Bullish (Positive Returns)"
+                interpretation["return_regime"] = "Bullish (Positive Returns)"
             elif ret_mean < -0.001:
-                interpretation['return_regime'] = "Bearish (Negative Returns)"
+                interpretation["return_regime"] = "Bearish (Negative Returns)"
             else:
-                interpretation['return_regime'] = "Sideways (Neutral Returns)"
+                interpretation["return_regime"] = "Sideways (Neutral Returns)"
 
         # Volatility (use standard deviation of returns if available)
-        if 'log_ret' in feature_map:
-            ret_idx = feature_map['log_ret']
+        if "log_ret" in feature_map:
+            ret_idx = feature_map["log_ret"]
             ret_var = cov[ret_idx, ret_idx]
             ret_vol = np.sqrt(ret_var)
             if ret_vol > 0.02:
-                interpretation['volatility_regime'] = "High Volatility"
+                interpretation["volatility_regime"] = "High Volatility"
             elif ret_vol > 0.01:
-                interpretation['volatility_regime'] = "Medium Volatility"
+                interpretation["volatility_regime"] = "Medium Volatility"
             else:
-                interpretation['volatility_regime'] = "Low Volatility"
+                interpretation["volatility_regime"] = "Low Volatility"
 
         # Volume
-        if 'volume' in feature_map or 'obv' in feature_map:
-            vol_idx = feature_map.get('volume', feature_map.get('obv'))
+        if "volume" in feature_map or "obv" in feature_map:
+            vol_idx = feature_map.get("volume", feature_map.get("obv"))
             if vol_idx is not None:
                 vol_mean = mean[vol_idx]
                 if vol_mean > np.mean(mean):
-                    interpretation['volume_regime'] = "High Volume"
+                    interpretation["volume_regime"] = "High Volume"
                 else:
-                    interpretation['volume_regime'] = "Low Volume"
+                    interpretation["volume_regime"] = "Low Volume"
 
         # Trend indicators
-        trend_features = ['sma', 'ema', 'macd']
+        trend_features = ["sma", "ema", "macd"]
         trend_found = False
         for feature in trend_features:
             if any(feature in name.lower() for name in feature_names):
-                interpretation['trend_regime'] = "Trending State"
+                interpretation["trend_regime"] = "Trending State"
                 trend_found = True
                 break
 
         if not trend_found:
-            interpretation['trend_regime'] = "Mean-Reverting State"
+            interpretation["trend_regime"] = "Mean-Reverting State"
 
         return interpretation
 
-    def analyze_state_transitions(self, X: Union[pd.DataFrame, np.ndarray]) -> Dict[str, Any]:
+    def analyze_state_transitions(
+        self, X: Union[pd.DataFrame, np.ndarray]
+    ) -> Dict[str, Any]:
         """
         Analyze state transition patterns.
 
@@ -354,23 +369,24 @@ class GaussianHMMModel(BaseHMMModel):
 
         # Analyze transition patterns
         transition_analysis = {
-            'transition_matrix': transmat,
-            'state_frequencies': np.bincount(states, minlength=self.n_components) / len(states),
-            'expected_residence_times': 1 / np.diag(transmat),
-            'transition_entropy': -np.sum(transmat * np.log(transmat + 1e-10)),
-            'most_likely_transitions': []
+            "transition_matrix": transmat,
+            "state_frequencies": np.bincount(states, minlength=self.n_components)
+            / len(states),
+            "expected_residence_times": 1 / np.diag(transmat),
+            "transition_entropy": -np.sum(transmat * np.log(transmat + 1e-10)),
+            "most_likely_transitions": [],
         }
 
         # Find most likely transitions
         for i in range(self.n_components):
             for j in range(self.n_components):
                 if i != j:
-                    transition_analysis['most_likely_transitions'].append(
+                    transition_analysis["most_likely_transitions"].append(
                         (i, j, transmat[i, j])
                     )
 
         # Sort by probability
-        transition_analysis['most_likely_transitions'].sort(
+        transition_analysis["most_likely_transitions"].sort(
             key=lambda x: x[2], reverse=True
         )
 
@@ -382,16 +398,21 @@ class GaussianHMMModel(BaseHMMModel):
             if states[i] != states[i + 1]:
                 actual_transitions += 1
 
-        transition_analysis.update({
-            'actual_transition_counts': transition_counts,
-            'actual_transition_probabilities': transition_counts / transition_counts.sum(axis=1, keepdims=True),
-            'total_transitions': actual_transitions,
-            'transition_rate': actual_transitions / (len(states) - 1)
-        })
+        transition_analysis.update(
+            {
+                "actual_transition_counts": transition_counts,
+                "actual_transition_probabilities": transition_counts
+                / transition_counts.sum(axis=1, keepdims=True),
+                "total_transitions": actual_transitions,
+                "transition_rate": actual_transitions / (len(states) - 1),
+            }
+        )
 
         return transition_analysis
 
-    def detect_regime_changes(self, X: Union[pd.DataFrame, np.ndarray], threshold: float = 0.5) -> np.ndarray:
+    def detect_regime_changes(
+        self, X: Union[pd.DataFrame, np.ndarray], threshold: float = 0.5
+    ) -> np.ndarray:
         """
         Detect significant regime changes in the data.
 
@@ -416,14 +437,16 @@ class GaussianHMMModel(BaseHMMModel):
         regime_changes = np.zeros(len(dominant_states), dtype=bool)
 
         for i in range(1, len(dominant_states)):
-            if dominant_states[i] != dominant_states[i-1]:
+            if dominant_states[i] != dominant_states[i - 1]:
                 # Check if the new state is significantly more probable
                 if probabilities[i, dominant_states[i]] > threshold:
                     regime_changes[i] = True
 
         return regime_changes
 
-    def compute_state_persistence(self, X: Union[pd.DataFrame, np.ndarray]) -> Dict[int, Dict[str, float]]:
+    def compute_state_persistence(
+        self, X: Union[pd.DataFrame, np.ndarray]
+    ) -> Dict[int, Dict[str, float]]:
         """
         Compute persistence statistics for each state.
 
@@ -449,10 +472,10 @@ class GaussianHMMModel(BaseHMMModel):
 
             if len(state_indices) == 0:
                 persistence_stats[state] = {
-                    'mean_duration': 0,
-                    'max_duration': 0,
-                    'min_duration': 0,
-                    'num_periods': 0
+                    "mean_duration": 0,
+                    "max_duration": 0,
+                    "min_duration": 0,
+                    "num_periods": 0,
                 }
                 continue
 
@@ -463,7 +486,7 @@ class GaussianHMMModel(BaseHMMModel):
                 current_period = [state_indices[0]]
 
                 for i in range(1, len(state_indices)):
-                    if state_indices[i] == state_indices[i-1] + 1:
+                    if state_indices[i] == state_indices[i - 1] + 1:
                         current_period.append(state_indices[i])
                     else:
                         periods.append(current_period)
@@ -473,11 +496,11 @@ class GaussianHMMModel(BaseHMMModel):
                 # Calculate statistics
                 durations = [len(period) for period in periods]
                 persistence_stats[state] = {
-                    'mean_duration': np.mean(durations),
-                    'max_duration': np.max(durations),
-                    'min_duration': np.min(durations),
-                    'num_periods': len(periods),
-                    'total_observations': len(state_indices)
+                    "mean_duration": np.mean(durations),
+                    "max_duration": np.max(durations),
+                    "min_duration": np.min(durations),
+                    "num_periods": len(periods),
+                    "total_observations": len(state_indices),
                 }
 
         return persistence_stats
