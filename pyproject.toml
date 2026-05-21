@@ -5,332 +5,37 @@ build-backend = "hatchling.build"
 [project]
 name = "hmm-futures-analysis"
 version = "0.1.0"
-description = "Hidden Markov Models for futures market regime detection and analysis"
+description = "Hidden Markov Models for futures market regime detection"
 readme = "README.md"
 license = {file = "LICENSE"}
-authors = [
-    {name = "HMM Futures Analysis Team", email = "team@example.com"},
-]
-maintainers = [
-    {name = "HMM Futures Analysis Team", email = "team@example.com"},
-]
-keywords = ["hmm", "futures", "trading", "machine-learning", "finance", "regime-detection"]
-classifiers = [
-    "Development Status :: 4 - Beta",
-    "Intended Audience :: Financial and Insurance Industry",
-    "Intended Audience :: Developers",
-    "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Topic :: Office/Business :: Financial",
-    "Topic :: Scientific/Engineering :: Artificial Intelligence",
-]
 requires-python = ">=3.9"
 dependencies = [
-    "click>=8.0.0",
     "numpy>=1.20.0",
     "pandas>=1.3.0",
     "scikit-learn>=1.0.0",
     "scipy>=1.7.0",
-    "matplotlib>=3.4.0",
-    "seaborn>=0.11.0",
-    "plotly>=5.0.0",
-    "dash>=2.0.0",
     "hmmlearn>=0.2.7",
-    "dask[complete]>=2021.8.0",
-    "daft>=0.1.0",
-    "tqdm>=4.60.0",
     "pydantic>=1.8.0",
-    "rich>=10.0.0",
-    "typer>=0.4.0",
-    "joblib>=1.5.1",
-    "loguru>=0.7.2",
-    "psutil>=7.1.0",
-    "pyyaml>=6.0.3",
-    "ta>=0.11.0",
-    "chardet>=5.2.0",
-    "mplfinance>=0.12.9b0",
-    "pytest-cov>=7.0.0",
-    "ruff>=0.14.1",
-    "pandas-stubs>=2.2.2.240807",
+    "pyyaml>=6.0",
+    "ta>=0.10.0",
 ]
 
 [project.optional-dependencies]
-dev = [
-    "pytest>=7.0.0",
-    "pytest-cov>=4.0.0",
-    "pytest-mock>=3.6.0",
-    "pytest-xdist>=2.5.0",
-    "black>=22.0.0",
-    "ruff>=0.1.0",
-    "mypy>=1.0.0",
-    "isort>=5.10.0",
-    "pre-commit>=2.17.0",
-    "bandit>=1.7.0",
-    "safety>=2.0.0",
-    "types-PyYAML>=6.0.0",
-]
-docs = [
-    "sphinx>=5.0.0",
-    "furo>=2022.09.29",
-    "sphinx-autodoc-typehints>=1.19.0",
-    "sphinx-rtd-theme>=1.2.0",
-    "myst-parser>=0.18.0",
-    "sphinx-copybutton>=0.5.0",
-    "sphinx-tabs>=3.4.0",
-]
-test = [
-    "pytest>=7.0.0",
-    "pytest-cov>=4.0.0",
-    "pytest-mock>=3.6.0",
-    "pytest-xdist>=2.5.0",
-    "pytest-timeout>=2.1.0",
-    "pytest-benchmark>=4.0.0",
-    "pytest-asyncio>=0.21.0",
-    "coverage>=6.0.0",
-    "freezegun>=1.2.0",
-    "responses>=0.23.0",
-]
-viz = [
-    "mplfinance>=0.12.0",
-    "bokeh>=2.4.0",
-    "altair>=4.2.0",
-    "dash>=2.0.0",
-]
-all = [
-    "hmm-futures-analysis[dev,docs,test]",
-]
-
-[project.urls]
-Homepage = "https://github.com/egargale/hmm_test"
-Documentation = "https://hmm-futures-analysis.readthedocs.io"
-Repository = "https://github.com/egargale/hmm_test"
-"Bug Tracker" = "https://github.com/egargale/hmm_test/issues"
-Changelog = "https://github.com/egargale/hmm_test/blob/main/CHANGELOG.md"
-
-[project.scripts]
-hmm-analyze = "test_cli:cli"
-hmm-futures = "test_cli:cli"
-
-[tool.hatch.build.targets.sdist]
-include = [
-    "/src",
-    "/tests",
-    "/docs",
-    "/README.md",
-    "/LICENSE",
-    "/CHANGELOG.md",
-]
+yfinance = ["yfinance>=0.2.0"]
+dask = ["dask[complete]>=2021.8.0"]
+daft = ["daft>=0.3.0"]
+dev = ["pytest>=7.0", "ruff"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src"]
+packages = ["scripts"]
 
-[tool.black]
-line-length = 88
-target-version = ['py38', 'py39', 'py310', 'py311']
-include = '\.pyi?$'
-extend-exclude = '''
-/(
-  # directories
-  \.eggs
-  | \.git
-  | \.hg
-  | \.mypy_cache
-  | \.tox
-  | \.venv
-  | build
-  | dist
-)/
-'''
-
-[tool.ruff]
-line-length = 88
-target-version = "py38"
-exclude = [
-    ".bzr",
-    ".direnv",
-    ".eggs",
-    ".git",
-    ".hg",
-    ".mypy_cache",
-    ".nox",
-    ".pants.d",
-    ".ruff_cache",
-    ".svn",
-    ".tox",
-    ".venv",
-    "__pypackages__",
-    "_build",
-    "buck-out",
-    "build",
-    "dist",
-    "node_modules",
-    "venv",
-]
-
-[tool.ruff.lint]
-select = [
-    "E",  # pycodestyle errors
-    "W",  # pycodestyle warnings
-    "F",  # pyflakes
-    "I",  # isort
-    "B",  # flake8-bugbear
-    "C4", # flake8-comprehensions
-    "UP", # pyupgrade
-]
-extend-select = [
-    "I002", # banned-relative-import
-]
-ignore = [
-    "E501",  # line too long, handled by black
-    "B008",  # do not perform function calls in argument defaults
-    "C901",  # too complex
-]
-
-[tool.ruff.lint.per-file-ignores]
-"__init__.py" = ["F401"]
-"tests/**" = ["E501", "B011", "B018"]
-
-[tool.ruff.lint.isort]
-known-first-party = ["src"]
-
-[tool.ruff.format]
-quote-style = "double"
-indent-style = "space"
-
-[tool.mypy]
-python_version = "3.13"
-warn_return_any = false
-warn_unused_configs = false
-disallow_untyped_defs = false
-disallow_incomplete_defs = false
-check_untyped_defs = false
-disallow_untyped_decorators = false
-no_implicit_optional = false
-warn_redundant_casts = false
-warn_unused_ignores = false
-warn_no_return = false
-warn_unreachable = false
-strict_equality = false
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = [
-    "dask.*",
-    "daft.*",
-    "hmmlearn.*",
-    "mplfinance.*",
-    "plotly.*",
-    "dash.*",
-    "sklearn.*",
-    "ta.*",
-    "scipy.*",
-    "loguru.*",
-    "structlog.*",
-    "weasyprint.*",
-    "chardet.*",
-    "utils.*",
-    "backtesting.*",
-    "data_processing.*",
-    "pipelines.*",
-    "model_training.*",
-    "visualization.*",
-    "processing_engines.*",
-]
-ignore_missing_imports = true
+[tool.hatch.build.targets.sdist]
+include = ["/scripts"]
 
 [tool.pytest.ini_options]
-minversion = "7.0"
-pythonpath = ["src"]
-addopts = [
-    "-ra",
-    "--strict-markers",
-    "--strict-config",
-    "--cov=src",
-    "--cov-report=term-missing",
-    "--cov-report=html",
-    "--cov-report=xml",
-    "--cov-fail-under=95",
-]
-testpaths = ["tests"]
-markers = [
-    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
-    "integration: marks tests as integration tests",
-    "unit: marks tests as unit tests",
-    "e2e: marks tests as end-to-end tests",
-    "cli: marks tests as CLI tests",
-    "visualization: marks tests as visualization tests",
-    "backtesting: marks tests as backtesting tests",
-    "gpu: marks tests that require GPU",
-    "benchmark: marks tests as benchmarks",
-    "requires_internet: marks tests that require internet connection",
-    "requires_data: marks tests that require test data files",
-]
-filterwarnings = [
-    "error",
-    "ignore::UserWarning",
-    "ignore::DeprecationWarning",
-    "ignore::PendingDeprecationWarning",
-]
+pythonpath = ["scripts"]
+addopts = ["-ra", "--strict-markers"]
 
-[tool.coverage.run]
-source = ["src"]
-omit = [
-    "*/tests/*",
-    "*/test_*",
-    "*/__pycache__/*",
-    "*/site-packages/*",
-]
-
-[tool.coverage.report]
-exclude_lines = [
-    "pragma: no cover",
-    "def __repr__",
-    "if self.debug:",
-    "if settings.DEBUG",
-    "raise AssertionError",
-    "raise NotImplementedError",
-    "if 0:",
-    "if __name__ == .__main__.:",
-    "class .*\\bProtocol\\):",
-    "@(abc\\.)?abstractmethod",
-]
-show_missing = true
-precision = 2
-fail_under = 95
-
-[tool.coverage.html]
-directory = "htmlcov"
-
-[tool.bandit]
-exclude_dirs = ["tests", "test_*"]
-skips = ["B101", "B601"]
-
-[tool.isort]
-profile = "black"
-multi_line_output = 3
-line_length = 88
-known_first_party = ["src"]
-
-[dependency-groups]
-dev = [
-    "freezegun>=1.5.5",
-    "mypy>=1.18.2",
-    "pandas-stubs>=2.2.2.240807",
-    "pre-commit>=4.3.0",
-    "pytest>=8.4.2",
-    "pytest-asyncio>=1.2.0",
-    "pytest-benchmark>=5.1.0",
-    "pytest-timeout>=2.4.0",
-    "pytest-watch>=4.2.0",
-    "responses>=0.25.8",
-    "types-chardet>=5.0.4.6",
-    "types-psutil>=7.0.0.20251001",
-    "types-pyyaml>=6.0.12.20250915",
-    "types-seaborn>=0.13.2.20250914",
-    "types-tqdm>=4.67.0.20250809",
-]
+[tool.ruff]
+target-version = "py39"
+line-length = 88
