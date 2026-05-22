@@ -3,13 +3,13 @@ import json
 
 from tests.conftest import run_regime
 
-# Required top-level keys in the JSON contract
+# Required top-level keys in the JSON contract (v0.2.0)
 REQUIRED_KEYS = [
-    "source", "rows", "date_start", "date_end", "params",
-    "states", "current_regime", "next_state_probabilities",
+    "source", "engine", "dates",
+    "current_regime", "next_state_probabilities",
     "signal", "transition_matrix", "persistence_diagonal",
-    "stationary_distribution", "walk_forward", "hmm",
-    "hmm_test_extras", "forecast", "framework", "disclaimer",
+    "stationary_distribution", "regime_counts", "walk_forward",
+    "forecast", "engine_info", "framework", "disclaimer",
 ]
 
 
@@ -17,104 +17,100 @@ class TestJSONContract:
     """Validate JSON output schema against the regime contract."""
 
     def test_all_required_keys_present(self, btc_csv):
-        result = run_regime("--csv", btc_csv, "--json", "--no-hmm")
+        result = run_regime("--csv", btc_csv, "--json", "--engine", "threshold")
         assert result.returncode == 0, f"stderr: {result.stderr}"
         data = json.loads(result.stdout)
         for key in REQUIRED_KEYS:
             assert key in data, f"Missing required key: {key}"
 
     def test_signal_is_float_in_range(self, btc_csv):
-        result = run_regime("--csv", btc_csv, "--json", "--no-hmm")
+        result = run_regime("--csv", btc_csv, "--json", "--engine", "threshold")
         data = json.loads(result.stdout)
         assert isinstance(data["signal"], (int, float))
         assert -1.0 <= data["signal"] <= 1.0
 
     def test_transition_matrix_3x3(self, btc_csv):
-        result = run_regime("--csv", btc_csv, "--json", "--no-hmm")
+        result = run_regime("--csv", btc_csv, "--json", "--engine", "threshold")
         data = json.loads(result.stdout)
         mat = data["transition_matrix"]
         assert len(mat) == 3
         assert all(len(row) == 3 for row in mat)
 
     def test_transition_matrix_rows_sum_to_one(self, btc_csv):
-        result = run_regime("--csv", btc_csv, "--json", "--no-hmm")
+        result = run_regime("--csv", btc_csv, "--json", "--engine", "threshold")
         data = json.loads(result.stdout)
         for row in data["transition_matrix"]:
             assert abs(sum(row) - 1.0) < 0.01
 
     def test_stationary_distribution_sums_to_one(self, btc_csv):
-        result = run_regime("--csv", btc_csv, "--json", "--no-hmm")
+        result = run_regime("--csv", btc_csv, "--json", "--engine", "threshold")
         data = json.loads(result.stdout)
         sd = data["stationary_distribution"]
         total = sd["bear"] + sd["sideways"] + sd["bull"]
         assert abs(total - 1.0) < 0.01
 
     def test_next_state_probabilities_sums_to_one(self, btc_csv):
-        result = run_regime("--csv", btc_csv, "--json", "--no-hmm")
+        result = run_regime("--csv", btc_csv, "--json", "--engine", "threshold")
         data = json.loads(result.stdout)
         nsp = data["next_state_probabilities"]
         total = nsp["bear"] + nsp["sideways"] + nsp["bull"]
         assert abs(total - 1.0) < 0.01
 
-    def test_states_are_bear_sideways_bull(self, btc_csv):
-        result = run_regime("--csv", btc_csv, "--json", "--no-hmm")
+    def test_engine_field(self, btc_csv):
+        result = run_regime("--csv", btc_csv, "--json", "--engine", "threshold")
         data = json.loads(result.stdout)
-        state_names = {s["name"] for s in data["states"]}
-        assert state_names == {"bear", "sideways", "bull"}
+        assert data["engine"] == "threshold"
 
     def test_walk_forward_keys(self, btc_csv):
-        result = run_regime("--csv", btc_csv, "--json", "--no-hmm")
+        result = run_regime("--csv", btc_csv, "--json", "--engine", "threshold")
         data = json.loads(result.stdout)
         wf = data["walk_forward"]
-        assert "sharpe" in wf
-        assert "max_drawdown" in wf
-        assert "n_trades" in wf
+        expected = {"sharpe", "max_drawdown", "n_trades", "win_rate", "profit_factor", "total_return"}
+        assert set(wf.keys()) == expected
 
-    def test_hmm_block_present(self, btc_csv):
-        result = run_regime("--csv", btc_csv, "--json", "--no-hmm")
+    def test_engine_info_keys(self, btc_csv):
+        result = run_regime("--csv", btc_csv, "--json", "--engine", "threshold")
         data = json.loads(result.stdout)
-        assert "available" in data["hmm"]
-        assert data["hmm"]["available"] is False  # --no-hmm
-
-    def test_hmm_test_extras_keys(self, btc_csv):
-        result = run_regime("--csv", btc_csv, "--json", "--no-hmm")
-        data = json.loads(result.stdout)
-        extras = data["hmm_test_extras"]
-        assert "n_states" in extras
-        assert "method" in extras
-        assert "data_points" in extras
+        ei = data["engine_info"]
+        assert "method" in ei
+        assert "features" in ei
+        assert "n_states" in ei
 
     def test_forecast_keys(self, btc_csv):
-        result = run_regime("--csv", btc_csv, "--json", "--no-hmm")
+        result = run_regime("--csv", btc_csv, "--json", "--engine", "threshold")
         data = json.loads(result.stdout)
         forecast = data["forecast"]
         assert "1_step" in forecast
         assert "5_step" in forecast
         assert "20_step" in forecast
 
-    def test_params_reflect_args(self, btc_csv):
-        result = run_regime(
-            "--csv", btc_csv, "--json", "--no-hmm",
-            "--window", "10", "--threshold", "0.03",
-        )
+    def test_regime_counts_keys(self, btc_csv):
+        result = run_regime("--csv", btc_csv, "--json", "--engine", "threshold")
         data = json.loads(result.stdout)
-        assert data["params"]["window"] == 10
-        assert data["params"]["threshold"] == 0.03
+        rc = data["regime_counts"]
+        assert set(rc.keys()) == {"bear", "sideways", "bull"}
 
-    def test_rows_positive(self, btc_csv):
-        result = run_regime("--csv", btc_csv, "--json", "--no-hmm")
+    def test_dates_structure(self, btc_csv):
+        result = run_regime("--csv", btc_csv, "--json", "--engine", "threshold")
         data = json.loads(result.stdout)
-        assert data["rows"] > 0
+        assert "start" in data["dates"]
+        assert "end" in data["dates"]
 
     def test_framework_string(self, btc_csv):
-        result = run_regime("--csv", btc_csv, "--json", "--no-hmm")
+        result = run_regime("--csv", btc_csv, "--json", "--engine", "threshold")
         data = json.loads(result.stdout)
         assert "hmm_test" in data["framework"]
 
     def test_disclaimer_present(self, btc_csv):
-        result = run_regime("--csv", btc_csv, "--json", "--no-hmm")
+        result = run_regime("--csv", btc_csv, "--json", "--engine", "threshold")
         data = json.loads(result.stdout)
         assert len(data["disclaimer"]) > 0
+
+    def test_engine_messina_csv_without_ohlcv_errors(self, btc_csv):
+        result = run_regime("--csv", btc_csv, "--json", "--engine", "messina")
+        data = json.loads(result.stdout)
+        assert "error" in data
+        assert "OHLCV" in data["error"]
 
 
 class TestContractErrorHandling:
@@ -131,7 +127,9 @@ class TestContractErrorHandling:
         assert result.returncode != 0
 
     def test_small_dataset_json_valid(self, futures_csv):
-        result = run_regime("--csv", futures_csv, "--json", "--no-hmm")
+        result = run_regime(
+            "--csv", futures_csv, "--json", "--engine", "threshold"
+        )
         assert result.returncode == 0
         data = json.loads(result.stdout)
         # walk_forward may have null sharpe for small datasets

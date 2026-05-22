@@ -58,9 +58,12 @@ class TestThresholdPipeline:
     def test_walk_forward_returns_keys(self, btc_csv):
         prices = load_from_csv(btc_csv)
         result = walk_forward_backtest(prices)
-        assert "sharpe" in result
-        assert "max_drawdown" in result
-        assert "n_trades" in result
+        expected = {
+            "sharpe", "max_drawdown", "n_trades",
+            "win_rate", "profit_factor", "total_return",
+        }
+        for key in expected:
+            assert key in result, f"Missing key: {key}"
 
     def test_walk_forward_drawdown_negative_or_nan(self, btc_csv):
         prices = load_from_csv(btc_csv)
@@ -138,17 +141,22 @@ class TestPipelineRunInputValidation:
 
     def test_run_returns_valid_structure(self, btc_csv):
         prices = load_from_csv(btc_csv)
-        result = pipeline_run(prices, source="test", use_hmm=False)
+        result = pipeline_run(prices, source="test", engine="threshold")
         # Top-level keys
         expected_keys = {
-            "source", "rows", "date_start", "date_end", "params",
-            "states", "current_regime", "next_state_probabilities",
+            "source", "engine", "dates",
+            "current_regime", "next_state_probabilities",
             "signal", "transition_matrix", "persistence_diagonal",
-            "stationary_distribution", "walk_forward", "hmm",
-            "hmm_test_extras", "forecast", "framework", "disclaimer",
+            "stationary_distribution", "regime_counts", "walk_forward",
+            "forecast", "engine_info", "framework", "disclaimer",
         }
         for key in expected_keys:
             assert key in result, f"Missing required key: {key}"
+        # Engine
+        assert result["engine"] == "threshold"
+        # Dates
+        assert "start" in result["dates"]
+        assert "end" in result["dates"]
         # Current regime
         assert result["current_regime"]["name"] in ("bear", "sideways", "bull")
         assert isinstance(result["current_regime"]["index"], int)
@@ -168,12 +176,12 @@ class TestPipelineRunInputValidation:
         sd = result["stationary_distribution"]
         total = sd["bear"] + sd["sideways"] + sd["bull"]
         assert abs(total - 1.0) < 0.01
-        # HMM disabled block
-        assert result["hmm"]["available"] is False
-        assert result["hmm"]["reason"] == "HMM disabled via --no-hmm"
-        # Walk-forward
+        # Walk-forward has 6 keys
         wf = result["walk_forward"]
-        assert set(wf.keys()) == {"sharpe", "max_drawdown", "n_trades"}
+        assert set(wf.keys()) == {
+            "sharpe", "max_drawdown", "n_trades",
+            "win_rate", "profit_factor", "total_return",
+        }
         assert isinstance(wf["n_trades"], int)
         # Forecast
         for step in ("1_step", "5_step", "20_step"):
@@ -181,19 +189,170 @@ class TestPipelineRunInputValidation:
             f = result["forecast"][step]
             assert set(f.keys()) == {"bear", "sideways", "bull"}
             assert abs(sum(f.values()) - 1.0) < 0.01
+        # Engine info
+        ei = result["engine_info"]
+        assert ei["method"] == "threshold"
+        # Regime counts
+        rc = result["regime_counts"]
+        assert set(rc.keys()) == {"bear", "sideways", "bull"}
+        assert all(isinstance(v, int) for v in rc.values())
 
-    def test_run_with_hmm_enabled(self, btc_csv):
+    def test_run_with_hmm_engine_requires_ohlcv(self, btc_csv):
+        """pipeline.run(engine='hmm') without OHLCV raises ValueError."""
         prices = load_from_csv(btc_csv)
-        result = pipeline_run(prices, source="test", use_hmm=True)
-        hmm = result["hmm"]
-        assert "available" in hmm
-        # Either HMM succeeded or it's a graceful failure
-        if hmm["available"]:
-            assert "regimes" in hmm
-            assert "transition_matrix" in hmm
-        else:
-            assert "reason" in hmm
-            assert isinstance(hmm["reason"], str)
+        with pytest.raises(ValueError, match=r"OHLCV"):
+            pipeline_run(prices, source="test", engine="hmm")
+
+
+class TestWalkForwardBacktest:
+    """Tests for refactored walk_forward_backtest with discrete trades."""
+
+    def test_threshold_engine_returns_rich_keys(self, btc_csv):
+        """Threshold engine returns 6 keys with discrete trade model."""
+        prices = load_from_csv(btc_csv)
+        result = walk_forward_backtest(prices, engine="threshold")
+        expected = {
+            "sharpe", "max_drawdown", "n_trades",
+            "win_rate", "profit_factor", "total_return",
+        }
+        for key in expected:
+            assert key in result, f"Missing key: {key}"
+
+    def test_threshold_engine_win_rate_in_range(self, btc_csv):
+        """Win rate should be in [0, 1] or NaN."""
+        prices = load_from_csv(btc_csv)
+        result = walk_forward_backtest(prices, engine="threshold")
+        wr = result["win_rate"]
+        assert 0.0 <= wr <= 1.0 or np.isnan(wr)
+
+    def test_threshold_engine_raises_on_invalid_engine(self, btc_csv):
+        """Invalid engine name raises ValueError."""
+        prices = load_from_csv(btc_csv)
+        with pytest.raises(ValueError, match=r"engine"):
+            walk_forward_backtest(prices, engine="invalid")
+
+    def test_insufficient_data_returns_nan(self, btc_csv):
+        """Too few bars returns NaN-filled result."""
+        prices = load_from_csv(btc_csv).iloc[:5]
+        result = walk_forward_backtest(prices, engine="threshold", min_train=252)
+        assert np.isnan(result["sharpe"])
+        assert np.isnan(result["max_drawdown"])
+        assert result["n_trades"] == 0
+        assert np.isnan(result["win_rate"])
+        assert np.isnan(result["profit_factor"])
+        assert np.isnan(result["total_return"])
+
+
+class TestHmmWalkForward:
+    """Tests for HMM-based walk-forward backtest engines."""
+
+    @pytest.fixture
+    def ohlcv_small(self):
+        """Small synthetic OHLCV dataset for fast HMM fitting."""
+        np.random.seed(42)
+        n = 400  # enough for min_train=252
+        dates = pd.date_range("2020-01-01", periods=n, freq="B")
+        close = 100.0 + np.cumsum(np.random.normal(0.02, 1.0, n))
+        close = np.maximum(close, 1.0)  # ensure positive
+        return pd.DataFrame(
+            {
+                "open": close + np.random.normal(0, 0.3, n),
+                "high": close + np.abs(np.random.normal(0.8, 0.4, n)),
+                "low": close - np.abs(np.random.normal(0.8, 0.4, n)),
+                "close": close,
+                "volume": np.random.randint(100, 10000, n).astype(float),
+            },
+            index=dates,
+        )
+
+    def test_hmm_engine_requires_ohlcv(self, btc_csv):
+        """engine=hmm without OHLCV raises ValueError."""
+        prices = load_from_csv(btc_csv)
+        with pytest.raises(ValueError, match=r"ohlcv|OHLCV"):
+            walk_forward_backtest(prices, engine="hmm")
+
+    def test_messina_engine_requires_ohlcv(self, btc_csv):
+        """engine=messina without OHLCV raises ValueError."""
+        prices = load_from_csv(btc_csv)
+        with pytest.raises(ValueError, match=r"ohlcv|OHLCV"):
+            walk_forward_backtest(prices, engine="messina")
+
+    def test_hmm_engine_returns_rich_keys(self, ohlcv_small):
+        """engine=hmm with valid OHLCV produces 6-key result."""
+        prices = ohlcv_small["close"]
+        result = walk_forward_backtest(
+            prices, engine="hmm", ohlcv=ohlcv_small, min_train=300
+        )
+        expected = {
+            "sharpe", "max_drawdown", "n_trades",
+            "win_rate", "profit_factor", "total_return",
+        }
+        for key in expected:
+            assert key in result, f"Missing key: {key}"
+
+    def test_messina_engine_returns_rich_keys(self, ohlcv_small):
+        """engine=messina with valid OHLCV produces 6-key result."""
+        prices = ohlcv_small["close"]
+        result = walk_forward_backtest(
+            prices, engine="messina", ohlcv=ohlcv_small, min_train=300
+        )
+        expected = {
+            "sharpe", "max_drawdown", "n_trades",
+            "win_rate", "profit_factor", "total_return",
+        }
+        for key in expected:
+            assert key in result, f"Missing key: {key}"
+
+
+class TestPipelineRunEngine:
+    """Tests for pipeline.run() with engine parameter."""
+
+    def test_run_with_engine_threshold(self, btc_csv):
+        """pipeline.run(engine='threshold') produces valid output."""
+        prices = load_from_csv(btc_csv)
+        result = pipeline_run(prices, source="test", engine="threshold")
+        assert result["engine"] == "threshold"
+        assert result["engine_info"]["method"] == "threshold"
+        # Walk-forward has 6 keys
+        wf = result["walk_forward"]
+        assert set(wf.keys()) == {
+            "sharpe", "max_drawdown", "n_trades",
+            "win_rate", "profit_factor", "total_return",
+        }
+
+    def test_run_rejects_invalid_engine(self, btc_csv):
+        """Invalid engine raises ValueError."""
+        prices = load_from_csv(btc_csv)
+        with pytest.raises(ValueError, match=r"engine"):
+            pipeline_run(prices, source="test", engine="invalid")
+
+    def test_run_engine_info_has_expected_keys(self, btc_csv):
+        """engine_info block has required fields."""
+        prices = load_from_csv(btc_csv)
+        result = pipeline_run(prices, source="test", engine="threshold")
+        ei = result["engine_info"]
+        assert ei["method"] == "threshold"
+        assert "features" in ei
+        assert "n_states" in ei
+
+    def test_run_output_no_hmm_key(self, btc_csv):
+        """New contract: no top-level hmm key."""
+        prices = load_from_csv(btc_csv)
+        result = pipeline_run(prices, source="test", engine="threshold")
+        assert "hmm" not in result
+        assert "hmm_test_extras" not in result
+
+    def test_run_walk_forward_sharpe_not_none(self, btc_csv):
+        """With sufficient data, walk_forward produces numeric values."""
+        prices = load_from_csv(btc_csv)
+        result = pipeline_run(prices, source="test", engine="threshold")
+        wf = result["walk_forward"]
+        assert isinstance(wf["sharpe"], float)
+        assert not np.isnan(wf["sharpe"])
+        assert isinstance(wf["max_drawdown"], float)
+        assert wf["max_drawdown"] <= 0 or np.isnan(wf["max_drawdown"])
+        assert isinstance(wf["n_trades"], int)
+        assert wf["n_trades"] > 0
 
 
 class TestPipelineHelpers:
@@ -229,3 +388,14 @@ class TestPipelineHelpers:
     def test_nan_to_none_on_transition_matrix_nan(self):
         # Transition matrix may produce NaN in degenerate cases — verify
         assert _nan_to_none(math.nan) is None
+
+    def test_nan_to_none_handles_infinity(self):
+        """Infinity should serialize as None (JSON-safe)."""
+        assert _nan_to_none(float("inf")) is None
+        assert _nan_to_none(float("-inf")) is None
+
+    def test_nan_to_none_preserves_valid_floats(self):
+        """Normal finite floats pass through unchanged."""
+        assert _nan_to_none(3.14) == 3.14
+        assert _nan_to_none(-2.718) == -2.718
+        assert _nan_to_none(0.0) == 0.0

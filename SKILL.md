@@ -2,15 +2,18 @@
 name: hmm-regime-detection
 description: >
   Detect the current market regime (Bull/Bear/Sideways) for any asset using
-  Hidden Markov Models and Markov chain analysis. Use when the user wants
-  regime detection, Markov transition analysis, walk-forward backtesting,
-  or regime-based risk gating — on a ticker (via yfinance) or on CSV price data.
-  Produces a structured JSON output compatible with the agentskills.io regime contract.
+  threshold-based classification or Hidden Markov Models. Three independent
+  engines: threshold (fast, close-only), messina (HMM + 12 Messina features),
+  hmm (HMM + ~44 generic features). Each engine produces a self-contained
+  output with bias-free walk-forward backtest and trade-level analytics.
+  Use when the user wants regime detection, Markov transition analysis,
+  walk-forward backtesting, or regime-based risk gating — on a ticker
+  (via yfinance) or on CSV price data.
 ---
 
 # HMM Regime Detection Skill
 
-Detect whether an asset is in a **Bull** (uptrend), **Bear** (downtrend), or **Sideways** (range-bound) regime using threshold-based classification with optional Hidden Markov Model (HMM) analysis. Includes no-lookahead walk-forward backtesting so you can evaluate how regime-based trading signals would have performed historically.
+Detect whether an asset is in a **Bull** (uptrend), **Bear** (downtrend), or **Sideways** (range-bound) regime. Three independent engines are available, each producing a complete, self-contained analysis with bias-free walk-forward backtest and trade-level analytics.
 
 ## Quick Invocation
 
@@ -19,116 +22,124 @@ SKILL_DIR="$HOME/.hermes/skills/trading/hmm_test"
 VENV="$SKILL_DIR/.venv"
 
 # ── FIRST TIME: create and populate the venv ──────────────────────────────
-# The skill ships without a venv. Dependencies must be installed before use.
 cd "$SKILL_DIR" && uv venv "$VENV" --python 3.12
 uv pip install --python "$VENV/bin/python" ".[yfinance]"
 
-# ── NORMAL RUNS (always use the venv python — bare 'python' will fail) ────
+# ── NORMAL RUNS ──────────────────────────────────────────────────────────
 "$VENV/bin/python" "$SKILL_DIR/scripts/cli.py" --ticker KO --json
-"$VENV/bin/python" "$SKILL_DIR/scripts/cli.py" --csv data.csv --json --no-hmm
+"$VENV/bin/python" "$SKILL_DIR/scripts/cli.py" --csv data.csv --json
+"$VENV/bin/python" "$SKILL_DIR/scripts/cli.py" --csv data.csv --json --engine messina
 ```
 
-> **Common failure**: running `python scripts/cli.py` without activating the venv first hits `ModuleNotFoundError: No module named 'pydantic'` (or other deps). Always use `.venv/bin/python` explicitly.
+> **Common failure**: running `python scripts/cli.py` without activating the venv hits `ModuleNotFoundError`. Always use `.venv/bin/python` explicitly.
 
-The `--json` flag sends one JSON object to stdout and nothing else. Without `--json`, a pretty-printed table goes to stderr.
+## Engines
+
+Three independent, self-contained engines. Pick one per invocation via `--engine`:
+
+| Engine | `--engine` | Features | Model | Data required |
+|--------|-----------|----------|-------|---------------|
+| **Threshold** | `threshold` (default) | 1 (returns) | Rolling return vs. threshold | Close prices |
+| **Messina** | `messina` | 12 (Wilder's) | GaussianHMM on expanding window | OHLCV |
+| **HMM** | `hmm` | ~44 (SMA-based) | GaussianHMM on expanding window | OHLCV |
+
+The Messina and HMM engines require OHLCV data and automatically receive it when using `--ticker`. For CSV mode, the CSV must contain open/high/low/close/volume columns.
 
 ## Arguments
 
 | Argument | Type | Default | Description |
 |----------|------|---------|-------------|
-| `--csv` | path | — | Path to CSV file with price data (relative or absolute). |
+| `--csv` | path | — | Path to CSV file with price data. |
 | `--ticker` | str | — | yfinance ticker (e.g. `ES=F`, `SPY`, `BTC-USD`). |
 | `--json` | flag | off | Output JSON to stdout. On error: `{"error": "..."}` + exit 1. |
+| `--engine` | str | `threshold` | One of `threshold`, `messina`, `hmm`. |
 | `--window` | int | 20 | Rolling window for regime classification. |
-| `--threshold` | float | 0.05 | Rolling return threshold for bull/bear classification. |
+| `--threshold` | float | 0.05 | Return threshold for bull/bear classification. |
 | `--min-train` | int | 252 | Minimum bars before walk-forward trading starts. |
-| `--hmm` | flag | on | Enable HMM analysis (default). |
-| `--no-hmm` | flag | — | Disable HMM (threshold only). |
-| `--n-states` | int | 3 | Number of HMM states. |
+| `--n-states` | int | 3 | Number of HMM states (ignored by threshold engine). |
+
+### Removed flags (v0.2.0)
+
+`--hmm`/`--no-hmm` and `--messina` have been replaced by `--engine`. Old invocations will error.
 
 ## State Interpretation
 
-| State | Index | Trading Action |
-|-------|-------|----------------|
-| **Bear** | 0 | Short (or exit longs) |
-| **Sideways** | 1 | Flat / no position |
-| **Bull** | 2 | Long |
+| Regime | Index | Position |
+|--------|-------|----------|
+| **Bear** | 0 | Short (−1) |
+| **Sideways** | 1 | Flat (0) |
+| **Bull** | 2 | Long (+1) |
 
-The threshold method uses rolling return to classify: above `+threshold` = Bull, below `-threshold` = Bear, otherwise Sideways.
+The threshold engine uses rolling return to classify: above `+threshold` = Bull, below `-threshold` = Bear, otherwise Sideways. HMM engines sort states by ascending mean return to determine the mapping.
 
 ## JSON Output Contract
 
-The JSON output is compatible with the agentskills.io regime contract. All agents consuming this skill should expect the following structure:
-
-### Top-level fields
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `source` | str | Ticker symbol or CSV filename. |
-| `rows` | int | Number of price bars. |
-| `date_start` | str | First date in the series (YYYY-MM-DD). |
-| `date_end` | str | Last date in the series (YYYY-MM-DD). |
-| `params` | object | Parameters used: `window`, `threshold`, `method`. |
-| `states` | array | Metadata: `[{"name": "bear", "index": 0}, ...]`. |
-| `current_regime` | object | `{"name": "bull", "index": 2}`. Based on the most recent bar. |
-| `next_state_probabilities` | object | `{"bear": 0.1, "sideways": 0.3, "bull": 0.6}`. From transition matrix row for the current regime. |
-| `signal` | float | `P(bull) - P(bear)`, range [-1, 1]. Positive = bullish signal. |
-| `transition_matrix` | 3×3 array | Row-normalised transition matrix. Row `i` = probabilities of transitioning *from* state `i`. |
-| `persistence_diagonal` | object | `{"bear": 0.85, ...}`. Diagonal of transition matrix — higher = stickier regime. |
-| `stationary_distribution` | object | `{"bear": 0.25, ...}`. Long-run fraction of time spent in each regime. |
-| `walk_forward` | object | `{"sharpe": 1.2, "max_drawdown": -0.15, "n_trades": 45}`. NaN values become `null` in JSON. |
-| `hmm` | object | `{"available": true/false, ...}`. HMM results if available. |
-| `hmm_test_extras` | object | `{"n_states": 3, "method": "threshold", "data_points": 2528, "regime_counts": {...}}`. Skill-specific metadata. |
-| `forecast` | object | 1, 5, and 20-step-ahead regime probability forecasts via matrix exponentiation. |
-| `framework` | str | `"hmm_test v0.1.0"`. |
-| `disclaimer` | str | Standard disclaimer. |
-
-### hmm_test_extras structure
-
 ```json
 {
-  "n_states": 3,
-  "method": "threshold",
-  "data_points": 2528,
-  "regime_counts": {
-    "bear": 500,
-    "sideways": 1000,
-    "bull": 1028
-  }
+  "source": "ES=F",
+  "engine": "threshold",
+  "dates": {"start": "2016-01-04", "end": "2026-05-21"},
+  "current_regime": {"name": "bull", "index": 2},
+  "signal": 0.62,
+  "next_state_probabilities": {"bear": 0.08, "sideways": 0.30, "bull": 0.62},
+  "transition_matrix": [[0.88, 0.07, 0.05], [0.12, 0.70, 0.18], [0.04, 0.19, 0.77]],
+  "stationary_distribution": {"bear": 0.22, "sideways": 0.35, "bull": 0.43},
+  "persistence_diagonal": {"bear": 0.88, "sideways": 0.70, "bull": 0.77},
+  "regime_counts": {"bear": 480, "sideways": 760, "bull": 960},
+  "walk_forward": {
+    "sharpe": 0.51,
+    "max_drawdown": -0.15,
+    "n_trades": 42,
+    "win_rate": 0.57,
+    "profit_factor": 1.80,
+    "total_return": 0.23
+  },
+  "forecast": {
+    "1_step":  {"bear": 0.08, "sideways": 0.30, "bull": 0.62},
+    "5_step":  {"bear": 0.12, "sideways": 0.33, "bull": 0.55},
+    "20_step": {"bear": 0.18, "sideways": 0.35, "bull": 0.47}
+  },
+  "engine_info": {
+    "method": "threshold",
+    "features": "returns",
+    "n_states": 3
+  },
+  "framework": "hmm_test v0.2.0",
+  "disclaimer": "Regime detection is probabilistic. Past transitions do not guarantee future regimes. Not financial advice."
 }
 ```
 
+### Walk-forward fields
+
+All values are floats (may be `null` for insufficient data):
+
+| Field | Description |
+|-------|-------------|
+| `sharpe` | Annualised Sharpe ratio (daily factor √252) |
+| `max_drawdown` | Maximum drawdown from peak (negative, e.g. −0.15 = 15%) |
+| `n_trades` | Number of completed trades (integer) |
+| `win_rate` | Fraction of trades with positive P&L |
+| `profit_factor` | Gross profit / gross loss |
+| `total_return` | Total return over the trading period |
+
+### Engine info fields
+
+| Field | Description |
+|-------|-------------|
+| `method` | Engine name: `threshold`, `messina`, or `hmm` |
+| `features` | Feature mode: `returns`, `messina`, or `generic` |
+| `n_states` | Number of HMM states (always 3, included for reference) |
+| `caveat` | Present on HMM engines: warns about label instability on re-fit |
+
 ## Processing Pipeline
 
-1. **Load data** — CSV via auto-detection of date/close columns, or yfinance ticker download.
+1. **Load data** — CSV via auto-detection of date/close columns, or yfinance ticker download. For `--engine messina`/`hmm`, full OHLCV is loaded.
 2. **Compute returns** — `pct_change().dropna()`.
 3. **Classify regimes** — Rolling sum of returns over `--window` bars vs `--threshold`.
 4. **Build transition matrix** — Counts → row-normalised 3×3 probability matrix.
 5. **Compute statistics** — Stationary distribution, persistence diagonal, directional signal.
-6. **Walk-forward backtest** — No-lookahead: at each bar `t`, uses only data `[0:t)` for regime classification, then trades at `t` using the signal. Equity curve built from daily P&L.
-7. **HMM analysis** (optional) — Fits a GaussianHMM with `n_states=3`, re-orders states by mean return (lowest→bear, highest→bull), returns labeled regimes and transition matrix.
-8. **Forecast** — Matrix exponentiation to project regime probabilities 1, 5, and 20 steps ahead.
-
-## Modes
-
-### Threshold (default, always runs)
-
-Fast, deterministic. Good for quick regime checks. Uses rolling return sums. No model fitting required.
-
-### HMM (optional, runs when `--hmm` or default)
-
-Slower but richer. Fits a Gaussian Hidden Markov Model with 3 states. States are labeled post-hoc by ascending mean return expectation. **Caveat**: labels may swap on re-fit — agents should not rely on state index stability across runs.
-
-If HMM fails (e.g. hmmlearn not installed, insufficient data, convergence failure), the output includes `{"available": false, "reason": "..."}` and the threshold-based results are still valid.
-
-## Walk-Forward Backtest Detail
-
-- **No lookahead bias**: At time `t`, only price data up to `t-1` is used for regime classification.
-- **Signal trading**: Position = `clip(signal, -1, 1)` applied at bar `t`. No transaction costs modeled.
-- **Equity curve**: Cumulative product of `1 + position * return`.
-- **Min train**: First `min_train` bars are excluded from trading (insufficient history).
-- **Sharpe ratio**: Annualised using `sqrt(252)` daily factor. Returns `NaN` (→ `null` in JSON) if insufficient data.
-- **Drawdown**: Max drawdown from peak equity. Negative value (e.g. `-0.15` = 15% drawdown).
+6. **Walk-forward backtest** — No-lookahead: at each bar `t`, regime classification uses only data `[0:t)`. Discrete positions (−1, 0, +1) via `{bear: short, sideways: flat, bull: long}`. Trades fire on regime changes. Daily P&L from lagged positions × returns.
+7. **Forecast** — Matrix exponentiation to project regime probabilities 1, 5, and 20 steps ahead.
 
 ## Signal Interpretation
 
@@ -136,10 +147,10 @@ If HMM fails (e.g. hmmlearn not installed, insufficient data, convergence failur
 signal = P(next_regime = Bull) - P(next_regime = Bear)
 ```
 
-- **+1.0**: Strong bullish expectation → go long.
-- **0.0**: Neutral → stay flat.
-- **-1.0**: Strong bearish expectation → go short.
-- Intermediate values: fractional positions (e.g. `0.5` = half long).
+- **+1.0**: Strong bullish expectation → long conviction
+- **0.0**: Neutral → flat
+- **-1.0**: Strong bearish expectation → short conviction
+- Intermediate values: fractional between 0.0 and extremes
 
 ## Composition Patterns
 
@@ -149,7 +160,7 @@ signal = P(next_regime = Bull) - P(next_regime = Bear)
 import subprocess, json
 
 result = subprocess.run(
-    ["python", "scripts/cli.py", "--csv", "data.csv", "--json"],
+    ["python", "scripts/cli.py", "--csv", "data.csv", "--json", "--engine", "threshold"],
     capture_output=True, text=True
 )
 
@@ -158,40 +169,32 @@ if result.returncode == 0:
     regime = data["current_regime"]["name"]
     signal = data["signal"]
     sharpe = data["walk_forward"]["sharpe"]
+    win_rate = data["walk_forward"]["win_rate"]
     # Use regime + signal for allocation decision
 else:
     error = json.loads(result.stdout)["error"]
-    # Handle failure
 ```
 
 ### Ticker scanning
 
-Loop over tickers and collect signals:
-
 ```bash
 for ticker in SPY QQQ IWM DIA; do
-  python scripts/cli.py --ticker $ticker --json --no-hmm
+  python scripts/cli.py --ticker $ticker --json --engine threshold
 done
 ```
 
-### Gate a strategy with regime
-
-Use `signal > 0` as a long-only filter, or `abs(signal) > 0.2` as a minimum conviction threshold.
-
 ## Gotchas
 
-1. **HMM label instability**: Labels "bear"/"bull" are inferred from ascending state means and can swap between re-fits. Threshold mode labels are stable.
-2. **Sharpe for intraday data**: The default `sqrt(252)` assumes daily bars. For intraday data, the Sharpe may be inflated. Use `--min-train` appropriately.
-3. **Insufficient data**: If `len(prices) < min_train + 1`, walk_forward returns `null` Sharpe and 0 trades.
-4. **CSV format**: Auto-detects date and close columns. If detection fails, specify columns explicitly or reformat the CSV.
-5. **yfinance dependency**: Optional. Install with `pip install yfinance` or `uv sync --extra yfinance`.
-6. **signal = 0**: Can happen when bull and bear probabilities are equal. Common in sideways markets.
-7. **HMM silently fails on some tickers**: When GaussianHMM.fit() cannot converge or finds no valid observation sequence (e.g., returns "Not enough clean rows (0)"), the output includes `hmm.available: false` with a reason string. **This does NOT crash the tool** — threshold results are still returned correctly. Do not treat HMM unavailability as a skill malfunction; it is expected behaviour for certain price series. Use `--no-hmm` explicitly if HMM failures are causing issues in downstream pipelines.
+1. **HMM label instability**: Messina/hmm engines sort states by mean return. Labels may swap between re-fits on different data. Threshold engine labels are stable.
+2. **HMM engines need OHLCV**: `--csv` with `--engine messina` or `--engine hmm` requires open/high/low/close/volume columns. For close-only CSVs, use `--engine threshold`.
+3. **Sharpe for intraday data**: The default `sqrt(252)` assumes daily bars. For intraday data, the Sharpe may be inflated.
+4. **Insufficient data**: If `len(prices) < min_train + 1`, walk_forward returns `null` for all fields except `n_trades` (0).
+5. **CSV format**: Auto-detects date and close columns. If detection fails, specify columns explicitly or reformat the CSV.
+6. **yfinance dependency**: Optional. Install with `pip install yfinance` or `uv sync --extra yfinance`.
+7. **signal = 0**: Can happen when bull and bear probabilities are equal. Common in sideways markets.
 8. **Threshold sensitivity**: Small `--threshold` values produce frequent regime switches. Large values make the regime "sticky".
 
 ## Reference Index
-
-For deeper dives on specific topics, see the reference files:
 
 | Topic | File |
 |-------|------|
@@ -200,7 +203,6 @@ For deeper dives on specific topics, see the reference files:
 | Walk-forward methodology, drawdown, position sizing | [`references/backtesting_detail.md`](references/backtesting_detail.md) |
 | All parameters, tuning, recommended values by asset class | [`references/configuration.md`](references/configuration.md) |
 | Common errors and fixes | [`references/troubleshooting.md`](references/troubleshooting.md) |
-| HMM silent failure ("Not enough clean rows (0)") | [`references/hmm_silent_failure.md`](references/hmm_silent_failure.md) |
 
 ## Dependencies
 

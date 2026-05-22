@@ -1,9 +1,9 @@
 """Regime detection pipeline — callable from Python or CLI.
 
 This module owns the full analysis pipeline: threshold-based regime
-classification, transition matrix, statistics, forecasts, walk-forward
-backtest, and optional HMM analysis.  It returns a plain dict that
-conforms to the regime-detection JSON contract.
+classification, transition matrix, statistics, forecasts, and walk-forward
+backtest.  Supports three engines: threshold (fast, close-only), messina
+(HMM + 12 Messina features), and hmm (HMM + ~44 generic features).
 """
 
 from __future__ import annotations
@@ -13,7 +13,6 @@ import math
 import numpy as np
 import pandas as pd
 
-from regime.hmm_adapter import run_hmm_regime
 from regime.markov_chain import (
     build_transition_matrix,
     classify_regimes,
@@ -25,11 +24,19 @@ from regime.markov_chain import (
 from regime.walk_forward import walk_forward_backtest
 
 _STATE_NAMES = ("bear", "sideways", "bull")
-_FRAMEWORK_VERSION = "hmm_test v0.1.0"
+_VALID_ENGINES = frozenset({"threshold", "messina", "hmm"})
+_FRAMEWORK_VERSION = "hmm_test v0.2.0"
 _DISCLAIMER = (
     "Regime detection is probabilistic. Past transitions do not guarantee "
     "future regimes. Not financial advice."
 )
+
+# Engine feature labels
+_ENGINE_FEATURES: dict[str, str] = {
+    "threshold": "returns",
+    "messina": "messina",
+    "hmm": "generic",
+}
 
 
 def _probs_to_dict(probs: np.ndarray) -> dict[str, float]:
@@ -42,18 +49,21 @@ def _probs_to_dict(probs: np.ndarray) -> dict[str, float]:
 
 
 def _nan_to_none(value: float) -> float | None:
-    """Replace NaN with None for JSON serialisation."""
-    return None if isinstance(value, float) and math.isnan(value) else value
+    """Replace NaN and Infinity with None for JSON serialisation."""
+    if isinstance(value, float) and (math.isnan(value) or math.isinf(value)):
+        return None
+    return value
 
 
 def run(
     prices: pd.Series,
     *,
     source: str,
+    engine: str = "threshold",
     window: int = 20,
     threshold: float = 0.05,
     min_train: int = 252,
-    use_hmm: bool = True,
+    ohlcv: pd.DataFrame | None = None,
     n_states: int = 3,
 ) -> dict:
     """Run the full regime-detection pipeline and return a JSON-compatible dict.
@@ -61,25 +71,33 @@ def run(
     Parameters
     ----------
     prices : pd.Series
-        Price series with a DatetimeIndex.
+        Close price series with a DatetimeIndex.
     source : str
         Label for the data source (ticker symbol or filename).
+    engine : str
+        Which engine to use: ``"threshold"``, ``"messina"``, or ``"hmm"``.
     window : int
         Rolling window for threshold-based regime classification.
     threshold : float
         Return threshold for bull/bear classification.
     min_train : int
         Minimum bars before walk-forward trading starts.
-    use_hmm : bool
-        Whether to run optional HMM analysis.
+    ohlcv : pd.DataFrame | None
+        OHLCV data (required for messina/hmm engines).
     n_states : int
-        Number of HMM states.
+        Number of HMM states (ignored by threshold engine).
 
     Returns
     -------
     dict
-        JSON-compatible output conforming to the regime-detection contract.
+        JSON-compatible output conforming to the hmm-regime-detection contract.
     """
+    # --- Engine validation ---
+    if engine not in _VALID_ENGINES:
+        raise ValueError(
+            f"engine must be one of {sorted(_VALID_ENGINES)}, got {engine!r}"
+        )
+
     # --- Input validation ---
     if not isinstance(prices, pd.Series):
         raise ValueError(f"prices must be a pd.Series, got {type(prices).__name__}")
@@ -96,7 +114,7 @@ def run(
             f"prices must yield at least 2 valid returns, got {len(returns)}"
         )
 
-    # --- Threshold-based regime classification ---
+    # --- Threshold-based regime classification (always runs for stats) ---
     regimes = classify_regimes(returns, window=window, threshold=threshold)
     transmat = build_transition_matrix(regimes)
     stationary = compute_stationary_distribution(transmat)
@@ -128,61 +146,58 @@ def run(
 
     # Walk-forward backtest
     wf = walk_forward_backtest(
-        prices, window=window, threshold=threshold, min_train=min_train
+        prices,
+        engine=engine,
+        window=window,
+        threshold=threshold,
+        min_train=min_train,
+        ohlcv=ohlcv,
+        n_states=n_states,
     )
     walk_forward = {
         "sharpe": _nan_to_none(wf["sharpe"]),
         "max_drawdown": _nan_to_none(wf["max_drawdown"]),
         "n_trades": wf["n_trades"],
+        "win_rate": _nan_to_none(wf["win_rate"]),
+        "profit_factor": _nan_to_none(wf["profit_factor"]),
+        "total_return": _nan_to_none(wf["total_return"]),
     }
 
-    # HMM (optional)
-    hmm_result: dict
-    if use_hmm:
-        try:
-            hmm_result = run_hmm_regime(prices, n_states=n_states)
-        except (ValueError, RuntimeError) as exc:
-            hmm_result = {"available": False, "reason": str(exc)}
-    else:
-        hmm_result = {"available": False, "reason": "HMM disabled via --no-hmm"}
+    # Engine info
+    engine_info: dict[str, object] = {
+        "method": engine,
+        "features": _ENGINE_FEATURES.get(engine, engine),
+        "n_states": n_states,
+    }
+    if engine in ("messina", "hmm"):
+        engine_info["caveat"] = (
+            "HMM states sorted by mean return; labels may swap on re-fit"
+        )
 
     return {
         "source": source,
-        "rows": len(prices),
-        "date_start": date_start,
-        "date_end": date_end,
-        "params": {
-            "window": window,
-            "threshold": threshold,
-            "method": "threshold",
+        "engine": engine,
+        "dates": {
+            "start": date_start,
+            "end": date_end,
         },
-        "states": [
-            {"name": "bear", "index": 0},
-            {"name": "sideways", "index": 1},
-            {"name": "bull", "index": 2},
-        ],
         "current_regime": {
             "name": _STATE_NAMES[last_regime],
             "index": last_regime,
         },
-        "next_state_probabilities": _probs_to_dict(current_probs),
         "signal": signal,
+        "next_state_probabilities": _probs_to_dict(current_probs),
         "transition_matrix": transmat.tolist(),
-        "persistence_diagonal": persistence,
         "stationary_distribution": _probs_to_dict(stationary),
+        "persistence_diagonal": persistence,
+        "regime_counts": regime_counts_map,
         "walk_forward": walk_forward,
-        "hmm": hmm_result,
-        "hmm_test_extras": {
-            "n_states": n_states,
-            "method": "threshold",
-            "data_points": len(prices),
-            "regime_counts": regime_counts_map,
-        },
         "forecast": {
             "1_step": forecast_1,
             "5_step": forecast_5,
             "20_step": forecast_20,
         },
+        "engine_info": engine_info,
         "framework": _FRAMEWORK_VERSION,
         "disclaimer": _DISCLAIMER,
     }
