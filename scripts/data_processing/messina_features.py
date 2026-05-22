@@ -117,8 +117,12 @@ def add_messina_features(
     -------
     pd.DataFrame
         Original df with added columns:
-        log_ret, sma_200, sma_13, atr_20, adx_14, di_plus_14, di_minus_14,
-        adx_slope, vstop, vstop_trend, price_sma200_ratio, price_vstop_ratio
+        log_ret, sma_200, sma_13, atr_20, adx_14, adx_inflection,
+        di_plus_14, di_minus_14, di_spread,
+        vstop, vstop_trend, vstop_interaction,
+        price_sma200_ratio, price_vstop_ratio,
+        price_vstop_gap_atr, sma200_distance_atr,
+        volume_ratio, true_range_pct, kdj_j
     """
     required = {"open", "high", "low", "close", "volume"}
     missing = required - set(df.columns)
@@ -165,22 +169,68 @@ def add_messina_features(
     df["di_plus_14"] = di_plus
     df["di_minus_14"] = di_minus
 
-    # ADX slope (3-day)
-    df["adx_slope"] = df["adx_14"].diff(3)
+    # ADX inflection (1-day) — V3 rule #1: the last tick matters more than 3-day slope
+    df["adx_inflection"] = df["adx_14"].diff(1)
+
+    # DI spread — directional momentum balance; keeps the continuous distribution
+    # the HMM needs (di_crossover was too sparse — broke Gaussian clustering)
+    df["di_spread"] = di_plus - di_minus
 
     # ── VSTOP ─────────────────────────────────────────────────────────
     df["vstop"], trend_series = _calc_vstop(df["sma_13"], df["atr_20"], vstop_multiplier)
     df["vstop_trend"] = trend_series  # 1 = uptrend, -1 = downtrend
 
-    # ── Derived ratios ───────────────────────────────────────────────
+    # VSTOP interaction — encodes whether VSTOP acts as support or resistance
+    # sign(close - vstop) * vstop_trend:
+    #   +1 = price above VSTOP in uptrend (support held)
+    #   −1 = price below VSTOP in uptrend (retest zone)
+    #   +1 = price below VSTOP in downtrend (resistance held)
+    #   −1 = price above VSTOP in downtrend (D→B break)
+    df["vstop_interaction"] = np.sign(df["close"] - df["vstop"]) * df["vstop_trend"]
+
+    # ── Derived ratios & level gaps ───────────────────────────────────
     df["price_sma200_ratio"] = close / df["sma_200"]
     df["price_vstop_ratio"] = close / df["vstop"]
+
+    # Volatility-normalised gaps from key levels (V3 §4.3 freshness, §2.1 structure)
+    df["price_vstop_gap_atr"] = (close - df["vstop"]) / df["atr_20"]
+    df["sma200_distance_atr"] = (close - df["sma_200"]) / df["atr_20"]
+
+    # ── Volume & volatility ──────────────────────────────────────────
+    # Volume ratio — regime events (VSTOP break, crossover) on high volume
+    # are more significant than on low volume
+    vol_sma20 = df["volume"].rolling(window=20, min_periods=20).mean()
+    df["volume_ratio"] = df["volume"] / vol_sma20
+
+    # True range as percentage of price — volatility regime independent of price level
+    df["true_range_pct"] = tr / close
+
+    # ── KDJ oscillator (Wilder's smoothing, period 3) ─────────────────
+    # Standard configuration: 9, 3, 3, 3 (RSV period, K smooth, D smooth, J coeff)
+    # Uses Wilder's moving average: K = K_prev + (RSV − K_prev) / smooth
+    # J-line oscillates beyond [0, 100] for early overbought (>100) / oversold (<0)
+    kdj_n = 9
+    kdj_smooth = 3
+    low_n = df["low"].rolling(window=kdj_n, min_periods=kdj_n).min()
+    high_n = df["high"].rolling(window=kdj_n, min_periods=kdj_n).max()
+    rsv = 100.0 * (close - low_n) / (high_n - low_n)
+    kdj_k = pd.Series(np.nan, index=df.index)
+    kdj_d = pd.Series(np.nan, index=df.index)
+    first_k = kdj_n - 1  # first valid RSV bar
+    if len(df) > first_k:
+        kdj_k.iloc[first_k] = rsv.iloc[first_k]  # Wilder's: initialise from first value
+        kdj_d.iloc[first_k] = rsv.iloc[first_k]
+        for i in range(first_k + 1, len(df)):
+            if pd.notna(rsv.iloc[i]):
+                kdj_k.iloc[i] = kdj_k.iloc[i - 1] + (rsv.iloc[i] - kdj_k.iloc[i - 1]) / kdj_smooth
+                kdj_d.iloc[i] = kdj_d.iloc[i - 1] + (kdj_k.iloc[i] - kdj_d.iloc[i - 1]) / kdj_smooth
+    df["kdj_j"] = 3.0 * kdj_k - 2.0 * kdj_d
 
     # Replace infinities from division by zero
     df.replace([np.inf, -np.inf], np.nan, inplace=True)
 
     logger.info(
-        "Added Messina features: sma_200, sma_13, atr_20, adx_14, "
-        "di_+/-, adx_slope, vstop, ratios"
+        "Added Messina features (18): sma_200, sma_13, atr_20, adx_14, "
+        "adx_inflection, di_+/-, di_crossover, vstop, ratios, gaps, volume"
     )
     return df

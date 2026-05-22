@@ -17,8 +17,12 @@ from data_processing.messina_features import add_messina_features
 # Feature column names for Messina mode
 _MESSINA_COLS = [
     "log_ret", "sma_200", "sma_13", "atr_20",
-    "adx_14", "di_plus_14", "di_minus_14", "adx_slope",
-    "vstop", "vstop_trend", "price_sma200_ratio", "price_vstop_ratio",
+    "adx_14", "adx_inflection",
+    "di_plus_14", "di_minus_14", "di_spread",
+    "vstop", "vstop_trend", "vstop_interaction",
+    "price_sma200_ratio", "price_vstop_ratio",
+    "price_vstop_gap_atr", "sma200_distance_atr",
+    "volume_ratio", "true_range_pct", "kdj_j",
 ]
 
 

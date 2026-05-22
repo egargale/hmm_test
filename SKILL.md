@@ -3,7 +3,7 @@ name: hmm-regime-detection
 description: >
   Detect the current market regime (Bull/Bear/Sideways) for any asset using
   threshold-based classification or Hidden Markov Models. Three independent
-  engines: threshold (fast, close-only), messina (HMM + 12 Messina features),
+  engines: threshold (fast, close-only), messina (HMM + 17 Messina features),
   hmm (HMM + ~44 generic features). Each engine produces a self-contained
   output with bias-free walk-forward backtest and trade-level analytics.
   Use when the user wants regime detection, Markov transition analysis,
@@ -40,7 +40,7 @@ Three independent, self-contained engines. Pick one per invocation via `--engine
 | Engine | `--engine` | Features | Model | Data required |
 |--------|-----------|----------|-------|---------------|
 | **Threshold** | `threshold` (default) | 1 (returns) | Rolling return vs. threshold | Close prices |
-| **Messina** | `messina` | 12 (Wilder's) | GaussianHMM on expanding window | OHLCV |
+| **Messina** | `messina` | 18 (Wilder's) | GaussianHMM on expanding window | OHLCV |
 | **HMM** | `hmm` | ~44 (SMA-based) | GaussianHMM on expanding window | OHLCV |
 
 The Messina and HMM engines require OHLCV data and automatically receive it when using `--ticker`. For CSV mode, the CSV must contain open/high/low/close/volume columns.
