@@ -8,6 +8,8 @@ wheels/
 
 # Virtual environments
 .venv
+# Oh-My_ClaudeCode
+.omc/
 
 # Logs
 logs
@@ -33,4 +35,4 @@ node_modules/
 
 # Task files
 # tasks.json
-# tasks/ 
+# tasks/

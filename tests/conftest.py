@@ -1,5 +1,4 @@
 """Shared fixtures for hmm_test integration tests."""
-import json
 import subprocess
 import sys
 from pathlib import Path

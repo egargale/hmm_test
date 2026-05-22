@@ -47,14 +47,13 @@ def walk_forward_backtest(
     if len(prices) < min_train + 1:
         return {"sharpe": np.nan, "max_drawdown": np.nan, "n_trades": 0}
 
-    returns = prices.pct_change().dropna()
+    returns = prices.pct_change(fill_method=None).dropna()
     n = len(returns)
 
     if n < min_train:
         return {"sharpe": np.nan, "max_drawdown": np.nan, "n_trades": 0}
 
     positions = np.zeros(n)
-    prev_position = 0.0
 
     for t in range(min_train, n):
         hist_returns = returns.iloc[:t]
@@ -66,7 +65,6 @@ def walk_forward_backtest(
         signal = compute_signal(next_state_probs)
 
         positions[t] = np.clip(signal, -1.0, 1.0)
-        prev_position = positions[t]
 
     pnl = positions * returns.values
     pnl_series = pd.Series(pnl, index=returns.index)

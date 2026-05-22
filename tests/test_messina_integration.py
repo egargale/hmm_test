@@ -1,8 +1,6 @@
 """Integration tests for --messina CLI flag and OHLCV HMM path."""
 import json
 
-import pytest
-
 from tests.conftest import run_regime
 
 

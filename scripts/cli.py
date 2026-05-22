@@ -25,7 +25,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import numpy as np
 import pandas as pd
 
-from data_processing.csv_auto_detect import load_from_csv, load_from_yfinance
+from data_processing.csv_auto_detect import load_from_csv
 from regime.hmm_adapter import run_hmm_regime
 from regime.markov_chain import (
     build_transition_matrix,

@@ -292,7 +292,7 @@ class CSVFormatDetector:
                 return enc
             except (UnicodeDecodeError, Exception):
                 continue
-        logger.warning(f"Encoding detection failed, defaulting to utf-8")
+        logger.warning("Encoding detection failed, defaulting to utf-8")
         return "utf-8"
 
     def _detect_delimiter(self, file_path: Path, encoding: str) -> str:

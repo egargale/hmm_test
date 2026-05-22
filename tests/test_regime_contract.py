@@ -1,8 +1,6 @@
 """Contract validation tests for regime.py JSON output."""
 import json
 
-import pytest
-
 from tests.conftest import run_regime
 
 # Required top-level keys in the JSON contract

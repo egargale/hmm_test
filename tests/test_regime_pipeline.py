@@ -1,7 +1,8 @@
 """Integration tests for the regime detection pipeline."""
-import json
+import math
 
 import numpy as np
+import pandas as pd
 import pytest
 
 from regime.markov_chain import (
@@ -12,6 +13,7 @@ from regime.markov_chain import (
     compute_stationary_distribution,
     forecast_n_steps,
 )
+from regime.pipeline import _nan_to_none, _probs_to_dict, run as pipeline_run
 from regime.walk_forward import walk_forward_backtest
 from data_processing.csv_auto_detect import load_from_csv
 
@@ -92,3 +94,138 @@ class TestThresholdPipeline:
         assert "bear" in persistence
         assert "sideways" in persistence
         assert "bull" in persistence
+
+
+class TestPipelineRunInputValidation:
+    """Input validation tests for pipeline.run()."""
+
+    @staticmethod
+    def _make_series(n: int) -> pd.Series:
+        dates = pd.date_range("2024-01-01", periods=n, freq="D")
+        return pd.Series(
+            [float(i) for i in range(1, n + 1)], index=dates, dtype=float
+        )
+
+    def test_rejects_empty_series(self):
+        with pytest.raises(ValueError, match="at least 2 rows"):
+            pipeline_run(self._make_series(0), source="test")
+
+    def test_rejects_single_row(self):
+        with pytest.raises(ValueError, match="at least 2 rows"):
+            pipeline_run(self._make_series(1), source="test")
+
+    def test_rejects_zero_price_series(self):
+        """[0.0, 0.0] produces only NaN returns after pct_change — empty after dropna."""
+        idx = pd.date_range("2024-01-01", periods=2, freq="D")
+        with pytest.raises(ValueError, match="at least 2 valid returns"):
+            pipeline_run(pd.Series([0.0, 0.0], index=idx), source="test")
+
+    def test_rejects_non_numeric_dtype(self):
+        idx = pd.date_range("2024-01-01", periods=3, freq="D")
+        s = pd.Series(["10.0", "20.0", "30.0"], index=idx)
+        with pytest.raises(ValueError, match="numeric"):
+            pipeline_run(s, source="test")
+
+    def test_rejects_non_datetime_index(self):
+        s = pd.Series([1.0, 2.0, 3.0])
+        with pytest.raises(ValueError, match="DatetimeIndex"):
+            pipeline_run(s, source="test")
+
+    def test_rejects_dataframe(self):
+        df = pd.DataFrame({"close": [1.0, 2.0, 3.0]})
+        with pytest.raises(ValueError, match=r"pd\.Series"):
+            pipeline_run(df, source="test")
+
+    def test_run_returns_valid_structure(self, btc_csv):
+        prices = load_from_csv(btc_csv)
+        result = pipeline_run(prices, source="test", use_hmm=False)
+        # Top-level keys
+        expected_keys = {
+            "source", "rows", "date_start", "date_end", "params",
+            "states", "current_regime", "next_state_probabilities",
+            "signal", "transition_matrix", "persistence_diagonal",
+            "stationary_distribution", "walk_forward", "hmm",
+            "hmm_test_extras", "forecast", "framework", "disclaimer",
+        }
+        for key in expected_keys:
+            assert key in result, f"Missing required key: {key}"
+        # Current regime
+        assert result["current_regime"]["name"] in ("bear", "sideways", "bull")
+        assert isinstance(result["current_regime"]["index"], int)
+        # Signal range
+        assert -1.0 <= result["signal"] <= 1.0
+        # Transition matrix
+        tm = result["transition_matrix"]
+        assert len(tm) == 3
+        assert all(len(row) == 3 for row in tm)
+        for row in tm:
+            assert abs(sum(row) - 1.0) < 0.01
+        # Persistence diagonal
+        for name in ("bear", "sideways", "bull"):
+            assert name in result["persistence_diagonal"]
+            assert 0.0 <= result["persistence_diagonal"][name] <= 1.0
+        # Stationary distribution
+        sd = result["stationary_distribution"]
+        total = sd["bear"] + sd["sideways"] + sd["bull"]
+        assert abs(total - 1.0) < 0.01
+        # HMM disabled block
+        assert result["hmm"]["available"] is False
+        assert result["hmm"]["reason"] == "HMM disabled via --no-hmm"
+        # Walk-forward
+        wf = result["walk_forward"]
+        assert set(wf.keys()) == {"sharpe", "max_drawdown", "n_trades"}
+        assert isinstance(wf["n_trades"], int)
+        # Forecast
+        for step in ("1_step", "5_step", "20_step"):
+            assert step in result["forecast"]
+            f = result["forecast"][step]
+            assert set(f.keys()) == {"bear", "sideways", "bull"}
+            assert abs(sum(f.values()) - 1.0) < 0.01
+
+    def test_run_with_hmm_enabled(self, btc_csv):
+        prices = load_from_csv(btc_csv)
+        result = pipeline_run(prices, source="test", use_hmm=True)
+        hmm = result["hmm"]
+        assert "available" in hmm
+        # Either HMM succeeded or it's a graceful failure
+        if hmm["available"]:
+            assert "regimes" in hmm
+            assert "transition_matrix" in hmm
+        else:
+            assert "reason" in hmm
+            assert isinstance(hmm["reason"], str)
+
+
+class TestPipelineHelpers:
+    """Unit tests for pipeline private helpers."""
+
+    def test_nan_to_none_replaces_nan(self):
+        assert _nan_to_none(float("nan")) is None
+        assert _nan_to_none(np.nan) is None
+
+    def test_nan_to_none_preserves_values(self):
+        assert _nan_to_none(0.0) == 0.0
+        assert _nan_to_none(-1.5) == -1.5
+        assert _nan_to_none(1.5) == 1.5
+        # isinstance(None, float) → False → returned as-is
+        assert _nan_to_none(None) is None
+
+    def test_nan_to_none_handles_int(self):
+        # int values are not float → returned as-is
+        assert _nan_to_none(42) == 42
+        assert _nan_to_none(-1) == -1
+
+    def test_probs_to_dict_maps_correctly(self):
+        result = _probs_to_dict(np.array([0.1, 0.3, 0.6]))
+        assert result == {"bear": 0.1, "sideways": 0.3, "bull": 0.6}
+        assert all(isinstance(v, float) for v in result.values())
+
+    def test_probs_to_dict_with_zeros(self):
+        result = _probs_to_dict(np.array([0.0, 1.0, 0.0]))
+        assert result["bear"] == 0.0
+        assert result["sideways"] == 1.0
+        assert result["bull"] == 0.0
+
+    def test_nan_to_none_on_transition_matrix_nan(self):
+        # Transition matrix may produce NaN in degenerate cases — verify
+        assert _nan_to_none(math.nan) is None

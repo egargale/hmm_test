@@ -141,7 +141,6 @@ def add_messina_features(
 
     # ── ADX14 / DI+ / DI- (Wilder's smoothing) ───────────────────────
     period = 14
-    prev_close = close.shift(1)
     up_move = df["high"] - df["high"].shift(1)
     down_move = df["low"].shift(1) - df["low"]
 
@@ -181,7 +180,7 @@ def add_messina_features(
     df.replace([np.inf, -np.inf], np.nan, inplace=True)
 
     logger.info(
-        f"Added Messina features: sma_200, sma_13, atr_20, adx_14, "
-        f"di_+/-, adx_slope, vstop, ratios"
+        "Added Messina features: sma_200, sma_13, atr_20, adx_14, "
+        "di_+/-, adx_slope, vstop, ratios"
     )
     return df
