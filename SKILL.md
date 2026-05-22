@@ -15,18 +15,20 @@ Detect whether an asset is in a **Bull** (uptrend), **Bear** (downtrend), or **S
 ## Quick Invocation
 
 ```bash
-# CSV file (relative or absolute path)
-python scripts/cli.py --csv BTC.csv --json
+SKILL_DIR="$HOME/.hermes/skills/trading/hmm_test"
+VENV="$SKILL_DIR/.venv"
 
-# yfinance ticker
-python scripts/cli.py --ticker ES=F --json
+# ── FIRST TIME: create and populate the venv ──────────────────────────────
+# The skill ships without a venv. Dependencies must be installed before use.
+cd "$SKILL_DIR" && uv venv "$VENV" --python 3.12
+uv pip install --python "$VENV/bin/python" ".[yfinance]"
 
-# Threshold-only (skip HMM)
-python scripts/cli.py --csv BTC.csv --json --no-hmm
-
-# Custom parameters
-python scripts/cli.py --ticker SPY --json --window 10 --threshold 0.03 --min-train 126
+# ── NORMAL RUNS (always use the venv python — bare 'python' will fail) ────
+"$VENV/bin/python" "$SKILL_DIR/scripts/cli.py" --ticker KO --json
+"$VENV/bin/python" "$SKILL_DIR/scripts/cli.py" --csv data.csv --json --no-hmm
 ```
+
+> **Common failure**: running `python scripts/cli.py` without activating the venv first hits `ModuleNotFoundError: No module named 'pydantic'` (or other deps). Always use `.venv/bin/python` explicitly.
 
 The `--json` flag sends one JSON object to stdout and nothing else. Without `--json`, a pretty-printed table goes to stderr.
 
@@ -184,7 +186,8 @@ Use `signal > 0` as a long-only filter, or `abs(signal) > 0.2` as a minimum conv
 4. **CSV format**: Auto-detects date and close columns. If detection fails, specify columns explicitly or reformat the CSV.
 5. **yfinance dependency**: Optional. Install with `pip install yfinance` or `uv sync --extra yfinance`.
 6. **signal = 0**: Can happen when bull and bear probabilities are equal. Common in sideways markets.
-7. **Threshold sensitivity**: Small `--threshold` values produce frequent regime switches. Large values make the regime "sticky".
+7. **HMM silently fails on some tickers**: When GaussianHMM.fit() cannot converge or finds no valid observation sequence (e.g., returns "Not enough clean rows (0)"), the output includes `hmm.available: false` with a reason string. **This does NOT crash the tool** — threshold results are still returned correctly. Do not treat HMM unavailability as a skill malfunction; it is expected behaviour for certain price series. Use `--no-hmm` explicitly if HMM failures are causing issues in downstream pipelines.
+8. **Threshold sensitivity**: Small `--threshold` values produce frequent regime switches. Large values make the regime "sticky".
 
 ## Reference Index
 
@@ -197,6 +200,7 @@ For deeper dives on specific topics, see the reference files:
 | Walk-forward methodology, drawdown, position sizing | [`references/backtesting_detail.md`](references/backtesting_detail.md) |
 | All parameters, tuning, recommended values by asset class | [`references/configuration.md`](references/configuration.md) |
 | Common errors and fixes | [`references/troubleshooting.md`](references/troubleshooting.md) |
+| HMM silent failure ("Not enough clean rows (0)") | [`references/hmm_silent_failure.md`](references/hmm_silent_failure.md) |
 
 ## Dependencies
 

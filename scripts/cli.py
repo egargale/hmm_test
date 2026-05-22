@@ -23,6 +23,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import numpy as np
+import pandas as pd
 
 from data_processing.csv_auto_detect import load_from_csv, load_from_yfinance
 from regime.hmm_adapter import run_hmm_regime
@@ -66,8 +67,19 @@ def _build_output(
     min_train: int,
     use_hmm: bool,
     n_states: int,
+    hmm_source=None,
+    use_messina: bool = False,
 ) -> dict:
-    """Build the full JSON-compatible output dictionary."""
+    """Build the full JSON-compatible output dictionary.
+
+    Parameters
+    ----------
+    prices : pd.Series
+        Close prices (used by threshold, walk-forward, forecasts).
+    hmm_source : pd.Series or pd.DataFrame, optional
+        Data passed to the HMM. If None, falls back to ``prices``.
+        Pass a full OHLCV DataFrame for richer HMM features.
+    """
     returns = prices.pct_change().dropna()
 
     # --- Threshold-based regime classification ---
@@ -112,7 +124,8 @@ def _build_output(
     hmm_result: dict
     if use_hmm:
         try:
-            hmm_result = run_hmm_regime(prices, n_states=n_states)
+            hmm_data = hmm_source if hmm_source is not None else prices
+            hmm_result = run_hmm_regime(hmm_data, n_states=n_states, use_messina=use_messina)
         except Exception as exc:
             hmm_result = {"available": False, "reason": str(exc)}
     else:
@@ -302,6 +315,13 @@ def main() -> None:
         default=3,
         help="Number of HMM states (default: 3).",
     )
+    parser.add_argument(
+        "--messina",
+        action="store_true",
+        default=False,
+        dest="use_messina",
+        help="Use Messina-specific features (SMA200/13, VSTOP, ADX/DI) instead of generic 44-feature set.",
+    )
 
     args = parser.parse_args()
 
@@ -315,12 +335,22 @@ def main() -> None:
     try:
         # Load data
         source: str
+        hmm_source = None
         if args.csv is not None:
             source = args.csv
             prices = load_from_csv(args.csv)
         else:
             source = args.ticker  # type: ignore[assignment]
-            prices = load_from_yfinance(args.ticker)
+            import yfinance
+            ohlcv_raw = yfinance.download(args.ticker, period="10y", progress=False)
+            # Flatten MultiIndex columns from yfinance (Ticker, Price)
+            if isinstance(ohlcv_raw.columns, pd.MultiIndex):
+                ohlcv_raw.columns = [c[0].lower() for c in ohlcv_raw.columns]
+            else:
+                ohlcv_raw.columns = [c.lower() for c in ohlcv_raw.columns]
+            prices = ohlcv_raw["close"]
+            if args.use_hmm:
+                hmm_source = ohlcv_raw[["open", "high", "low", "close", "volume"]]
 
         # Guard: need at least 2 price points to compute returns
         if len(prices) < 2:
@@ -338,6 +368,8 @@ def main() -> None:
             min_train=args.min_train,
             use_hmm=args.use_hmm,
             n_states=args.n_states,
+            hmm_source=hmm_source,
+            use_messina=args.use_messina,
         )
 
         if args.json:
