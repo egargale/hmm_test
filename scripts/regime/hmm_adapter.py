@@ -40,7 +40,7 @@ def run_hmm_regime(
             messina_cols = [
                 "log_ret", "sma_200", "sma_13", "atr_20",
                 "adx_14", "di_plus_14", "di_minus_14", "adx_slope",
-                "vstop", "price_sma200_ratio", "price_vstop_ratio",
+                "vstop", "vstop_trend", "price_sma200_ratio", "price_vstop_ratio",
             ]
             numeric_cols = [c for c in messina_cols if c in df.columns]
         else:

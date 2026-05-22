@@ -120,6 +120,11 @@ def add_messina_features(
         log_ret, sma_200, sma_13, atr_20, adx_14, di_plus_14, di_minus_14,
         adx_slope, vstop, vstop_trend, price_sma200_ratio, price_vstop_ratio
     """
+    required = {"open", "high", "low", "close", "volume"}
+    missing = required - set(df.columns)
+    if missing:
+        raise ValueError(f"add_messina_features requires OHLCV columns, missing: {sorted(missing)}")
+
     df = df.copy()
     close = df["close"]
 

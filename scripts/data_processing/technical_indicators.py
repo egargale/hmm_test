@@ -78,8 +78,8 @@ def get_default_indicator_config() -> Dict[str, Dict[str, Any]]:
             "aroon": {"length": 25},
         },
         "enhanced_volume": {
-            "adl": {},
-            "vpt": {},
+            "adl": {"enabled": True},
+            "vpt": {"enabled": True},
         },
         "custom": {},
     }
@@ -105,6 +105,8 @@ def validate_indicator_config(config: Dict[str, Any]) -> bool:
     """
     Validate indicator configuration parameters.
 
+    Handles nested config structure: {category: {indicator: {params}}}.
+
     Args:
         config: Configuration dictionary for indicators
 
@@ -115,33 +117,30 @@ def validate_indicator_config(config: Dict[str, Any]) -> bool:
         logger.error("Indicator config must be a dictionary")
         return False
 
-    for indicator, params in config.items():
-        if not isinstance(params, dict):
-            logger.error(f"Parameters for {indicator} must be a dictionary")
-            return False
+    for category, indicators in config.items():
+        if not isinstance(indicators, dict):
+            continue
+        for indicator, params in indicators.items():
+            if not isinstance(params, dict):
+                continue
 
-        # Common validation for length parameters
-        if "length" in params:
-            if not isinstance(params["length"], int) or params["length"] <= 0:
-                logger.error(
-                    f"Invalid length parameter for {indicator}: {params['length']}"
-                )
-                return False
-
-        # Validate MACD parameters
-        if indicator == "macd":
-            required_params = ["fast", "slow", "signal"]
-            for param in required_params:
-                if (
-                    param not in params
-                    or not isinstance(params[param], int)
-                    or params[param] <= 0
-                ):
-                    logger.error(f"Invalid or missing {param} parameter for MACD")
+            # Common validation for length parameters
+            if "length" in params:
+                if not isinstance(params["length"], int) or params["length"] <= 0:
+                    logger.error(f"Invalid length for {category}.{indicator}: {params['length']}")
                     return False
-            if params["fast"] >= params["slow"]:
-                logger.error("MACD fast period must be less than slow period")
-                return False
+
+            # Validate MACD parameters
+            if indicator == "macd":
+                for param in ["fast", "slow", "signal"]:
+                    if param in params and (
+                        not isinstance(params[param], int) or params[param] <= 0
+                    ):
+                        logger.error(f"Invalid {param} for {category}.macd")
+                        return False
+                if "fast" in params and "slow" in params and params["fast"] >= params["slow"]:
+                    logger.error("MACD fast period must be less than slow period")
+                    return False
 
     logger.debug("Indicator configuration validation passed")
     return True

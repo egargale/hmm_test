@@ -341,16 +341,15 @@ def main() -> None:
             prices = load_from_csv(args.csv)
         else:
             source = args.ticker  # type: ignore[assignment]
-            prices = load_from_yfinance(args.ticker)
-            # Download full OHLCV when HMM is enabled (richer features)
+            import yfinance
+            ohlcv_raw = yfinance.download(args.ticker, period="10y", progress=False)
+            # Flatten MultiIndex columns from yfinance (Ticker, Price)
+            if isinstance(ohlcv_raw.columns, pd.MultiIndex):
+                ohlcv_raw.columns = [c[0].lower() for c in ohlcv_raw.columns]
+            else:
+                ohlcv_raw.columns = [c.lower() for c in ohlcv_raw.columns]
+            prices = ohlcv_raw["close"]
             if args.use_hmm:
-                import yfinance
-                ohlcv_raw = yfinance.download(args.ticker, period="10y", progress=False)
-                # Flatten MultiIndex columns from yfinance (Ticker, Price)
-                if isinstance(ohlcv_raw.columns, pd.MultiIndex):
-                    ohlcv_raw.columns = [c[0].lower() for c in ohlcv_raw.columns]
-                else:
-                    ohlcv_raw.columns = [c.lower() for c in ohlcv_raw.columns]
                 hmm_source = ohlcv_raw[["open", "high", "low", "close", "volume"]]
 
         # Guard: need at least 2 price points to compute returns
