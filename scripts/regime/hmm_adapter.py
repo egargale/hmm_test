@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 
 from data_processing.feature_engineering import add_features
+from data_processing.messina_features import add_messina_features
 from hmm_models.gaussian_hmm import GaussianHMMModel
 from hmm_models.gmm_hmm import GMMHMMModel
 from regime.markov_chain import compute_stationary_distribution
@@ -13,12 +14,18 @@ def run_hmm_regime(
     model_type: str = "gaussian",
     covariance_type: str = "full",
     n_iter: int = 100,
+    use_messina: bool = False,
 ) -> dict:
     """
     Run HMM regime detection and return regime skill JSON contract.
 
-    Returns {"available": True, ...} on success,
-    {"available": False, "reason": "..."} on failure.
+    Parameters
+    ----------
+    prices : pd.Series or pd.DataFrame
+        Close prices (Series) or full OHLCV (DataFrame).
+    use_messina : bool
+        If True, compute Messina-specific features (SMA200, SMA13, ATR20,
+        ADX/DI, VSTOP, ratios) instead of the generic 44-feature set.
     """
     try:
         if isinstance(prices, pd.Series):
@@ -26,15 +33,27 @@ def run_hmm_regime(
             prices["open"] = prices["close"]
             prices["high"] = prices["close"]
             prices["low"] = prices["close"]
-            prices["volume"] = 0
+            prices["volume"] = 1
 
-        df = add_features(prices)
-        numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
-        ohlcv = {"open", "high", "low", "close", "volume"}
-        feature_cols = [c for c in numeric_cols if c not in ohlcv]
-        if not feature_cols:
+        if use_messina:
+            df = add_messina_features(prices)
+            messina_cols = [
+                "log_ret", "sma_200", "sma_13", "atr_20",
+                "adx_14", "di_plus_14", "di_minus_14", "adx_slope",
+                "vstop", "price_sma200_ratio", "price_vstop_ratio",
+            ]
+            numeric_cols = [c for c in messina_cols if c in df.columns]
+        else:
+            df = add_features(prices, min_periods=10)
+            # Drop columns that are entirely NaN (e.g. VWAP when volume=0)
+            df = df.dropna(axis=1, how="all")
+            numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+            ohlcv = {"open", "high", "low", "close", "volume"}
+            numeric_cols = [c for c in numeric_cols if c not in ohlcv]
+
+        if not numeric_cols:
             return {"available": False, "reason": "No numeric features after engineering"}
-        df_clean = df[feature_cols].dropna()
+        df_clean = df[numeric_cols].dropna()
         if len(df_clean) < n_states + 1:
             return {"available": False, "reason": f"Not enough clean rows ({len(df_clean)})"}
 
@@ -81,6 +100,7 @@ def run_hmm_regime(
                 "sideways": float(stationary[order[1]]),
                 "bull": float(stationary[order[2]]),
             },
+            "feature_mode": "messina" if use_messina else "generic",
             "caveat": "HMM state labels are inferred from ascending mean return; labels may swap on re-fit",
         }
     except Exception as e:

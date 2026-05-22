@@ -37,20 +37,51 @@ def get_default_indicator_config() -> Dict[str, Dict[str, Any]]:
     """
     Get default configuration for technical indicators.
 
-    Returns:
-        Dictionary with default indicator configurations
+    Returns a nested dict matching the category structure expected
+    by add_features() in feature_engineering.py.
     """
     return {
-        "sma": {"length": 20},
-        "ema": {"length": 20},
-        "rsi": {"length": 14},
-        "atr": {"length": 14},
-        "macd": {"fast": 12, "slow": 26, "signal": 9},
-        "bollinger_bands": {"length": 20, "std": 2},
-        "roc": {"length": 10},
-        "stochastic": {"k": 14, "d": 3},
-        "adx": {"length": 14},
-        "volume_sma": {"length": 20},
+        "moving_averages": {
+            "sma": {"length": 20},
+            "ema": {"length": 20},
+            "sma_ratio": {"fast": 50, "slow": 200},
+        },
+        "volatility": {
+            "atr": {"length": 14},
+            "bbands": {"length": 20, "std": 2},
+        },
+        "momentum": {
+            "rsi": {"length": 14},
+            "roc": {"length": 10},
+            "stochastic": {"k": 14, "d": 3},
+            "macd": {"fast": 12, "slow": 26, "signal": 9},
+        },
+        "volume": {
+            "volume_sma": {"length": 20},
+            "volume_ratio": {"length": 20},
+        },
+        "trend": {
+            "adx": {"length": 14},
+        },
+        "patterns": {},
+        "enhanced_momentum": {
+            "williams_r": {"length": 14},
+            "cci": {"length": 20},
+            "mfi": {"length": 14},
+        },
+        "enhanced_volatility": {
+            "chaikin_vol": {"length": 10},
+            "hv": {"length": 20},
+        },
+        "enhanced_trend": {
+            "tma": {"length": 20},
+            "aroon": {"length": 25},
+        },
+        "enhanced_volume": {
+            "adl": {},
+            "vpt": {},
+        },
+        "custom": {},
     }
 
 
