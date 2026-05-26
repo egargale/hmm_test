@@ -2,13 +2,14 @@
 """Regime detection entry point for the hmm-regime-detection skill.
 
 CLI for detecting market regimes (Bull/Bear/Sideways) using one of three
-independent engines: threshold (fast, close-only), messina (HMM + 12
+independent engines: threshold (fast, close-only), messina (HMM + 18
 Messina features), or hmm (HMM + ~44 generic features).
 
 Usage:
-    python scripts/cli.py --csv BTC.csv --json
-    python scripts/cli.py --ticker ES=F --json --engine hmm
-    python scripts/cli.py --csv data.csv --engine threshold
+    hmm-regime --csv BTC.csv --json
+    hmm-regime --ticker ES=F --json --engine hmm
+    hmm-regime --csv data.csv --engine threshold
+    ./run.sh --csv BTC.csv --json
 """
 
 from __future__ import annotations
@@ -18,14 +19,10 @@ import json
 import sys
 from pathlib import Path
 
-# Ensure scripts/ directory is on sys.path so that sibling packages resolve
-# when this file is executed directly (e.g. `python scripts/regime.py`).
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-
 import pandas as pd
 
-from data_processing.csv_auto_detect import load_from_csv
-from regime.pipeline import run as pipeline_run
+from .data_processing.csv_auto_detect import load_from_csv
+from .regime.pipeline import run as pipeline_run
 
 _STATE_NAMES = ("bear", "sideways", "bull")
 _FRAMEWORK_VERSION = "hmm_test v0.2.0"

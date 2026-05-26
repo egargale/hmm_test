@@ -18,7 +18,7 @@ except ImportError:
     HMMLEARN_AVAILABLE = False
     hmm = None
 
-from utils import get_logger
+from ..utils import get_logger
 
 from .base import BaseHMMModel
 

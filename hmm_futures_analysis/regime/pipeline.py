@@ -13,7 +13,7 @@ import math
 import numpy as np
 import pandas as pd
 
-from regime.markov_chain import (
+from .markov_chain import (
     build_transition_matrix,
     classify_regimes,
     compute_persistence_diagonal,
@@ -21,7 +21,7 @@ from regime.markov_chain import (
     compute_stationary_distribution,
     forecast_n_steps,
 )
-from regime.walk_forward import walk_forward_backtest
+from .walk_forward import walk_forward_backtest
 
 _STATE_NAMES = ("bear", "sideways", "bull")
 _VALID_ENGINES = frozenset({"threshold", "messina", "hmm"})

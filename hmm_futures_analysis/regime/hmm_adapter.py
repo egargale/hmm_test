@@ -11,8 +11,8 @@ import numpy as np
 import pandas as pd
 from hmmlearn import hmm
 
-from data_processing.feature_engineering import add_features
-from data_processing.messina_features import add_messina_features
+from ..data_processing.feature_engineering import add_features
+from ..data_processing.messina_features import add_messina_features
 
 # Feature column names for Messina mode
 _MESSINA_COLS = [

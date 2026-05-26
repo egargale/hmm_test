@@ -16,7 +16,7 @@ import pandas as pd
 from sklearn.base import BaseEstimator, clone
 from sklearn.model_selection import TimeSeriesSplit, cross_val_score
 
-from utils import get_logger
+from ..utils import get_logger
 
 logger = get_logger(__name__)
 

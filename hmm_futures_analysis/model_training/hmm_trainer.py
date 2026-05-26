@@ -23,7 +23,7 @@ except ImportError:
     StandardScaler = None
     ConvergenceWarning = None
 
-from utils import HMMConfig, get_logger
+from ..utils import HMMConfig, get_logger
 
 logger = get_logger(__name__)
 

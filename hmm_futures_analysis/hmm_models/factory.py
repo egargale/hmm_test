@@ -7,7 +7,7 @@ with automatic configuration and hyperparameter management.
 
 from typing import Any, Dict, List, Optional
 
-from utils import get_logger
+from ..utils import get_logger
 
 from .base import BaseHMMModel
 from .gaussian_hmm import GaussianHMMModel

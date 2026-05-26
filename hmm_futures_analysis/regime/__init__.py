@@ -1,4 +1,4 @@
-from regime.markov_chain import (
+from .markov_chain import (
     build_transition_matrix,
     classify_regimes,
     compute_persistence_diagonal,

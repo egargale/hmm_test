@@ -11,8 +11,8 @@ from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 import pandas as pd
 
-from utils import get_logger
-from utils.data_types import BacktestResult
+from ..utils import get_logger
+from ..utils.data_types import BacktestResult
 
 logger = get_logger(__name__)
 

@@ -12,14 +12,13 @@ ROOT = Path(__file__).resolve().parent.parent
 
 
 def run_regime(*args):
-    """Run scripts/cli.py with args, return CompletedProcess."""
-    cmd = [sys.executable, str(ROOT / "scripts" / "cli.py")] + list(args)
+    """Run hmm_futures_analysis/cli.py with args, return CompletedProcess."""
+    cmd = [sys.executable, "-m", "hmm_futures_analysis.cli"] + list(args)
     result = subprocess.run(
         cmd,
         capture_output=True,
         text=True,
         cwd=str(ROOT),
-        env={**__import__("os").environ, "PYTHONPATH": str(ROOT / "scripts")},
     )
     return result
 

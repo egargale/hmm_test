@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from regime.markov_chain import (
+from hmm_futures_analysis.regime.markov_chain import (
     build_transition_matrix,
     classify_regimes,
     compute_persistence_diagonal,
@@ -13,9 +13,9 @@ from regime.markov_chain import (
     compute_stationary_distribution,
     forecast_n_steps,
 )
-from regime.pipeline import _nan_to_none, _probs_to_dict, run as pipeline_run
-from regime.walk_forward import walk_forward_backtest
-from data_processing.csv_auto_detect import load_from_csv
+from hmm_futures_analysis.regime.pipeline import _nan_to_none, _probs_to_dict, run as pipeline_run
+from hmm_futures_analysis.regime.walk_forward import walk_forward_backtest
+from hmm_futures_analysis.data_processing.csv_auto_detect import load_from_csv
 
 
 class TestThresholdPipeline:

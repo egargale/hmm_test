@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from data_processing.messina_features import (
+from hmm_futures_analysis.data_processing.messina_features import (
     _calc_vstop,
     _true_range,
     _wilder_smooth,

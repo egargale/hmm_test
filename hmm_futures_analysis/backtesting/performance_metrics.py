@@ -10,8 +10,8 @@ from typing import Any, Dict, Optional
 import numpy as np
 import pandas as pd
 
-from utils import get_logger
-from utils.data_types import PerformanceMetrics
+from ..utils import get_logger
+from ..utils.data_types import PerformanceMetrics
 
 logger = get_logger(__name__)
 

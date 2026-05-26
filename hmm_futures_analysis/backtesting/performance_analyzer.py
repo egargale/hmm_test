@@ -10,8 +10,8 @@ from typing import Any, Dict
 import numpy as np
 import pandas as pd
 
-from utils import get_logger
-from utils.data_types import BacktestResult, PerformanceMetrics
+from ..utils import get_logger
+from ..utils.data_types import BacktestResult, PerformanceMetrics
 
 from .performance_metrics import calculate_performance, calculate_returns
 

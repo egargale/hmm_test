@@ -14,10 +14,10 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from backtesting.performance_metrics import calculate_drawdown_metrics
-from backtesting.performance_metrics import calculate_sharpe_ratio
-from regime.hmm_adapter import hmm_state_from_slice
-from regime.markov_chain import classify_regimes
+from ..backtesting.performance_metrics import calculate_drawdown_metrics
+from ..backtesting.performance_metrics import calculate_sharpe_ratio
+from .hmm_adapter import hmm_state_from_slice
+from .markov_chain import classify_regimes
 
 _VALID_ENGINES = frozenset({"threshold", "messina", "hmm"})
 _STATE_MAP = {0: -1, 1: 0, 2: 1}  # bear=short, sideways=flat, bull=long

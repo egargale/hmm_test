@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from data_processing.technical_indicators import (
+from hmm_futures_analysis.data_processing.technical_indicators import (
     get_default_indicator_config,
     validate_indicator_config,
 )
@@ -89,35 +89,35 @@ class TestFeatureProduction:
         )
 
     def test_config_produces_sma(self, ohlcv_300):
-        from data_processing.feature_engineering import add_features
+        from hmm_futures_analysis.data_processing.feature_engineering import add_features
 
         df = add_features(ohlcv_300, min_periods=10)
         sma_cols = [c for c in df.columns if c.startswith("sma_")]
         assert len(sma_cols) > 0, "No SMA columns produced — indicators still skipped"
 
     def test_config_produces_rsi(self, ohlcv_300):
-        from data_processing.feature_engineering import add_features
+        from hmm_futures_analysis.data_processing.feature_engineering import add_features
 
         df = add_features(ohlcv_300, min_periods=10)
         rsi_cols = [c for c in df.columns if "rsi" in c.lower()]
         assert len(rsi_cols) > 0, "No RSI columns produced"
 
     def test_config_produces_atr(self, ohlcv_300):
-        from data_processing.feature_engineering import add_features
+        from hmm_futures_analysis.data_processing.feature_engineering import add_features
 
         df = add_features(ohlcv_300, min_periods=10)
         atr_cols = [c for c in df.columns if "atr" in c.lower()]
         assert len(atr_cols) > 0, "No ATR columns produced"
 
     def test_config_produces_adx(self, ohlcv_300):
-        from data_processing.feature_engineering import add_features
+        from hmm_futures_analysis.data_processing.feature_engineering import add_features
 
         df = add_features(ohlcv_300, min_periods=10)
         adx_cols = [c for c in df.columns if "adx" in c.lower()]
         assert len(adx_cols) > 0, "No ADX columns produced"
 
     def test_config_produces_adl_vpt(self, ohlcv_300):
-        from data_processing.feature_engineering import add_features
+        from hmm_futures_analysis.data_processing.feature_engineering import add_features
 
         df = add_features(ohlcv_300, min_periods=10)
         assert "adl" in df.columns, "ADL column not produced"

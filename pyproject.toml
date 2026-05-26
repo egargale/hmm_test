@@ -26,14 +26,17 @@ dask = ["dask[complete]>=2021.8.0"]
 daft = ["daft>=0.3.0"]
 dev = ["pytest>=7.0", "ruff"]
 
+[project.scripts]
+hmm-regime = "hmm_futures_analysis.cli:main"
+
 [tool.hatch.build.targets.wheel]
-packages = ["scripts"]
+packages = ["hmm_futures_analysis"]
 
 [tool.hatch.build.targets.sdist]
-include = ["/scripts"]
+include = ["/hmm_futures_analysis"]
 
 [tool.pytest.ini_options]
-pythonpath = ["scripts"]
+pythonpath = ["."]
 addopts = ["-ra", "--strict-markers"]
 
 [tool.ruff]

@@ -7,7 +7,7 @@ SMA200, SMA13, ATR20 (Wilder's), ADX14/DI, VSTOP, and derived ratios.
 import numpy as np
 import pandas as pd
 
-from utils.logging_config import get_logger
+from ..utils.logging_config import get_logger
 
 logger = get_logger(__name__)
 

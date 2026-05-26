@@ -18,20 +18,16 @@ Detect whether an asset is in a **Bull** (uptrend), **Bear** (downtrend), or **S
 ## Quick Invocation
 
 ```bash
-SKILL_DIR="$HOME/.hermes/skills/trading/hmm_test"
-VENV="$SKILL_DIR/.venv"
-
-# ── FIRST TIME: create and populate the venv ──────────────────────────────
-cd "$SKILL_DIR" && uv venv "$VENV" --python 3.12
-uv pip install --python "$VENV/bin/python" ".[yfinance]"
+SKILL_DIR="$SKILL_DIR"
 
 # ── NORMAL RUNS ──────────────────────────────────────────────────────────
-"$VENV/bin/python" "$SKILL_DIR/scripts/cli.py" --ticker KO --json
-"$VENV/bin/python" "$SKILL_DIR/scripts/cli.py" --csv data.csv --json
-"$VENV/bin/python" "$SKILL_DIR/scripts/cli.py" --csv data.csv --json --engine messina
+"$SKILL_DIR/run.sh" --ticker KO --json
+"$SKILL_DIR/run.sh" --csv data.csv --json
+"$SKILL_DIR/run.sh" --csv data.csv --json --engine messina
 ```
 
-> **Common failure**: running `python scripts/cli.py` without activating the venv hits `ModuleNotFoundError`. Always use `.venv/bin/python` explicitly.
+> The `run.sh` wrapper is self-bootstrapping — it creates a venv and installs
+> dependencies on first run. No manual setup required.
 
 ## Engines
 
@@ -160,7 +156,7 @@ signal = P(next_regime = Bull) - P(next_regime = Bear)
 import subprocess, json
 
 result = subprocess.run(
-    ["python", "scripts/cli.py", "--csv", "data.csv", "--json", "--engine", "threshold"],
+    ["./run.sh", "--csv", "data.csv", "--json", "--engine", "threshold"],
     capture_output=True, text=True
 )
 
@@ -179,7 +175,7 @@ else:
 
 ```bash
 for ticker in SPY QQQ IWM DIA; do
-  python scripts/cli.py --ticker $ticker --json --engine threshold
+  ./run.sh --ticker $ticker --json --engine threshold
 done
 ```
 
@@ -190,7 +186,7 @@ done
 3. **Sharpe for intraday data**: The default `sqrt(252)` assumes daily bars. For intraday data, the Sharpe may be inflated.
 4. **Insufficient data**: If `len(prices) < min_train + 1`, walk_forward returns `null` for all fields except `n_trades` (0).
 5. **CSV format**: Auto-detects date and close columns. If detection fails, specify columns explicitly or reformat the CSV.
-6. **yfinance dependency**: Optional. Install with `pip install yfinance` or `uv sync --extra yfinance`.
+6. **yfinance dependency**: Optional. `run.sh` installs it automatically. For manual install: `uv sync --extra yfinance`.
 7. **signal = 0**: Can happen when bull and bear probabilities are equal. Common in sideways markets.
 8. **Threshold sensitivity**: Small `--threshold` values produce frequent regime switches. Large values make the regime "sticky".
 

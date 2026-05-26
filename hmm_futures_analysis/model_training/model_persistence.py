@@ -24,7 +24,7 @@ except ImportError:
     hmm = None
     StandardScaler = None
 
-from utils import HMMConfig, get_logger
+from ..utils import HMMConfig, get_logger
 
 # Import pandas for timestamps
 try:
