@@ -119,3 +119,29 @@ Additionally:
 - [[ADR-002]] Engine seam deepening — easier after dead modules are gone
 - [[ADR-003]] Feature engineering trim — `FeatureEngineer` class removal is part of this ADR
 - [[ADR-004]] CLI data loading seam — independent of this ADR
+
+## Note for future planning: Why hmm_models/ was superseded
+
+The dead `hmm_models/` + `model_training/` (~4,060 lines) represent an earlier train-once, evaluate, persist paradigm that was replaced by the walk-forward refit-every-N-bars design in `regime/hmm_adapter.py` (217 lines). Three statistical choices in the live adapter are superior for the actual use case:
+
+### 1. Covariance type: `diag` (live) is correct for high-dimensional features
+
+The dead code defaults to `covariance_type="full"`. With ~44 features for the `hmm` engine, `full` covariance requires 990 parameters per state × 3 states = 2,970 covariance parameters alone. On typical datasets of ~2,500 bars, this is under-determined and would overfit to noise in the covariance structure. The live adapter's `diag` covariance estimates only 44 parameters per state — statistically appropriate for this feature dimensionality.
+
+### 2. Walk-forward label continuity: `_match_states()` is essential
+
+The dead architecture has no mechanism for maintaining state label consistency across consecutive fits. HMM state indices are arbitrary — refitting on bars [0:500] vs [0:600] can swap state 0 and state 2. The live `_match_states()` solves this via nearest-neighbor matching in mean space. Without this, walk-forward backtesting produces incoherent regime labels. The dead architecture was fundamentally incompatible with the walk-forward paradigm.
+
+### 3. Fast refits: pragmatic for ~100-fits-per-run workload
+
+The dead code uses `n_iter=100`, `tol=1e-6` (strict convergence). The live adapter uses `n_iter=30`, `tol=1e-4`. The walk-forward loop refits ~100 times per backtest run. 30 iterations is typically sufficient for EM convergence on financial data, and the aggregate of many fresh refits is more robust than a single precise fit on stale data.
+
+### What was lost
+
+- **BIC/AIC model selection** — useful for choosing `n_states`, could be extracted from `gaussian_hmm.py:evaluate_model_quality()` as a standalone utility
+- **Cross-validation with `TimeSeriesSplit`** — never wired into the pipeline but valuable for research
+- **Rich state diagnostics** — human-readable descriptions, financial interpretation, transition analysis, persistence statistics
+- **Model persistence** — pickle-based save/load with metadata; irrelevant for walk-forward but useful for train-once scenarios
+- **GMMHMMModel** — Gaussian Mixture emissions for more complex within-state distributions
+
+If any of these become needed, extract the relevant functions as standalone utilities rather than reviving the class hierarchy.
