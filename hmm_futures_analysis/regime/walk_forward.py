@@ -11,21 +11,24 @@ win rate, profit factor, total return.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 import pandas as pd
 
 from ..backtesting.performance_metrics import calculate_drawdown_metrics
 from ..backtesting.performance_metrics import calculate_sharpe_ratio
-from .hmm_adapter import hmm_state_from_slice
-from .markov_chain import classify_regimes
+from .engine_protocol import ENGINE_REGISTRY
 
-_VALID_ENGINES = frozenset({"threshold", "messina", "hmm"})
+if TYPE_CHECKING:
+    from .engine_protocol import RegimeEngine
+
 _STATE_MAP = {0: -1, 1: 0, 2: 1}  # bear=short, sideways=flat, bull=long
+_VALID_ENGINES = frozenset(ENGINE_REGISTRY.keys())
 _HMM_ENGINES = frozenset({"messina", "hmm"})
 
 
 def _empty_result() -> dict:
-    """Return NaN-filled result for insufficient data."""
     return {
         "sharpe": float("nan"),
         "max_drawdown": float("nan"),
@@ -39,10 +42,6 @@ def _empty_result() -> dict:
 def _compute_trade_stats(
     positions: np.ndarray, equity: np.ndarray
 ) -> tuple[int, float, float]:
-    """Extract trade-level statistics from position transitions.
-
-    Returns (n_trades, win_rate, profit_factor).
-    """
     n = len(positions)
     trade_pnls: list[float] = []
     in_trade = False
@@ -78,10 +77,34 @@ def _compute_trade_stats(
     return n_trades, float(win_rate), float(profit_factor)
 
 
+def _resolve_engine(
+    engine: str | RegimeEngine,
+    window: int,
+    threshold: float,
+    n_states: int,
+    ohlcv: pd.DataFrame | None,
+) -> RegimeEngine:
+    if isinstance(engine, str):
+        if engine not in _VALID_ENGINES:
+            raise ValueError(
+                f"engine must be one of {sorted(_VALID_ENGINES)}, got {engine!r}"
+            )
+        if engine in _HMM_ENGINES and ohlcv is None:
+            raise ValueError(
+                f"engine {engine!r} requires OHLCV data "
+                "(open/high/low/close/volume). Pass ohlcv= DataFrame."
+            )
+        cls = ENGINE_REGISTRY[engine]
+        if engine == "threshold":
+            return cls(window=window, threshold=threshold)
+        return cls(n_states=n_states)
+    return engine
+
+
 def walk_forward_backtest(
     prices: pd.Series,
     *,
-    engine: str = "threshold",
+    engine: str | RegimeEngine = "threshold",
     window: int = 20,
     threshold: float = 0.05,
     min_train: int = 252,
@@ -94,8 +117,9 @@ def walk_forward_backtest(
     ----------
     prices : pd.Series
         Close prices with DatetimeIndex.
-    engine : str
-        Which engine to use: ``"threshold"``, ``"messina"``, or ``"hmm"``.
+    engine : str | RegimeEngine
+        Engine name (``"threshold"``, ``"messina"``, or ``"hmm"``) or a
+        ``RegimeEngine`` instance.
     window : int
         Rolling window for threshold-based regime classification.
     threshold : float
@@ -112,17 +136,7 @@ def walk_forward_backtest(
     dict
         ``{sharpe, max_drawdown, n_trades, win_rate, profit_factor, total_return}``
     """
-    if engine not in _VALID_ENGINES:
-        raise ValueError(
-            f"engine must be one of {sorted(_VALID_ENGINES)}, got {engine!r}"
-        )
-
-    # HMM engines require OHLCV
-    if engine in _HMM_ENGINES and ohlcv is None:
-        raise ValueError(
-            f"engine {engine!r} requires OHLCV data "
-            "(open/high/low/close/volume). Pass ohlcv= DataFrame."
-        )
+    eng = _resolve_engine(engine, window, threshold, n_states, ohlcv)
 
     if len(prices) < min_train + 1:
         return _empty_result()
@@ -132,20 +146,22 @@ def walk_forward_backtest(
     if n < min_train:
         return _empty_result()
 
-    # --- Dispatch to engine ---
-    if engine == "threshold":
-        positions = _walk_forward_threshold(returns, window, threshold, min_train)
-    elif engine in _HMM_ENGINES:
-        use_messina = engine == "messina"
-        positions = _walk_forward_hmm(
-            ohlcv,  # type: ignore[arg-type]  # guard above ensures not None
-            returns,
-            min_train,
-            n_states=n_states,
-            use_messina=use_messina,
+    # Precompute features (returns None for threshold engine)
+    precomputed = None
+    if ohlcv is not None:
+        try:
+            precomputed = eng.precompute(ohlcv)
+        except (ValueError, RuntimeError, KeyError):
+            precomputed = None
+
+    positions = np.zeros(n, dtype=int)
+
+    if precomputed is not None:
+        positions = _walk_forward_precomputed(
+            eng, precomputed, returns, min_train, n_states,
         )
     else:
-        return _empty_result()  # pragma: no cover
+        positions = _walk_forward_raw(eng, returns, min_train, window, threshold)
 
     # --- Daily P&L from lagged discrete positions ---
     pnl = np.zeros(n, dtype=float)
@@ -178,85 +194,48 @@ def walk_forward_backtest(
     }
 
 
-def _walk_forward_threshold(
+def _walk_forward_raw(
+    eng: RegimeEngine,
     returns: pd.Series,
+    min_train: int,
     window: int,
     threshold: float,
-    min_train: int,
 ) -> np.ndarray:
-    """Threshold engine: classify regimes on expanding window, map to positions.
-
-    Returns an integer array of positions (-1, 0, 1) parallel to ``returns``.
-    """
     n = len(returns)
     positions = np.zeros(n, dtype=int)
 
     for t in range(min_train, n):
-        hist_returns = returns.iloc[:t]
-        regimes = classify_regimes(hist_returns, window=window, threshold=threshold)
-        regime = int(regimes[-1])
-        positions[t] = _STATE_MAP[regime]
+        result = eng.classify(returns.iloc[:t])
+        positions[t] = _STATE_MAP.get(result.regime, 0)
 
     return positions
 
 
-def _walk_forward_hmm(
-    ohlcv: pd.DataFrame,
+def _walk_forward_precomputed(
+    eng: RegimeEngine,
+    features: pd.DataFrame,
     returns: pd.Series,
     min_train: int,
     n_states: int,
-    use_messina: bool,
 ) -> np.ndarray:
-    """HMM engine: refit HMM on expanding feature window, map to positions.
-
-    Precomputes features once on the full dataset, then slices per bar for
-    walk-forward training.  Uses parameter matching to preserve label
-    continuity across consecutive fits.
-
-    Returns an integer array of positions (-1, 0, 1) parallel to ``returns``.
-    """
     n = len(returns)
-
-    # Precompute features once (bias-free: all indicators are backward-looking)
-    try:
-        precomputed = hmm_state_from_slice(
-            ohlcv, n_states=n_states, use_messina=use_messina, return_features=True
-        )
-        features: pd.DataFrame = precomputed["features"]
-    except (ValueError, RuntimeError, KeyError):
-        # Feature engineering or HMM fitting failed — no signal
-        return np.zeros(n, dtype=int)
-
     positions = np.zeros(n, dtype=int)
     prev_means: np.ndarray | None = None
-    last_regime: int = 1  # default sideways
+    last_regime: int = 1
 
-    # Skip-N: refit HMM every N bars, hold regime between refits.
-    # Balances accuracy vs performance for real tickers (2000+ bars × 44 features).
-    # refit_every is capped at 20 bars (refit at least every 20 bars).
-    refit_every = max(1, (n - min_train) // 100)  # target ~100 fits total
-    refit_every = min(refit_every, 20)              # cap interval at 20 bars
+    refit_every = max(1, (n - min_train) // 100)
+    refit_every = min(refit_every, 20)
 
     for t in range(min_train, n):
         refit_now = (t == min_train) or ((t - min_train) % refit_every == 0)
 
         if refit_now:
-            # Slice features up to bar t (no lookahead)
             features_slice = features.iloc[:t]
-
             try:
-                result = hmm_state_from_slice(
-                    features_slice,
-                    n_states=n_states,
-                    use_messina=False,  # features already computed
-                    return_features=False,
-                    prev_means=prev_means,
-                    precomputed=True,
-                )
-                last_regime = result["regime"]
-                prev_means = result["means"]
+                result = eng.classify(features_slice, prev_means=prev_means)
+                last_regime = result.regime
+                prev_means = result.means
             except (ValueError, RuntimeError):
-                # HMM fit failure — hold previous position
                 pass
 
         positions[t] = _STATE_MAP.get(last_regime, 0)

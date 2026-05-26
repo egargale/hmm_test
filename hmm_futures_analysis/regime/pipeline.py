@@ -13,6 +13,7 @@ import math
 import numpy as np
 import pandas as pd
 
+from .engine_protocol import ENGINE_REGISTRY
 from .markov_chain import (
     build_transition_matrix,
     classify_regimes,
@@ -24,14 +25,12 @@ from .markov_chain import (
 from .walk_forward import walk_forward_backtest
 
 _STATE_NAMES = ("bear", "sideways", "bull")
-_VALID_ENGINES = frozenset({"threshold", "messina", "hmm"})
 _FRAMEWORK_VERSION = "hmm_test v0.2.0"
 _DISCLAIMER = (
     "Regime detection is probabilistic. Past transitions do not guarantee "
     "future regimes. Not financial advice."
 )
 
-# Engine feature labels
 _ENGINE_FEATURES: dict[str, str] = {
     "threshold": "returns",
     "messina": "messina",
@@ -40,7 +39,6 @@ _ENGINE_FEATURES: dict[str, str] = {
 
 
 def _probs_to_dict(probs: np.ndarray) -> dict[str, float]:
-    """Convert a 3-element probability array to {bear, sideways, bull} dict."""
     return {
         "bear": float(probs[0]),
         "sideways": float(probs[1]),
@@ -49,7 +47,6 @@ def _probs_to_dict(probs: np.ndarray) -> dict[str, float]:
 
 
 def _nan_to_none(value: float) -> float | None:
-    """Replace NaN and Infinity with None for JSON serialisation."""
     if isinstance(value, float) and (math.isnan(value) or math.isinf(value)):
         return None
     return value
@@ -66,39 +63,12 @@ def run(
     ohlcv: pd.DataFrame | None = None,
     n_states: int = 3,
 ) -> dict:
-    """Run the full regime-detection pipeline and return a JSON-compatible dict.
-
-    Parameters
-    ----------
-    prices : pd.Series
-        Close price series with a DatetimeIndex.
-    source : str
-        Label for the data source (ticker symbol or filename).
-    engine : str
-        Which engine to use: ``"threshold"``, ``"messina"``, or ``"hmm"``.
-    window : int
-        Rolling window for threshold-based regime classification.
-    threshold : float
-        Return threshold for bull/bear classification.
-    min_train : int
-        Minimum bars before walk-forward trading starts.
-    ohlcv : pd.DataFrame | None
-        OHLCV data (required for messina/hmm engines).
-    n_states : int
-        Number of HMM states (ignored by threshold engine).
-
-    Returns
-    -------
-    dict
-        JSON-compatible output conforming to the hmm-regime-detection contract.
-    """
-    # --- Engine validation ---
-    if engine not in _VALID_ENGINES:
+    """Run the full regime-detection pipeline and return a JSON-compatible dict."""
+    if engine not in ENGINE_REGISTRY:
         raise ValueError(
-            f"engine must be one of {sorted(_VALID_ENGINES)}, got {engine!r}"
+            f"engine must be one of {sorted(ENGINE_REGISTRY.keys())}, got {engine!r}"
         )
 
-    # --- Input validation ---
     if not isinstance(prices, pd.Series):
         raise ValueError(f"prices must be a pd.Series, got {type(prices).__name__}")
     if not pd.api.types.is_numeric_dtype(prices):
