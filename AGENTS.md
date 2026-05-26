@@ -3,7 +3,7 @@
 This file provides guidance to agents when working with code in this repository.
 
 ## Project Overview
-This is a Hidden Markov Model (HMM) futures trading analysis project. It provides an Agent Skill that detects market regimes (Bull/Bear/Sideways) using threshold-based classification with optional HMM analysis.
+This is a Hidden Markov Model (HMM) futures trading analysis project. It provides an Agent Skill that detects market regimes (Bull/Bear/Sideways) using three independent engines: threshold (fast, close-only), messina (HMM + 19 Messina features), and hmm (HMM + ~50 generic features).
 
 ## Agent skills
 

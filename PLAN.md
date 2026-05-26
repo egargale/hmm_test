@@ -26,56 +26,77 @@
 
 ```
 hmm_test/
-├── SKILL.md                    # NEW: agent-facing skill definition
-├── pyproject.toml              # MODIFIED: stripped dependencies
+├── SKILL.md                    # Agent-facing skill definition
+├── AGENTS.md                   # Agent guidance
+├── CONTEXT.md                  # Domain language & terminology
+├── pyproject.toml              # Package config (hmm-futures-analysis)
 ├── .python-version
 ├── LICENSE
 ├── PLAN.md                     # this file
+├── run.sh                      # Self-bootstrapping entry point for skill consumers
 ├── test_data/
 │   ├── test_futures.csv
+│   ├── BTC.csv
 │   └── sample_ohlcv.csv
-├── scripts/
-│   ├── regime.py               # NEW: thin entry point
+├── hmm_futures_analysis/
+│   ├── __init__.py
+│   ├── cli.py                  # CLI entry point (hmm-regime console script)
 │   ├── backtesting/
 │   │   ├── __init__.py
-│   │   ├── strategy_engine.py
-│   │   ├── performance_analyzer.py
-│   │   ├── performance_metrics.py
-│   │   ├── bias_prevention.py
-│   │   └── utils.py
+│   │   └── performance_metrics.py
 │   ├── data_processing/
 │   │   ├── __init__.py
-│   │   ├── csv_parser.py        # MODIFIED: absorbed streaming logic
+│   │   ├── csv_parser.py
 │   │   ├── csv_format_detector.py
-│   │   ├── csv_auto_detect.py   # yfinance + CSV auto-detect
+│   │   ├── csv_auto_detect.py
 │   │   ├── data_validation.py
-│   │   └── feature_engineering.py
-│   ├── hmm_models/
+│   │   ├── feature_engineering.py
+│   │   ├── messina_features.py
+│   │   └── technical_indicators.py
+│   ├── regime/
 │   │   ├── __init__.py
-│   │   ├── base.py
-│   │   ├── gaussian_hmm.py
-│   │   ├── gmm_hmm.py
-│   │   └── factory.py
-│   ├── model_training/
-│   │   ├── __init__.py
-│   │   ├── hmm_trainer.py
-│   │   ├── inference_engine.py
-│   │   └── model_persistence.py
+│   │   ├── engine_protocol.py  # RegimeEngine protocol + ENGINE_REGISTRY
+│   │   ├── engines/
+│   │   │   ├── __init__.py
+│   │   │   ├── threshold.py
+│   │   │   ├── hmm_generic.py
+│   │   │   ├── hmm_messina.py
+│   │   │   └── _hmm_shared.py
+│   │   ├── hmm_adapter.py      # Legacy HMM adapter (deprecated)
+│   │   ├── markov_chain.py
+│   │   ├── pipeline.py
+│   │   └── walk_forward.py
 │   └── utils/
 │       ├── __init__.py
-│       ├── config.py
 │       ├── data_types.py
 │       └── logging_config.py
 ├── references/
-│   ├── hmm_theory.md           # NEW
-│   ├── feature_engineering.md  # NEW
-│   ├── backtesting_detail.md   # NEW
-│   ├── configuration.md        # NEW
-│   └── troubleshooting.md      # NEW
-├── tests/
-│   ├── conftest.py             # MODIFIED: update fixtures, drop dead deps
-│   ├── test_regime_pipeline.py # NEW: integration tests
-│   └── test_regime_contract.py # NEW: JSON contract validation
+│   ├── hmm_theory.md
+│   ├── feature_engineering.md
+│   ├── backtesting_detail.md
+│   ├── configuration.md
+│   └── troubleshooting.md
+├── docs/
+│   ├── adr/
+│   │   ├── 0001-three-independent-engines.md
+│   │   └── 0002-same-repo-dual-distribution.md
+│   ├── architecture/
+│   │   ├── 001-excise-dead-weight.md
+│   │   └── 002-deepen-engine-seam.md
+│   └── agents/
+│       ├── domain.md
+│       ├── issue-tracker.md
+│       └── triage-labels.md
+└── tests/
+    ├── conftest.py
+    ├── test_regime_pipeline.py
+    ├── test_regime_contract.py
+    ├── test_regime_engine.py
+    ├── test_messina_features.py
+    ├── test_messina_integration.py
+    ├── test_indicator_config.py
+    ├── test_packaging.py
+    └── test_excise_dead_weight.py
 ```
 
 ## Removed
@@ -156,17 +177,17 @@ Update `tests/conftest.py` imports.
 
 Move chunked CSV reading logic from `processing_engines/streaming_engine.py` into `data_processing/csv_parser.py`. The `process_csv()` function should handle chunked reading natively without a factory pattern.
 
-### Step 5: Write `scripts/regime.py`
+### Step 5: Write `cli.py`
 
-Entry point. Accepts `--csv`, `--ticker`, `--json`, `--window`, `--threshold`, `--min-train`, `--hmm`.
+Entry point. Accepts `--csv`, `--ticker`, `--json`, `--engine`, `--window`, `--threshold`, `--min-train`, `--n-states`.
 Pipeline:
 1. Load data (CSV auto-detect or yfinance)
 2. Compute returns
-3. Classify regimes (threshold or HMM)
+3. Classify regimes (threshold, messina, or hmm via ENGINE_REGISTRY)
 4. Build transition matrix
 5. Compute stationary distribution, persistence, signal
 6. Run walk-forward backtest
-7. Output: JSON (with `hmm_test_extras`) or pretty terminal
+7. Output: JSON or pretty terminal
 
 ### Step 6: Write `SKILL.md`
 
@@ -189,5 +210,5 @@ Two test files:
 ```bash
 uv sync
 uv run pytest tests/ -v
-uv run python scripts/regime.py --csv test_data/test_futures.csv --json
+./run.sh --csv test_data/test_futures.csv --json
 ```

@@ -230,7 +230,7 @@ def add_messina_features(
     df.replace([np.inf, -np.inf], np.nan, inplace=True)
 
     logger.info(
-        "Added Messina features (18): sma_200, sma_13, atr_20, adx_14, "
-        "adx_inflection, di_+/-, di_crossover, vstop, ratios, gaps, volume"
+        "Added Messina features (19): sma_200, sma_13, atr_20, adx_14, "
+        "adx_inflection, di_+/-, di_spread, vstop, ratios, gaps, volume, kdj_j"
     )
     return df

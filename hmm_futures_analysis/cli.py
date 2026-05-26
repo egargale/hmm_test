@@ -137,7 +137,7 @@ def main() -> None:
         type=str,
         default="threshold",
         choices=["threshold", "messina", "hmm"],
-        help="Analysis engine: threshold (fast, close-only), messina (HMM+12 features), hmm (HMM+44 features). Default: threshold.",
+        help="Analysis engine: threshold (fast, close-only), messina (HMM+19 features), hmm (HMM+50 features). Default: threshold.",
     )
     parser.add_argument(
         "--window",

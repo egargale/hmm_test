@@ -5,7 +5,7 @@ Detect market regimes (Bull/Bear/Sideways) using threshold-based classification 
 ## Language
 
 **Engine**:
-A self-contained analysis pipeline that produces a full output block (regime classification, transition matrix, forecasts, walk-forward backtest) from a single methodology. Three engines exist: `threshold` (fast, close-only), `messina` (HMM with 18 Messina features), `hmm` (HMM with ~44 generic features). The user selects one per invocation.
+A self-contained analysis pipeline that produces a full output block (regime classification, transition matrix, forecasts, walk-forward backtest) from a single methodology. Three engines exist: `threshold` (fast, close-only), `messina` (HMM with 19 Messina features), `hmm` (HMM with ~50 generic features). The user selects one per invocation.
 _Avoid_: model, mode, method, strategy
 
 **Walk-forward backtest**:
@@ -33,7 +33,7 @@ Open, High, Low, Close, Volume — the five price columns required for feature e
 _Avoid_: price data, market data
 
 **Feature engineering**:
-The process of computing technical indicators (log returns, SMAs, ATR, RSI, MACD, Bollinger, VSTOP, etc.) from OHLCV data. Two modes exist: `generic` (~44 indicators, SMA-based) and `messina` (17 indicators, Wilder's smoothing, VSTOP, ADX/DI, interaction terms, level gaps). Features are precomputed once on the full dataset and sliced per bar in the walk-forward loop — all indicators are backward-looking (no lookahead bias).
+The process of computing technical indicators (log returns, SMAs, ATR, RSI, MACD, Bollinger, VSTOP, etc.) from OHLCV data. Two modes exist: `generic` (~50 indicators, SMA-based) and `messina` (19 indicators, Wilder's smoothing, VSTOP, ADX/DI, interaction terms, level gaps, KDJ oscillator). Features are precomputed once on the full dataset and sliced per bar in the walk-forward loop — all indicators are backward-looking (no lookahead bias).
 _Avoid_: indicator calculation, TA computation
 
 **Discrete trade**:

@@ -30,19 +30,25 @@ Given a ticker or CSV with price data, it outputs a structured JSON with:
 - **Signal** — `P(bull) - P(bear)` in `[-1, 1]`
 - **Walk-forward backtest** — Sharpe, max drawdown, trade count
 - **Forecasts** — 1-step, 5-step, 20-step regime probabilities
-- **Optional HMM** — Gaussian/GMM hidden Markov model for richer state detection
+- **Three independent engines** — threshold (close-only), messina (HMM + 19 features), hmm (HMM + ~50 features)
 
 ## Usage
 
 ```bash
-# From CSV
-PYTHONPATH=scripts python scripts/cli.py --csv data.csv --json --no-hmm
+# From CSV (threshold engine, default)
+./run.sh --csv data.csv --json
 
-# From ticker (needs yfinance)
-PYTHONPATH=scripts python scripts/cli.py --ticker ES=F --json
+# From ticker (needs yfinance, installed automatically by run.sh)
+./run.sh --ticker ES=F --json
+
+# Messina engine (HMM with 19 Wilder's-smoothed features, requires OHLCV)
+./run.sh --csv data.csv --json --engine messina
+
+# Generic HMM engine (~50 SMA-based features, requires OHLCV)
+./run.sh --ticker SPY --json --engine hmm
 
 # Custom parameters
-PYTHONPATH=scripts python scripts/cli.py --csv data.csv --json --window 10 --threshold 0.03
+./run.sh --csv data.csv --json --window 10 --threshold 0.03
 ```
 
 ## Output Contract
@@ -50,13 +56,31 @@ PYTHONPATH=scripts python scripts/cli.py --csv data.csv --json --window 10 --thr
 ```json
 {
   "source": "ES=F",
+  "engine": "threshold",
+  "dates": {"start": "2016-01-04", "end": "2026-05-21"},
   "current_regime": {"name": "bull", "index": 2},
-  "signal": 0.45,
-  "next_state_probabilities": {"bear": 0.10, "sideways": 0.30, "bull": 0.60},
-  "transition_matrix": [[0.85, 0.10, 0.05], [0.08, 0.72, 0.20], [0.05, 0.15, 0.80]],
-  "stationary_distribution": {"bear": 0.25, "sideways": 0.40, "bull": 0.35},
-  "walk_forward": {"sharpe": 1.2, "max_drawdown": -0.15, "n_trades": 45},
-  "hmm": {"available": false}
+  "signal": 0.62,
+  "next_state_probabilities": {"bear": 0.08, "sideways": 0.30, "bull": 0.62},
+  "transition_matrix": [[0.88, 0.07, 0.05], [0.12, 0.70, 0.18], [0.04, 0.19, 0.77]],
+  "stationary_distribution": {"bear": 0.22, "sideways": 0.35, "bull": 0.43},
+  "persistence_diagonal": {"bear": 0.88, "sideways": 0.70, "bull": 0.77},
+  "regime_counts": {"bear": 480, "sideways": 760, "bull": 960},
+  "walk_forward": {
+    "sharpe": 0.51, "max_drawdown": -0.15, "n_trades": 42,
+    "win_rate": 0.57, "profit_factor": 1.80, "total_return": 0.23
+  },
+  "forecast": {
+    "1_step":  {"bear": 0.08, "sideways": 0.30, "bull": 0.62},
+    "5_step":  {"bear": 0.12, "sideways": 0.33, "bull": 0.55},
+    "20_step": {"bear": 0.18, "sideways": 0.35, "bull": 0.47}
+  },
+  "engine_info": {
+    "method": "threshold",
+    "features": "returns",
+    "n_states": 3
+  },
+  "framework": "hmm_test v0.2.0",
+  "disclaimer": "Regime detection is probabilistic. Past transitions do not guarantee future regimes. Not financial advice."
 }
 ```
 
