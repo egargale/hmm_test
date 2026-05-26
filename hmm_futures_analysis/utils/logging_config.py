@@ -12,6 +12,8 @@ import sys
 from pathlib import Path
 from typing import Optional
 
+from pydantic import BaseModel, Field, field_validator
+
 try:
     from loguru import logger
 
@@ -27,7 +29,27 @@ except ImportError:
     STRUCTLOG_AVAILABLE = False
 
 
-from .config import LoggingConfig
+class LoggingConfig(BaseModel):
+    """Configuration for logging."""
+
+    level: str = Field("INFO", description="Logging level")
+    format: str = Field(
+        "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        description="Log message format",
+    )
+    date_format: str = Field("%Y-%m-%d %H:%M:%S", description="Date format for logs")
+    file_path: Optional[str] = Field(None, description="Optional log file path")
+    max_file_size: str = Field("10 MB", description="Maximum log file size")
+    backup_count: int = Field(5, ge=0, description="Number of backup log files")
+    enable_rotation: bool = Field(True, description="Enable log file rotation")
+
+    @field_validator("level")
+    @classmethod
+    def validate_level(cls, v: str) -> str:
+        allowed_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+        if v.upper() not in allowed_levels:
+            raise ValueError(f"level must be one of {allowed_levels}")
+        return v.upper()
 
 
 def setup_logging(
