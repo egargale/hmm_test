@@ -24,6 +24,8 @@ from .markov_chain import (
 )
 from .walk_forward import walk_forward_backtest
 
+_HMM_ENGINES = frozenset({"messina", "hmm"})
+
 _STATE_NAMES = ("bear", "sideways", "bull")
 _FRAMEWORK_VERSION = "hmm_test v0.2.0"
 _DISCLAIMER = (
@@ -84,8 +86,54 @@ def run(
             f"prices must yield at least 2 valid returns, got {len(returns)}"
         )
 
-    # --- Threshold-based regime classification (always runs for stats) ---
-    regimes = classify_regimes(returns, window=window, threshold=threshold)
+    # --- Engine-specific regime classification ---
+    warmup_bars: int | None = None
+
+    if engine == "threshold":
+        regimes = classify_regimes(returns, window=window, threshold=threshold)
+    else:
+        if ohlcv is None:
+            raise ValueError(
+                f"engine {engine!r} requires OHLCV data "
+                "(open/high/low/close/volume). Pass ohlcv= DataFrame."
+            )
+        eng_cls = ENGINE_REGISTRY[engine]
+        eng = eng_cls(n_states=n_states)
+
+        precomputed = None
+        try:
+            precomputed = eng.precompute(ohlcv)
+        except (ValueError, RuntimeError, KeyError):
+            precomputed = None
+        if precomputed is None:
+            raise ValueError(
+                f"engine {engine!r} failed to precompute features from OHLCV data"
+            )
+
+        n = len(returns)
+        regimes = np.ones(n, dtype=int)
+        prev_means: np.ndarray | None = None
+        last_regime = 1
+
+        refit_every = max(1, (n - min_train) // 100)
+        refit_every = min(refit_every, 20)
+
+        for t in range(min_train, n):
+            refit_now = (t == min_train) or ((t - min_train) % refit_every == 0)
+            if refit_now:
+                features_slice = precomputed.iloc[:t]
+                try:
+                    result = eng.classify(
+                        features_slice, prev_means=prev_means
+                    )
+                    last_regime = result.regime
+                    prev_means = result.means
+                except (ValueError, RuntimeError):
+                    pass
+            regimes[t] = last_regime
+
+        warmup_bars = min_train
+
     transmat = build_transition_matrix(regimes)
     stationary = compute_stationary_distribution(transmat)
     persistence = compute_persistence_diagonal(transmat)
@@ -143,6 +191,8 @@ def run(
         engine_info["caveat"] = (
             "HMM states sorted by mean return; labels may swap on re-fit"
         )
+        if warmup_bars is not None:
+            engine_info["warmup_bars"] = warmup_bars
 
     return {
         "source": source,

@@ -399,3 +399,91 @@ class TestPipelineHelpers:
         assert _nan_to_none(3.14) == 3.14
         assert _nan_to_none(-2.718) == -2.718
         assert _nan_to_none(0.0) == 0.0
+
+
+class TestPipelineEngineTopLevelStats:
+    """Top-level stats must reflect the chosen engine, not always threshold."""
+
+    @pytest.fixture
+    def ohlcv_pipeline(self):
+        """Synthetic OHLCV for pipeline top-level stats testing."""
+        np.random.seed(42)
+        n = 400
+        dates = pd.date_range("2020-01-01", periods=n, freq="B")
+        close = 100.0 + np.cumsum(np.random.normal(0.02, 1.0, n))
+        close = np.maximum(close, 1.0)
+        return pd.DataFrame(
+            {
+                "open": close + np.random.normal(0, 0.3, n),
+                "high": close + np.abs(np.random.normal(0.8, 0.4, n)),
+                "low": close - np.abs(np.random.normal(0.8, 0.4, n)),
+                "close": close,
+                "volume": np.random.randint(100, 10000, n).astype(float),
+            },
+            index=dates,
+        )
+
+    def test_hmm_transition_matrix_differs_from_threshold(self, ohlcv_pipeline):
+        """HMM engine must produce a different transition matrix than threshold."""
+        prices = ohlcv_pipeline["close"]
+        common = dict(source="test", min_train=300)
+        result_threshold = pipeline_run(prices, engine="threshold", **common)
+        result_hmm = pipeline_run(
+            prices, engine="hmm", ohlcv=ohlcv_pipeline, **common
+        )
+        assert result_hmm["transition_matrix"] != result_threshold["transition_matrix"]
+
+    def test_messina_transition_matrix_differs_from_threshold(self, ohlcv_pipeline):
+        """Messina engine must produce a different transition matrix than threshold."""
+        prices = ohlcv_pipeline["close"]
+        common = dict(source="test", min_train=300)
+        result_threshold = pipeline_run(prices, engine="threshold", **common)
+        result_messina = pipeline_run(
+            prices, engine="messina", ohlcv=ohlcv_pipeline, **common
+        )
+        assert (
+            result_messina["transition_matrix"]
+            != result_threshold["transition_matrix"]
+        )
+
+    def test_hmm_engine_info_contains_warmup_bars(self, ohlcv_pipeline):
+        """HMM engine_info documents the warmup period."""
+        prices = ohlcv_pipeline["close"]
+        result = pipeline_run(
+            prices, engine="hmm", ohlcv=ohlcv_pipeline, source="test", min_train=300
+        )
+        assert "warmup_bars" in result["engine_info"]
+        assert result["engine_info"]["warmup_bars"] == 300
+
+    def test_messina_engine_info_contains_warmup_bars(self, ohlcv_pipeline):
+        """Messina engine_info documents the warmup period."""
+        prices = ohlcv_pipeline["close"]
+        result = pipeline_run(
+            prices,
+            engine="messina",
+            ohlcv=ohlcv_pipeline,
+            source="test",
+            min_train=300,
+        )
+        assert "warmup_bars" in result["engine_info"]
+        assert result["engine_info"]["warmup_bars"] == 300
+
+    def test_threshold_engine_info_has_no_warmup_bars(self, ohlcv_pipeline):
+        """Threshold engine does not report warmup_bars."""
+        prices = ohlcv_pipeline["close"]
+        result = pipeline_run(
+            prices, engine="threshold", source="test", min_train=300
+        )
+        assert "warmup_bars" not in result["engine_info"]
+
+    def test_hmm_pipeline_requires_ohlcv(self, ohlcv_pipeline):
+        """engine=hmm without OHLCV raises ValueError at top-level."""
+        prices = ohlcv_pipeline["close"]
+        with pytest.raises(ValueError, match=r"OHLCV"):
+            pipeline_run(prices, engine="hmm", source="test")
+
+    def test_messina_pipeline_requires_ohlcv(self, ohlcv_pipeline):
+        """engine=messina without OHLCV raises ValueError at top-level."""
+        prices = ohlcv_pipeline["close"]
+        with pytest.raises(ValueError, match=r"OHLCV"):
+            pipeline_run(prices, engine="messina", source="test")
