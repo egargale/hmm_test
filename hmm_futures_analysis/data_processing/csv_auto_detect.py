@@ -127,6 +127,55 @@ def load_from_yfinance(ticker: str, period: str = "10y") -> pd.Series:
     return close
 
 
+def _check_min_rows(prices: pd.Series) -> None:
+    """Raise ValueError if *prices* has fewer than 2 rows."""
+    if len(prices) < 2:
+        raise ValueError(
+            f"Need at least 2 rows of price data, got {len(prices)}. "
+            "Cannot compute returns from a single price point."
+        )
+
+
+def load_prices(
+    *,
+    csv: str | None = None,
+    ticker: str | None = None,
+) -> tuple[pd.Series, pd.DataFrame | None, str]:
+    """Unified data-loading entry point.
+
+    Exactly one of *csv* or *ticker* must be provided.
+
+    Returns
+    -------
+    tuple[pd.Series, pd.DataFrame | None, str]
+        (prices, ohlcv, source_label)
+    """
+    if (csv is None) == (ticker is None):
+        raise ValueError("Provide exactly one of csv or ticker")
+
+    if csv is not None:
+        prices = load_from_csv(csv)
+        _check_min_rows(prices)
+        return prices, None, csv
+
+    # ticker path
+    import yfinance
+
+    ohlcv_raw = yfinance.download(ticker, period="10y", progress=False)
+    if ohlcv_raw.empty:
+        raise ValueError(f"No data returned for ticker: {ticker}")
+
+    if isinstance(ohlcv_raw.columns, pd.MultiIndex):
+        ohlcv_raw.columns = [c[0].lower() for c in ohlcv_raw.columns]
+    else:
+        ohlcv_raw.columns = [c.lower() for c in ohlcv_raw.columns]
+
+    prices = ohlcv_raw["close"]
+    ohlcv = ohlcv_raw[["open", "high", "low", "close", "volume"]]
+    _check_min_rows(prices)
+    return prices, ohlcv, ticker
+
+
 def load_price_series(source: str, **kwargs) -> pd.Series:
     """Load a price series from CSV or yfinance.
 

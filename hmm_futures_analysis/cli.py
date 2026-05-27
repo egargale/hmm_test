@@ -17,11 +17,8 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from pathlib import Path
 
-import pandas as pd
-
-from .data_processing.csv_auto_detect import load_from_csv
+from .data_processing.csv_auto_detect import load_prices
 from .regime.pipeline import run as pipeline_run
 
 _STATE_NAMES = ("bear", "sideways", "bull")
@@ -175,30 +172,7 @@ def main() -> None:
 
     try:
         # Load data
-        source: str
-        ohlcv = None
-        if args.csv is not None:
-            source = args.csv
-            prices = load_from_csv(args.csv)
-        else:
-            source = args.ticker  # type: ignore[assignment]
-            import yfinance
-            ohlcv_raw = yfinance.download(args.ticker, period="10y", progress=False)
-            # Flatten MultiIndex columns from yfinance (Ticker, Price)
-            if isinstance(ohlcv_raw.columns, pd.MultiIndex):
-                ohlcv_raw.columns = [c[0].lower() for c in ohlcv_raw.columns]
-            else:
-                ohlcv_raw.columns = [c.lower() for c in ohlcv_raw.columns]
-            prices = ohlcv_raw["close"]
-            if args.engine in ("messina", "hmm"):
-                ohlcv = ohlcv_raw[["open", "high", "low", "close", "volume"]]
-
-        # Guard: need at least 2 price points to compute returns
-        if len(prices) < 2:
-            raise ValueError(
-                f"Need at least 2 rows of price data, got {len(prices)}. "
-                "Cannot compute returns from a single price point."
-            )
+        prices, ohlcv, source = load_prices(csv=args.csv, ticker=args.ticker)
 
         # Build output
         output = pipeline_run(
