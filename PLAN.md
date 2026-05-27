@@ -79,136 +79,58 @@ hmm_test/
 ├── docs/
 │   ├── adr/
 │   │   ├── 0001-three-independent-engines.md
-│   │   └── 0002-same-repo-dual-distribution.md
+│   │   ├── 0002-same-repo-dual-distribution.md
+│   │   ├── 0003-engine-self-containment.md
+│   │   └── 0004-cli-data-loading-seam.md
 │   ├── architecture/
 │   │   ├── 001-excise-dead-weight.md
-│   │   └── 002-deepen-engine-seam.md
+│   │   ├── 002-deepen-engine-seam.md
+│   │   └── 003-trim-feature-engineering.md
 │   └── agents/
 │       ├── domain.md
 │       ├── issue-tracker.md
 │       └── triage-labels.md
 └── tests/
     ├── conftest.py
-    ├── test_regime_pipeline.py
-    ├── test_regime_contract.py
-    ├── test_regime_engine.py
+    ├── test_engine_independence.py
+    ├── test_excise_dead_weight.py
+    ├── test_feature_engineering.py
+    ├── test_indicator_config.py
+    ├── test_load_prices.py
     ├── test_messina_features.py
     ├── test_messina_integration.py
-    ├── test_indicator_config.py
     ├── test_packaging.py
-    └── test_excise_dead_weight.py
+    ├── test_regime_contract.py
+    ├── test_regime_engine.py
+    └── test_regime_pipeline.py
 ```
 
-## Removed
+## Completed Steps
 
-- `src/processing_engines/` — streaming absorbed, Dask/Daft dropped
-- `src/visualization/` — agent renders locally
-- `src/compatibility/` — legacy shim
-- `src/pipelines/` — CLI workflow wrapper
-- `cli.py`, `cli_simple.py`, `main.py` — CLI layer
-- `SRC_DIRECTORY_STRUCTURE_DESIGN.md` — retroactive design doc
-- `.omc/` — tool artifacts
-- `docs/` — RST replaced by `references/` + `SKILL.md`
-- `examples/` — if present
+All 9 implementation steps from the original plan are complete. Key milestones:
 
-## Implementation steps
+| Step | Description | Commit | Status |
+|------|-------------|--------|--------|
+| 1 | Restructure directories (`src/` → `scripts/` → `hmm_futures_analysis/`) | `4d60098` | ✅ Done |
+| 2 | Clean `pyproject.toml` | `4d60098` | ✅ Done |
+| 3 | Fix cross-module imports (all relative) | `4d60098` | ✅ Done |
+| 4 | Absorb streaming into `csv_parser.py` | `4d60098` | ✅ Done |
+| 5 | Write `cli.py` | `4d60098`, `0070e96` | ✅ Done |
+| 6 | Write `SKILL.md` | `04978c9` | ✅ Done |
+| 7 | Write `references/` | `04978c9` | ✅ Done |
+| 8 | Write integration tests | `a5b3099`+ | ✅ Done |
+| 9 | Verify | all PRs | ✅ Done |
 
-### Step 1: Restructure directories
+### Additional completed work (post-plan)
 
-Move `src/` → `scripts/`. Remove dead packages and root-level CLI files.
-
-```
-mkdir -p scripts
-mv src/backtesting scripts/
-mv src/data_processing scripts/
-mv src/hmm_models scripts/
-mv src/model_training scripts/
-mv src/utils scripts/
-rm -rf src/processing_engines src/visualization src/compatibility src/pipelines src/
-rm -f cli.py cli_simple.py main.py SRC_DIRECTORY_STRUCTURE_DESIGN.md
-rm -rf .omc/ docs/ examples/
-```
-
-### Step 2: Clean pyproject.toml
-
-Strip to core + optional dependencies. Remove build-system scripts/config for removed modules. Result:
-
-```toml
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[project]
-name = "hmm-futures-analysis"
-version = "0.1.0"
-description = "Hidden Markov Models for futures market regime detection"
-requires-python = ">=3.9"
-dependencies = [
-    "numpy>=1.20.0",
-    "pandas>=1.3.0",
-    "scikit-learn>=1.0.0",
-    "scipy>=1.7.0",
-    "hmmlearn>=0.2.7",
-]
-
-[project.optional-dependencies]
-yfinance = ["yfinance>=0.2.0"]
-dask = ["dask[complete]>=2021.8.0"]
-daft = ["daft>=0.3.0"]
-dev = ["pytest>=7.0", "ruff"]
-
-[tool.pytest.ini_options]
-pythonpath = ["scripts"]
-addopts = ["-ra", "--strict-markers"]
-
-[tool.ruff]
-target-version = "py39"
-```
-
-### Step 3: Fix all cross-module imports
-
-Every `from utils import ...` → update if needed (should still work since `scripts/` is the pythonpath).
-Every `from src.xxx` → remove `src.` prefix.
-Remove `tqdm` imports from `backtesting/bias_prevention.py` and `strategy_engine.py`.
-Remove `click` references.
-Update `tests/conftest.py` imports.
-
-### Step 4: Absorb streaming engine into data_processing
-
-Move chunked CSV reading logic from `processing_engines/streaming_engine.py` into `data_processing/csv_parser.py`. The `process_csv()` function should handle chunked reading natively without a factory pattern.
-
-### Step 5: Write `cli.py`
-
-Entry point. Accepts `--csv`, `--ticker`, `--json`, `--engine`, `--window`, `--threshold`, `--min-train`, `--n-states`.
-Pipeline:
-1. Load data (CSV auto-detect or yfinance)
-2. Compute returns
-3. Classify regimes (threshold, messina, or hmm via ENGINE_REGISTRY)
-4. Build transition matrix
-5. Compute stationary distribution, persistence, signal
-6. Run walk-forward backtest
-7. Output: JSON or pretty terminal
-
-### Step 6: Write `SKILL.md`
-
-YAML frontmatter with `name: hmm-regime-detection` and targeted description.
-Body (~4000 tokens): invocation, JSON contract, composition patterns, gotchas, reference index.
-
-### Step 7: Write `references/`
-
-Five files: hmm_theory, feature_engineering, backtesting_detail, configuration, troubleshooting.
-Extract from existing `docs/user_guide/complete_guide.rst` and adapt for agent consumption.
-
-### Step 8: Write integration tests
-
-Two test files:
-- `test_regime_pipeline.py` — load CSV, classify regimes, compute signal, verify output fields
-- `test_regime_contract.py` — verify JSON schema matches contract
-
-### Step 9: Verify
-
-```bash
-uv sync
-uv run pytest tests/ -v
-./run.sh --csv test_data/test_futures.csv --json
-```
+| Change | Commit | PR/Issue |
+|--------|--------|----------|
+| Excise dead weight modules (~5,650 lines) | `1e2736b` | PR #9, ADR-001 |
+| Implement RegimeEngine protocol | `0b13329` | ADR-002 |
+| Documentation update (CONTEXT, README, SKILL, PLAN) | `07f8043` | — |
+| HMM engines drive top-level pipeline stats | `3e4d7da` | Issue #10 |
+| Engine self-containment ADR | `a020239` | PR #13, ADR-0003 |
+| Integration test: engines produce different regimes | `274e401` | PR #11 |
+| Delete unused FeatureEngineer class | `e47ebf5` | PR #14, ADR-003 |
+| Messina feature set refined to 18 indicators (19 cols incl log_ret) | `68863fe` | — |
+| CLI data loading seam (`load_prices()`) | `0070e96` | ADR-0004 |

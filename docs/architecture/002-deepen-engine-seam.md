@@ -1,9 +1,10 @@
 # ADR-002: Deepen Engine Seam with RegimeEngine Protocol
 
-**Status**: Proposed
+**Status**: Accepted
 **Date**: 2026-05-26
 **Priority**: Medium
 **Depends on**: ADR-001 (excised dead modules)
+**Implemented**: 2026-05-26 (commit `0b13329` — RegimeEngine protocol, ENGINE_REGISTRY, 268 new tests)
 
 ## Context
 

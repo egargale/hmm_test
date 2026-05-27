@@ -1,9 +1,10 @@
 # ADR-001: Excise Dead Weight Modules
 
-**Status**: Proposed
+**Status**: Accepted
 **Date**: 2026-05-26
 **Priority**: Strong
 **Revised**: 2026-05-26 (corrected dead-module list and line counts)
+**Implemented**: 2026-05-26 (commit `1e2736b`, PR #9 — ~5,650 lines excised, 135/135 tests pass)
 
 ## Context
 

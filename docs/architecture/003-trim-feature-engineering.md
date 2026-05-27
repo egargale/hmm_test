@@ -1,8 +1,9 @@
 # ADR-003: Trim Feature Engineering Monolith
 
-**Status**: Proposed
+**Status**: Accepted
 **Date**: 2026-05-26
 **Priority**: Worth Exploring
+**Implemented**: 2026-05-27 (commit `e47ebf5`, PR #14 — FeatureEngineer class deleted, file 1300→849 lines)
 
 ## Context
 
