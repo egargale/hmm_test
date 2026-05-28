@@ -24,6 +24,12 @@ SKILL_DIR="$SKILL_DIR"
 "$SKILL_DIR/run.sh" --ticker KO --json
 "$SKILL_DIR/run.sh" --csv data.csv --json
 "$SKILL_DIR/run.sh" --csv data.csv --json --engine messina
+
+# ── BIC STATE SELECTION ──────────────────────────────────────────────────
+"$SKILL_DIR/run.sh" --ticker SPY --json --engine hmm --n-states auto
+
+# ── WHIPSAW FILTERS ─────────────────────────────────────────────────────
+"$SKILL_DIR/run.sh" --ticker QQQ --json --engine hmm --dwell-bars 3 --hysteresis 0.1
 ```
 
 > The `run.sh` wrapper is self-bootstrapping — it creates a venv and installs
@@ -52,7 +58,9 @@ The Messina and HMM engines require OHLCV data and automatically receive it when
 | `--window` | int | 20 | Rolling window for regime classification. |
 | `--threshold` | float | 0.05 | Return threshold for bull/bear classification. |
 | `--min-train` | int | 252 | Minimum bars before walk-forward trading starts. |
-| `--n-states` | int | 3 | Number of HMM states (ignored by threshold engine). |
+| `--n-states` | int/`auto` | 3 | Number of HMM states. Pass `auto` for BIC-based selection (ignored by threshold engine). |
+| `--dwell-bars` | int | 0 | Dwell-time filter: require N consecutive same-regime bars before switching position. 0 = disabled. |
+| `--hysteresis` | float | 0.0 | Hysteresis filter: require posterior probability margin > D to switch regime. 0.0 = disabled. No-op for threshold engine. |
 
 ### Removed flags (v0.2.0)
 
@@ -124,7 +132,7 @@ All values are floats (may be `null` for insufficient data):
 |-------|-------------|
 | `method` | Engine name: `threshold`, `messina`, or `hmm` |
 | `features` | Feature mode: `returns`, `messina`, or `generic` |
-| `n_states` | Number of HMM states (always 3, included for reference) |
+| `n_states` | Number of HMM states (3 by default, may differ with `--n-states auto`) |
 | `caveat` | Present on HMM engines: warns about label instability on re-fit |
 
 ## Processing Pipeline
@@ -134,7 +142,7 @@ All values are floats (may be `null` for insufficient data):
 3. **Classify regimes** — Rolling sum of returns over `--window` bars vs `--threshold`.
 4. **Build transition matrix** — Counts → row-normalised 3×3 probability matrix.
 5. **Compute statistics** — Stationary distribution, persistence diagonal, directional signal.
-6. **Walk-forward backtest** — No-lookahead: at each bar `t`, regime classification uses only data `[0:t)`. Discrete positions (−1, 0, +1) via `{bear: short, sideways: flat, bull: long}`. Trades fire on regime changes. Daily P&L from lagged positions × returns.
+6. **Walk-forward backtest** — No-lookahead: at each bar `t`, regime classification uses only data `[0:t)`. Discrete positions (−1, 0, +1) via `{bear: short, sideways: flat, bull: long}`. Optional **dwell-time** (`--dwell-bars`) and **hysteresis** (`--hysteresis`) filters gate position changes (AND logic — both must agree to switch). Trades fire on regime changes. Daily P&L from lagged positions × returns.
 7. **Forecast** — Matrix exponentiation to project regime probabilities 1, 5, and 20 steps ahead.
 
 ## Signal Interpretation
@@ -179,6 +187,24 @@ for ticker in SPY QQQ IWM DIA; do
 done
 ```
 
+## Advanced Options
+
+### BIC State Selection (`--n-states auto`)
+
+When `--n-states auto` is passed, the HMM engine evaluates candidate state counts (2–max) using the Bayesian Information Criterion (BIC). For each candidate `k`, it fits a GaussianHMM with 3 restarts and selects the lowest-BIC count. A short-data guard (`effective_max = min(max_states, max(2, n // 10))`) prevents degenerate fits on small datasets. PCA-compatible: BIC automatically uses PCA-reduced features when `pca_variance` is set.
+
+### PCA Whitening (constructor-only)
+
+HMM and Messina engines accept a `pca_variance` parameter (float, e.g. `0.95`). When set, PCA whitening is applied inside `_fit_hmm_on_slice()` — after z-score, before HMM fit. The component count is determined by the variance threshold on the first refit and reused for subsequent refits to maintain dimensional consistency for `_match_states()`. This is currently a constructor-only parameter with no CLI flag.
+
+### Walk-Forward Whipsaw Filters
+
+Two optional filters reduce excessive position switching in walk-forward backtests:
+
+- **Dwell-time** (`--dwell-bars N`): Requires N consecutive bars of the same new regime before switching position. Default 0 = disabled.
+- **Hysteresis** (`--hysteresis D`): Requires the posterior probability margin (new regime's probability minus current regime's probability) to exceed D before switching. Default 0.0 = disabled. No-op for the threshold engine (no posteriors).
+- **Logic**: AND — both filters must agree to allow a switch.
+
 ## Gotchas
 
 1. **HMM label instability**: Messina/hmm engines sort states by mean return. Labels may swap between re-fits on different data. Threshold engine labels are stable.
@@ -189,6 +215,8 @@ done
 6. **yfinance dependency**: Optional. `run.sh` installs it automatically. For manual install: `uv sync --extra yfinance`.
 7. **signal = 0**: Can happen when bull and bear probabilities are equal. Common in sideways markets.
 8. **Threshold sensitivity**: Small `--threshold` values produce frequent regime switches. Large values make the regime "sticky".
+9. **Hysteresis + threshold engine**: `--hysteresis` has no effect with `--engine threshold` because the threshold engine does not produce posterior probabilities.
+10. **BIC auto + PCA**: When both `--n-states auto` and PCA whitening are active, BIC evaluation uses PCA-reduced features automatically.
 
 ## Reference Index
 
