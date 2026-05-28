@@ -9,8 +9,14 @@ from ._hmm_shared import _fit_hmm_on_slice, _match_states, engineer_features
 
 
 class HMMMMessinaEngine:
-    def __init__(self, n_states: int = 3) -> None:
+    def __init__(
+        self,
+        n_states: int = 3,
+        pca_variance: float | None = None,
+    ) -> None:
         self.n_states = n_states
+        self.pca_variance = pca_variance
+        self._pca_n_components: int | None = None
 
     def precompute(self, data: pd.DataFrame) -> pd.DataFrame | None:
         return engineer_features(data, use_messina=True)
@@ -25,9 +31,21 @@ class HMMMMessinaEngine:
                 f"for {self.n_states} HMM states"
             )
         features_arr = features_clean.to_numpy(dtype=np.float64)
-        model, center, scale = _fit_hmm_on_slice(features_arr, n_states=self.n_states)
+
+        model, center, scale, pca_n, pca_transform = _fit_hmm_on_slice(
+            features_arr, n_states=self.n_states, pca_variance=self.pca_variance,
+        )
+
+        # Sticky component count
+        if pca_n is not None and self._pca_n_components is None:
+            self._pca_n_components = pca_n
+
         means = model.means_
+
+        # Transform last bar through z-score → (optional PCA) for prediction
         last_features = (features_arr[-1:] - center) / scale
+        if pca_transform is not None:
+            last_features = pca_transform.transform(last_features)
         raw_state = model.predict(last_features.astype(np.float64))[0]
 
         # Map HMM states to regime indices (0=bear, 1=sideways, 2=bull)

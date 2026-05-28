@@ -186,7 +186,7 @@ def hmm_state_from_slice(
     features_arr = features_clean.to_numpy(dtype=np.float64)
 
     # Fit HMM on cleaned slice
-    model, center, scale = _fit_hmm_on_slice(features_arr, n_states=n_states)
+    model, center, scale, _pca_n, _pca_transform = _fit_hmm_on_slice(features_arr, n_states=n_states)
 
     # Get means in standardized space
     means = model.means_  # shape (n_states, n_features)

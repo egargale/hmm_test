@@ -65,6 +65,7 @@ def run(
     min_train: int = 252,
     ohlcv: pd.DataFrame | None = None,
     n_states: int | str = 3,
+    pca_variance: float | None = None,
 ) -> dict:
     """Run the full regime-detection pipeline and return a JSON-compatible dict."""
     if engine not in ENGINE_REGISTRY:
@@ -132,7 +133,7 @@ def run(
                 max_states=6,
             )
 
-        eng = eng_cls(n_states=resolved_n_states)
+        eng = eng_cls(n_states=resolved_n_states, pca_variance=pca_variance)
 
         n = len(returns)
         regimes = np.ones(n, dtype=int)
@@ -195,6 +196,7 @@ def run(
         min_train=min_train,
         ohlcv=ohlcv,
         n_states=resolved_n_states,
+        pca_variance=pca_variance,
     )
     walk_forward = {
         "sharpe": _nan_to_none(wf["sharpe"]),

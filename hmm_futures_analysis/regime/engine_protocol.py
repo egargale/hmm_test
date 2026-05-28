@@ -34,4 +34,45 @@ def _build_registry() -> dict[str, type]:
     }
 
 
-ENGINE_REGISTRY: dict[str, type] = _build_registry()
+class _LazyRegistry(dict):
+    """Dict subclass that lazily builds on first access."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._built = False
+
+    def _ensure_built(self) -> None:
+        if not self._built:
+            self._built = True
+            self.update(_build_registry())
+
+    def __contains__(self, key: object) -> bool:
+        self._ensure_built()
+        return super().__contains__(key)
+
+    def __getitem__(self, key: str) -> type:
+        self._ensure_built()
+        return super().__getitem__(key)
+
+    def __iter__(self):
+        self._ensure_built()
+        return super().__iter__()
+
+    def keys(self):
+        self._ensure_built()
+        return super().keys()
+
+    def values(self):
+        self._ensure_built()
+        return super().values()
+
+    def items(self):
+        self._ensure_built()
+        return super().items()
+
+    def __len__(self) -> int:
+        self._ensure_built()
+        return super().__len__()
+
+
+ENGINE_REGISTRY: dict[str, type] = _LazyRegistry()

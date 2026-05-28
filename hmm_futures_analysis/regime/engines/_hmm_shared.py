@@ -4,6 +4,7 @@ from __future__ import annotations
 import os
 import warnings
 from contextlib import redirect_stderr, redirect_stdout
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
@@ -11,6 +12,9 @@ from hmmlearn import hmm
 
 from ...data_processing.feature_engineering import add_features
 from ...data_processing.messina_features import add_messina_features
+
+if TYPE_CHECKING:
+    from sklearn.decomposition import PCA
 
 _MESSINA_COLS = [
     "log_ret", "sma_200", "sma_13", "atr_20",
@@ -46,10 +50,31 @@ def _fit_hmm_on_slice(
     features: np.ndarray,
     n_states: int = 3,
     random_state: int = 42,
-) -> tuple[hmm.GaussianHMM, np.ndarray, np.ndarray]:
+    pca_variance: float | None = None,
+) -> tuple[hmm.GaussianHMM, np.ndarray, np.ndarray, int | None, PCA | None]:
+    """Fit GaussianHMM on a feature slice, with optional PCA whitening.
+
+    Pipeline: raw features → z-score → (optional PCA) → fit.
+
+    Returns (model, center, scale, pca_n_components, pca_transform).
+    When ``pca_variance`` is None, returns (model, center, scale, None, None)
+    preserving backward compatibility in structure.
+    """
     center = np.mean(features, axis=0)
     scale = np.std(features, axis=0) + 1e-8
     X = ((features - center) / scale).astype(np.float64)
+
+    # Optional PCA whitening (model layer, per ADR-0005)
+    pca_n_components_used: int | None = None
+    pca_transform: PCA | None = None
+    if pca_variance is not None:
+        from sklearn.decomposition import PCA as _PCA
+
+        pca_transform = _PCA(
+            n_components=pca_variance, svd_solver="full", random_state=random_state,
+        )
+        X = pca_transform.fit_transform(X).astype(np.float64)
+        pca_n_components_used = int(pca_transform.n_components_)
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
@@ -67,7 +92,7 @@ def _fit_hmm_on_slice(
                 )
                 model.fit(X)
 
-    return model, center, scale
+    return model, center, scale, pca_n_components_used, pca_transform
 
 
 def select_n_states(
@@ -75,6 +100,7 @@ def select_n_states(
     max_states: int = 6,
     random_state: int = 42,
     n_restarts: int = 3,
+    pca_variance: float | None = None,
 ) -> int:
     """Select optimal number of HMM states via Bayesian Information Criterion.
 
@@ -109,13 +135,18 @@ def select_n_states(
     for k in range(2, effective_max + 1):
         for restart in range(n_restarts):
             seed = random_state + restart * 1000 + k
-            model, center, scale = _fit_hmm_on_slice(
+            model, center, scale, pca_n, pca_transform = _fit_hmm_on_slice(
                 features, n_states=k, random_state=seed,
+                pca_variance=pca_variance,
             )
             X_norm = ((features - center) / scale).astype(np.float64)
+            if pca_transform is not None:
+                X_norm = pca_transform.transform(X_norm).astype(np.float64)
             log_likelihood = model.score(X_norm)
+            # Effective dimensionality (reduced by PCA when active)
+            d_eff = model.means_.shape[1]
             # Free params: means (k*d) + diag covariances (k*d) + transition (k*(k-1))
-            n_params = k * d + k * d + k * (k - 1)
+            n_params = k * d_eff + k * d_eff + k * (k - 1)
             bic = -2.0 * log_likelihood + n_params * np.log(n)
             if bic < best_bic:
                 best_bic = bic

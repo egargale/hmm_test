@@ -83,6 +83,7 @@ def _resolve_engine(
     threshold: float,
     n_states: int,
     ohlcv: pd.DataFrame | None,
+    pca_variance: float | None = None,
 ) -> RegimeEngine:
     if isinstance(engine, str):
         if engine not in _VALID_ENGINES:
@@ -97,7 +98,7 @@ def _resolve_engine(
         cls = ENGINE_REGISTRY[engine]
         if engine == "threshold":
             return cls(window=window, threshold=threshold)
-        return cls(n_states=n_states)
+        return cls(n_states=n_states, pca_variance=pca_variance)
     return engine
 
 
@@ -110,6 +111,7 @@ def walk_forward_backtest(
     min_train: int = 252,
     ohlcv: pd.DataFrame | None = None,
     n_states: int = 3,
+    pca_variance: float | None = None,
 ) -> dict:
     """No-lookahead walk-forward backtest with discrete position sizing.
 
@@ -130,13 +132,15 @@ def walk_forward_backtest(
         OHLCV data required for messina/hmm engines.
     n_states : int
         Number of HMM states (ignored by threshold engine).
+    pca_variance : float | None
+        Optional PCA whitening threshold for HMM engines.
 
     Returns
     -------
     dict
         ``{sharpe, max_drawdown, n_trades, win_rate, profit_factor, total_return}``
     """
-    eng = _resolve_engine(engine, window, threshold, n_states, ohlcv)
+    eng = _resolve_engine(engine, window, threshold, n_states, ohlcv, pca_variance)
 
     if len(prices) < min_train + 1:
         return _empty_result()
