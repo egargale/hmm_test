@@ -107,6 +107,21 @@ def _print_terminal(output: dict) -> None:
     print(sep, file=sys.stderr)
 
 
+def _parse_n_states(value: str) -> str | int:
+    """Parse --n-states: accept 'auto' or an integer >= 2."""
+    if value == "auto":
+        return "auto"
+    try:
+        iv = int(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            f"--n-states must be 'auto' or an integer, got {value!r}"
+        )
+    if iv < 2:
+        raise argparse.ArgumentTypeError(f"--n-states must be >= 2, got {iv}")
+    return iv
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Detect market regimes (Bull/Bear/Sideways) using Markov analysis.",
@@ -156,9 +171,9 @@ def main() -> None:
     )
     parser.add_argument(
         "--n-states",
-        type=int,
+        type=_parse_n_states,
         default=3,
-        help="Number of HMM states (default: 3).",
+        help="Number of HMM states: 'auto' for BIC selection, or an integer >= 2 (default: 3).",
     )
 
     args = parser.parse_args()

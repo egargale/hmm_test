@@ -30,13 +30,35 @@ class HMMMMessinaEngine:
         last_features = (features_arr[-1:] - center) / scale
         raw_state = model.predict(last_features.astype(np.float64))[0]
 
-        if prev_means is not None:
-            assignment = _match_states(means, prev_means)
-            regime = assignment.get(int(raw_state), 1)
+        # Map HMM states to regime indices (0=bear, 1=sideways, 2=bull)
+        # based on ascending mean return order, collapsed to 3 buckets
+        state_means = means[:, 0]
+        order = np.argsort(state_means)
+        if self.n_states <= 3:
+            label_map = {int(order[i]): i for i in range(len(order))}
         else:
-            state_means = means[:, 0]
-            order = np.argsort(state_means)
-            label_map = {int(order[0]): 0, int(order[1]): 1, int(order[2]): 2}
-            regime = label_map.get(int(raw_state), 1)
+            # Collapse n_states into 3 regimes: low/middle/high terciles
+            n = len(order)
+            label_map = {}
+            for i, state_idx in enumerate(order):
+                regime = min(2, i * 3 // n)
+                label_map[int(state_idx)] = regime
+
+        regime = label_map.get(int(raw_state), 1)
+
+        if prev_means is not None:
+            # Map through: raw_state -> matched old state -> old regime
+            prev_order = np.argsort(prev_means[:, 0])
+            prev_n = len(prev_order)
+            if prev_n <= 3:
+                prev_label_map = {int(prev_order[i]): i for i in range(prev_n)}
+            else:
+                prev_label_map = {}
+                for i, si in enumerate(prev_order):
+                    prev_label_map[int(si)] = min(2, i * 3 // prev_n)
+            assignment = _match_states(means, prev_means)
+            old_state = assignment.get(int(raw_state))
+            if old_state is not None:
+                regime = prev_label_map.get(old_state, regime)
 
         return ClassifyResult(regime=int(regime), means=means)

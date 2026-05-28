@@ -70,6 +70,60 @@ def _fit_hmm_on_slice(
     return model, center, scale
 
 
+def select_n_states(
+    features: np.ndarray,
+    max_states: int = 6,
+    random_state: int = 42,
+    n_restarts: int = 3,
+) -> int:
+    """Select optimal number of HMM states via Bayesian Information Criterion.
+
+    Fits GaussianHMM for each candidate n_states in [2, max_states] with
+    multiple random restarts and returns the count with the lowest BIC.
+
+    Parameters
+    ----------
+    features : np.ndarray
+        Feature matrix (n_samples, n_features).
+    max_states : int
+        Maximum number of states to evaluate.
+    random_state : int
+        Base random seed for reproducibility.
+    n_restarts : int
+        Number of random restarts per candidate state count.
+
+    Returns
+    -------
+    int
+        Optimal number of states by BIC.
+    """
+    n = len(features)
+    d = features.shape[1]
+
+    # Guard: cap max_states to avoid degenerate fits on short data
+    effective_max = min(max_states, max(2, n // 10))
+
+    best_bic = float("inf")
+    best_k = 2
+
+    for k in range(2, effective_max + 1):
+        for restart in range(n_restarts):
+            seed = random_state + restart * 1000 + k
+            model, center, scale = _fit_hmm_on_slice(
+                features, n_states=k, random_state=seed,
+            )
+            X_norm = ((features - center) / scale).astype(np.float64)
+            log_likelihood = model.score(X_norm)
+            # Free params: means (k*d) + diag covariances (k*d) + transition (k*(k-1))
+            n_params = k * d + k * d + k * (k - 1)
+            bic = -2.0 * log_likelihood + n_params * np.log(n)
+            if bic < best_bic:
+                best_bic = bic
+                best_k = k
+
+    return best_k
+
+
 def _match_states(
     new_means: np.ndarray,
     prev_means: np.ndarray,

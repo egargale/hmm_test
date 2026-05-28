@@ -14,6 +14,7 @@ import numpy as np
 import pandas as pd
 
 from .engine_protocol import ENGINE_REGISTRY
+from .engines._hmm_shared import select_n_states
 from .markov_chain import (
     build_transition_matrix,
     classify_regimes,
@@ -63,7 +64,7 @@ def run(
     threshold: float = 0.05,
     min_train: int = 252,
     ohlcv: pd.DataFrame | None = None,
-    n_states: int = 3,
+    n_states: int | str = 3,
 ) -> dict:
     """Run the full regime-detection pipeline and return a JSON-compatible dict."""
     if engine not in ENGINE_REGISTRY:
@@ -86,6 +87,19 @@ def run(
             f"prices must yield at least 2 valid returns, got {len(returns)}"
         )
 
+    # --- Resolve n_states='auto' for HMM engines ---
+    resolved_n_states: int = 3  # default for threshold
+    if isinstance(n_states, str) and n_states == "auto":
+        if engine in _HMM_ENGINES:
+            # Need to precompute features first for BIC evaluation
+            pass  # resolved below after precompute
+        else:
+            resolved_n_states = 3  # threshold ignores n_states
+    elif isinstance(n_states, int):
+        resolved_n_states = n_states
+    else:
+        raise ValueError(f"n_states must be int or 'auto', got {n_states!r}")
+
     # --- Engine-specific regime classification ---
     warmup_bars: int | None = None
 
@@ -98,17 +112,27 @@ def run(
                 "(open/high/low/close/volume). Pass ohlcv= DataFrame."
             )
         eng_cls = ENGINE_REGISTRY[engine]
-        eng = eng_cls(n_states=n_states)
 
+        # Precompute features (needed for BIC and for classification)
+        eng_temp = eng_cls(n_states=3)  # n_states doesn't affect precompute
         precomputed = None
         try:
-            precomputed = eng.precompute(ohlcv)
+            precomputed = eng_temp.precompute(ohlcv)
         except (ValueError, RuntimeError, KeyError):
             precomputed = None
         if precomputed is None:
             raise ValueError(
                 f"engine {engine!r} failed to precompute features from OHLCV data"
             )
+
+        # Resolve 'auto' now that we have features
+        if isinstance(n_states, str) and n_states == "auto":
+            resolved_n_states = select_n_states(
+                precomputed.dropna().to_numpy(dtype=np.float64),
+                max_states=6,
+            )
+
+        eng = eng_cls(n_states=resolved_n_states)
 
         n = len(returns)
         regimes = np.ones(n, dtype=int)
@@ -170,7 +194,7 @@ def run(
         threshold=threshold,
         min_train=min_train,
         ohlcv=ohlcv,
-        n_states=n_states,
+        n_states=resolved_n_states,
     )
     walk_forward = {
         "sharpe": _nan_to_none(wf["sharpe"]),
@@ -185,7 +209,7 @@ def run(
     engine_info: dict[str, object] = {
         "method": engine,
         "features": _ENGINE_FEATURES.get(engine, engine),
-        "n_states": n_states,
+        "n_states": resolved_n_states,
     }
     if engine in ("messina", "hmm"):
         engine_info["caveat"] = (
