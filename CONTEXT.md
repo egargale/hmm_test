@@ -44,6 +44,26 @@ _Avoid_: continuous position, fractional trade, signal-weighted trade
 The threshold engine's method for mapping classified regimes to trading positions. At each bar, the regime (0/1/2) from `classify_regimes()` is mapped directly to a position via `{0: -1, 1: 0, 2: 1}`. No signal threshold or intermediate computation.
 _Avoid_: signal-gating, conviction filtering
 
+**BIC state selection** (`--n-states auto`):
+Automatic selection of the number of HMM latent states via Bayesian Information Criterion. `select_n_states()` in `_hmm_shared.py` fits GaussianHMM for each candidate `k` in `[2, max_states]` with multiple restarts and returns the count with the lowest BIC. Default remains `--n-states 3`. The BIC penalty naturally guards against overfitting on short data windows.
+_Avoid_: auto-tuning, state optimization
+
+**PCA whitening**:
+Optional dimensionality reduction applied after z-score normalization and before `model.fit()` inside `_fit_hmm_on_slice()`. Opt-in per engine via `pca_variance` parameter (e.g. 0.95 = keep 95% of variance). Reduces the generic engine's ~50 features to ~10-15 components. Component count is sticky — determined on first refit, reused on subsequent refits. Per ADR-0005.
+_Avoid_: feature reduction, dimensionality reduction (use PCA whitening)
+
+**Dwell-time filter** (`--dwell-bars N`):
+Walk-forward filter that requires a regime to persist for N consecutive bars before the position changes. Lives in `walk_forward.py`, not inside engines (ADR-0003). Counter resets when the candidate regime changes. Default 0 = disabled.
+_Avoid_: hold period, minimum hold
+
+**Hysteresis filter** (`--hysteresis D`):
+Walk-forward filter that only switches regimes when the posterior probability of the new regime exceeds the current regime's by a margin `> D`. Requires `posteriors` from `ClassifyResult` — no-op for the threshold engine (which returns `posteriors=None`). Lives in `walk_forward.py` (ADR-0003, ADR-0007). Default 0.0 = disabled.
+_Avoid_: probability threshold, confidence filter
+
+**Posteriors**:
+Posterior probability array over regimes, returned by HMM engines via `ClassifyResult.posteriors`. Computed from `model.predict_proba()`. When `n_states > 3`, aggregated by regime bucket (Bear/Sideways/Bull). Used by the hysteresis filter. `None` for the threshold engine.
+_Avoid_: probabilities, confidence scores
+
 ## Flagged ambiguities
 
 - **"state"**: Use **regime** for the labeled market condition (Bear/Sideways/Bull) and **HMM latent state** for the raw model output index. Never use "state" alone.
