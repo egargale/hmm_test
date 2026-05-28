@@ -175,6 +175,18 @@ def main() -> None:
         default=3,
         help="Number of HMM states: 'auto' for BIC selection, or an integer >= 2 (default: 3).",
     )
+    parser.add_argument(
+        "--dwell-bars",
+        type=int,
+        default=0,
+        help="Dwell-time filter: require N consecutive same-regime bars before switching position (default: 0 = disabled).",
+    )
+    parser.add_argument(
+        "--hysteresis",
+        type=float,
+        default=0.0,
+        help="Hysteresis filter: require posterior probability margin > D to switch regime (default: 0.0 = disabled).",
+    )
 
     args = parser.parse_args()
 
@@ -199,6 +211,8 @@ def main() -> None:
             min_train=args.min_train,
             ohlcv=ohlcv,
             n_states=args.n_states,
+            dwell_bars=args.dwell_bars,
+            hysteresis_delta=args.hysteresis,
         )
 
         if args.json:

@@ -112,6 +112,8 @@ def walk_forward_backtest(
     ohlcv: pd.DataFrame | None = None,
     n_states: int = 3,
     pca_variance: float | None = None,
+    dwell_bars: int = 0,
+    hysteresis_delta: float = 0.0,
 ) -> dict:
     """No-lookahead walk-forward backtest with discrete position sizing.
 
@@ -134,6 +136,12 @@ def walk_forward_backtest(
         Number of HMM states (ignored by threshold engine).
     pca_variance : float | None
         Optional PCA whitening threshold for HMM engines.
+    dwell_bars : int
+        Minimum consecutive bars with same regime before switching position.
+        0 disables the filter (default).
+    hysteresis_delta : float
+        Minimum posterior probability margin required to switch regimes.
+        0.0 disables the filter (default). No-op when posteriors are None.
 
     Returns
     -------
@@ -163,9 +171,13 @@ def walk_forward_backtest(
     if precomputed is not None:
         positions = _walk_forward_precomputed(
             eng, precomputed, returns, min_train, n_states,
+            dwell_bars=dwell_bars, hysteresis_delta=hysteresis_delta,
         )
     else:
-        positions = _walk_forward_raw(eng, returns, min_train, window, threshold)
+        positions = _walk_forward_raw(
+            eng, returns, min_train, window, threshold,
+            dwell_bars=dwell_bars, hysteresis_delta=hysteresis_delta,
+        )
 
     # --- Daily P&L from lagged discrete positions ---
     pnl = np.zeros(n, dtype=float)
@@ -198,19 +210,68 @@ def walk_forward_backtest(
     }
 
 
+def _apply_filters(
+    new_regime: int,
+    current_regime: int,
+    posteriors: np.ndarray | None,
+    current_posteriors: np.ndarray | None,
+    consecutive_count: int,
+    dwell_bars: int,
+    hysteresis_delta: float,
+) -> tuple[bool, int]:
+    """Decide whether to switch from current_regime to new_regime.
+
+    Returns (should_switch, updated_consecutive_count).
+    AND logic: both dwell and hysteresis must agree to switch.
+    """
+    if new_regime == current_regime:
+        # Same regime, no switch needed, reset counter
+        return False, 0
+
+    # Dwell-time: increment counter for this new regime
+    new_count = consecutive_count + 1
+    dwell_pass = (dwell_bars <= 0) or (new_count >= dwell_bars)
+
+    # Hysteresis: check posterior margin
+    hyst_pass = True
+    if hysteresis_delta > 0.0 and posteriors is not None and current_posteriors is not None:
+        if new_regime < len(posteriors) and current_regime < len(current_posteriors):
+            margin = posteriors[new_regime] - current_posteriors[current_regime]
+            hyst_pass = margin > hysteresis_delta
+
+    if dwell_pass and hyst_pass:
+        return True, 0  # switch, reset counter
+    return False, new_count  # hold, keep counting
+
+
 def _walk_forward_raw(
     eng: RegimeEngine,
     returns: pd.Series,
     min_train: int,
     window: int,
     threshold: float,
+    dwell_bars: int = 0,
+    hysteresis_delta: float = 0.0,
 ) -> np.ndarray:
     n = len(returns)
     positions = np.zeros(n, dtype=int)
+    current_regime = 1  # sideways default
+    consecutive_count = 0
+    current_posteriors: np.ndarray | None = None
 
     for t in range(min_train, n):
         result = eng.classify(returns.iloc[:t])
-        positions[t] = _STATE_MAP.get(result.regime, 0)
+        new_regime = result.regime
+
+        should_switch, consecutive_count = _apply_filters(
+            new_regime, current_regime, result.posteriors, current_posteriors,
+            consecutive_count, dwell_bars, hysteresis_delta,
+        )
+        if should_switch:
+            current_regime = new_regime
+            current_posteriors = result.posteriors
+
+        positions[t] = _STATE_MAP.get(current_regime, 0)
 
     return positions
 
@@ -221,11 +282,15 @@ def _walk_forward_precomputed(
     returns: pd.Series,
     min_train: int,
     n_states: int,
+    dwell_bars: int = 0,
+    hysteresis_delta: float = 0.0,
 ) -> np.ndarray:
     n = len(returns)
     positions = np.zeros(n, dtype=int)
     prev_means: np.ndarray | None = None
-    last_regime: int = 1
+    current_regime: int = 1
+    consecutive_count = 0
+    current_posteriors: np.ndarray | None = None
 
     refit_every = max(1, (n - min_train) // 100)
     refit_every = min(refit_every, 20)
@@ -237,11 +302,21 @@ def _walk_forward_precomputed(
             features_slice = features.iloc[:t]
             try:
                 result = eng.classify(features_slice, prev_means=prev_means)
-                last_regime = result.regime
+                new_regime = result.regime
                 prev_means = result.means
+
+                should_switch, consecutive_count = _apply_filters(
+                    new_regime, current_regime, result.posteriors,
+                    current_posteriors, consecutive_count,
+                    dwell_bars, hysteresis_delta,
+                )
+                if should_switch:
+                    current_regime = new_regime
+                    current_posteriors = result.posteriors
+
             except (ValueError, RuntimeError):
                 pass
 
-        positions[t] = _STATE_MAP.get(last_regime, 0)
+        positions[t] = _STATE_MAP.get(current_regime, 0)
 
     return positions

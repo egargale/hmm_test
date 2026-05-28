@@ -48,6 +48,9 @@ class HMMMMessinaEngine:
             last_features = pca_transform.transform(last_features)
         raw_state = model.predict(last_features.astype(np.float64))[0]
 
+        # Compute posteriors for the last observation
+        posteriors = model.predict_proba(last_features.astype(np.float64))[-1]
+
         # Map HMM states to regime indices (0=bear, 1=sideways, 2=bull)
         # based on ascending mean return order, collapsed to 3 buckets
         state_means = means[:, 0]
@@ -64,6 +67,18 @@ class HMMMMessinaEngine:
 
         regime = label_map.get(int(raw_state), 1)
 
+        # Reorder posteriors to match regime labels (0=bear, 1=sideways, 2=bull)
+        if self.n_states <= 3:
+            reordered = np.zeros(self.n_states)
+            for state_idx in range(self.n_states):
+                reordered[label_map[state_idx]] = posteriors[state_idx]
+            posteriors = reordered
+        else:
+            agg = np.zeros(3)
+            for state_idx in range(self.n_states):
+                agg[label_map[state_idx]] += posteriors[state_idx]
+            posteriors = agg
+
         if prev_means is not None:
             # Map through: raw_state -> matched old state -> old regime
             prev_order = np.argsort(prev_means[:, 0])
@@ -79,4 +94,4 @@ class HMMMMessinaEngine:
             if old_state is not None:
                 regime = prev_label_map.get(old_state, regime)
 
-        return ClassifyResult(regime=int(regime), means=means)
+        return ClassifyResult(regime=int(regime), means=means, posteriors=posteriors)

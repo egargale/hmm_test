@@ -66,6 +66,8 @@ def run(
     ohlcv: pd.DataFrame | None = None,
     n_states: int | str = 3,
     pca_variance: float | None = None,
+    dwell_bars: int = 0,
+    hysteresis_delta: float = 0.0,
 ) -> dict:
     """Run the full regime-detection pipeline and return a JSON-compatible dict."""
     if engine not in ENGINE_REGISTRY:
@@ -197,6 +199,8 @@ def run(
         ohlcv=ohlcv,
         n_states=resolved_n_states,
         pca_variance=pca_variance,
+        dwell_bars=dwell_bars,
+        hysteresis_delta=hysteresis_delta,
     )
     walk_forward = {
         "sharpe": _nan_to_none(wf["sharpe"]),

@@ -12,6 +12,7 @@ import pandas as pd
 class ClassifyResult:
     regime: int  # 0=bear, 1=sideways, 2=bull
     means: np.ndarray | None = None
+    posteriors: np.ndarray | None = None
 
 
 @runtime_checkable
