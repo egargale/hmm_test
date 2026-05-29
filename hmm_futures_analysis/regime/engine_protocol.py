@@ -13,6 +13,8 @@ class ClassifyResult:
     regime: int  # 0=bear, 1=sideways, 2=bull
     means: np.ndarray | None = None
     posteriors: np.ndarray | None = None
+    feature_saliency: np.ndarray | None = None
+    selected_features: list[str] | None = None
 
 
 @runtime_checkable
@@ -24,6 +26,7 @@ class RegimeEngine(Protocol):
 
 
 def _build_registry() -> dict[str, type]:
+    from .engines.fshmm import FSHMMEngine
     from .engines.hmm_generic import HMMGenericEngine
     from .engines.hmm_messina import HMMMMessinaEngine
     from .engines.threshold import ThresholdEngine
@@ -32,6 +35,7 @@ def _build_registry() -> dict[str, type]:
         "threshold": ThresholdEngine,
         "hmm": HMMGenericEngine,
         "messina": HMMMMessinaEngine,
+        "fshmm": FSHMMEngine,
     }
 
 

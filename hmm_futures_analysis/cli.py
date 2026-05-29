@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 """Regime detection entry point for the hmm-regime-detection skill.
 
-CLI for detecting market regimes (Bull/Bear/Sideways) using one of three
+CLI for detecting market regimes (Bull/Bear/Sideways) using one of four
 independent engines: threshold (fast, close-only), messina (HMM + 18
-Messina features), or hmm (HMM + ~44 generic features).
+Messina features), hmm (HMM + ~44 generic features), or fshmm (HMM +
+feature saliency).
 
 Usage:
     hmm-regime --csv BTC.csv --json
     hmm-regime --ticker ES=F --json --engine hmm
     hmm-regime --csv data.csv --engine threshold
+    hmm-regime --csv data.csv --engine fshmm --saliency-threshold 0.3
     ./run.sh --csv BTC.csv --json
 """
 
@@ -23,6 +25,23 @@ from .regime.pipeline import run as pipeline_run
 
 _STATE_NAMES = ("bear", "sideways", "bull")
 _FRAMEWORK_VERSION = "hmm_test v0.2.0"
+
+
+def _write_saliency_csv(output: dict, path: str) -> None:
+    """Write fshmm saliency weights to a CSV file."""
+    import csv as csv_mod
+
+    saliency = output.get("engine_info", {}).get("feature_saliency")
+    selected = output.get("engine_info", {}).get("selected_features")
+    if saliency is None:
+        return
+
+    with open(path, "w", newline="") as f:
+        writer = csv_mod.writer(f)
+        writer.writerow(["feature_index", "saliency_weight", "selected"])
+        for i, w in enumerate(saliency):
+            is_sel = "yes" if selected and f"f{i}" in selected else "no"
+            writer.writerow([i, f"{w:.6f}", is_sel])
 
 
 def _print_terminal(output: dict) -> None:
@@ -148,8 +167,8 @@ def main() -> None:
         "--engine",
         type=str,
         default="threshold",
-        choices=["threshold", "messina", "hmm"],
-        help="Analysis engine: threshold (fast, close-only), messina (HMM+19 features), hmm (HMM+50 features). Default: threshold.",
+        choices=["threshold", "messina", "hmm", "fshmm"],
+        help="Analysis engine: threshold (fast, close-only), messina (HMM+19 features), hmm (HMM+50 features), fshmm (HMM+feature saliency). Default: threshold.",
     )
     parser.add_argument(
         "--window",
@@ -188,6 +207,19 @@ def main() -> None:
         help="Hysteresis filter: require posterior probability margin > D to switch regime (default: 0.0 = disabled).",
     )
 
+    parser.add_argument(
+        "--saliency-threshold",
+        type=float,
+        default=0.5,
+        help="Feature saliency pruning threshold for fshmm engine (default: 0.5).",
+    )
+    parser.add_argument(
+        "--saliency-output",
+        type=str,
+        default=None,
+        help="Save fshmm saliency weights to CSV file.",
+    )
+
     args = parser.parse_args()
 
     # Validate source arguments
@@ -213,6 +245,7 @@ def main() -> None:
             n_states=args.n_states,
             dwell_bars=args.dwell_bars,
             hysteresis_delta=args.hysteresis,
+            saliency_threshold=args.saliency_threshold,
         )
 
         if args.json:
@@ -220,6 +253,10 @@ def main() -> None:
             sys.stdout.write("\n")
         else:
             _print_terminal(output)
+
+        # Write saliency weights CSV if requested
+        if args.saliency_output and args.engine == "fshmm":
+            _write_saliency_csv(output, args.saliency_output)
 
     except Exception as exc:
         if args.json:

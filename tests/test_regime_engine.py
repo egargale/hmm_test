@@ -296,10 +296,10 @@ class TestSelectNStates:
 class TestEngineRegistry:
     """ENGINE_REGISTRY maps strings to correct classes."""
 
-    def test_registry_has_three_engines(self):
+    def test_registry_has_four_engines(self):
         from hmm_futures_analysis.regime.engine_protocol import ENGINE_REGISTRY
 
-        assert set(ENGINE_REGISTRY.keys()) == {"threshold", "hmm", "messina"}
+        assert set(ENGINE_REGISTRY.keys()) == {"threshold", "hmm", "messina", "fshmm"}
 
     def test_registry_threshold_class(self):
         from hmm_futures_analysis.regime.engine_protocol import ENGINE_REGISTRY
@@ -318,6 +318,19 @@ class TestEngineRegistry:
         from hmm_futures_analysis.regime.engines.hmm_messina import HMMMMessinaEngine
 
         assert ENGINE_REGISTRY["messina"] is HMMMMessinaEngine
+
+    def test_registry_fshmm_class(self):
+        from hmm_futures_analysis.regime.engine_protocol import ENGINE_REGISTRY
+        from hmm_futures_analysis.regime.engines.fshmm import FSHMMEngine
+
+        assert ENGINE_REGISTRY["fshmm"] is FSHMMEngine
+
+    def test_fshmm_satisfies_protocol(self):
+        from hmm_futures_analysis.regime.engine_protocol import RegimeEngine
+        from hmm_futures_analysis.regime.engines.fshmm import FSHMMEngine
+
+        engine = FSHMMEngine(n_states=3)
+        assert isinstance(engine, RegimeEngine)
 
     def test_invalid_engine_raises_key_error(self):
         from hmm_futures_analysis.regime.engine_protocol import ENGINE_REGISTRY

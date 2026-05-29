@@ -25,7 +25,7 @@ from .markov_chain import (
 )
 from .walk_forward import walk_forward_backtest
 
-_HMM_ENGINES = frozenset({"messina", "hmm"})
+_HMM_ENGINES = frozenset({"messina", "hmm", "fshmm"})
 
 _STATE_NAMES = ("bear", "sideways", "bull")
 _FRAMEWORK_VERSION = "hmm_test v0.2.0"
@@ -38,6 +38,7 @@ _ENGINE_FEATURES: dict[str, str] = {
     "threshold": "returns",
     "messina": "messina",
     "hmm": "generic",
+    "fshmm": "generic",
 }
 
 
@@ -68,6 +69,7 @@ def run(
     pca_variance: float | None = None,
     dwell_bars: int = 0,
     hysteresis_delta: float = 0.0,
+    saliency_threshold: float = 0.5,
 ) -> dict:
     """Run the full regime-detection pipeline and return a JSON-compatible dict."""
     if engine not in ENGINE_REGISTRY:
@@ -135,7 +137,7 @@ def run(
                 max_states=6,
             )
 
-        eng = eng_cls(n_states=resolved_n_states, pca_variance=pca_variance)
+        eng = eng_cls(n_states=resolved_n_states, pca_variance=pca_variance, **({'saliency_threshold': saliency_threshold} if engine == 'fshmm' else {}))
 
         n = len(returns)
         regimes = np.ones(n, dtype=int)
@@ -201,6 +203,7 @@ def run(
         pca_variance=pca_variance,
         dwell_bars=dwell_bars,
         hysteresis_delta=hysteresis_delta,
+        saliency_threshold=saliency_threshold,
     )
     walk_forward = {
         "sharpe": _nan_to_none(wf["sharpe"]),
@@ -217,12 +220,17 @@ def run(
         "features": _ENGINE_FEATURES.get(engine, engine),
         "n_states": resolved_n_states,
     }
-    if engine in ("messina", "hmm"):
+    if engine in ("messina", "hmm", "fshmm"):
         engine_info["caveat"] = (
             "HMM states sorted by mean return; labels may swap on re-fit"
         )
         if warmup_bars is not None:
             engine_info["warmup_bars"] = warmup_bars
+
+    # Expose saliency data for fshmm engine
+    if engine == "fshmm" and hasattr(eng, "_last_saliency"):
+        engine_info["feature_saliency"] = eng._last_saliency
+        engine_info["selected_features"] = eng._last_selected_features
 
     return {
         "source": source,
