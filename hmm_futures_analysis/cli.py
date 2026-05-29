@@ -212,7 +212,7 @@ def main() -> None:
         type=str,
         default="weibull",
         choices=["weibull", "cox"],
-        help="Survival model for duration forecasting: weibull (default) or cox (requires statsmodels).",
+        help="Survival model for duration forecasting: weibull (default) or cox (requires lifelines).",
     )
 
     args = parser.parse_args()

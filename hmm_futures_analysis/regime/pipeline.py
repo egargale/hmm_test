@@ -259,7 +259,7 @@ def run(
         from .duration_forecast import forecast_duration
 
         result["duration_forecast"] = forecast_duration(
-            regimes, model=duration_model
+            regimes, model=duration_model, prices=prices
         )
 
     return result
