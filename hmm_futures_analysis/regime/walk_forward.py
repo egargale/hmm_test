@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 
 _STATE_MAP = {0: -1, 1: 0, 2: 1}  # bear=short, sideways=flat, bull=long
 _VALID_ENGINES = frozenset(ENGINE_REGISTRY.keys())
-_HMM_ENGINES = frozenset({"messina", "hmm"})
+_HMM_ENGINES = frozenset({"messina", "hmm", "robust_hmm"})
 
 
 def _empty_result() -> dict:
@@ -84,6 +84,7 @@ def _resolve_engine(
     n_states: int,
     ohlcv: pd.DataFrame | None,
     pca_variance: float | None = None,
+    robust_method: str = "huber",
 ) -> RegimeEngine:
     if isinstance(engine, str):
         if engine not in _VALID_ENGINES:
@@ -98,7 +99,10 @@ def _resolve_engine(
         cls = ENGINE_REGISTRY[engine]
         if engine == "threshold":
             return cls(window=window, threshold=threshold)
-        return cls(n_states=n_states, pca_variance=pca_variance)
+        kwargs: dict = {"n_states": n_states, "pca_variance": pca_variance}
+        if engine == "robust_hmm":
+            kwargs["robust_method"] = robust_method
+        return cls(**kwargs)
     return engine
 
 
@@ -114,6 +118,7 @@ def walk_forward_backtest(
     pca_variance: float | None = None,
     dwell_bars: int = 0,
     hysteresis_delta: float = 0.0,
+    robust_method: str = "huber",
 ) -> dict:
     """No-lookahead walk-forward backtest with discrete position sizing.
 
@@ -148,7 +153,7 @@ def walk_forward_backtest(
     dict
         ``{sharpe, max_drawdown, n_trades, win_rate, profit_factor, total_return}``
     """
-    eng = _resolve_engine(engine, window, threshold, n_states, ohlcv, pca_variance)
+    eng = _resolve_engine(engine, window, threshold, n_states, ohlcv, pca_variance, robust_method)
 
     if len(prices) < min_train + 1:
         return _empty_result()

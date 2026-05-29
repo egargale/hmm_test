@@ -299,7 +299,7 @@ class TestEngineRegistry:
     def test_registry_has_three_engines(self):
         from hmm_futures_analysis.regime.engine_protocol import ENGINE_REGISTRY
 
-        assert set(ENGINE_REGISTRY.keys()) == {"threshold", "hmm", "messina"}
+        assert set(ENGINE_REGISTRY.keys()) == {"threshold", "hmm", "messina", "robust_hmm"}
 
     def test_registry_threshold_class(self):
         from hmm_futures_analysis.regime.engine_protocol import ENGINE_REGISTRY

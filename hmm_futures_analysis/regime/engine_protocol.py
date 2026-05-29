@@ -26,12 +26,14 @@ class RegimeEngine(Protocol):
 def _build_registry() -> dict[str, type]:
     from .engines.hmm_generic import HMMGenericEngine
     from .engines.hmm_messina import HMMMMessinaEngine
+    from .engines.robust_hmm import RobustHMMEngine
     from .engines.threshold import ThresholdEngine
 
     return {
         "threshold": ThresholdEngine,
         "hmm": HMMGenericEngine,
         "messina": HMMMMessinaEngine,
+        "robust_hmm": RobustHMMEngine,
     }
 
 

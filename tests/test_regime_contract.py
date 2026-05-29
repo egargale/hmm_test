@@ -106,8 +106,17 @@ class TestJSONContract:
         data = json.loads(result.stdout)
         assert len(data["disclaimer"]) > 0
 
-    def test_engine_messina_csv_without_ohlcv_errors(self, btc_csv):
+    def test_engine_messina_csv_with_ohlcv_succeeds(self, btc_csv):
         result = run_regime("--csv", btc_csv, "--json", "--engine", "messina")
+        data = json.loads(result.stdout)
+        assert result.returncode == 0, f"stderr: {result.stderr}"
+        assert data["engine"] == "messina"
+
+    def test_engine_messina_csv_without_ohlcv_errors(self, tmp_path):
+        lines = ["date,close"] + [f"2024-01-{d:02d},{100+d}" for d in range(1, 32)]
+        close_only = tmp_path / "close_only.csv"
+        close_only.write_text("\n".join(lines) + "\n")
+        result = run_regime("--csv", str(close_only), "--json", "--engine", "messina")
         data = json.loads(result.stdout)
         assert "error" in data
         assert "OHLCV" in data["error"]

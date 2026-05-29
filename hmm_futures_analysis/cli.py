@@ -148,8 +148,8 @@ def main() -> None:
         "--engine",
         type=str,
         default="threshold",
-        choices=["threshold", "messina", "hmm"],
-        help="Analysis engine: threshold (fast, close-only), messina (HMM+19 features), hmm (HMM+50 features). Default: threshold.",
+        choices=["threshold", "messina", "hmm", "robust_hmm"],
+        help="Analysis engine: threshold (fast, close-only), messina (HMM+19 features), hmm (HMM+50 features), robust_hmm (HMM with outlier-resistant emissions). Default: threshold.",
     )
     parser.add_argument(
         "--window",
@@ -187,6 +187,13 @@ def main() -> None:
         default=0.0,
         help="Hysteresis filter: require posterior probability margin > D to switch regime (default: 0.0 = disabled).",
     )
+    parser.add_argument(
+        "--robust-method",
+        type=str,
+        default="huber",
+        choices=["huber", "mcd"],
+        help="Robust estimation method for robust_hmm engine: huber (Huber IRLS) or mcd (MinCovDet). Default: huber.",
+    )
 
     args = parser.parse_args()
 
@@ -213,6 +220,7 @@ def main() -> None:
             n_states=args.n_states,
             dwell_bars=args.dwell_bars,
             hysteresis_delta=args.hysteresis,
+            robust_method=args.robust_method,
         )
 
         if args.json:

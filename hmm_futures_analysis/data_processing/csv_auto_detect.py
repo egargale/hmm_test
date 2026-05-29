@@ -136,6 +136,36 @@ def _check_min_rows(prices: pd.Series) -> None:
         )
 
 
+def _try_load_ohlcv(path: str) -> pd.DataFrame | None:
+    """Try to load OHLCV columns from a CSV. Returns None if unavailable."""
+    df = pd.read_csv(path)
+    lower = {c.lower().strip(): c for c in df.columns}
+
+    col_map = {}
+    for target, candidates in [
+        ("open", ["open"]), ("high", ["high"]), ("low", ["low"]),
+        ("close", ["close", "last", "adj close", "price"]),
+        ("volume", ["volume", "vol"]),
+    ]:
+        for c in candidates:
+            if c in lower:
+                col_map[target] = lower[c]
+                break
+        if target not in col_map:
+            return None
+
+    date_col = _find_date_column(list(df.columns))
+    if date_col is None:
+        date_col = df.columns[0]
+
+    result = df[[col_map["open"], col_map["high"], col_map["low"],
+                 col_map["close"], col_map["volume"]]].copy()
+    result.columns = ["open", "high", "low", "close", "volume"]
+    result.index = pd.to_datetime(df[date_col])
+    result = result.sort_index()
+    return result
+
+
 def load_prices(
     *,
     csv: str | None = None,
@@ -156,7 +186,9 @@ def load_prices(
     if csv is not None:
         prices = load_from_csv(csv)
         _check_min_rows(prices)
-        return prices, None, csv
+
+        ohlcv = _try_load_ohlcv(csv)
+        return prices, ohlcv, csv
 
     # ticker path
     import yfinance

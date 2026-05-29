@@ -25,7 +25,7 @@ from .markov_chain import (
 )
 from .walk_forward import walk_forward_backtest
 
-_HMM_ENGINES = frozenset({"messina", "hmm"})
+_HMM_ENGINES = frozenset({"messina", "hmm", "robust_hmm"})
 
 _STATE_NAMES = ("bear", "sideways", "bull")
 _FRAMEWORK_VERSION = "hmm_test v0.2.0"
@@ -38,6 +38,7 @@ _ENGINE_FEATURES: dict[str, str] = {
     "threshold": "returns",
     "messina": "messina",
     "hmm": "generic",
+    "robust_hmm": "generic",
 }
 
 
@@ -68,6 +69,7 @@ def run(
     pca_variance: float | None = None,
     dwell_bars: int = 0,
     hysteresis_delta: float = 0.0,
+    robust_method: str = "huber",
 ) -> dict:
     """Run the full regime-detection pipeline and return a JSON-compatible dict."""
     if engine not in ENGINE_REGISTRY:
@@ -135,7 +137,10 @@ def run(
                 max_states=6,
             )
 
-        eng = eng_cls(n_states=resolved_n_states, pca_variance=pca_variance)
+        eng_kwargs: dict = {"n_states": resolved_n_states, "pca_variance": pca_variance}
+        if engine == "robust_hmm":
+            eng_kwargs["robust_method"] = robust_method
+        eng = eng_cls(**eng_kwargs)
 
         n = len(returns)
         regimes = np.ones(n, dtype=int)
@@ -201,6 +206,7 @@ def run(
         pca_variance=pca_variance,
         dwell_bars=dwell_bars,
         hysteresis_delta=hysteresis_delta,
+        robust_method=robust_method,
     )
     walk_forward = {
         "sharpe": _nan_to_none(wf["sharpe"]),
@@ -217,12 +223,14 @@ def run(
         "features": _ENGINE_FEATURES.get(engine, engine),
         "n_states": resolved_n_states,
     }
-    if engine in ("messina", "hmm"):
+    if engine in ("messina", "hmm", "robust_hmm"):
         engine_info["caveat"] = (
             "HMM states sorted by mean return; labels may swap on re-fit"
         )
         if warmup_bars is not None:
             engine_info["warmup_bars"] = warmup_bars
+        if engine == "robust_hmm":
+            engine_info["robust_method"] = robust_method
 
     return {
         "source": source,

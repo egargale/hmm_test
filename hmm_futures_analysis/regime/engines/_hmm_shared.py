@@ -95,6 +95,95 @@ def _fit_hmm_on_slice(
     return model, center, scale, pca_n_components_used, pca_transform
 
 
+def _huber_correction(
+    model: hmm.GaussianHMM,
+    X: np.ndarray,
+    posteriors: np.ndarray,
+    k: float = 1.345,
+    n_iter: int = 4,
+) -> None:
+    """Post-hoc Huber IRLS correction of emission parameters."""
+    for s in range(model.n_components):
+        resp = posteriors[:, s]
+        mu = model.means_[s].copy()
+        var = np.diag(model.covars_[s]).copy()
+
+        for _ in range(n_iter):
+            diff = X - mu
+            mahal = np.sqrt(np.sum(diff ** 2 / (var + 1e-8), axis=1))
+            w = np.ones(len(X))
+            mask = mahal > k
+            w[mask] = k / (mahal[mask] + 1e-8)
+            combined = resp * w
+            total = combined.sum() + 1e-8
+            mu = (combined[:, np.newaxis] * X).sum(axis=0) / total
+            diff = X - mu
+            var = (combined[:, np.newaxis] * diff ** 2).sum(axis=0) / total
+
+        model.means_[s] = mu
+        model.covars_[s] = np.diag(var)
+
+
+_MCD_MAX_POINTS = 200
+
+
+def _mcd_correction(
+    model: hmm.GaussianHMM,
+    X: np.ndarray,
+    posteriors: np.ndarray,
+) -> None:
+    """Post-hoc MinCovDet correction of emission parameters."""
+    from sklearn.covariance import MinCovDet
+
+    rng = np.random.RandomState(0)
+    for s in range(model.n_components):
+        mask = posteriors[:, s] > 0.3
+        n_pts = mask.sum()
+        if n_pts < model.n_components + 1:
+            continue
+        try:
+            X_state = X[mask]
+            if n_pts > _MCD_MAX_POINTS:
+                idx = rng.choice(n_pts, size=_MCD_MAX_POINTS, replace=False)
+                X_state = X_state[idx]
+            mcd = MinCovDet()
+            mcd.fit(X_state)
+            model.means_[s] = mcd.location_
+            model.covars_[s] = np.diag(mcd.covariance_)
+        except Exception:
+            continue
+
+
+def robust_fit_gaussian_hmm(
+    features: np.ndarray,
+    n_states: int = 3,
+    random_state: int = 42,
+    pca_variance: float | None = None,
+    robust_method: str = "huber",
+) -> tuple[hmm.GaussianHMM, np.ndarray, np.ndarray, int | None, PCA | None]:
+    """Fit GaussianHMM with post-hoc robust emission correction.
+
+    Same return shape as _fit_hmm_on_slice for drop-in compatibility.
+    """
+    model, center, scale, pca_n, pca_transform = _fit_hmm_on_slice(
+        features, n_states=n_states, random_state=random_state,
+        pca_variance=pca_variance,
+    )
+
+    X = ((features - center) / scale).astype(np.float64)
+    if pca_transform is not None:
+        X = pca_transform.transform(X).astype(np.float64)
+
+    posteriors = model.predict_proba(X)
+
+    if robust_method == "huber":
+        _huber_correction(model, X, posteriors)
+    elif robust_method == "mcd":
+        _mcd_correction(model, X, posteriors)
+
+    return model, center, scale, pca_n, pca_transform
+
+
 def select_n_states(
     features: np.ndarray,
     max_states: int = 6,
