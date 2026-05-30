@@ -6,10 +6,6 @@ import pandas as pd
 import pytest
 
 from hmm_futures_analysis.regime.engine_protocol import ENGINE_REGISTRY, RegimeEngine
-from hmm_futures_analysis.regime.engines._hmm_shared import (
-    _fit_hmm_on_slice,
-    robust_fit_gaussian_hmm,
-)
 from tests.conftest import run_regime
 
 

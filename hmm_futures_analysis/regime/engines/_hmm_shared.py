@@ -1,4 +1,5 @@
 """Shared HMM utilities used by both HMM engine classes."""
+
 from __future__ import annotations
 
 import os
@@ -17,19 +18,29 @@ if TYPE_CHECKING:
     from sklearn.decomposition import PCA
 
 _MESSINA_COLS = [
-    "log_ret", "sma_200", "sma_13", "atr_20",
-    "adx_14", "adx_inflection",
-    "di_plus_14", "di_minus_14", "di_spread",
-    "vstop", "vstop_trend", "vstop_interaction",
-    "price_sma200_ratio", "price_vstop_ratio",
-    "price_vstop_gap_atr", "sma200_distance_atr",
-    "volume_ratio", "true_range_pct", "kdj_j",
+    "log_ret",
+    "sma_200",
+    "sma_13",
+    "atr_20",
+    "adx_14",
+    "adx_inflection",
+    "di_plus_14",
+    "di_minus_14",
+    "di_spread",
+    "vstop",
+    "vstop_trend",
+    "vstop_interaction",
+    "price_sma200_ratio",
+    "price_vstop_ratio",
+    "price_vstop_gap_atr",
+    "sma200_distance_atr",
+    "volume_ratio",
+    "true_range_pct",
+    "kdj_j",
 ]
 
 
-def engineer_features(
-    data: pd.DataFrame, use_messina: bool
-) -> pd.DataFrame:
+def engineer_features(data: pd.DataFrame, use_messina: bool) -> pd.DataFrame:
     if use_messina:
         df = add_messina_features(data)
         cols = [c for c in _MESSINA_COLS if c in df.columns]
@@ -71,7 +82,9 @@ def _fit_hmm_on_slice(
         from sklearn.decomposition import PCA as _PCA
 
         pca_transform = _PCA(
-            n_components=pca_variance, svd_solver="full", random_state=random_state,
+            n_components=pca_variance,
+            svd_solver="full",
+            random_state=random_state,
         )
         X = pca_transform.fit_transform(X).astype(np.float64)
         pca_n_components_used = int(pca_transform.n_components_)
@@ -100,7 +113,8 @@ def _huber_correction(
     X: np.ndarray,
     posteriors: np.ndarray,
     k: float = 1.345,
-    n_iter: int = 4,
+    max_iter: int = 10,
+    tol: float = 1e-6,
 ) -> None:
     """Post-hoc Huber IRLS correction of emission parameters."""
     for s in range(model.n_components):
@@ -108,9 +122,10 @@ def _huber_correction(
         mu = model.means_[s].copy()
         var = np.diag(model.covars_[s]).copy()
 
-        for _ in range(n_iter):
+        for _ in range(max_iter):
+            prev_mu = mu.copy()
             diff = X - mu
-            mahal = np.sqrt(np.sum(diff ** 2 / (var + 1e-8), axis=1))
+            mahal = np.sqrt(np.sum(diff**2 / (var + 1e-8), axis=1))
             w = np.ones(len(X))
             mask = mahal > k
             w[mask] = k / (mahal[mask] + 1e-8)
@@ -118,7 +133,9 @@ def _huber_correction(
             total = combined.sum() + 1e-8
             mu = (combined[:, np.newaxis] * X).sum(axis=0) / total
             diff = X - mu
-            var = (combined[:, np.newaxis] * diff ** 2).sum(axis=0) / total
+            var = (combined[:, np.newaxis] * diff**2).sum(axis=0) / total
+            if np.max(np.abs(mu - prev_mu)) < tol:
+                break
 
         model.means_[s] = mu
         model.covars_[s] = np.diag(var)
@@ -131,26 +148,28 @@ def _mcd_correction(
     model: hmm.GaussianHMM,
     X: np.ndarray,
     posteriors: np.ndarray,
+    random_state: int = 0,
 ) -> None:
     """Post-hoc MinCovDet correction of emission parameters."""
     from sklearn.covariance import MinCovDet
 
-    rng = np.random.RandomState(0)
+    rng = np.random.RandomState(random_state)
     for s in range(model.n_components):
         mask = posteriors[:, s] > 0.3
         n_pts = mask.sum()
-        if n_pts < model.n_components + 1:
+        n_features = X.shape[1]
+        if n_pts < max(model.n_components + 1, n_features + 1, 5):
             continue
         try:
             X_state = X[mask]
             if n_pts > _MCD_MAX_POINTS:
                 idx = rng.choice(n_pts, size=_MCD_MAX_POINTS, replace=False)
                 X_state = X_state[idx]
-            mcd = MinCovDet()
+            mcd = MinCovDet(random_state=random_state)
             mcd.fit(X_state)
             model.means_[s] = mcd.location_
             model.covars_[s] = np.diag(mcd.covariance_)
-        except Exception:
+        except (ValueError, np.linalg.LinAlgError):
             continue
 
 
@@ -166,7 +185,9 @@ def robust_fit_gaussian_hmm(
     Same return shape as _fit_hmm_on_slice for drop-in compatibility.
     """
     model, center, scale, pca_n, pca_transform = _fit_hmm_on_slice(
-        features, n_states=n_states, random_state=random_state,
+        features,
+        n_states=n_states,
+        random_state=random_state,
         pca_variance=pca_variance,
     )
 
@@ -179,7 +200,7 @@ def robust_fit_gaussian_hmm(
     if robust_method == "huber":
         _huber_correction(model, X, posteriors)
     elif robust_method == "mcd":
-        _mcd_correction(model, X, posteriors)
+        _mcd_correction(model, X, posteriors, random_state=random_state)
 
     return model, center, scale, pca_n, pca_transform
 
@@ -213,7 +234,6 @@ def select_n_states(
         Optimal number of states by BIC.
     """
     n = len(features)
-    d = features.shape[1]
 
     # Guard: cap max_states to avoid degenerate fits on short data
     effective_max = min(max_states, max(2, n // 10))
@@ -225,7 +245,9 @@ def select_n_states(
         for restart in range(n_restarts):
             seed = random_state + restart * 1000 + k
             model, center, scale, pca_n, pca_transform = _fit_hmm_on_slice(
-                features, n_states=k, random_state=seed,
+                features,
+                n_states=k,
+                random_state=seed,
                 pca_variance=pca_variance,
             )
             X_norm = ((features - center) / scale).astype(np.float64)

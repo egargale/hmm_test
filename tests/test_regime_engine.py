@@ -1,4 +1,5 @@
 """Tests for RegimeEngine protocol and engine registry (ADR-002)."""
+
 import subprocess
 import sys
 from pathlib import Path
@@ -66,7 +67,6 @@ class TestThresholdEngine:
         assert engine.precompute(returns_series) is None
 
     def test_classify_bull_when_strong_positive_returns(self):
-        from hmm_futures_analysis.regime.engine_protocol import ClassifyResult
         from hmm_futures_analysis.regime.engines.threshold import ThresholdEngine
 
         n = 50
@@ -299,7 +299,12 @@ class TestEngineRegistry:
     def test_registry_has_three_engines(self):
         from hmm_futures_analysis.regime.engine_protocol import ENGINE_REGISTRY
 
-        assert set(ENGINE_REGISTRY.keys()) == {"threshold", "hmm", "messina", "robust_hmm"}
+        assert set(ENGINE_REGISTRY.keys()) == {
+            "threshold",
+            "hmm",
+            "messina",
+            "robust_hmm",
+        }
 
     def test_registry_threshold_class(self):
         from hmm_futures_analysis.regime.engine_protocol import ENGINE_REGISTRY
@@ -378,19 +383,27 @@ class TestCLINStatesArg:
     """CLI --n-states accepts 'auto' and integers >= 2."""
 
     def test_n_states_auto_accepted(self, btc_csv):
-        proc = run_regime("--csv", btc_csv, "--engine", "threshold", "--n-states", "auto", "--json")
+        proc = run_regime(
+            "--csv", btc_csv, "--engine", "threshold", "--n-states", "auto", "--json"
+        )
         assert proc.returncode == 0
 
     def test_n_states_3_backward_compat(self, btc_csv):
-        proc = run_regime("--csv", btc_csv, "--engine", "threshold", "--n-states", "3", "--json")
+        proc = run_regime(
+            "--csv", btc_csv, "--engine", "threshold", "--n-states", "3", "--json"
+        )
         assert proc.returncode == 0
 
     def test_n_states_1_rejected(self, btc_csv):
-        proc = run_regime("--csv", btc_csv, "--engine", "hmm", "--n-states", "1", "--json")
+        proc = run_regime(
+            "--csv", btc_csv, "--engine", "hmm", "--n-states", "1", "--json"
+        )
         assert proc.returncode != 0
 
     def test_n_states_invalid_string_rejected(self, btc_csv):
-        proc = run_regime("--csv", btc_csv, "--engine", "hmm", "--n-states", "foo", "--json")
+        proc = run_regime(
+            "--csv", btc_csv, "--engine", "hmm", "--n-states", "foo", "--json"
+        )
         assert proc.returncode != 0
 
 
@@ -423,7 +436,11 @@ class TestPipelineAutoNStates:
 
         prices, ohlcv = prices_and_ohlcv
         output = pipeline_run(
-            prices, source="test", engine="hmm", ohlcv=ohlcv, n_states="auto",
+            prices,
+            source="test",
+            engine="hmm",
+            ohlcv=ohlcv,
+            n_states="auto",
         )
         # Should succeed and return a valid result
         assert "engine_info" in output
@@ -442,8 +459,12 @@ class TestPipelineAutoNStates:
             "hmm_futures_analysis.regime.pipeline.select_n_states",
             return_value=3,
         ) as mock_bic:
-            output = pipeline_run(
-                prices, source="test", engine="hmm", ohlcv=ohlcv, n_states="auto",
+            _ = pipeline_run(
+                prices,
+                source="test",
+                engine="hmm",
+                ohlcv=ohlcv,
+                n_states="auto",
             )
             mock_bic.assert_called_once()
 
@@ -458,7 +479,10 @@ class TestPipelineAutoNStates:
             "hmm_futures_analysis.regime.pipeline.select_n_states",
             return_value=3,
         ) as mock_bic:
-            output = pipeline_run(
-                prices, source="test", engine="threshold", n_states="auto",
+            _ = pipeline_run(
+                prices,
+                source="test",
+                engine="threshold",
+                n_states="auto",
             )
             mock_bic.assert_not_called()

@@ -2,7 +2,7 @@
 
 from .csv_parser import process_csv
 from .data_validation import validate_data
-from .csv_auto_detect import load_from_csv, load_from_yfinance, load_price_series, load_prices
+from .csv_auto_detect import load_from_csv, load_prices
 
 try:
     from .feature_engineering import add_features
@@ -40,12 +40,14 @@ if add_features is not None:
     __all__.append("add_features")
 
 if get_default_indicator_config is not None:
-    __all__.extend([
-        "get_default_indicator_config",
-        "get_available_indicators",
-        "validate_indicator_config",
-        "validate_ohlcv_columns",
-    ])
+    __all__.extend(
+        [
+            "get_default_indicator_config",
+            "get_available_indicators",
+            "validate_indicator_config",
+            "validate_ohlcv_columns",
+        ]
+    )
 
 if CSVFormatDetector is not None:
     __all__.extend(["CSVFormatDetector", "CSVFormat", "DetectionResult"])

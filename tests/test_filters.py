@@ -5,7 +5,6 @@ Acceptance criteria: https://github.com/egargale/hmm_test/issues/19#issuecomment
 """
 import numpy as np
 import pandas as pd
-import pytest
 
 
 class TestClassifyResultPosteriors:
