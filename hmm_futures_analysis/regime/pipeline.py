@@ -9,6 +9,7 @@ backtest.  Supports three engines: threshold (fast, close-only), messina
 from __future__ import annotations
 
 import math
+import time
 
 import numpy as np
 import pandas as pd
@@ -74,8 +75,13 @@ def run(
     saliency_threshold: float = 0.5,
     duration_forecast: bool = False,
     duration_model: str = "weibull",
+    profile: bool = False,
 ) -> dict:
     """Run the full regime-detection pipeline and return a JSON-compatible dict."""
+    t_start = time.monotonic() if profile else 0.0
+    _phases: dict[str, float] = {}
+    _classify_times: list[float] = []
+
     if engine not in ENGINE_REGISTRY:
         raise ValueError(
             f"engine must be one of {sorted(ENGINE_REGISTRY.keys())}, got {engine!r}"
@@ -125,10 +131,13 @@ def run(
         # Precompute features (needed for BIC and for classification)
         eng_temp = eng_cls(n_states=3)  # n_states doesn't affect precompute
         precomputed = None
+        t_pc = time.monotonic()
         try:
             precomputed = eng_temp.precompute(ohlcv)
         except (ValueError, RuntimeError, KeyError):
             precomputed = None
+        if profile:
+            _phases["precompute"] = float(round(time.monotonic() - t_pc, 6))
         if precomputed is None:
             raise ValueError(
                 f"engine {engine!r} failed to precompute features from OHLCV data"
@@ -136,10 +145,15 @@ def run(
 
         # Resolve 'auto' now that we have features
         if isinstance(n_states, str) and n_states == "auto":
+            t_bic = time.monotonic()
             resolved_n_states = select_n_states(
                 precomputed.dropna().to_numpy(dtype=np.float64),
                 max_states=6,
             )
+            if profile:
+                _phases["bic_select_n_states"] = float(
+                    round(time.monotonic() - t_bic, 6)
+                )
 
         eng_kwargs: dict = {"n_states": resolved_n_states, "pca_variance": pca_variance}
         if engine == "robust_hmm":
@@ -150,25 +164,31 @@ def run(
 
         n = len(returns)
         regimes = np.ones(n, dtype=int)
+        posteriors_all = np.zeros((n, 3), dtype=float)
         prev_means: np.ndarray | None = None
         last_regime = 1
+        last_post: np.ndarray | None = None
 
         refit_every = max(1, (n - min_train) // 100)
         refit_every = min(refit_every, 20)
 
+        t_wf = time.monotonic()
         for t in range(min_train, n):
             refit_now = (t == min_train) or ((t - min_train) % refit_every == 0)
             if refit_now:
                 features_slice = precomputed.iloc[:t]
                 try:
-                    result = eng.classify(
-                        features_slice, prev_means=prev_means
-                    )
+                    result = eng.classify(features_slice, prev_means=prev_means)
                     last_regime = result.regime
                     prev_means = result.means
+                    last_post = result.posteriors
                 except (ValueError, RuntimeError):
                     pass
             regimes[t] = last_regime
+            if last_post is not None:
+                posteriors_all[t] = last_post
+        if profile:
+            _phases["walk_forward_classify"] = float(round(time.monotonic() - t_wf, 6))
 
         warmup_bars = min_train
 
@@ -200,21 +220,25 @@ def run(
     forecast_5 = _probs_to_dict(forecast_n_steps(transmat, current_probs, 5))
     forecast_20 = _probs_to_dict(forecast_n_steps(transmat, current_probs, 20))
 
-    # Walk-forward backtest
-    wf = walk_forward_backtest(
-        prices,
-        engine=engine,
-        window=window,
-        threshold=threshold,
-        min_train=min_train,
-        ohlcv=ohlcv,
-        n_states=resolved_n_states,
-        pca_variance=pca_variance,
-        dwell_bars=dwell_bars,
-        hysteresis_delta=hysteresis_delta,
-        robust_method=robust_method,
-        saliency_threshold=saliency_threshold,
-    )
+    # Walk-forward backtest (reuse pre-computed regime labels for HMM engines)
+    t_wfb = time.monotonic()
+    wf_kwargs: dict = {
+        "engine": engine,
+        "window": window,
+        "threshold": threshold,
+        "min_train": min_train,
+        "ohlcv": ohlcv,
+        "n_states": resolved_n_states,
+        "pca_variance": pca_variance,
+        "dwell_bars": dwell_bars,
+        "hysteresis_delta": hysteresis_delta,
+        "robust_method": robust_method,
+        "saliency_threshold": saliency_threshold,
+    }
+    if engine in _HMM_ENGINES:
+        wf_kwargs["regimes"] = regimes
+        wf_kwargs["posteriors"] = posteriors_all
+    wf = walk_forward_backtest(prices, **wf_kwargs)
     walk_forward = {
         "sharpe": _nan_to_none(wf["sharpe"]),
         "max_drawdown": _nan_to_none(wf["max_drawdown"]),
@@ -223,6 +247,8 @@ def run(
         "profit_factor": _nan_to_none(wf["profit_factor"]),
         "total_return": _nan_to_none(wf["total_return"]),
     }
+    if profile:
+        _phases["walk_forward_backtest"] = float(round(time.monotonic() - t_wfb, 6))
 
     # Engine info
     engine_info: dict[str, object] = {
@@ -279,5 +305,28 @@ def run(
         result["duration_forecast"] = forecast_duration(
             regimes, model=duration_model, prices=prices
         )
+
+    # --- Profiling ---
+    if profile:
+        timing: dict = {
+            "total_wall_seconds": float(round(time.monotonic() - t_start, 6)),
+            "phases": _phases,
+        }
+        if _classify_times:
+            sorted_times = sorted(_classify_times)
+            n_cls = len(sorted_times)
+            median = sorted_times[n_cls // 2]
+            if n_cls % 2 == 0:
+                median = (sorted_times[n_cls // 2 - 1] + median) / 2.0
+            p99_idx = int(n_cls * 0.99)
+            if p99_idx >= n_cls:
+                p99_idx = n_cls - 1
+            timing["walk_forward_classify_stats"] = {
+                "min": float(round(sorted_times[0], 6)),
+                "median": float(round(median, 6)),
+                "p99": float(round(sorted_times[p99_idx], 6)),
+                "n_calls": n_cls,
+            }
+        result["timing"] = timing
 
     return result

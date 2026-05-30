@@ -1,4 +1,5 @@
 """Feature Saliency HMM regime classification engine."""
+
 from __future__ import annotations
 
 import warnings
@@ -118,9 +119,7 @@ class FSHMMEngine:
 
         # Saliency output
         selected_features = [
-            name
-            for name, r in zip(feature_names, rho)
-            if r >= self.saliency_threshold
+            name for name, r in zip(feature_names, rho) if r >= self.saliency_threshold
         ]
 
         result = ClassifyResult(
@@ -141,9 +140,7 @@ class FSHMMEngine:
     # Core FSHMM EM
     # ------------------------------------------------------------------
 
-    def _fit_fshmm(
-        self, X: np.ndarray
-    ) -> tuple[hmm.GaussianHMM, np.ndarray]:
+    def _fit_fshmm(self, X: np.ndarray) -> tuple[hmm.GaussianHMM, np.ndarray]:
         """Run Feature Saliency EM on z-scored (and optionally PCA'd) data.
 
         Returns (trained_hmm_model, rho_array).
@@ -166,20 +163,23 @@ class FSHMMEngine:
             base_model.fit(X)
 
         # Pull initial parameters from base model
-        mu = base_model.means_.copy()          # (K, D)
-        sigma2 = base_model._covars_.copy()     # (K, D) diagonal
-        pi = base_model.startprob_.copy()       # (K,)
-        A = base_model.transmat_.copy()          # (K, K)
+        mu = base_model.means_.copy()  # (K, D)
+        sigma2 = base_model._covars_.copy()  # (K, D) diagonal
+        pi = base_model.startprob_.copy()  # (K,)
+        A = base_model.transmat_.copy()  # (K, K)
 
         # Saliency parameters
         rho = np.full(D, 0.5)
-        epsilon = np.mean(X, axis=0)             # background mean
-        tau2 = np.var(X, axis=0) + 1e-8          # background variance
+        epsilon = np.mean(X, axis=0)  # background mean
+        tau2 = np.var(X, axis=0) + 1e-8  # background variance
+
+        plateau_count = 0
+        prev_ll = 0.0
 
         for _iteration in range(self.max_iter):
             # --- Standard E-step: forward-backward ---
             # Compute log-likelihood under current (mu, sigma2)
-            log_signal = _log_gaussian_diag(X, mu, sigma2)      # (T, K)
+            log_signal = _log_gaussian_diag(X, mu, sigma2)  # (T, K)
             log_pi = np.log(np.clip(pi, 1e-300, None))
             log_A = np.log(np.clip(A, 1e-300, None))
 
@@ -187,7 +187,9 @@ class FSHMMEngine:
             log_alpha = np.empty((T, K))
             log_alpha[0] = log_pi + log_signal[0]
             for t in range(1, T):
-                log_alpha[t] = _logsumexp_row(log_alpha[t - 1] + log_A.T) + log_signal[t]
+                log_alpha[t] = (
+                    _logsumexp_row(log_alpha[t - 1] + log_A.T) + log_signal[t]
+                )
 
             # Backward pass
             log_beta = np.zeros((T, K))
@@ -196,13 +198,18 @@ class FSHMMEngine:
                     log_A + log_signal[t + 1] + log_beta[t + 1]
                 )
 
+            # Log-likelihood for plateau early-exit (before gamma exp)
+            log_lik = float(_logsumexp_row(log_alpha[-1]))
+
             # Gamma (posteriors)
             log_gamma = log_alpha + log_beta
             log_gamma -= _logsumexp_row(log_gamma)[:, np.newaxis]
             gamma = np.exp(log_gamma)  # (T, K)
 
             # --- Saliency E-step (vectorized) ---
-            p_signal = _gaussian_pdf(X[:, np.newaxis, :], mu[np.newaxis, :, :], sigma2[np.newaxis, :, :])  # (T, K, D)
+            p_signal = _gaussian_pdf(
+                X[:, np.newaxis, :], mu[np.newaxis, :, :], sigma2[np.newaxis, :, :]
+            )  # (T, K, D)
             p_bg = _gaussian_pdf(X, epsilon, tau2)  # (T, D)
 
             rho_clamp = np.clip(rho, 1e-10, 1 - 1e-10)
@@ -211,14 +218,14 @@ class FSHMMEngine:
             num_bg = (1 - rho_clamp)[np.newaxis, np.newaxis, :] * p_bg[:, np.newaxis, :]
             denom = num_signal + num_bg + 1e-300
 
-            u = gamma[:, :, np.newaxis] * num_signal / denom   # (T, K, D)
-            v = gamma[:, :, np.newaxis] - u                     # (T, K, D)
+            u = gamma[:, :, np.newaxis] * num_signal / denom  # (T, K, D)
+            v = gamma[:, :, np.newaxis] - u  # (T, K, D)
 
             # --- M-step ---
 
             # Update mu[i, l]
-            u_sum_t = np.sum(u, axis=0)                        # (K, D)
-            u_xt = np.einsum("tkd,td->kd", u, X)              # (K, D)
+            u_sum_t = np.sum(u, axis=0)  # (K, D)
+            u_xt = np.einsum("tkd,td->kd", u, X)  # (K, D)
             mask = u_sum_t > 1e-10
             mu = np.where(mask, u_xt / np.maximum(u_sum_t, 1e-10), mu)
 
@@ -229,8 +236,8 @@ class FSHMMEngine:
             sigma2 = np.maximum(sigma2, 1e-8)
 
             # Update epsilon[l]
-            v_sum_i = np.sum(v, axis=1)                        # (T, D)
-            v_sum_it = np.sum(v_sum_i, axis=0)                 # (D,)
+            v_sum_i = np.sum(v, axis=1)  # (T, D)
+            v_sum_it = np.sum(v_sum_i, axis=0)  # (D,)
             epsilon = np.sum(v_sum_i * X, axis=0) / np.maximum(v_sum_it, 1e-10)
 
             # Update tau2[l]
@@ -239,29 +246,42 @@ class FSHMMEngine:
             tau2 = np.maximum(tau2, 1e-8)
 
             # Update rho[l] — MAP closed-form (Adams 2016)
-            u_sum = np.sum(u, axis=(0, 1))                     # (D,)
+            u_sum = np.sum(u, axis=(0, 1))  # (D,)
             k_param = 1.0
             T_hat = T + 1 + k_param
             discriminant = np.maximum(T_hat**2 - 4 * k_param * u_sum, 0)
             rho_new = (T_hat - np.sqrt(discriminant)) / (2 * k_param)
             rho_new = np.clip(rho_new, 1e-10, 1 - 1e-10)
 
-            # Update pi and A analytically from gamma
+            # Update pi analytically from gamma
             pi = gamma[0] / np.sum(gamma[0])
-            xi_sum = np.zeros((K, K))
-            for t in range(T - 1):
-                xi = gamma[t, :, np.newaxis] * A * np.exp(
-                    _log_gaussian_diag(X[t + 1:t + 2], mu, sigma2)[0]
-                )[np.newaxis, :]
-                xi_sum += xi / np.maximum(np.sum(xi, axis=1, keepdims=True), 1e-300)
+
+            # Vectorised transition M-step uses updated mu, sigma2
+            log_signal_upd = _log_gaussian_diag(X, mu, sigma2)
+            signal_exp = np.exp(log_signal_upd[1:])
+            xi_all = np.einsum("ti,tj,ij->tij", gamma[:-1], signal_exp, A)
+            xi_all /= np.maximum(xi_all.sum(axis=2, keepdims=True), 1e-300)
+            xi_sum = xi_all.sum(axis=0)
             A = xi_sum / np.maximum(np.sum(xi_sum, axis=1, keepdims=True), 1e-300)
             # Ensure valid transition matrix
             A = np.clip(A, 1e-10, None)
             A /= A.sum(axis=1, keepdims=True)
 
-            # Convergence check on rho
+            # Convergence checks
             delta = np.max(np.abs(rho_new - rho))
             rho = rho_new
+
+            # Plateau early-exit: bail if log-likelihood flat for 3 iterations
+            if _iteration > 2:
+                delta_ll = abs(log_lik - prev_ll)
+                if delta_ll < 1e-5 * max(abs(prev_ll), 1.0):
+                    plateau_count += 1
+                    if plateau_count >= 3:
+                        break
+                else:
+                    plateau_count = 0
+            prev_ll = log_lik
+
             if delta < self.tol:
                 break
 
@@ -277,7 +297,7 @@ class FSHMMEngine:
                 init_params="",
             )
             # Fit once to initialise internal state, then overwrite
-            final_model.fit(X[:K + 1])
+            final_model.fit(X[: K + 1])
             final_model.means_ = mu
             final_model._covars_ = sigma2
             final_model.startprob_ = pi
@@ -291,18 +311,12 @@ class FSHMMEngine:
 # ------------------------------------------------------------------
 
 
-def _gaussian_pdf(
-    x: np.ndarray, mu: np.ndarray, sigma2: np.ndarray
-) -> np.ndarray:
+def _gaussian_pdf(x: np.ndarray, mu: np.ndarray, sigma2: np.ndarray) -> np.ndarray:
     """Vectorised Gaussian PDF (diagonal covariance)."""
-    return (1.0 / np.sqrt(2 * np.pi * sigma2)) * np.exp(
-        -0.5 * (x - mu) ** 2 / sigma2
-    )
+    return (1.0 / np.sqrt(2 * np.pi * sigma2)) * np.exp(-0.5 * (x - mu) ** 2 / sigma2)
 
 
-def _log_gaussian_diag(
-    X: np.ndarray, mu: np.ndarray, sigma2: np.ndarray
-) -> np.ndarray:
+def _log_gaussian_diag(X: np.ndarray, mu: np.ndarray, sigma2: np.ndarray) -> np.ndarray:
     """Log-likelihood of X under diagonal Gaussian (per-state).
 
     X: (T, D), mu: (K, D), sigma2: (K, D) → (T, K)
@@ -311,8 +325,12 @@ def _log_gaussian_diag(
     return (
         -0.5 * n_features * np.log(2 * np.pi)
         - 0.5 * np.sum(np.log(sigma2), axis=1)
-        - 0.5 * np.sum((X[:, np.newaxis, :] - mu[np.newaxis, :, :]) ** 2
-                        / sigma2[np.newaxis, :, :], axis=2)
+        - 0.5
+        * np.sum(
+            (X[:, np.newaxis, :] - mu[np.newaxis, :, :]) ** 2
+            / sigma2[np.newaxis, :, :],
+            axis=2,
+        )
     )
 
 
