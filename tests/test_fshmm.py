@@ -180,11 +180,21 @@ class TestPipelineIntegration:
 class TestCLIIntegration:
     """--engine fshmm runs end-to-end."""
 
-    def test_cli_fshmm_rejects_without_ohlcv(self, btc_csv):
+    def test_cli_fshmm_rejects_without_ohlcv(self, tmp_path):
         """CSV files without OHLCV columns should give a clear error."""
-        result = run_regime("--csv", btc_csv, "--engine", "fshmm", "--json")
+        # Create a minimal CSV with only date+price (no OHLCV)
+        csv_no_ohlcv = tmp_path / "no_ohlcv.csv"
+        csv_no_ohlcv.write_text(
+            "Date,Price\n"
+            "2024-01-01,100\n2024-01-02,101\n2024-01-03,102\n"
+            "2024-01-04,103\n2024-01-05,104\n2024-01-06,105\n"
+            "2024-01-07,106\n2024-01-08,107\n2024-01-09,108\n"
+            "2024-01-10,109\n"
+        )
+        result = run_regime("--csv", str(csv_no_ohlcv), "--engine", "fshmm", "--json")
         assert result.returncode != 0
-        assert "OHLCV" in result.stdout or "ohlcv" in result.stdout.lower()
+        output = result.stdout + result.stderr
+        assert "OHLCV" in output or "ohlcv" in output.lower()
 
     def test_cli_accepts_fshmm_engine_flag(self, btc_csv):
         """--engine fshmm is accepted as a valid choice (may fail on data)."""

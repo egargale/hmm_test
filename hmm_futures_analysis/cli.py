@@ -22,9 +22,38 @@ import sys
 
 from .data_processing.csv_auto_detect import load_prices
 from .regime.pipeline import run as pipeline_run
+from .utils import get_logger
 
 _STATE_NAMES = ("bear", "sideways", "bull")
 _FRAMEWORK_VERSION = "hmm_test v0.2.0"
+
+
+def _suppress_stdout_logging() -> None:
+    """Redirect all logging away from stdout so --json emits only JSON."""
+    # 1. loguru: remove all handlers
+    try:
+        from loguru import logger as _loguru_logger
+
+        _loguru_logger.remove()
+    except ImportError:
+        pass
+
+    # 2. structlog: reconfigure to print to stderr
+    try:
+        import structlog
+
+        structlog.configure(
+            logger_factory=structlog.PrintLoggerFactory(file=sys.stderr)
+        )
+    except ImportError:
+        pass
+
+    # 3. stdlib: remove any stdout handlers
+    import logging
+
+    for handler in logging.root.handlers[:]:
+        if getattr(handler, "stream", None) is sys.stdout:
+            logging.root.removeHandler(handler)
 
 
 def _write_saliency_csv(output: dict, path: str) -> None:
@@ -265,6 +294,10 @@ def main() -> None:
         parser.error("arguments --ticker and --csv are mutually exclusive")
 
     try:
+        # In JSON mode, suppress logging to stdout so only the JSON object is emitted
+        if args.json:
+            _suppress_stdout_logging()
+
         # Load data
         prices, ohlcv, source = load_prices(csv=args.csv, ticker=args.ticker)
 
