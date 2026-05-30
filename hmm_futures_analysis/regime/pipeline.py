@@ -25,7 +25,7 @@ from .markov_chain import (
 )
 from .walk_forward import walk_forward_backtest
 
-_HMM_ENGINES = frozenset({"messina", "hmm", "robust_hmm"})
+_HMM_ENGINES = frozenset({"messina", "hmm", "robust_hmm", "fshmm"})
 
 _STATE_NAMES = ("bear", "sideways", "bull")
 _FRAMEWORK_VERSION = "hmm_test v0.2.0"
@@ -39,6 +39,7 @@ _ENGINE_FEATURES: dict[str, str] = {
     "messina": "messina",
     "hmm": "generic",
     "robust_hmm": "generic",
+    "fshmm": "generic",
 }
 
 
@@ -70,6 +71,7 @@ def run(
     dwell_bars: int = 0,
     hysteresis_delta: float = 0.0,
     robust_method: str = "huber",
+    saliency_threshold: float = 0.5,
 ) -> dict:
     """Run the full regime-detection pipeline and return a JSON-compatible dict."""
     if engine not in ENGINE_REGISTRY:
@@ -140,6 +142,8 @@ def run(
         eng_kwargs: dict = {"n_states": resolved_n_states, "pca_variance": pca_variance}
         if engine == "robust_hmm":
             eng_kwargs["robust_method"] = robust_method
+        if engine == "fshmm":
+            eng_kwargs["saliency_threshold"] = saliency_threshold
         eng = eng_cls(**eng_kwargs)
 
         n = len(returns)
@@ -207,6 +211,7 @@ def run(
         dwell_bars=dwell_bars,
         hysteresis_delta=hysteresis_delta,
         robust_method=robust_method,
+        saliency_threshold=saliency_threshold,
     )
     walk_forward = {
         "sharpe": _nan_to_none(wf["sharpe"]),
@@ -223,7 +228,7 @@ def run(
         "features": _ENGINE_FEATURES.get(engine, engine),
         "n_states": resolved_n_states,
     }
-    if engine in ("messina", "hmm", "robust_hmm"):
+    if engine in ("messina", "hmm", "robust_hmm", "fshmm"):
         engine_info["caveat"] = (
             "HMM states sorted by mean return; labels may swap on re-fit"
         )
@@ -231,6 +236,11 @@ def run(
             engine_info["warmup_bars"] = warmup_bars
         if engine == "robust_hmm":
             engine_info["robust_method"] = robust_method
+
+    # Expose saliency data for fshmm engine
+    if engine == "fshmm" and hasattr(eng, "_last_saliency"):
+        engine_info["feature_saliency"] = eng._last_saliency
+        engine_info["selected_features"] = eng._last_selected_features
 
     return {
         "source": source,
