@@ -121,6 +121,20 @@ def _print_terminal(output: dict) -> None:
     print(f"  Win rate       : {wr_str}", file=sys.stderr)
     print(f"  Profit factor  : {pf_str}", file=sys.stderr)
 
+    if "duration_forecast" in sr and sr["duration_forecast"] is not None:
+        df = sr["duration_forecast"]
+        header("DURATION FORECAST")
+        print(f"  Current regime     : {df['current_regime'].upper()}", file=sys.stderr)
+        print(f"  Days in regime     : {df['days_in_regime']}", file=sys.stderr)
+        if df["expected_remaining_days"] is not None:
+            print(f"  Expected remaining  : {df['expected_remaining_days']:.1f} days", file=sys.stderr)
+            print(f"  Hazard rate         : {df['hazard_rate']:.4f}", file=sys.stderr)
+            print(f"  Median survival     : {df['survival_50pct']:.1f} days", file=sys.stderr)
+            print(f"  Weibull shape       : {df['weibull_shape']:.4f}", file=sys.stderr)
+            print(f"  Weibull scale       : {df['weibull_scale']:.2f}", file=sys.stderr)
+        else:
+            print("  (insufficient historical spells for fitting)", file=sys.stderr)
+
     header("DISCLAIMER")
     print(f"  {sr['disclaimer']}", file=sys.stderr)
     print(sep, file=sys.stderr)
@@ -227,6 +241,21 @@ def main() -> None:
         help="Save fshmm saliency weights to CSV file.",
     )
 
+    parser.add_argument(
+        "--duration-forecast",
+        action="store_true",
+        default=False,
+        help="Enable regime duration forecasting via Weibull survival analysis (default: disabled).",
+    )
+    parser.add_argument(
+        "--duration-model",
+        type=str,
+        default="weibull",
+        choices=["weibull", "cox"],
+        help="Survival model for duration forecasting: weibull (default) or cox (requires lifelines).",
+    )
+    )
+
     args = parser.parse_args()
 
     # Validate source arguments
@@ -254,6 +283,8 @@ def main() -> None:
             hysteresis_delta=args.hysteresis,
             robust_method=args.robust_method,
             saliency_threshold=args.saliency_threshold,
+            duration_forecast=args.duration_forecast,
+            duration_model=args.duration_model,
         )
 
         if args.json:

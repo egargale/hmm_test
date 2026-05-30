@@ -25,7 +25,8 @@ dependencies = [
 yfinance = ["yfinance>=0.2.0"]
 dask = ["dask[complete]>=2021.8.0"]
 daft = ["daft>=0.3.0"]
-dev = ["pytest>=7.0", "ruff"]
+survival = ["lifelines>=0.27.0"]
+dev = ["pytest>=7.0", "ruff", "lifelines>=0.27.0"]
 
 [project.scripts]
 hmm-regime = "hmm_futures_analysis.cli:main"

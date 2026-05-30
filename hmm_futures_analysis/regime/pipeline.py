@@ -72,6 +72,8 @@ def run(
     hysteresis_delta: float = 0.0,
     robust_method: str = "huber",
     saliency_threshold: float = 0.5,
+    duration_forecast: bool = False,
+    duration_model: str = "weibull",
 ) -> dict:
     """Run the full regime-detection pipeline and return a JSON-compatible dict."""
     if engine not in ENGINE_REGISTRY:
@@ -242,7 +244,7 @@ def run(
         engine_info["feature_saliency"] = eng._last_saliency
         engine_info["selected_features"] = eng._last_selected_features
 
-    return {
+    result = {
         "source": source,
         "engine": engine,
         "dates": {
@@ -269,3 +271,13 @@ def run(
         "framework": _FRAMEWORK_VERSION,
         "disclaimer": _DISCLAIMER,
     }
+
+    # --- Duration forecast (optional post-processing) ---
+    if duration_forecast:
+        from .duration_forecast import forecast_duration
+
+        result["duration_forecast"] = forecast_duration(
+            regimes, model=duration_model, prices=prices
+        )
+
+    return result
