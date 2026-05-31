@@ -72,6 +72,10 @@ _Avoid_: robust model, outlier engine
 Feature Saliency HMM (Adams et al. 2016). Learns per-feature saliency weights ρ during EM, automatically identifying which of the ~50 generic features are most informative for regime detection. Features with ρ < `--saliency-threshold` (default 0.5) are masked as irrelevant. Outputs `feature_saliency` and `selected_features` in `engine_info`.
 _Avoid_: saliency model, feature selection engine
 
+**Engine config**:
+A flat dataclass that encapsulates all constructor parameters for one engine. Each engine has its own config class (e.g. `ThresholdConfig`, `RobustHMMConfig`) with fields matching the engine's `__init__`. Configs also carry `name` (the registry key) and `features` (the feature-engineering mode label). The CLI constructs the right config from CLI args; pipeline and walk-forward never see engine-specific kwargs. Per ADR-0004.
+_Avoid_: engine settings, engine params
+
 **Duration forecast**:
 Optional post-processing that estimates how long the current regime will persist. Two survival models: `weibull` (Weibull distribution fit to historical regime durations) and `cox` (Cox proportional hazards with realized-volatility covariate). Outputs median expected remaining days and conditional survival curve per regime. Opt-in via `--duration-forecast`.
 _Avoid_: regime length prediction, time-to-transition

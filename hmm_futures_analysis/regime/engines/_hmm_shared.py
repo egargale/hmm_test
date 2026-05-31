@@ -14,6 +14,7 @@ from hmmlearn import hmm
 from ...data_processing.feature_engineering import add_features
 from ...data_processing.messina_features import MESSINA_FEATURE_COLUMNS
 from ...data_processing.messina_features import add_messina_features
+from ..engine_protocol import ClassifyResult
 
 if TYPE_CHECKING:
     from sklearn.decomposition import PCA
@@ -283,3 +284,99 @@ def _match_states(
             used.add(best_new)
 
     return assignment
+
+
+def _classify_hmm_slice(
+    model: hmm.GaussianHMM,
+    center: np.ndarray,
+    scale: np.ndarray,
+    pca_transform: PCA | None,
+    features_arr: np.ndarray,
+    n_states: int,
+    prev_means: np.ndarray | None,
+) -> ClassifyResult:
+    """Shared post-fit classify pipeline for HMM engines.
+
+    Pipeline: z-score last bar → optional PCA transform → model.predict()
+    → label map (sort means ascending, collapse to 3 regimes if n_states > 3)
+    → posteriors reorder/aggregate → _remap_to_prev_states if prev_means given.
+    """
+    means = model.means_
+
+    # Transform last bar through z-score → (optional PCA) for prediction
+    last_features = (features_arr[-1:] - center) / scale
+    if pca_transform is not None:
+        last_features = pca_transform.transform(last_features)
+    raw_state = model.predict(last_features.astype(np.float64))[0]
+
+    # Compute posteriors for the last observation
+    posteriors = model.predict_proba(last_features.astype(np.float64))[-1]
+
+    # Map HMM states to regime indices (0=bear, 1=sideways, 2=bull)
+    # based on ascending mean return order, collapsed to 3 buckets
+    state_means = means[:, 0]
+    order = np.argsort(state_means)
+    if n_states <= 3:
+        label_map = {int(order[i]): i for i in range(len(order))}
+    else:
+        n = len(order)
+        label_map = {}
+        for i, state_idx in enumerate(order):
+            regime = min(2, i * 3 // n)
+            label_map[int(state_idx)] = regime
+
+    regime = label_map.get(int(raw_state), 1)
+
+    # Reorder posteriors to match regime labels (0=bear, 1=sideways, 2=bull)
+    if n_states <= 3:
+        reordered = np.zeros(n_states)
+        for state_idx in range(n_states):
+            reordered[label_map[state_idx]] = posteriors[state_idx]
+        posteriors = reordered
+    else:
+        # Aggregate posteriors by regime bucket
+        agg = np.zeros(3)
+        for state_idx in range(n_states):
+            agg[label_map[state_idx]] += posteriors[state_idx]
+        posteriors = agg
+
+    if prev_means is not None:
+        regime = _remap_to_prev_states(means, raw_state, prev_means, default=regime)
+
+    return ClassifyResult(regime=int(regime), means=means, posteriors=posteriors)
+
+
+def _remap_to_prev_states(
+    means: np.ndarray, raw_state: int, prev_means: np.ndarray, *, default: int = 0
+) -> int:
+    """Remap a raw HMM state to the regime index from the previous cycle.
+
+    Sorts prev_means by column 0, builds a label map (identity for ≤3 states,
+    collapsed to 3 regimes for >3), then maps raw_state through _match_states
+    and the prev label map.
+
+    Args:
+        means: Current-cycle HMM means (n_states × n_features).
+        raw_state: Predicted raw latent state index.
+        prev_means: Previous-cycle HMM means (prev_n × n_features).
+        default: Fallback regime when raw_state has no match.
+
+    Returns:
+        Remapped regime index (0=bear, 1=sideways, 2=bull).
+    """
+    prev_order = np.argsort(prev_means[:, 0])
+    prev_n = len(prev_order)
+
+    if prev_n <= 3:
+        prev_label_map = {int(prev_order[i]): i for i in range(prev_n)}
+    else:
+        prev_label_map = {}
+        for i, si in enumerate(prev_order):
+            prev_label_map[int(si)] = min(2, i * 3 // prev_n)
+
+    assignment = _match_states(means, prev_means)
+    old_state = assignment.get(int(raw_state))
+    if old_state is not None:
+        return prev_label_map.get(old_state, default)
+
+    return default
