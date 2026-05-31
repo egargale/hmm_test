@@ -1,4 +1,5 @@
 """Tests for FSHMM (Feature Saliency HMM) engine."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -97,7 +98,7 @@ class TestRegistry:
     def test_registry_returns_fshmm_engine(self):
         from hmm_futures_analysis.regime.engines.fshmm import FSHMMEngine
 
-        assert ENGINE_REGISTRY["fshmm"] is FSHMMEngine
+        assert ENGINE_REGISTRY["fshmm"][0] is FSHMMEngine
 
 
 @pytest.mark.slow
@@ -148,7 +149,9 @@ class TestPCASupport:
 
         df = _make_signal_noise_data(n_samples=400, n_signal=5, n_noise=10)
         engine = FSHMMEngine(
-            n_states=3, pca_variance=0.95, random_state=42,
+            n_states=3,
+            pca_variance=0.95,
+            random_state=42,
         )
         result = engine.classify(df)
         assert result.regime in (0, 1, 2)
@@ -212,8 +215,13 @@ class TestCLIIntegration:
     def test_cli_saliency_threshold_flag(self, btc_csv):
         """--saliency-threshold flag is accepted."""
         result = run_regime(
-            "--csv", btc_csv, "--engine", "fshmm",
-            "--saliency-threshold", "0.3", "--json",
+            "--csv",
+            btc_csv,
+            "--engine",
+            "fshmm",
+            "--saliency-threshold",
+            "0.3",
+            "--json",
         )
         # Should not fail with unrecognized argument
         if "unrecognized arguments" in result.stderr:
@@ -229,10 +237,14 @@ class TestThresholdBehavior:
 
         df = _make_signal_noise_data(n_samples=400, n_signal=5, n_noise=10)
         engine_low = FSHMMEngine(
-            n_states=3, saliency_threshold=0.1, random_state=42,
+            n_states=3,
+            saliency_threshold=0.1,
+            random_state=42,
         )
         engine_high = FSHMMEngine(
-            n_states=3, saliency_threshold=0.9, random_state=42,
+            n_states=3,
+            saliency_threshold=0.9,
+            random_state=42,
         )
         result_low = engine_low.classify(df)
         result_high = engine_high.classify(df)
@@ -251,7 +263,10 @@ class TestConvergence:
 
         df = _make_signal_noise_data(n_samples=300, n_signal=5, n_noise=10)
         engine = FSHMMEngine(
-            n_states=3, max_iter=100, tol=1e-4, random_state=42,
+            n_states=3,
+            max_iter=100,
+            tol=1e-4,
+            random_state=42,
         )
         result = engine.classify(df)
 
@@ -291,7 +306,9 @@ class TestTracerBullet:
 
         df = _make_signal_noise_data(n_samples=400, n_signal=5, n_noise=10)
         engine = FSHMMEngine(
-            n_states=3, saliency_threshold=0.5, random_state=42,
+            n_states=3,
+            saliency_threshold=0.5,
+            random_state=42,
         )
         result = engine.classify(df)
 
@@ -314,7 +331,9 @@ class TestTracerBullet:
 
         df = _make_signal_noise_data(n_samples=400, n_signal=5, n_noise=10)
         engine = FSHMMEngine(
-            n_states=3, saliency_threshold=0.5, random_state=42,
+            n_states=3,
+            saliency_threshold=0.5,
+            random_state=42,
         )
         result = engine.classify(df)
 

@@ -1,4 +1,4 @@
-"""RegimeEngine protocol, ClassifyResult, and ENGINE_REGISTRY."""
+"""RegimeEngine protocol, ClassifyResult, config dataclasses, and ENGINE_REGISTRY."""
 
 from __future__ import annotations
 
@@ -26,7 +26,52 @@ class RegimeEngine(Protocol):
     ) -> ClassifyResult: ...
 
 
-def _build_registry() -> dict[str, type]:
+# --- Config dataclasses (ADR-0004) ---
+
+
+@dataclass
+class ThresholdConfig:
+    name: str = "threshold"
+    features: str = "returns"
+    window: int = 20
+    threshold: float = 0.05
+
+
+@dataclass
+class HMMGenericConfig:
+    name: str = "hmm"
+    features: str = "generic"
+    n_states: int = 3
+    pca_variance: float | None = None
+
+
+@dataclass
+class HMMMMessinaConfig:
+    name: str = "messina"
+    features: str = "messina"
+    n_states: int = 3
+    pca_variance: float | None = None
+
+
+@dataclass
+class RobustHMMConfig:
+    name: str = "robust_hmm"
+    features: str = "generic"
+    n_states: int = 3
+    pca_variance: float | None = None
+    robust_method: str = "huber"
+
+
+@dataclass
+class FSHMMConfig:
+    name: str = "fshmm"
+    features: str = "generic"
+    n_states: int = 3
+    pca_variance: float | None = None
+    saliency_threshold: float = 0.5
+
+
+def _build_registry() -> dict[str, tuple[type, type]]:
     from .engines.fshmm import FSHMMEngine
     from .engines.hmm_generic import HMMGenericEngine
     from .engines.hmm_messina import HMMMMessinaEngine
@@ -34,11 +79,11 @@ def _build_registry() -> dict[str, type]:
     from .engines.threshold import ThresholdEngine
 
     return {
-        "threshold": ThresholdEngine,
-        "hmm": HMMGenericEngine,
-        "messina": HMMMMessinaEngine,
-        "robust_hmm": RobustHMMEngine,
-        "fshmm": FSHMMEngine,
+        "threshold": (ThresholdEngine, ThresholdConfig),
+        "hmm": (HMMGenericEngine, HMMGenericConfig),
+        "messina": (HMMMMessinaEngine, HMMMMessinaConfig),
+        "robust_hmm": (RobustHMMEngine, RobustHMMConfig),
+        "fshmm": (FSHMMEngine, FSHMMConfig),
     }
 
 
@@ -83,7 +128,26 @@ class _LazyRegistry(dict):
         return super().__len__()
 
 
-ENGINE_REGISTRY: dict[str, type] = _LazyRegistry()
+def resolve_engine(config) -> RegimeEngine:
+    """Construct an engine from a config dataclass."""
+    import dataclasses
+
+    name = getattr(config, "name", None)
+    if name not in ENGINE_REGISTRY:
+        raise ValueError(
+            f"Unknown engine name {name!r}. Available: {sorted(ENGINE_REGISTRY.keys())}"
+        )
+    engine_cls, _ = ENGINE_REGISTRY[name]
+    # Strip name/features — they're config metadata, not constructor params
+    kwargs = {
+        k: v
+        for k, v in dataclasses.asdict(config).items()
+        if k not in ("name", "features")
+    }
+    return engine_cls(**kwargs)
+
+
+ENGINE_REGISTRY: dict[str, tuple[type, type]] = _LazyRegistry()
 
 # Engine sets derived from the registry.
 # HMM_ENGINES: engines that fit a GaussianHMM and provide posteriors.

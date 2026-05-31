@@ -92,7 +92,7 @@ def _resolve_engine(
                 f"engine {engine!r} requires OHLCV data "
                 "(open/high/low/close/volume). Pass ohlcv= DataFrame."
             )
-        cls = ENGINE_REGISTRY[engine]
+        cls = ENGINE_REGISTRY[engine][0]
         if engine == "threshold":
             return cls(window=window, threshold=threshold)
         kwargs: dict = {"n_states": n_states, "pca_variance": pca_variance}

@@ -125,7 +125,7 @@ def run(
                 f"engine {engine!r} requires OHLCV data "
                 "(open/high/low/close/volume). Pass ohlcv= DataFrame."
             )
-        eng_cls = ENGINE_REGISTRY[engine]
+        eng_cls = ENGINE_REGISTRY[engine][0]
 
         # Precompute features (needed for BIC and for classification)
         eng_temp = eng_cls(n_states=3)  # n_states doesn't affect precompute
