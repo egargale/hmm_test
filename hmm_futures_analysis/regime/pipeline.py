@@ -99,6 +99,138 @@ def _validate_prices(prices: pd.Series) -> pd.Series:
     return returns
 
 
+def _classify_hmm(
+    eng: object,
+    precomputed: pd.DataFrame,
+    returns: pd.Series,
+    min_train: int,
+    *,
+    profile: bool = False,
+    _phases: dict[str, float] | None = None,
+    _classify_times: list[float] | None = None,
+) -> ClassifyOutput:
+    """Run the walk-forward classify loop for HMM engines.
+
+    Receives a pre-constructed engine, precomputed features, and returns.
+    Walks forward from ``min_train`` to ``len(returns)``, refitting at
+    adaptive intervals.  Returns a :class:`ClassifyOutput` carrying
+    regimes, posteriors, last regime, warmup bars, and the engine
+    instance.
+    """
+    _phases = _phases if _phases is not None else {}
+    _classify_times = _classify_times if _classify_times is not None else []
+
+    n = len(returns)
+    regimes = np.ones(n, dtype=int)
+    posteriors_all = np.zeros((n, 3), dtype=float)
+    prev_means: np.ndarray | None = None
+    last_regime = 1
+    last_post: np.ndarray | None = None
+
+    refit_every = max(1, (n - min_train) // 100)
+    refit_every = min(refit_every, 20)
+
+    t_wf = time.monotonic()
+    for t in range(min_train, n):
+        refit_now = (t == min_train) or ((t - min_train) % refit_every == 0)
+        if refit_now:
+            features_slice = precomputed.iloc[:t]
+            try:
+                t_cls_start = time.monotonic() if profile else 0.0
+                result = eng.classify(features_slice, prev_means=prev_means)
+                if profile:
+                    _classify_times.append(time.monotonic() - t_cls_start)
+                last_regime = result.regime
+                prev_means = result.means
+                last_post = result.posteriors
+            except (ValueError, RuntimeError):
+                pass
+        regimes[t] = last_regime
+        if last_post is not None:
+            posteriors_all[t] = last_post
+    if profile:
+        _phases["walk_forward_classify"] = float(round(time.monotonic() - t_wf, 6))
+
+    return ClassifyOutput(
+        regimes=regimes,
+        posteriors=posteriors_all,
+        last_regime=int(regimes[-1]),
+        warmup_bars=min_train,
+        engine_instance=eng,
+    )
+
+
+def _build_engine_info(
+    engine_config: object,
+    resolved_n_states: int,
+    eng: object | None,
+    *,
+    warmup_bars: int | None = None,
+) -> dict[str, object]:
+    """Build engine_info dict from config and optional engine instance.
+
+    Constructs base info (method, features, n_states) from config,
+    then enriches via duck-typed ``enrich_info()`` if the engine
+    provides it.
+    """
+    engine = getattr(engine_config, "name", None)
+    features_label: str = getattr(engine_config, "features", engine)
+
+    info: dict[str, object] = {
+        "method": engine,
+        "features": features_label,
+        "n_states": resolved_n_states,
+    }
+    if hasattr(eng, "enrich_info"):
+        ctx = {"warmup_bars": warmup_bars} if warmup_bars is not None else {}
+        info.update(eng.enrich_info(ctx))
+    return info
+
+
+def _build_markov_stats(
+    regimes: np.ndarray, price_index: pd.DatetimeIndex
+) -> MarkovStats:
+    """Compute Markov chain statistics from a regimes array.
+
+    Pure function: given regimes and a price index, produces
+    transition matrix, stationary distribution, persistence,
+    signal, regime counts, current regime/probs, and dates.
+    """
+    transmat = build_transition_matrix(regimes)
+    stationary = compute_stationary_distribution(transmat)
+    persistence = compute_persistence_diagonal(transmat)
+
+    last_regime = int(regimes[-1])
+    current_probs = transmat[last_regime]
+    signal = compute_signal(current_probs)
+
+    # Regime counts
+    unique, counts = np.unique(regimes, return_counts=True)
+    regime_counts_map: dict[str, int] = {name: 0 for name in _STATE_NAMES}
+    for s, c in zip(unique, counts):
+        regime_counts_map[_STATE_NAMES[s]] = int(c)
+
+    # Date boundaries
+    date_start: str = ""
+    date_end: str = ""
+    try:
+        date_start = str(price_index[0].date())
+        date_end = str(price_index[-1].date())
+    except (AttributeError, IndexError, TypeError):
+        pass
+
+    return MarkovStats(
+        transmat=transmat,
+        stationary=stationary,
+        persistence=persistence,
+        signal=signal,
+        current_regime=last_regime,
+        current_probs=current_probs,
+        regime_counts=regime_counts_map,
+        dates={"start": date_start, "end": date_end},
+    )
+
+
 def run(
     prices: pd.Series,
     *,
@@ -135,14 +267,20 @@ def run(
     resolved_n_states: int = 3  # default for threshold
 
     # --- Engine-specific regime classification ---
-    warmup_bars: int | None = None
-    eng: object | None = None  # set for HMM engines
+    eng: object | None = None
 
     if engine == "threshold":
         window = getattr(config, "window", 20)
         threshold = getattr(config, "threshold", 0.05)
         regimes = classify_regimes(returns, window=window, threshold=threshold)
         eng = resolve_engine(config)
+        classify_out = ClassifyOutput(
+            regimes=regimes,
+            posteriors=None,
+            last_regime=int(regimes[-1]),
+            warmup_bars=None,
+            engine_instance=eng,
+        )
     else:
         eng_cls = ENGINE_REGISTRY[engine][0]
 
@@ -183,80 +321,17 @@ def run(
 
         eng = resolve_engine(config)
 
-        n = len(returns)
-        regimes = np.ones(n, dtype=int)
-        posteriors_all = np.zeros((n, 3), dtype=float)
-        prev_means: np.ndarray | None = None
-        last_regime = 1
-        last_post: np.ndarray | None = None
+        classify_out = _classify_hmm(
+            eng,
+            precomputed,
+            returns,
+            min_train,
+            profile=profile,
+            _phases=_phases,
+            _classify_times=_classify_times,
+        )
 
-        refit_every = max(1, (n - min_train) // 100)
-        refit_every = min(refit_every, 20)
-
-        t_wf = time.monotonic()
-        for t in range(min_train, n):
-            refit_now = (t == min_train) or ((t - min_train) % refit_every == 0)
-            if refit_now:
-                features_slice = precomputed.iloc[:t]
-                try:
-                    t_cls_start = time.monotonic() if profile else 0.0
-                    result = eng.classify(features_slice, prev_means=prev_means)
-                    if profile:
-                        _classify_times.append(time.monotonic() - t_cls_start)
-                    last_regime = result.regime
-                    prev_means = result.means
-                    last_post = result.posteriors
-                except (ValueError, RuntimeError):
-                    pass
-            regimes[t] = last_regime
-            if last_post is not None:
-                posteriors_all[t] = last_post
-        if profile:
-            _phases["walk_forward_classify"] = float(round(time.monotonic() - t_wf, 6))
-
-        warmup_bars = min_train
-
-    classify_out = ClassifyOutput(
-        regimes=regimes,
-        posteriors=posteriors_all if engine != "threshold" else None,
-        last_regime=int(regimes[-1]),
-        warmup_bars=warmup_bars,
-        engine_instance=eng,
-    )
-
-    transmat = build_transition_matrix(classify_out.regimes)
-    stationary = compute_stationary_distribution(transmat)
-    persistence = compute_persistence_diagonal(transmat)
-
-    last_regime = int(classify_out.regimes[-1])
-    current_probs = transmat[last_regime]
-    signal = compute_signal(current_probs)
-
-    # Regime counts
-    unique, counts = np.unique(classify_out.regimes, return_counts=True)
-    regime_counts_map: dict[str, int] = {name: 0 for name in _STATE_NAMES}
-    for s, c in zip(unique, counts):
-        regime_counts_map[_STATE_NAMES[s]] = int(c)
-
-    # Date boundaries
-    date_start: str = ""
-    date_end: str = ""
-    try:
-        date_start = str(prices.index[0].date())
-        date_end = str(prices.index[-1].date())
-    except (AttributeError, IndexError, TypeError):
-        pass
-
-    markov = MarkovStats(
-        transmat=transmat,
-        stationary=stationary,
-        persistence=persistence,
-        signal=signal,
-        current_regime=last_regime,
-        current_probs=current_probs,
-        regime_counts=regime_counts_map,
-        dates={"start": date_start, "end": date_end},
-    )
+    markov = _build_markov_stats(classify_out.regimes, prices.index)
 
     # Forecasts
     forecast_1 = _probs_to_dict(
@@ -293,21 +368,12 @@ def run(
     if profile:
         _phases["walk_forward_backtest"] = float(round(time.monotonic() - t_wfb, 6))
 
-    # Engine info
-    engine_info: dict[str, object] = {
-        "method": engine,
-        "features": features_label,
-        "n_states": resolved_n_states,
-    }
-    # Enrich via duck-typed enrich_info() on engine instances
-    if hasattr(eng, "enrich_info"):
-        engine_info.update(
-            eng.enrich_info(
-                {"warmup_bars": classify_out.warmup_bars}
-                if classify_out.warmup_bars is not None
-                else {}
-            )
-        )
+    engine_info = _build_engine_info(
+        config,
+        resolved_n_states,
+        eng,
+        warmup_bars=classify_out.warmup_bars,
+    )
 
     result = {
         "source": source,
