@@ -9,14 +9,12 @@ except ImportError:
 
 try:
     from .technical_indicators import (
-        get_available_indicators,
         get_default_indicator_config,
         validate_indicator_config,
         validate_ohlcv_columns,
     )
 except ImportError:
     get_default_indicator_config = None
-    get_available_indicators = None
     validate_indicator_config = None
     validate_ohlcv_columns = None
 
@@ -32,7 +30,6 @@ if get_default_indicator_config is not None:
     __all__.extend(
         [
             "get_default_indicator_config",
-            "get_available_indicators",
             "validate_indicator_config",
             "validate_ohlcv_columns",
         ]

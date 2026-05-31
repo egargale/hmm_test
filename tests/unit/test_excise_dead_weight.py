@@ -83,6 +83,24 @@ def test_alive_module_importable(modname):
 # -- Package surface: __init__.py must not re-export dead symbols ----------
 
 
+DEAD_PERFORMANCE_FUNCTIONS = [
+    "calculate_performance",
+    "infer_trading_frequency",
+    "validate_performance_metrics",
+    "create_performance_summary",
+]
+
+
+@pytest.mark.parametrize("func_name", DEAD_PERFORMANCE_FUNCTIONS)
+def test_dead_performance_function_removed(func_name):
+    """Dead functions must not exist in performance_metrics module."""
+    import hmm_futures_analysis.backtesting.performance_metrics as pm
+
+    assert not hasattr(pm, func_name), (
+        f"Dead function still present: performance_metrics.{func_name}"
+    )
+
+
 def test_data_processing_init_no_dead_reexports():
     """data_processing/__init__.py must not re-export deleted modules."""
     import hmm_futures_analysis.data_processing as dp
@@ -93,6 +111,8 @@ def test_data_processing_init_no_dead_reexports():
         "CSVFormatDetector",
         "CSVFormat",
         "DetectionResult",
+        # Issue #55: dead function removed from technical_indicators.py
+        "get_available_indicators",
     ):
         assert not hasattr(dp, attr), (
             f"Dead re-export still present: data_processing.{attr}"
@@ -109,10 +129,27 @@ def test_backtesting_init_no_dead_reexports():
         "validate_backtest_realism",
         "calculate_transaction_costs",
         "validate_backtest_inputs",
+        # Issue #55: dead functions removed from performance_metrics.py
+        "calculate_performance",
     ):
         assert not hasattr(bt, attr), (
             f"Dead re-export still present: backtesting.{attr}"
         )
+
+
+DEAD_INDICATOR_FUNCTIONS = [
+    "get_available_indicators",
+]
+
+
+@pytest.mark.parametrize("func_name", DEAD_INDICATOR_FUNCTIONS)
+def test_dead_indicator_function_removed(func_name):
+    """Dead functions must not exist in technical_indicators module."""
+    import hmm_futures_analysis.data_processing.technical_indicators as ti
+
+    assert not hasattr(ti, func_name), (
+        f"Dead function still present: technical_indicators.{func_name}"
+    )
 
 
 def test_utils_init_no_dead_reexports():

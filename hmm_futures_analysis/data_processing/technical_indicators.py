@@ -5,7 +5,7 @@ Provides functions for calculating technical indicators and managing
 indicator configurations for financial market data.
 """
 
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 import pandas as pd
 
@@ -85,22 +85,6 @@ def get_default_indicator_config() -> Dict[str, Dict[str, Any]]:
     }
 
 
-def get_available_indicators() -> Dict[str, List[str]]:
-    """
-    Get list of available technical indicators by category.
-
-    Returns:
-        Dictionary mapping categories to indicator lists
-    """
-    return {
-        "trend": ["sma", "ema", "macd", "adx", "bollinger_bands"],
-        "momentum": ["rsi", "roc", "stochastic"],
-        "volatility": ["atr", "bollinger_bands"],
-        "volume": ["volume_sma", "obv"],
-        "price": ["price_patterns", "custom"],
-    }
-
-
 def validate_indicator_config(config: Dict[str, Any]) -> bool:
     """
     Validate indicator configuration parameters.
@@ -127,7 +111,9 @@ def validate_indicator_config(config: Dict[str, Any]) -> bool:
             # Common validation for length parameters
             if "length" in params:
                 if not isinstance(params["length"], int) or params["length"] <= 0:
-                    logger.error(f"Invalid length for {category}.{indicator}: {params['length']}")
+                    logger.error(
+                        f"Invalid length for {category}.{indicator}: {params['length']}"
+                    )
                     return False
 
             # Validate MACD parameters
@@ -138,7 +124,11 @@ def validate_indicator_config(config: Dict[str, Any]) -> bool:
                     ):
                         logger.error(f"Invalid {param} for {category}.macd")
                         return False
-                if "fast" in params and "slow" in params and params["fast"] >= params["slow"]:
+                if (
+                    "fast" in params
+                    and "slow" in params
+                    and params["fast"] >= params["slow"]
+                ):
                     logger.error("MACD fast period must be less than slow period")
                     return False
 
