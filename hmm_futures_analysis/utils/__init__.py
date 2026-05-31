@@ -6,16 +6,10 @@ including data types and logging configuration.
 """
 
 from .data_types import (
-    BacktestConfig,
-    BacktestResult,
     FeatureMatrix,
-    FuturesData,
-    HMMState,
-    PerformanceMetrics,
     PriceData,
     ProbabilityMatrix,
     StateSequence,
-    Trade,
 )
 from .logging_config import (
     get_logger,
@@ -26,13 +20,7 @@ from .logging_config import (
 )
 
 __all__ = [
-    # Data types
-    "FuturesData",
-    "HMMState",
-    "BacktestResult",
-    "PerformanceMetrics",
-    "BacktestConfig",
-    "Trade",
+    # Type aliases
     "PriceData",
     "FeatureMatrix",
     "StateSequence",

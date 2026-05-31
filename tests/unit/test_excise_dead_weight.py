@@ -152,6 +152,61 @@ def test_dead_indicator_function_removed(func_name):
     )
 
 
+DEAD_DATACLASSES = [
+    "FuturesData",
+    "HMMState",
+    "Trade",
+    "BacktestResult",
+    "PerformanceMetrics",
+    "BacktestConfig",
+    "CSVFormat",
+    "ProcessingStats",
+]
+
+
+@pytest.mark.parametrize("class_name", DEAD_DATACLASSES)
+def test_dead_dataclass_removed(class_name):
+    """Dead dataclasses must not exist in data_types module."""
+    import hmm_futures_analysis.utils.data_types as dt
+
+    assert not hasattr(dt, class_name), (
+        f"Dead dataclass still present: data_types.{class_name}"
+    )
+
+
+ALIVE_TYPE_ALIASES = [
+    "PriceData",
+    "FeatureMatrix",
+    "StateSequence",
+    "ProbabilityMatrix",
+]
+
+
+@pytest.mark.parametrize("alias_name", ALIVE_TYPE_ALIASES)
+def test_alive_type_alias_exists(alias_name):
+    """Type aliases must survive in data_types module."""
+    import hmm_futures_analysis.utils.data_types as dt
+
+    assert hasattr(dt, alias_name), f"Type alias missing from data_types: {alias_name}"
+
+
+def test_utils_init_no_dead_dataclasses():
+    """utils/__init__.py must not re-export dead dataclasses."""
+    import hmm_futures_analysis.utils as utils
+
+    for attr in (
+        "FuturesData",
+        "HMMState",
+        "Trade",
+        "BacktestResult",
+        "PerformanceMetrics",
+        "BacktestConfig",
+        "CSVFormat",
+        "ProcessingStats",
+    ):
+        assert not hasattr(utils, attr), f"Dead re-export still present: utils.{attr}"
+
+
 def test_utils_init_no_dead_reexports():
     """utils/__init__.py must not re-export deleted config or dead types."""
     import hmm_futures_analysis.utils as utils
