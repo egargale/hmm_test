@@ -4,7 +4,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 import pytest
 
@@ -57,18 +56,7 @@ def futures_csv():
 
 @pytest.fixture
 def sample_ohlcv():
-    """Generate sample OHLCV data for testing."""
-    np.random.seed(42)
-    n = 500
-    dates = pd.date_range("2020-01-01", periods=n, freq="B")
-    close = 100 + np.cumsum(np.random.normal(0.05, 1.5, n))
-    return pd.DataFrame(
-        {
-            "date": dates,
-            "open": close + np.random.normal(0, 0.5, n),
-            "high": close + abs(np.random.normal(1, 0.5, n)),
-            "low": close - abs(np.random.normal(1, 0.5, n)),
-            "close": close,
-            "volume": np.random.randint(1000, 10000, n),
-        }
-    )
+    """Load SPY OHLCV sample for fast, realistic HMM tests."""
+    p = ROOT / "test_data" / "SPY.csv"
+    df = pd.read_csv(p, index_col=0, parse_dates=True)
+    return df.astype(float)
