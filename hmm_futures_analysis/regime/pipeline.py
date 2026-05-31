@@ -16,7 +16,7 @@ import dataclasses
 import numpy as np
 import pandas as pd
 
-from .engine_protocol import ENGINE_REGISTRY, resolve_engine
+from .engine_protocol import ENGINE_REGISTRY, RegimeEngine, resolve_engine
 from .engines._hmm_shared import select_n_states
 from .markov_chain import (
     build_transition_matrix,
@@ -37,6 +37,31 @@ _DISCLAIMER = (
 )
 
 
+@dataclasses.dataclass
+class ClassifyOutput:
+    """Intermediate state from the classify phase."""
+
+    regimes: np.ndarray
+    posteriors: np.ndarray | None = None
+    last_regime: int = 1
+    warmup_bars: int | None = None
+    engine_instance: RegimeEngine | None = None
+
+
+@dataclasses.dataclass
+class MarkovStats:
+    """Computed Markov chain statistics."""
+
+    transmat: np.ndarray
+    stationary: np.ndarray
+    persistence: dict
+    signal: float
+    current_regime: int
+    current_probs: np.ndarray
+    regime_counts: dict[str, int]
+    dates: dict[str, str]
+
+
 def _probs_to_dict(probs: np.ndarray) -> dict[str, float]:
     return {
         "bear": float(probs[0]),
@@ -49,6 +74,29 @@ def _nan_to_none(value: float) -> float | None:
     if isinstance(value, float) and (math.isnan(value) or math.isinf(value)):
         return None
     return value
+
+
+def _validate_prices(prices: pd.Series) -> pd.Series:
+    """Validate prices Series and return computed returns.
+
+    Checks type, dtype, DatetimeIndex, and length.
+    Returns the pct_change returns series (NaN dropped).
+    """
+    if not isinstance(prices, pd.Series):
+        raise ValueError(f"prices must be a pd.Series, got {type(prices).__name__}")
+    if not pd.api.types.is_numeric_dtype(prices):
+        raise ValueError(f"prices must be numeric, got dtype {prices.dtype}")
+    if not isinstance(prices.index, pd.DatetimeIndex):
+        raise ValueError("prices must have a DatetimeIndex")
+    if len(prices) < 2:
+        raise ValueError(f"prices must have at least 2 rows, got {len(prices)}")
+
+    returns = prices.pct_change(fill_method=None).dropna()
+    if len(returns) < 2:
+        raise ValueError(
+            f"prices must yield at least 2 valid returns, got {len(returns)}"
+        )
+    return returns
 
 
 def run(
@@ -78,20 +126,7 @@ def run(
             f"engine must be one of {sorted(ENGINE_REGISTRY.keys())}, got {engine!r}"
         )
 
-    if not isinstance(prices, pd.Series):
-        raise ValueError(f"prices must be a pd.Series, got {type(prices).__name__}")
-    if not pd.api.types.is_numeric_dtype(prices):
-        raise ValueError(f"prices must be numeric, got dtype {prices.dtype}")
-    if not isinstance(prices.index, pd.DatetimeIndex):
-        raise ValueError("prices must have a DatetimeIndex")
-    if len(prices) < 2:
-        raise ValueError(f"prices must have at least 2 rows, got {len(prices)}")
-
-    returns = prices.pct_change(fill_method=None).dropna()
-    if len(returns) < 2:
-        raise ValueError(
-            f"prices must yield at least 2 valid returns, got {len(returns)}"
-        )
+    returns = _validate_prices(prices)
 
     # --- Resolve n_states='auto' for HMM engines ---
     config = engine_config  # shorthand
@@ -181,16 +216,24 @@ def run(
 
         warmup_bars = min_train
 
-    transmat = build_transition_matrix(regimes)
+    classify_out = ClassifyOutput(
+        regimes=regimes,
+        posteriors=posteriors_all if engine != "threshold" else None,
+        last_regime=int(regimes[-1]),
+        warmup_bars=warmup_bars,
+        engine_instance=eng,
+    )
+
+    transmat = build_transition_matrix(classify_out.regimes)
     stationary = compute_stationary_distribution(transmat)
     persistence = compute_persistence_diagonal(transmat)
 
-    last_regime = int(regimes[-1])
+    last_regime = int(classify_out.regimes[-1])
     current_probs = transmat[last_regime]
     signal = compute_signal(current_probs)
 
     # Regime counts
-    unique, counts = np.unique(regimes, return_counts=True)
+    unique, counts = np.unique(classify_out.regimes, return_counts=True)
     regime_counts_map: dict[str, int] = {name: 0 for name in _STATE_NAMES}
     for s, c in zip(unique, counts):
         regime_counts_map[_STATE_NAMES[s]] = int(c)
@@ -204,10 +247,27 @@ def run(
     except (AttributeError, IndexError, TypeError):
         pass
 
+    markov = MarkovStats(
+        transmat=transmat,
+        stationary=stationary,
+        persistence=persistence,
+        signal=signal,
+        current_regime=last_regime,
+        current_probs=current_probs,
+        regime_counts=regime_counts_map,
+        dates={"start": date_start, "end": date_end},
+    )
+
     # Forecasts
-    forecast_1 = _probs_to_dict(forecast_n_steps(transmat, current_probs, 1))
-    forecast_5 = _probs_to_dict(forecast_n_steps(transmat, current_probs, 5))
-    forecast_20 = _probs_to_dict(forecast_n_steps(transmat, current_probs, 20))
+    forecast_1 = _probs_to_dict(
+        forecast_n_steps(markov.transmat, markov.current_probs, 1)
+    )
+    forecast_5 = _probs_to_dict(
+        forecast_n_steps(markov.transmat, markov.current_probs, 5)
+    )
+    forecast_20 = _probs_to_dict(
+        forecast_n_steps(markov.transmat, markov.current_probs, 20)
+    )
 
     # Walk-forward backtest (reuse pre-computed regime labels for HMM engines)
     t_wfb = time.monotonic()
@@ -219,8 +279,8 @@ def run(
     }
     # HMM engines: reuse pre-computed regime labels
     if config.is_hmm:
-        wf_kwargs["regimes"] = regimes
-        wf_kwargs["posteriors"] = posteriors_all
+        wf_kwargs["regimes"] = classify_out.regimes
+        wf_kwargs["posteriors"] = classify_out.posteriors
     wf = walk_forward_backtest(prices, **wf_kwargs)
     walk_forward = {
         "sharpe": _nan_to_none(wf["sharpe"]),
@@ -243,7 +303,9 @@ def run(
     if hasattr(eng, "enrich_info"):
         engine_info.update(
             eng.enrich_info(
-                {"warmup_bars": warmup_bars} if warmup_bars is not None else {}
+                {"warmup_bars": classify_out.warmup_bars}
+                if classify_out.warmup_bars is not None
+                else {}
             )
         )
 
@@ -251,19 +313,19 @@ def run(
         "source": source,
         "engine": engine,
         "dates": {
-            "start": date_start,
-            "end": date_end,
+            "start": markov.dates["start"],
+            "end": markov.dates["end"],
         },
         "current_regime": {
-            "name": _STATE_NAMES[last_regime],
-            "index": last_regime,
+            "name": _STATE_NAMES[markov.current_regime],
+            "index": markov.current_regime,
         },
-        "signal": signal,
-        "next_state_probabilities": _probs_to_dict(current_probs),
-        "transition_matrix": transmat.tolist(),
-        "stationary_distribution": _probs_to_dict(stationary),
-        "persistence_diagonal": persistence,
-        "regime_counts": regime_counts_map,
+        "signal": markov.signal,
+        "next_state_probabilities": _probs_to_dict(markov.current_probs),
+        "transition_matrix": markov.transmat.tolist(),
+        "stationary_distribution": _probs_to_dict(markov.stationary),
+        "persistence_diagonal": markov.persistence,
+        "regime_counts": markov.regime_counts,
         "walk_forward": walk_forward,
         "forecast": {
             "1_step": forecast_1,
@@ -280,7 +342,7 @@ def run(
         from .duration_forecast import forecast_duration
 
         result["duration_forecast"] = forecast_duration(
-            regimes, model=duration_model, prices=prices
+            classify_out.regimes, model=duration_model, prices=prices
         )
 
     # --- Profiling ---
