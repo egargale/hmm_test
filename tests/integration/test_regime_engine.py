@@ -687,15 +687,8 @@ class TestConfigDataclasses:
             resolve_engine(BogusConfig())
 
 
-class TestConfigWalkForwardKwargs:
-    """Config dataclasses produce correct walk_forward_backtest kwargs."""
-
-    def test_threshold_wf_kwargs_returns_window_and_threshold(self):
-        from hmm_futures_analysis.regime.engine_protocol import ThresholdConfig
-
-        cfg = ThresholdConfig(window=15, threshold=0.03)
-        kwargs = cfg.walk_forward_kwargs()
-        assert kwargs == {"window": 15, "threshold": 0.03}
+class TestConfigIsHmm:
+    """Config dataclasses report correct is_hmm flag."""
 
     def test_threshold_is_hmm_false(self):
         from hmm_futures_analysis.regime.engine_protocol import ThresholdConfig
@@ -703,73 +696,20 @@ class TestConfigWalkForwardKwargs:
         cfg = ThresholdConfig()
         assert cfg.is_hmm is False
 
-    def test_hmm_generic_wf_kwargs_with_defaults(self):
-        from hmm_futures_analysis.regime.engine_protocol import HMMGenericConfig
-
-        cfg = HMMGenericConfig()
-        kwargs = cfg.walk_forward_kwargs(n_states=3)
-        assert kwargs == {"n_states": 3}
-
-    def test_hmm_generic_wf_kwargs_with_pca(self):
-        from hmm_futures_analysis.regime.engine_protocol import HMMGenericConfig
-
-        cfg = HMMGenericConfig(pca_variance=0.95)
-        kwargs = cfg.walk_forward_kwargs(n_states=4)
-        assert kwargs == {"n_states": 4, "pca_variance": 0.95}
-
     def test_hmm_generic_is_hmm_true(self):
         from hmm_futures_analysis.regime.engine_protocol import HMMGenericConfig
 
         assert HMMGenericConfig().is_hmm is True
-
-    def test_messina_wf_kwargs_same_as_generic(self):
-        from hmm_futures_analysis.regime.engine_protocol import HMMMMessinaConfig
-
-        cfg = HMMMMessinaConfig(pca_variance=0.9)
-        kwargs = cfg.walk_forward_kwargs(n_states=3)
-        assert kwargs == {"n_states": 3, "pca_variance": 0.9}
 
     def test_messina_is_hmm_true(self):
         from hmm_futures_analysis.regime.engine_protocol import HMMMMessinaConfig
 
         assert HMMMMessinaConfig().is_hmm is True
 
-    def test_robust_hmm_wf_kwargs_includes_method(self):
-        from hmm_futures_analysis.regime.engine_protocol import RobustHMMConfig
-
-        cfg = RobustHMMConfig(robust_method="mcd")
-        kwargs = cfg.walk_forward_kwargs(n_states=4)
-        assert kwargs == {"n_states": 4, "robust_method": "mcd"}
-
-    def test_robust_hmm_wf_kwargs_with_pca(self):
-        from hmm_futures_analysis.regime.engine_protocol import RobustHMMConfig
-
-        cfg = RobustHMMConfig(pca_variance=0.95, robust_method="huber")
-        kwargs = cfg.walk_forward_kwargs(n_states=3)
-        assert kwargs == {"n_states": 3, "pca_variance": 0.95, "robust_method": "huber"}
-
     def test_robust_hmm_is_hmm_true(self):
         from hmm_futures_analysis.regime.engine_protocol import RobustHMMConfig
 
         assert RobustHMMConfig().is_hmm is True
-
-    def test_fshmm_wf_kwargs_includes_saliency(self):
-        from hmm_futures_analysis.regime.engine_protocol import FSHMMConfig
-
-        cfg = FSHMMConfig(saliency_threshold=0.3)
-        kwargs = cfg.walk_forward_kwargs(n_states=3)
-        assert kwargs == {"n_states": 3, "saliency_threshold": 0.3}
-
-    def test_fshmm_wf_kwargs_with_pca(self):
-        from hmm_futures_analysis.regime.engine_protocol import FSHMMConfig
-
-        cfg = FSHMMConfig(pca_variance=0.95, saliency_threshold=0.7)
-        kwargs = cfg.walk_forward_kwargs(n_states=4)
-        assert kwargs == {
-            "n_states": 4,
-            "pca_variance": 0.95,
-            "saliency_threshold": 0.7,
-        }
 
     def test_fshmm_is_hmm_true(self):
         from hmm_futures_analysis.regime.engine_protocol import FSHMMConfig

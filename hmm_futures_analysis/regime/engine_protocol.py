@@ -40,9 +40,6 @@ class ThresholdConfig:
     def is_hmm(self) -> bool:
         return False
 
-    def walk_forward_kwargs(self) -> dict:
-        return {"window": self.window, "threshold": self.threshold}
-
 
 @dataclass
 class HMMGenericConfig:
@@ -55,12 +52,6 @@ class HMMGenericConfig:
     def is_hmm(self) -> bool:
         return True
 
-    def walk_forward_kwargs(self, n_states: int) -> dict:
-        kwargs: dict = {"n_states": n_states}
-        if self.pca_variance is not None:
-            kwargs["pca_variance"] = self.pca_variance
-        return kwargs
-
 
 @dataclass
 class HMMMMessinaConfig:
@@ -72,12 +63,6 @@ class HMMMMessinaConfig:
     @property
     def is_hmm(self) -> bool:
         return True
-
-    def walk_forward_kwargs(self, n_states: int) -> dict:
-        kwargs: dict = {"n_states": n_states}
-        if self.pca_variance is not None:
-            kwargs["pca_variance"] = self.pca_variance
-        return kwargs
 
 
 @dataclass
@@ -92,13 +77,6 @@ class RobustHMMConfig:
     def is_hmm(self) -> bool:
         return True
 
-    def walk_forward_kwargs(self, n_states: int) -> dict:
-        kwargs: dict = {"n_states": n_states}
-        if self.pca_variance is not None:
-            kwargs["pca_variance"] = self.pca_variance
-        kwargs["robust_method"] = self.robust_method
-        return kwargs
-
 
 @dataclass
 class FSHMMConfig:
@@ -111,13 +89,6 @@ class FSHMMConfig:
     @property
     def is_hmm(self) -> bool:
         return True
-
-    def walk_forward_kwargs(self, n_states: int) -> dict:
-        kwargs: dict = {"n_states": n_states}
-        if self.pca_variance is not None:
-            kwargs["pca_variance"] = self.pca_variance
-        kwargs["saliency_threshold"] = self.saliency_threshold
-        return kwargs
 
 
 def _build_registry() -> dict[str, tuple[type, type]]:
