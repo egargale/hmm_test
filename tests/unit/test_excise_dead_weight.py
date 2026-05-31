@@ -25,6 +25,9 @@ DEAD_PATHS = [
     "backtesting/bias_prevention.py",
     "backtesting/utils.py",
     "utils/config.py",
+    "data_processing/csv_parser.py",
+    "data_processing/csv_format_detector.py",
+    "data_processing/data_validation.py",
 ]
 
 DEAD_DIRS = [
@@ -64,9 +67,6 @@ ALIVE_MODULES = [
     f"{PACKAGE}.data_processing.messina_features",
     f"{PACKAGE}.data_processing.technical_indicators",
     f"{PACKAGE}.data_processing.csv_auto_detect",
-    f"{PACKAGE}.data_processing.csv_parser",
-    f"{PACKAGE}.data_processing.csv_format_detector",
-    f"{PACKAGE}.data_processing.data_validation",
     f"{PACKAGE}.backtesting.performance_metrics",
     f"{PACKAGE}.utils.data_types",
     f"{PACKAGE}.utils.logging_config",
@@ -81,6 +81,22 @@ def test_alive_module_importable(modname):
 
 
 # -- Package surface: __init__.py must not re-export dead symbols ----------
+
+
+def test_data_processing_init_no_dead_reexports():
+    """data_processing/__init__.py must not re-export deleted modules."""
+    import hmm_futures_analysis.data_processing as dp
+
+    for attr in (
+        "process_csv",
+        "validate_data",
+        "CSVFormatDetector",
+        "CSVFormat",
+        "DetectionResult",
+    ):
+        assert not hasattr(dp, attr), (
+            f"Dead re-export still present: data_processing.{attr}"
+        )
 
 
 def test_backtesting_init_no_dead_reexports():
