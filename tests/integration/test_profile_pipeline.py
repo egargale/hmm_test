@@ -9,6 +9,11 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from hmm_futures_analysis.regime.engine_protocol import (  # noqa: F401
+    HMMGenericConfig,
+    HMMMMessinaConfig,
+    ThresholdConfig,
+)
 from hmm_futures_analysis.regime.pipeline import run as pipeline_run
 
 
@@ -52,9 +57,7 @@ class TestProfileThreshold:
 
     def test_profile_returns_timing_dict(self):
         prices = _make_prices(400)
-        result = pipeline_run(prices, source="test", engine="threshold", profile=True)
-
-        assert "timing" in result
+        result = pipeline_run(prices, source="test", engine_config=ThresholdConfig(), profile=True)
         timing = result["timing"]
         assert "total_wall_seconds" in timing
         assert timing["total_wall_seconds"] > 0
@@ -62,7 +65,7 @@ class TestProfileThreshold:
     def test_timing_has_no_classify_stats_for_threshold(self):
         """Threshold engine doesn't call eng.classify() in a loop."""
         prices = _make_prices(400)
-        result = pipeline_run(prices, source="test", engine="threshold", profile=True)
+        result = pipeline_run(prices, source="test", engine_config=ThresholdConfig(), profile=True)
 
         timing = result["timing"]
         # Threshold has no HMM classify loop, so no classify stats
@@ -74,7 +77,7 @@ class TestProfileThreshold:
     def test_threshold_timing_has_phases_dict(self):
         """Threshold engine timing includes a phases sub-dict."""
         prices = _make_prices(400)
-        result = pipeline_run(prices, source="test", engine="threshold", profile=True)
+        result = pipeline_run(prices, source="test", engine_config=ThresholdConfig(), profile=True)
 
         timing = result["timing"]
         assert "phases" in timing
@@ -96,9 +99,8 @@ class TestProfileHMMClassify:
         result = pipeline_run(
             prices,
             source="test",
-            engine="hmm",
+            engine_config=HMMGenericConfig(n_states=3),
             ohlcv=ohlcv,
-            n_states=3,
             min_train=50,
             profile=True,
         )
@@ -123,9 +125,8 @@ class TestProfileHMMClassify:
         result = pipeline_run(
             prices,
             source="test",
-            engine="hmm",
+            engine_config=HMMGenericConfig(n_states=3),
             ohlcv=ohlcv,
-            n_states=3,
             min_train=50,
             profile=True,
         )
@@ -150,9 +151,8 @@ class TestProfileBICSelection:
         result = pipeline_run(
             prices,
             source="test",
-            engine="hmm",
+            engine_config=HMMGenericConfig(n_states="auto"),
             ohlcv=ohlcv,
-            n_states="auto",
             min_train=50,
             profile=True,
         )
@@ -173,9 +173,8 @@ class TestProfileBICSelection:
         result = pipeline_run(
             prices,
             source="test",
-            engine="hmm",
+            engine_config=HMMGenericConfig(n_states="auto"),
             ohlcv=ohlcv,
-            n_states="auto",
             min_train=50,
             profile=True,
         )
@@ -210,9 +209,8 @@ class TestProfileWalkForwardBacktest:
         result = pipeline_run(
             prices,
             source="test",
-            engine="hmm",
+            engine_config=HMMGenericConfig(n_states=3),
             ohlcv=ohlcv,
-            n_states=3,
             min_train=50,
             profile=True,
         )
@@ -228,9 +226,8 @@ class TestProfileWalkForwardBacktest:
         result = pipeline_run(
             prices,
             source="test",
-            engine="hmm",
+            engine_config=HMMGenericConfig(n_states=3),
             ohlcv=ohlcv,
-            n_states=3,
             min_train=50,
             profile=True,
         )
@@ -250,13 +247,15 @@ class TestProfileWalkForwardBacktest:
 class TestProfileAllEngines:
     """Every engine produces a valid timing structure with profile=True."""
 
-    @pytest.mark.parametrize("engine", ["threshold", "hmm", "messina"])
-    def test_engine_timing_structure(self, engine):
+    @pytest.mark.parametrize(
+        "engine_config",
+        [ThresholdConfig(), HMMGenericConfig(), HMMMMessinaConfig()],
+    )
+    def test_engine_timing_structure(self, engine_config):
         prices = _make_prices(300)
-        kwargs = dict(source="test", engine=engine, profile=True, min_train=50)
-        if engine != "threshold":
+        kwargs = dict(source="test", engine_config=engine_config, profile=True, min_train=50)
+        if not isinstance(engine_config, ThresholdConfig):
             kwargs["ohlcv"] = _make_ohlcv(prices)
-            kwargs["n_states"] = 3
 
         result = pipeline_run(prices, **kwargs)
 

@@ -18,13 +18,11 @@ import pandas as pd
 
 from ..backtesting.performance_metrics import calculate_drawdown_metrics
 from ..backtesting.performance_metrics import calculate_sharpe_ratio
-from .engine_protocol import ENGINE_REGISTRY, HMM_ENGINES
 
 if TYPE_CHECKING:
     from .engine_protocol import RegimeEngine
 
 _STATE_MAP = {0: -1, 1: 0, 2: 1}  # bear=short, sideways=flat, bull=long
-_VALID_ENGINES = frozenset(ENGINE_REGISTRY.keys())
 
 
 def _empty_result() -> dict:
@@ -72,38 +70,6 @@ def _compute_trade_stats(
     return n_trades, float(win_rate), float(profit_factor)
 
 
-def _resolve_engine(
-    engine: str | RegimeEngine,
-    window: int,
-    threshold: float,
-    n_states: int,
-    ohlcv: pd.DataFrame | None,
-    pca_variance: float | None = None,
-    robust_method: str = "huber",
-    saliency_threshold: float = 0.5,
-) -> RegimeEngine:
-    if isinstance(engine, str):
-        if engine not in _VALID_ENGINES:
-            raise ValueError(
-                f"engine must be one of {sorted(_VALID_ENGINES)}, got {engine!r}"
-            )
-        if engine in HMM_ENGINES and ohlcv is None:
-            raise ValueError(
-                f"engine {engine!r} requires OHLCV data "
-                "(open/high/low/close/volume). Pass ohlcv= DataFrame."
-            )
-        cls = ENGINE_REGISTRY[engine][0]
-        if engine == "threshold":
-            return cls(window=window, threshold=threshold)
-        kwargs: dict = {"n_states": n_states, "pca_variance": pca_variance}
-        if engine == "robust_hmm":
-            kwargs["robust_method"] = robust_method
-        if engine == "fshmm":
-            kwargs["saliency_threshold"] = saliency_threshold
-        return cls(**kwargs)
-    return engine
-
-
 def _walk_forward_from_arrays(
     regimes: np.ndarray,
     posteriors: np.ndarray | None = None,
@@ -142,17 +108,10 @@ def _walk_forward_from_arrays(
 def walk_forward_backtest(
     prices: pd.Series,
     *,
-    engine: str | RegimeEngine = "threshold",
-    window: int = 20,
-    threshold: float = 0.05,
+    engine: RegimeEngine,
     min_train: int = 252,
-    ohlcv: pd.DataFrame | None = None,
-    n_states: int = 3,
-    pca_variance: float | None = None,
     dwell_bars: int = 0,
     hysteresis_delta: float = 0.0,
-    robust_method: str = "huber",
-    saliency_threshold: float = 0.5,
     regimes: np.ndarray | None = None,
     posteriors: np.ndarray | None = None,
 ) -> dict:
@@ -162,21 +121,11 @@ def walk_forward_backtest(
     ----------
     prices : pd.Series
         Close prices with DatetimeIndex.
-    engine : str | RegimeEngine
-        Engine name (``"threshold"``, ``"messina"``, or ``"hmm"``) or a
-        ``RegimeEngine`` instance.  Ignored when ``regimes`` is provided.
-    window : int
-        Rolling window for threshold-based regime classification.
-    threshold : float
-        Return threshold for bull/bear classification.
+    engine : RegimeEngine
+        A ``RegimeEngine`` instance used for regime classification.
+        Ignored when ``regimes`` is provided.
     min_train : int
         Minimum number of bars before trading starts.
-    ohlcv : pd.DataFrame | None
-        OHLCV data required for messina/hmm engines.
-    n_states : int
-        Number of HMM states (ignored by threshold engine).
-    pca_variance : float | None
-        Optional PCA whitening threshold for HMM engines.
     dwell_bars : int
         Minimum consecutive bars with same regime before switching position.
         0 disables the filter (default).
@@ -196,16 +145,12 @@ def walk_forward_backtest(
     dict
         ``{sharpe, max_drawdown, n_trades, win_rate, profit_factor, total_return}``
     """
-    eng = _resolve_engine(
-        engine,
-        window,
-        threshold,
-        n_states,
-        ohlcv,
-        pca_variance,
-        robust_method,
-        saliency_threshold,
-    )
+    if not hasattr(engine, "classify"):
+        raise TypeError(
+            f"engine must be a RegimeEngine instance, got {type(engine).__name__}"
+        )
+
+    eng = engine
 
     if len(prices) < min_train + 1:
         return _empty_result()
@@ -227,11 +172,10 @@ def walk_forward_backtest(
     else:
         # Precompute features (returns None for threshold engine)
         precomputed = None
-        if ohlcv is not None:
-            try:
-                precomputed = eng.precompute(ohlcv)
-            except (ValueError, RuntimeError, KeyError):
-                precomputed = None
+        try:
+            precomputed = eng.precompute(prices.to_frame("close"))
+        except (ValueError, RuntimeError, KeyError):
+            precomputed = None
 
         if precomputed is not None:
             positions = _walk_forward_precomputed(
@@ -239,7 +183,6 @@ def walk_forward_backtest(
                 precomputed,
                 returns,
                 min_train,
-                n_states,
                 dwell_bars=dwell_bars,
                 hysteresis_delta=hysteresis_delta,
             )
@@ -248,8 +191,6 @@ def walk_forward_backtest(
                 eng,
                 returns,
                 min_train,
-                window,
-                threshold,
                 dwell_bars=dwell_bars,
                 hysteresis_delta=hysteresis_delta,
             )
@@ -327,8 +268,6 @@ def _walk_forward_raw(
     eng: RegimeEngine,
     returns: pd.Series,
     min_train: int,
-    window: int,
-    threshold: float,
     dwell_bars: int = 0,
     hysteresis_delta: float = 0.0,
 ) -> np.ndarray:
@@ -365,7 +304,6 @@ def _walk_forward_precomputed(
     features: pd.DataFrame,
     returns: pd.Series,
     min_train: int,
-    n_states: int,
     dwell_bars: int = 0,
     hysteresis_delta: float = 0.0,
 ) -> np.ndarray:

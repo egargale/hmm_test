@@ -252,31 +252,55 @@ class TestWalkForwardPCA:
         return prices, ohlcv
 
     def test_walk_forward_hmm_with_pca_returns_valid_result(self, prices_and_ohlcv):
+        import numpy as np
+
+        from hmm_futures_analysis.regime.engines.hmm_generic import HMMGenericEngine
         from hmm_futures_analysis.regime.walk_forward import walk_forward_backtest
 
         prices, ohlcv = prices_and_ohlcv
-        result = walk_forward_backtest(
-            prices,
-            engine="hmm",
-            ohlcv=ohlcv,
-            min_train=100,
-            pca_variance=0.95,
+        engine = HMMGenericEngine(n_states=3, pca_variance=0.95)
+        # Precompute features, then use regimes pass-through
+        precomputed = engine.precompute(ohlcv)
+        returns = prices.pct_change(fill_method=None).dropna()
+        n = len(returns)
+        min_train = 100
+        regimes = np.ones(n, dtype=int)
+        for t in range(min_train, n):
+            try:
+                result = engine.classify(precomputed.iloc[:t])
+                regimes[t] = result.regime
+            except (ValueError, RuntimeError):
+                pass
+        wf = walk_forward_backtest(
+            prices, engine=engine, min_train=min_train, regimes=regimes
         )
-        assert "sharpe" in result
-        assert "n_trades" in result
-        assert isinstance(result["n_trades"], int)
+        assert "sharpe" in wf
+        assert "n_trades" in wf
+        assert isinstance(wf["n_trades"], int)
 
     def test_walk_forward_hmm_without_pca_unaffected(self, prices_and_ohlcv):
+        import numpy as np
+
+        from hmm_futures_analysis.regime.engines.hmm_generic import HMMGenericEngine
         from hmm_futures_analysis.regime.walk_forward import walk_forward_backtest
 
         prices, ohlcv = prices_and_ohlcv
-        result = walk_forward_backtest(
-            prices,
-            engine="hmm",
-            ohlcv=ohlcv,
-            min_train=100,
+        engine = HMMGenericEngine(n_states=3)
+        precomputed = engine.precompute(ohlcv)
+        returns = prices.pct_change(fill_method=None).dropna()
+        n = len(returns)
+        min_train = 100
+        regimes = np.ones(n, dtype=int)
+        for t in range(min_train, n):
+            try:
+                result = engine.classify(precomputed.iloc[:t])
+                regimes[t] = result.regime
+            except (ValueError, RuntimeError):
+                pass
+        wf = walk_forward_backtest(
+            prices, engine=engine, min_train=min_train, regimes=regimes
         )
-        assert "sharpe" in result
+        assert "sharpe" in wf
 
 
 # ===================================================================
@@ -309,28 +333,29 @@ class TestPipelinePCA:
         return prices, ohlcv
 
     def test_pipeline_hmm_with_pca_returns_valid_output(self, prices_and_ohlcv):
+        from hmm_futures_analysis.regime.engine_protocol import HMMGenericConfig
         from hmm_futures_analysis.regime.pipeline import run as pipeline_run
 
         prices, ohlcv = prices_and_ohlcv
         output = pipeline_run(
             prices,
             source="test",
-            engine="hmm",
+            engine_config=HMMGenericConfig(pca_variance=0.95),
             ohlcv=ohlcv,
-            pca_variance=0.95,
         )
         assert "engine_info" in output
         assert output["engine"] == "hmm"
         assert "walk_forward" in output
 
     def test_pipeline_hmm_without_pca_unaffected(self, prices_and_ohlcv):
+        from hmm_futures_analysis.regime.engine_protocol import HMMGenericConfig
         from hmm_futures_analysis.regime.pipeline import run as pipeline_run
 
         prices, ohlcv = prices_and_ohlcv
         output = pipeline_run(
             prices,
             source="test",
-            engine="hmm",
+            engine_config=HMMGenericConfig(),
             ohlcv=ohlcv,
         )
         assert "engine_info" in output

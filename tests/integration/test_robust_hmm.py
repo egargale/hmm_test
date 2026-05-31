@@ -258,14 +258,14 @@ class TestBICCompatibility:
     """robust_hmm should work with n_states='auto' (BIC selection)."""
 
     def test_robust_hmm_with_auto_n_states(self, btc_ohlcv, btc_prices):
+        from hmm_futures_analysis.regime.engine_protocol import RobustHMMConfig
         from hmm_futures_analysis.regime.pipeline import run as pipeline_run
 
         result = pipeline_run(
             btc_prices,
             source="test",
-            engine="robust_hmm",
+            engine_config=RobustHMMConfig(n_states="auto"),
             ohlcv=btc_ohlcv,
-            n_states="auto",
             min_train=300,
         )
         assert "error" not in result
@@ -279,14 +279,14 @@ class TestPCACompatibility:
     """Robust correction should work in PCA-whitened space."""
 
     def test_robust_hmm_with_pca(self, btc_ohlcv, btc_prices):
+        from hmm_futures_analysis.regime.engine_protocol import RobustHMMConfig
         from hmm_futures_analysis.regime.pipeline import run as pipeline_run
 
         result = pipeline_run(
             btc_prices,
             source="test",
-            engine="robust_hmm",
+            engine_config=RobustHMMConfig(pca_variance=0.95),
             ohlcv=btc_ohlcv,
-            pca_variance=0.95,
             min_train=300,
         )
         assert "error" not in result
@@ -298,19 +298,20 @@ class TestEngineIndependence:
     """robust_hmm differs from hmm on contaminated data, similar on clean."""
 
     def test_robust_differs_from_hmm_on_contaminated(self, btc_ohlcv, btc_prices):
+        from hmm_futures_analysis.regime.engine_protocol import HMMGenericConfig, RobustHMMConfig
         from hmm_futures_analysis.regime.pipeline import run as pipeline_run
 
         common = dict(source="test", min_train=300)
 
         result_hmm = pipeline_run(
             btc_prices,
-            engine="hmm",
+            engine_config=HMMGenericConfig(),
             ohlcv=btc_ohlcv,
             **common,
         )
         result_robust = pipeline_run(
             btc_prices,
-            engine="robust_hmm",
+            engine_config=RobustHMMConfig(),
             ohlcv=btc_ohlcv,
             **common,
         )
@@ -321,19 +322,18 @@ class TestEngineIndependence:
         assert result_hmm["engine"] == "hmm"
 
     def test_robust_uses_robust_method(self, btc_ohlcv, btc_prices):
+        from hmm_futures_analysis.regime.engine_protocol import RobustHMMConfig
         from hmm_futures_analysis.regime.pipeline import run as pipeline_run
 
         common = dict(source="test", min_train=300, ohlcv=btc_ohlcv)
         result_hub = pipeline_run(
             btc_prices,
-            engine="robust_hmm",
-            robust_method="huber",
+            engine_config=RobustHMMConfig(robust_method="huber"),
             **common,
         )
         result_mcd = pipeline_run(
             btc_prices,
-            engine="robust_hmm",
-            robust_method="mcd",
+            engine_config=RobustHMMConfig(robust_method="mcd"),
             **common,
         )
         assert result_hub["engine_info"].get("robust_method") == "huber"

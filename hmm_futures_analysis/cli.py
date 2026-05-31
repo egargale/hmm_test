@@ -21,11 +21,51 @@ import json
 import sys
 
 from .data_processing.csv_auto_detect import load_prices
+from .regime.engine_protocol import (
+    FSHMMConfig,
+    HMMGenericConfig,
+    HMMMMessinaConfig,
+    RobustHMMConfig,
+    ThresholdConfig,
+)
 from .regime.pipeline import run as pipeline_run
-from .utils import get_logger
 
 _STATE_NAMES = ("bear", "sideways", "bull")
 _FRAMEWORK_VERSION = "hmm_test v0.2.0"
+
+
+def _build_engine_config(args: argparse.Namespace) -> object:
+    """Construct the correct config dataclass from CLI args."""
+    engine = args.engine
+    if engine == "threshold":
+        return ThresholdConfig(
+            window=args.window,
+            threshold=args.threshold,
+        )
+    elif engine == "hmm":
+        return HMMGenericConfig(
+            n_states=args.n_states,
+            pca_variance=getattr(args, "pca_variance", None),
+        )
+    elif engine == "messina":
+        return HMMMMessinaConfig(
+            n_states=args.n_states,
+            pca_variance=getattr(args, "pca_variance", None),
+        )
+    elif engine == "robust_hmm":
+        return RobustHMMConfig(
+            n_states=args.n_states,
+            pca_variance=getattr(args, "pca_variance", None),
+            robust_method=args.robust_method,
+        )
+    elif engine == "fshmm":
+        return FSHMMConfig(
+            n_states=args.n_states,
+            pca_variance=getattr(args, "pca_variance", None),
+            saliency_threshold=args.saliency_threshold,
+        )
+    else:
+        raise ValueError(f"Unknown engine: {engine!r}")
 
 
 def _suppress_stdout_logging() -> None:
@@ -301,20 +341,18 @@ def main() -> None:
         # Load data
         prices, ohlcv, source = load_prices(csv=args.csv, ticker=args.ticker)
 
+        # Build engine config from CLI args
+        engine_config = _build_engine_config(args)
+
         # Build output
         output = pipeline_run(
             prices=prices,
             source=source,
-            engine=args.engine,
-            window=args.window,
-            threshold=args.threshold,
+            engine_config=engine_config,
             min_train=args.min_train,
             ohlcv=ohlcv,
-            n_states=args.n_states,
             dwell_bars=args.dwell_bars,
             hysteresis_delta=args.hysteresis,
-            robust_method=args.robust_method,
-            saliency_threshold=args.saliency_threshold,
             duration_forecast=args.duration_forecast,
             duration_model=args.duration_model,
         )

@@ -379,23 +379,29 @@ class TestWalkForwardWithProtocol:
         assert "n_trades" in result
         assert isinstance(result["n_trades"], int)
 
-    def test_walk_forward_rejects_invalid_engine_string(self, prices):
+    def test_walk_forward_rejects_string_engine(self, prices):
         from hmm_futures_analysis.regime.walk_forward import walk_forward_backtest
 
-        with pytest.raises(ValueError, match=r"engine"):
+        with pytest.raises(TypeError, match=r"engine"):
             walk_forward_backtest(prices, engine="nonexistent")
 
-    def test_walk_forward_hmm_engine_requires_ohlcv(self, prices):
+    def test_walk_forward_hmm_engine_needs_features(self, prices):
+        """HMM engine can't classify raw returns (needs precomputed features)."""
+        from hmm_futures_analysis.regime.engines.hmm_generic import HMMGenericEngine
         from hmm_futures_analysis.regime.walk_forward import walk_forward_backtest
 
-        with pytest.raises(ValueError, match=r"OHLCV"):
-            walk_forward_backtest(prices, engine="hmm")
+        engine = HMMGenericEngine(n_states=3)
+        # HMM engine requires features, not raw returns
+        with pytest.raises((ValueError, TypeError)):
+            walk_forward_backtest(prices, engine=engine)
 
-    def test_walk_forward_threshold_string_backward_compat(self, prices):
-        """String 'threshold' still works through registry dispatch."""
+    def test_walk_forward_threshold_engine_works(self, prices):
+        """ThresholdEngine instance works with walk_forward_backtest."""
+        from hmm_futures_analysis.regime.engines.threshold import ThresholdEngine
         from hmm_futures_analysis.regime.walk_forward import walk_forward_backtest
 
-        result = walk_forward_backtest(prices, engine="threshold", min_train=50)
+        engine = ThresholdEngine()
+        result = walk_forward_backtest(prices, engine=engine, min_train=50)
         assert "sharpe" in result
         assert isinstance(result["n_trades"], int)
 
@@ -455,15 +461,15 @@ class TestPipelineAutoNStates:
 
     def test_auto_resolves_to_integer(self, prices_and_ohlcv):
         """pipeline_run with n_states='auto' resolves to an integer."""
+        from hmm_futures_analysis.regime.engine_protocol import HMMGenericConfig
         from hmm_futures_analysis.regime.pipeline import run as pipeline_run
 
         prices, ohlcv = prices_and_ohlcv
         output = pipeline_run(
             prices,
             source="test",
-            engine="hmm",
+            engine_config=HMMGenericConfig(n_states="auto"),
             ohlcv=ohlcv,
-            n_states="auto",
         )
         # Should succeed and return a valid result
         assert "engine_info" in output
@@ -474,6 +480,7 @@ class TestPipelineAutoNStates:
     def test_auto_uses_bic_selection(self, prices_and_ohlcv):
         """n_states='auto' should use select_n_states under the hood."""
         from unittest.mock import patch
+        from hmm_futures_analysis.regime.engine_protocol import HMMGenericConfig
         from hmm_futures_analysis.regime.pipeline import run as pipeline_run
 
         prices, ohlcv = prices_and_ohlcv
@@ -485,15 +492,15 @@ class TestPipelineAutoNStates:
             _ = pipeline_run(
                 prices,
                 source="test",
-                engine="hmm",
+                engine_config=HMMGenericConfig(n_states="auto"),
                 ohlcv=ohlcv,
-                n_states="auto",
             )
             mock_bic.assert_called_once()
 
     def test_auto_threshold_ignores_bic(self, prices_and_ohlcv):
         """n_states='auto' with threshold engine doesn't call select_n_states."""
         from unittest.mock import patch
+        from hmm_futures_analysis.regime.engine_protocol import ThresholdConfig
         from hmm_futures_analysis.regime.pipeline import run as pipeline_run
 
         prices, ohlcv = prices_and_ohlcv
@@ -505,8 +512,7 @@ class TestPipelineAutoNStates:
             _ = pipeline_run(
                 prices,
                 source="test",
-                engine="threshold",
-                n_states="auto",
+                engine_config=ThresholdConfig(),
             )
             mock_bic.assert_not_called()
 
@@ -679,3 +685,155 @@ class TestConfigDataclasses:
 
         with pytest.raises(ValueError, match="Unknown engine name"):
             resolve_engine(BogusConfig())
+
+
+class TestConfigWalkForwardKwargs:
+    """Config dataclasses produce correct walk_forward_backtest kwargs."""
+
+    def test_threshold_wf_kwargs_returns_window_and_threshold(self):
+        from hmm_futures_analysis.regime.engine_protocol import ThresholdConfig
+
+        cfg = ThresholdConfig(window=15, threshold=0.03)
+        kwargs = cfg.walk_forward_kwargs()
+        assert kwargs == {"window": 15, "threshold": 0.03}
+
+    def test_threshold_is_hmm_false(self):
+        from hmm_futures_analysis.regime.engine_protocol import ThresholdConfig
+
+        cfg = ThresholdConfig()
+        assert cfg.is_hmm is False
+
+    def test_hmm_generic_wf_kwargs_with_defaults(self):
+        from hmm_futures_analysis.regime.engine_protocol import HMMGenericConfig
+
+        cfg = HMMGenericConfig()
+        kwargs = cfg.walk_forward_kwargs(n_states=3)
+        assert kwargs == {"n_states": 3}
+
+    def test_hmm_generic_wf_kwargs_with_pca(self):
+        from hmm_futures_analysis.regime.engine_protocol import HMMGenericConfig
+
+        cfg = HMMGenericConfig(pca_variance=0.95)
+        kwargs = cfg.walk_forward_kwargs(n_states=4)
+        assert kwargs == {"n_states": 4, "pca_variance": 0.95}
+
+    def test_hmm_generic_is_hmm_true(self):
+        from hmm_futures_analysis.regime.engine_protocol import HMMGenericConfig
+
+        assert HMMGenericConfig().is_hmm is True
+
+    def test_messina_wf_kwargs_same_as_generic(self):
+        from hmm_futures_analysis.regime.engine_protocol import HMMMMessinaConfig
+
+        cfg = HMMMMessinaConfig(pca_variance=0.9)
+        kwargs = cfg.walk_forward_kwargs(n_states=3)
+        assert kwargs == {"n_states": 3, "pca_variance": 0.9}
+
+    def test_messina_is_hmm_true(self):
+        from hmm_futures_analysis.regime.engine_protocol import HMMMMessinaConfig
+
+        assert HMMMMessinaConfig().is_hmm is True
+
+    def test_robust_hmm_wf_kwargs_includes_method(self):
+        from hmm_futures_analysis.regime.engine_protocol import RobustHMMConfig
+
+        cfg = RobustHMMConfig(robust_method="mcd")
+        kwargs = cfg.walk_forward_kwargs(n_states=4)
+        assert kwargs == {"n_states": 4, "robust_method": "mcd"}
+
+    def test_robust_hmm_wf_kwargs_with_pca(self):
+        from hmm_futures_analysis.regime.engine_protocol import RobustHMMConfig
+
+        cfg = RobustHMMConfig(pca_variance=0.95, robust_method="huber")
+        kwargs = cfg.walk_forward_kwargs(n_states=3)
+        assert kwargs == {"n_states": 3, "pca_variance": 0.95, "robust_method": "huber"}
+
+    def test_robust_hmm_is_hmm_true(self):
+        from hmm_futures_analysis.regime.engine_protocol import RobustHMMConfig
+
+        assert RobustHMMConfig().is_hmm is True
+
+    def test_fshmm_wf_kwargs_includes_saliency(self):
+        from hmm_futures_analysis.regime.engine_protocol import FSHMMConfig
+
+        cfg = FSHMMConfig(saliency_threshold=0.3)
+        kwargs = cfg.walk_forward_kwargs(n_states=3)
+        assert kwargs == {"n_states": 3, "saliency_threshold": 0.3}
+
+    def test_fshmm_wf_kwargs_with_pca(self):
+        from hmm_futures_analysis.regime.engine_protocol import FSHMMConfig
+
+        cfg = FSHMMConfig(pca_variance=0.95, saliency_threshold=0.7)
+        kwargs = cfg.walk_forward_kwargs(n_states=4)
+        assert kwargs == {
+            "n_states": 4,
+            "pca_variance": 0.95,
+            "saliency_threshold": 0.7,
+        }
+
+    def test_fshmm_is_hmm_true(self):
+        from hmm_futures_analysis.regime.engine_protocol import FSHMMConfig
+
+        assert FSHMMConfig().is_hmm is True
+
+
+class TestConfigEngineInfoExtras:
+    """Config dataclasses produce correct engine_info extra fields."""
+
+    def test_threshold_engine_info_extras_empty(self):
+        from hmm_futures_analysis.regime.engine_protocol import ThresholdConfig
+
+        cfg = ThresholdConfig()
+        assert cfg.engine_info_extras(warmup_bars=None) == {}
+
+    def test_hmm_generic_engine_info_extras_has_caveat(self):
+        from hmm_futures_analysis.regime.engine_protocol import HMMGenericConfig
+
+        cfg = HMMGenericConfig()
+        extras = cfg.engine_info_extras(warmup_bars=252)
+        assert "caveat" in extras
+        assert "HMM states sorted by mean return" in extras["caveat"]
+        assert extras["warmup_bars"] == 252
+
+    def test_hmm_generic_no_warmup_omits_key(self):
+        from hmm_futures_analysis.regime.engine_protocol import HMMGenericConfig
+
+        cfg = HMMGenericConfig()
+        extras = cfg.engine_info_extras(warmup_bars=None)
+        assert "warmup_bars" not in extras
+        assert "caveat" in extras
+
+    def test_messina_engine_info_extras_has_caveat(self):
+        from hmm_futures_analysis.regime.engine_protocol import HMMMMessinaConfig
+
+        cfg = HMMMMessinaConfig()
+        extras = cfg.engine_info_extras(warmup_bars=252)
+        assert "caveat" in extras
+
+    def test_robust_hmm_engine_info_extras_includes_method(self):
+        from hmm_futures_analysis.regime.engine_protocol import RobustHMMConfig
+
+        cfg = RobustHMMConfig(robust_method="mcd")
+        extras = cfg.engine_info_extras(warmup_bars=252)
+        assert extras["robust_method"] == "mcd"
+        assert "caveat" in extras
+
+    def test_fshmm_engine_info_extras_no_saliency_without_engine(self):
+        from hmm_futures_analysis.regime.engine_protocol import FSHMMConfig
+
+        cfg = FSHMMConfig()
+        extras = cfg.engine_info_extras(warmup_bars=252, eng=None)
+        assert "feature_saliency" not in extras
+        assert "caveat" in extras
+
+    def test_fshmm_engine_info_extras_with_saliency_engine(self):
+        from hmm_futures_analysis.regime.engine_protocol import FSHMMConfig
+
+        class FakeEngine:
+            _last_saliency = [0.1, 0.2, 0.3]
+            _last_selected_features = ["feat_a", "feat_b"]
+
+        cfg = FSHMMConfig()
+        extras = cfg.engine_info_extras(warmup_bars=252, eng=FakeEngine())
+        assert extras["feature_saliency"] == [0.1, 0.2, 0.3]
+        assert extras["selected_features"] == ["feat_a", "feat_b"]

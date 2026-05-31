@@ -165,6 +165,7 @@ class TestPipelineIntegration:
     """pipeline.run() with engine='fshmm' produces valid output."""
 
     def test_pipeline_runs_fshmm(self, btc_ohlcv, btc_prices):
+        from hmm_futures_analysis.regime.engine_protocol import FSHMMConfig
         from hmm_futures_analysis.regime.pipeline import run as pipeline_run
 
         # Use only last 80 bars with min_train=40 to minimise refit points
@@ -174,10 +175,9 @@ class TestPipelineIntegration:
         result = pipeline_run(
             prices,
             source="test",
-            engine="fshmm",
+            engine_config=FSHMMConfig(),
             ohlcv=ohlcv,
             min_train=40,
-            n_states=3,
         )
         assert result["engine"] == "fshmm"
         assert result["current_regime"]["index"] in (0, 1, 2)

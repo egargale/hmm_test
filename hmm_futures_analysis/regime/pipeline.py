@@ -11,10 +11,12 @@ from __future__ import annotations
 import math
 import time
 
+import dataclasses
+
 import numpy as np
 import pandas as pd
 
-from .engine_protocol import ENGINE_REGISTRY, HMM_ENGINES
+from .engine_protocol import ENGINE_REGISTRY, resolve_engine
 from .engines._hmm_shared import select_n_states
 from .markov_chain import (
     build_transition_matrix,
@@ -33,14 +35,6 @@ _DISCLAIMER = (
     "Regime detection is probabilistic. Past transitions do not guarantee "
     "future regimes. Not financial advice."
 )
-
-_ENGINE_FEATURES: dict[str, str] = {
-    "threshold": "returns",
-    "messina": "messina",
-    "hmm": "generic",
-    "robust_hmm": "generic",
-    "fshmm": "generic",
-}
 
 
 def _probs_to_dict(probs: np.ndarray) -> dict[str, float]:
@@ -61,17 +55,11 @@ def run(
     prices: pd.Series,
     *,
     source: str,
-    engine: str = "threshold",
-    window: int = 20,
-    threshold: float = 0.05,
+    engine_config: object = None,
     min_train: int = 252,
     ohlcv: pd.DataFrame | None = None,
-    n_states: int | str = 3,
-    pca_variance: float | None = None,
     dwell_bars: int = 0,
     hysteresis_delta: float = 0.0,
-    robust_method: str = "huber",
-    saliency_threshold: float = 0.5,
     duration_forecast: bool = False,
     duration_model: str = "weibull",
     profile: bool = False,
@@ -81,6 +69,10 @@ def run(
     _phases: dict[str, float] = {}
     _classify_times: list[float] = []
 
+    if engine_config is None:
+        raise ValueError("engine_config is required")
+
+    engine: str = getattr(engine_config, "name", None)
     if engine not in ENGINE_REGISTRY:
         raise ValueError(
             f"engine must be one of {sorted(ENGINE_REGISTRY.keys())}, got {engine!r}"
@@ -102,23 +94,20 @@ def run(
         )
 
     # --- Resolve n_states='auto' for HMM engines ---
+    config = engine_config  # shorthand
+    raw_n_states = getattr(config, "n_states", 3)
+    features_label: str = getattr(config, "features", engine)
     resolved_n_states: int = 3  # default for threshold
-    if isinstance(n_states, str) and n_states == "auto":
-        if engine in HMM_ENGINES:
-            # Need to precompute features first for BIC evaluation
-            pass  # resolved below after precompute
-        else:
-            resolved_n_states = 3  # threshold ignores n_states
-    elif isinstance(n_states, int):
-        resolved_n_states = n_states
-    else:
-        raise ValueError(f"n_states must be int or 'auto', got {n_states!r}")
 
     # --- Engine-specific regime classification ---
     warmup_bars: int | None = None
+    eng: object | None = None  # set for HMM engines
 
     if engine == "threshold":
+        window = getattr(config, "window", 20)
+        threshold = getattr(config, "threshold", 0.05)
         regimes = classify_regimes(returns, window=window, threshold=threshold)
+        eng = resolve_engine(config)
     else:
         if ohlcv is None:
             raise ValueError(
@@ -143,7 +132,7 @@ def run(
             )
 
         # Resolve 'auto' now that we have features
-        if isinstance(n_states, str) and n_states == "auto":
+        if isinstance(raw_n_states, str) and raw_n_states == "auto":
             t_bic = time.monotonic()
             resolved_n_states = select_n_states(
                 precomputed.dropna().to_numpy(dtype=np.float64),
@@ -154,13 +143,13 @@ def run(
                 _phases["bic_select_n_states"] = float(
                     round(time.monotonic() - t_bic, 6)
                 )
+            config = dataclasses.replace(config, n_states=resolved_n_states)
+        elif isinstance(raw_n_states, int):
+            resolved_n_states = raw_n_states
+        else:
+            raise ValueError(f"n_states must be int or 'auto', got {raw_n_states!r}")
 
-        eng_kwargs: dict = {"n_states": resolved_n_states, "pca_variance": pca_variance}
-        if engine == "robust_hmm":
-            eng_kwargs["robust_method"] = robust_method
-        if engine == "fshmm":
-            eng_kwargs["saliency_threshold"] = saliency_threshold
-        eng = eng_cls(**eng_kwargs)
+        eng = resolve_engine(config)
 
         n = len(returns)
         regimes = np.ones(n, dtype=int)
@@ -226,19 +215,13 @@ def run(
     # Walk-forward backtest (reuse pre-computed regime labels for HMM engines)
     t_wfb = time.monotonic()
     wf_kwargs: dict = {
-        "engine": engine,
-        "window": window,
-        "threshold": threshold,
+        "engine": eng,
         "min_train": min_train,
-        "ohlcv": ohlcv,
-        "n_states": resolved_n_states,
-        "pca_variance": pca_variance,
         "dwell_bars": dwell_bars,
         "hysteresis_delta": hysteresis_delta,
-        "robust_method": robust_method,
-        "saliency_threshold": saliency_threshold,
     }
-    if engine in HMM_ENGINES:
+    # HMM engines: reuse pre-computed regime labels
+    if config.is_hmm:
         wf_kwargs["regimes"] = regimes
         wf_kwargs["posteriors"] = posteriors_all
     wf = walk_forward_backtest(prices, **wf_kwargs)
@@ -256,22 +239,10 @@ def run(
     # Engine info
     engine_info: dict[str, object] = {
         "method": engine,
-        "features": _ENGINE_FEATURES.get(engine, engine),
+        "features": features_label,
         "n_states": resolved_n_states,
     }
-    if engine in ("messina", "hmm", "robust_hmm", "fshmm"):
-        engine_info["caveat"] = (
-            "HMM states sorted by mean return; labels may swap on re-fit"
-        )
-        if warmup_bars is not None:
-            engine_info["warmup_bars"] = warmup_bars
-        if engine == "robust_hmm":
-            engine_info["robust_method"] = robust_method
-
-    # Expose saliency data for fshmm engine
-    if engine == "fshmm" and hasattr(eng, "_last_saliency"):
-        engine_info["feature_saliency"] = eng._last_saliency
-        engine_info["selected_features"] = eng._last_selected_features
+    engine_info.update(config.engine_info_extras(warmup_bars=warmup_bars, eng=eng))
 
     result = {
         "source": source,

@@ -36,39 +36,127 @@ class ThresholdConfig:
     window: int = 20
     threshold: float = 0.05
 
+    @property
+    def is_hmm(self) -> bool:
+        return False
+
+    def walk_forward_kwargs(self) -> dict:
+        return {"window": self.window, "threshold": self.threshold}
+
+    def engine_info_extras(self, *, warmup_bars: int | None = None, eng: object = None) -> dict:
+        return {}
+
 
 @dataclass
 class HMMGenericConfig:
     name: str = "hmm"
     features: str = "generic"
-    n_states: int = 3
+    n_states: int | str = 3
     pca_variance: float | None = None
+
+    @property
+    def is_hmm(self) -> bool:
+        return True
+
+    def walk_forward_kwargs(self, n_states: int) -> dict:
+        kwargs: dict = {"n_states": n_states}
+        if self.pca_variance is not None:
+            kwargs["pca_variance"] = self.pca_variance
+        return kwargs
+
+    def engine_info_extras(self, *, warmup_bars: int | None = None, eng: object = None) -> dict:
+        extras: dict = {
+            "caveat": "HMM states sorted by mean return; labels may swap on re-fit",
+        }
+        if warmup_bars is not None:
+            extras["warmup_bars"] = warmup_bars
+        return extras
 
 
 @dataclass
 class HMMMMessinaConfig:
     name: str = "messina"
     features: str = "messina"
-    n_states: int = 3
+    n_states: int | str = 3
     pca_variance: float | None = None
+
+    @property
+    def is_hmm(self) -> bool:
+        return True
+
+    def walk_forward_kwargs(self, n_states: int) -> dict:
+        kwargs: dict = {"n_states": n_states}
+        if self.pca_variance is not None:
+            kwargs["pca_variance"] = self.pca_variance
+        return kwargs
+
+    def engine_info_extras(self, *, warmup_bars: int | None = None, eng: object = None) -> dict:
+        extras: dict = {
+            "caveat": "HMM states sorted by mean return; labels may swap on re-fit",
+        }
+        if warmup_bars is not None:
+            extras["warmup_bars"] = warmup_bars
+        return extras
 
 
 @dataclass
 class RobustHMMConfig:
     name: str = "robust_hmm"
     features: str = "generic"
-    n_states: int = 3
+    n_states: int | str = 3
     pca_variance: float | None = None
     robust_method: str = "huber"
+
+    @property
+    def is_hmm(self) -> bool:
+        return True
+
+    def walk_forward_kwargs(self, n_states: int) -> dict:
+        kwargs: dict = {"n_states": n_states}
+        if self.pca_variance is not None:
+            kwargs["pca_variance"] = self.pca_variance
+        kwargs["robust_method"] = self.robust_method
+        return kwargs
+
+    def engine_info_extras(self, *, warmup_bars: int | None = None, eng: object = None) -> dict:
+        extras: dict = {
+            "caveat": "HMM states sorted by mean return; labels may swap on re-fit",
+            "robust_method": self.robust_method,
+        }
+        if warmup_bars is not None:
+            extras["warmup_bars"] = warmup_bars
+        return extras
 
 
 @dataclass
 class FSHMMConfig:
     name: str = "fshmm"
     features: str = "generic"
-    n_states: int = 3
+    n_states: int | str = 3
     pca_variance: float | None = None
     saliency_threshold: float = 0.5
+
+    @property
+    def is_hmm(self) -> bool:
+        return True
+
+    def walk_forward_kwargs(self, n_states: int) -> dict:
+        kwargs: dict = {"n_states": n_states}
+        if self.pca_variance is not None:
+            kwargs["pca_variance"] = self.pca_variance
+        kwargs["saliency_threshold"] = self.saliency_threshold
+        return kwargs
+
+    def engine_info_extras(self, *, warmup_bars: int | None = None, eng: object = None) -> dict:
+        extras: dict = {
+            "caveat": "HMM states sorted by mean return; labels may swap on re-fit",
+        }
+        if warmup_bars is not None:
+            extras["warmup_bars"] = warmup_bars
+        if eng is not None and hasattr(eng, "_last_saliency"):
+            extras["feature_saliency"] = eng._last_saliency
+            extras["selected_features"] = eng._last_selected_features
+        return extras
 
 
 def _build_registry() -> dict[str, tuple[type, type]]:

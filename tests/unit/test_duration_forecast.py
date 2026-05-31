@@ -233,10 +233,11 @@ class TestPipelineIntegration:
     def test_pipeline_with_duration_forecast_flag(self, btc_csv):
         """pipeline.run(duration_forecast=True) → output contains duration_forecast key."""
         from hmm_futures_analysis.data_processing.csv_auto_detect import load_from_csv
+        from hmm_futures_analysis.regime.engine_protocol import ThresholdConfig
         from hmm_futures_analysis.regime.pipeline import run as pipeline_run
 
         prices = load_from_csv(btc_csv)
-        result = pipeline_run(prices, source="test", engine="threshold", duration_forecast=True)
+        result = pipeline_run(prices, source="test", engine_config=ThresholdConfig(), duration_forecast=True)
 
         assert "duration_forecast" in result
         df = result["duration_forecast"]
@@ -248,10 +249,11 @@ class TestPipelineIntegration:
     def test_pipeline_default_no_duration_forecast(self, btc_csv):
         """pipeline.run() without flag → no duration_forecast key."""
         from hmm_futures_analysis.data_processing.csv_auto_detect import load_from_csv
+        from hmm_futures_analysis.regime.engine_protocol import ThresholdConfig
         from hmm_futures_analysis.regime.pipeline import run as pipeline_run
 
         prices = load_from_csv(btc_csv)
-        result = pipeline_run(prices, source="test", engine="threshold")
+        result = pipeline_run(prices, source="test", engine_config=ThresholdConfig())
 
         assert "duration_forecast" not in result
 
@@ -397,7 +399,6 @@ class TestFitCoxPH:
     def test_coefficient_recovery(self):
         """Synthetic data with known covariate effects → coefficient recovery."""
         from hmm_futures_analysis.regime.duration_forecast import (
-            _build_spell_covariates,
             _extract_spells,
             _fit_coxph,
         )
@@ -509,11 +510,12 @@ class TestPipelineCoxIntegration:
     def test_pipeline_cox_produces_cox_fields(self, btc_csv):
         """pipeline.run(duration_model='cox') → output has both Weibull and Cox fields."""
         from hmm_futures_analysis.data_processing.csv_auto_detect import load_from_csv
+        from hmm_futures_analysis.regime.engine_protocol import ThresholdConfig
         from hmm_futures_analysis.regime.pipeline import run as pipeline_run
 
         prices = load_from_csv(btc_csv)
         result = pipeline_run(
-            prices, source="test", engine="threshold",
+            prices, source="test", engine_config=ThresholdConfig(),
             duration_forecast=True, duration_model="cox",
         )
 
@@ -528,11 +530,12 @@ class TestPipelineCoxIntegration:
     def test_pipeline_weibull_no_cox_fields(self, btc_csv):
         """pipeline.run(duration_model='weibull') → no Cox fields (backward compat)."""
         from hmm_futures_analysis.data_processing.csv_auto_detect import load_from_csv
+        from hmm_futures_analysis.regime.engine_protocol import ThresholdConfig
         from hmm_futures_analysis.regime.pipeline import run as pipeline_run
 
         prices = load_from_csv(btc_csv)
         result = pipeline_run(
-            prices, source="test", engine="threshold",
+            prices, source="test", engine_config=ThresholdConfig(),
             duration_forecast=True, duration_model="weibull",
         )
 
