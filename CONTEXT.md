@@ -5,7 +5,7 @@ Detect market regimes (Bull/Bear/Sideways) using threshold-based classification 
 ## Language
 
 **Engine**:
-A self-contained analysis pipeline that produces a full output block (regime classification, transition matrix, forecasts, walk-forward backtest) from a single methodology. Three engines exist: `threshold` (fast, close-only), `messina` (HMM with 19 Messina features), `hmm` (HMM with ~50 generic features). The user selects one per invocation.
+A self-contained analysis pipeline that produces a full output block (regime classification, transition matrix, forecasts, walk-forward backtest) from a single methodology. Five engines exist: `threshold` (fast, close-only), `messina` (HMM with 19 Messina features), `hmm` (HMM with ~50 generic features), `robust_hmm` (HMM with outlier-resistant emissions via Huber IRLS or MinCovDet), and `fshmm` (HMM with per-feature saliency weights learned during EM). The user selects one per invocation.
 _Avoid_: model, mode, method, strategy
 
 **Walk-forward backtest**:
@@ -64,6 +64,18 @@ _Avoid_: probability threshold, confidence filter
 Posterior probability array over regimes, returned by HMM engines via `ClassifyResult.posteriors`. Computed from `model.predict_proba()`. When `n_states > 3`, aggregated by regime bucket (Bear/Sideways/Bull). Used by the hysteresis filter. `None` for the threshold engine.
 _Avoid_: probabilities, confidence scores
 
+**Robust HMM engine** (`robust_hmm`):
+An HMM engine that applies outlier-resistant emission estimation after standard GaussianHMM fitting. Two methods: `huber` (Huber IRLS correction of means and variances) and `mcd` (Minimum Covariance Determinant replacement of emission covariance). Opt-in via `--robust-method`. Uses the same ~50 generic features as the `hmm` engine.
+_Avoid_: robust model, outlier engine
+
+**FSHMM engine** (`fshmm`):
+Feature Saliency HMM (Adams et al. 2016). Learns per-feature saliency weights ρ during EM, automatically identifying which of the ~50 generic features are most informative for regime detection. Features with ρ < `--saliency-threshold` (default 0.5) are masked as irrelevant. Outputs `feature_saliency` and `selected_features` in `engine_info`.
+_Avoid_: saliency model, feature selection engine
+
+**Duration forecast**:
+Optional post-processing that estimates how long the current regime will persist. Two survival models: `weibull` (Weibull distribution fit to historical regime durations) and `cox` (Cox proportional hazards with realized-volatility covariate). Outputs median expected remaining days and conditional survival curve per regime. Opt-in via `--duration-forecast`.
+_Avoid_: regime length prediction, time-to-transition
+
 ## Flagged ambiguities
 
 - **"state"**: Use **regime** for the labeled market condition (Bear/Sideways/Bull) and **HMM latent state** for the raw model output index. Never use "state" alone.
@@ -81,4 +93,4 @@ _Avoid_: probabilities, confidence scores
 >
 > **Dev**: What happens if someone runs `--engine messina` on a CSV that only has close prices?
 >
-> **Domain expert**: It errors. Messina and HMM engines require OHLCV. The threshold engine is the only one that works with close-only data. If a caller passes a Series for engine=messina, `hmm_adapter.py` can synthetic-upgrade it (all columns = close), but that produces degenerate features.
+> **Domain expert**: It errors. Messina and HMM engines require OHLCV. The threshold engine is the only one that works with close-only data.

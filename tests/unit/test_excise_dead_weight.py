@@ -59,7 +59,6 @@ ALIVE_MODULES = [
     f"{PACKAGE}.cli",
     f"{PACKAGE}.regime.pipeline",
     f"{PACKAGE}.regime.walk_forward",
-    f"{PACKAGE}.regime.hmm_adapter",
     f"{PACKAGE}.regime.markov_chain",
     f"{PACKAGE}.data_processing.feature_engineering",
     f"{PACKAGE}.data_processing.messina_features",
@@ -83,21 +82,35 @@ def test_alive_module_importable(modname):
 
 # -- Package surface: __init__.py must not re-export dead symbols ----------
 
+
 def test_backtesting_init_no_dead_reexports():
     """backtesting/__init__.py must not re-export deleted modules."""
     import hmm_futures_analysis.backtesting as bt
 
-    for attr in ("analyze_performance", "detect_lookahead_bias",
-                 "validate_backtest_realism", "calculate_transaction_costs",
-                 "validate_backtest_inputs"):
-        assert not hasattr(bt, attr), f"Dead re-export still present: backtesting.{attr}"
+    for attr in (
+        "analyze_performance",
+        "detect_lookahead_bias",
+        "validate_backtest_realism",
+        "calculate_transaction_costs",
+        "validate_backtest_inputs",
+    ):
+        assert not hasattr(bt, attr), (
+            f"Dead re-export still present: backtesting.{attr}"
+        )
 
 
 def test_utils_init_no_dead_reexports():
     """utils/__init__.py must not re-export deleted config or dead types."""
     import hmm_futures_analysis.utils as utils
 
-    for attr in ("Config", "HMMConfig", "ProcessingConfig", "LoggingConfig",
-                 "load_config", "save_config", "create_default_config",
-                 "ConfigBacktestConfig"):
+    for attr in (
+        "Config",
+        "HMMConfig",
+        "ProcessingConfig",
+        "LoggingConfig",
+        "load_config",
+        "save_config",
+        "create_default_config",
+        "ConfigBacktestConfig",
+    ):
         assert not hasattr(utils, attr), f"Dead re-export still present: utils.{attr}"

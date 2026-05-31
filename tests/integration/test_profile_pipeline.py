@@ -46,6 +46,7 @@ def _make_ohlcv(prices: pd.Series) -> pd.DataFrame:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.slow
 class TestProfileThreshold:
     """Threshold engine with profile=True produces a timing dict."""
 
@@ -85,6 +86,7 @@ class TestProfileThreshold:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.slow
 class TestProfileHMMClassify:
     """HMM engine with profile=True tracks per-call classify timing."""
 
@@ -138,6 +140,7 @@ class TestProfileHMMClassify:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.slow
 class TestProfileBICSelection:
     """BIC state selection with profile=True tracks per-state-count timing."""
 
@@ -197,6 +200,7 @@ class TestProfileBICSelection:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.slow
 class TestProfileWalkForwardBacktest:
     """Walk-forward backtest phase timing for HMM engines."""
 
@@ -242,6 +246,7 @@ class TestProfileWalkForwardBacktest:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.slow
 class TestProfileAllEngines:
     """Every engine produces a valid timing structure with profile=True."""
 

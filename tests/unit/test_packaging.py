@@ -1,8 +1,8 @@
 """Tests for package structure, importability, and distribution."""
+
 import subprocess
 
 import pytest
-
 
 
 class TestPackageImport:
@@ -39,10 +39,14 @@ class TestConsoleScript:
             console = eps.select(group="console_scripts", name="hmm-regime")
             found = list(console)
         else:
-            found = [ep for ep in eps.get("console_scripts", []) if ep.name == "hmm-regime"]
+            found = [
+                ep for ep in eps.get("console_scripts", []) if ep.name == "hmm-regime"
+            ]
         if not found:
             pytest.skip("hmm-regime entry point not registered (package not installed)")
-        assert len(found) == 1, f"Expected exactly 1 hmm-regime entry point, got {len(found)}"
+        assert len(found) == 1, (
+            f"Expected exactly 1 hmm-regime entry point, got {len(found)}"
+        )
         ep = found[0]
         assert "hmm_futures_analysis.cli:main" in ep.value
 
@@ -53,7 +57,7 @@ class TestRunSh:
     def test_run_sh_exists_and_executable(self):
         from pathlib import Path
 
-        run_sh = Path(__file__).resolve().parent.parent / "run.sh"
+        run_sh = Path(__file__).resolve().parent.parent.parent / "run.sh"
         assert run_sh.exists(), "run.sh not found at repo root"
         assert run_sh.stat().st_mode & 0o111, "run.sh is not executable"
 
@@ -62,12 +66,12 @@ class TestRunSh:
 
         import json
 
-        run_sh = str(Path(__file__).resolve().parent.parent / "run.sh")
+        run_sh = str(Path(__file__).resolve().parent.parent.parent / "run.sh")
         result = subprocess.run(
             [run_sh, "--csv", btc_csv, "--json"],
             capture_output=True,
             text=True,
-            cwd=str(Path(__file__).resolve().parent.parent),
+            cwd=str(Path(__file__).resolve().parent.parent.parent),
         )
         assert result.returncode == 0, f"run.sh failed: {result.stderr}"
         data = json.loads(result.stdout)

@@ -2,6 +2,7 @@
 import json
 
 from tests.conftest import run_regime
+import pytest
 
 # Required top-level keys in the JSON contract (v0.2.0)
 REQUIRED_KEYS = [
@@ -13,6 +14,7 @@ REQUIRED_KEYS = [
 ]
 
 
+@pytest.mark.slow
 class TestJSONContract:
     """Validate JSON output schema against the regime contract."""
 
@@ -122,6 +124,7 @@ class TestJSONContract:
         assert "OHLCV" in data["error"]
 
 
+@pytest.mark.slow
 class TestContractErrorHandling:
     """Test error handling in JSON mode."""
 

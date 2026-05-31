@@ -23,6 +23,7 @@ from hmm_futures_analysis.regime.walk_forward import walk_forward_backtest
 from hmm_futures_analysis.data_processing.csv_auto_detect import load_from_csv
 
 
+@pytest.mark.slow
 class TestThresholdPipeline:
     """Test threshold-based regime classification pipeline."""
 
@@ -108,6 +109,7 @@ class TestThresholdPipeline:
         assert "bull" in persistence
 
 
+@pytest.mark.slow
 class TestPipelineRunInputValidation:
     """Input validation tests for pipeline.run()."""
 
@@ -225,6 +227,7 @@ class TestPipelineRunInputValidation:
             pipeline_run(prices, source="test", engine="hmm")
 
 
+@pytest.mark.slow
 class TestWalkForwardBacktest:
     """Tests for refactored walk_forward_backtest with discrete trades."""
 
@@ -268,6 +271,7 @@ class TestWalkForwardBacktest:
         assert np.isnan(result["total_return"])
 
 
+@pytest.mark.slow
 class TestHmmWalkForward:
     """Tests for HMM-based walk-forward backtest engines."""
 
@@ -337,6 +341,7 @@ class TestHmmWalkForward:
             assert key in result, f"Missing key: {key}"
 
 
+@pytest.mark.slow
 class TestPipelineRunEngine:
     """Tests for pipeline.run() with engine parameter."""
 
@@ -392,6 +397,7 @@ class TestPipelineRunEngine:
         assert wf["n_trades"] > 0
 
 
+@pytest.mark.slow
 class TestPipelineHelpers:
     """Unit tests for pipeline private helpers."""
 
@@ -438,6 +444,7 @@ class TestPipelineHelpers:
         assert _nan_to_none(0.0) == 0.0
 
 
+@pytest.mark.slow
 class TestPipelineEngineTopLevelStats:
     """Top-level stats must reflect the chosen engine, not always threshold."""
 

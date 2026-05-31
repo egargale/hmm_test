@@ -7,6 +7,7 @@ import pytest
 from tests.conftest import run_regime
 
 
+@pytest.mark.slow
 class TestRunRegimeTimeout:
     """Verify the subprocess timeout guard in run_regime()."""
 

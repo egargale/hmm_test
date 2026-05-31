@@ -17,6 +17,7 @@ def run_regime(*args):
     return subprocess.run(cmd, capture_output=True, text=True, cwd=str(ROOT))
 
 
+@pytest.mark.slow
 class TestProtocolConformance:
     """Each engine class satisfies the RegimeEngine protocol."""
 
@@ -42,6 +43,7 @@ class TestProtocolConformance:
         assert isinstance(engine, RegimeEngine)
 
 
+@pytest.mark.slow
 class TestThresholdEngine:
     """ThresholdEngine classify returns expected regime indices."""
 
@@ -97,6 +99,7 @@ class TestThresholdEngine:
         assert result.regime == 1
 
 
+@pytest.mark.slow
 class TestHMMGenericEngine:
     """HMMGenericEngine precompute and classify."""
 
@@ -170,6 +173,7 @@ class TestHMMGenericEngine:
         assert result.means.shape[0] == 4
 
 
+@pytest.mark.slow
 class TestHMMMMessinaEngine:
     """HMMMMessinaEngine precompute and classify."""
 
@@ -229,6 +233,7 @@ class TestHMMMMessinaEngine:
         assert result.means.shape[0] == 2
 
 
+@pytest.mark.slow
 class TestSelectNStates:
     """BIC-based state count selection (Issue #17)."""
 
@@ -293,6 +298,7 @@ class TestSelectNStates:
         assert result == 2
 
 
+@pytest.mark.slow
 class TestEngineRegistry:
     """ENGINE_REGISTRY maps strings to correct classes."""
 
@@ -345,6 +351,7 @@ class TestEngineRegistry:
             ENGINE_REGISTRY["invalid"]
 
 
+@pytest.mark.slow
 class TestWalkForwardWithProtocol:
     """Walk-forward backtest works with protocol-based engine dispatch."""
 
@@ -393,6 +400,7 @@ class TestWalkForwardWithProtocol:
         assert isinstance(result["n_trades"], int)
 
 
+@pytest.mark.slow
 class TestCLINStatesArg:
     """CLI --n-states accepts 'auto' and integers >= 2."""
 
@@ -421,6 +429,7 @@ class TestCLINStatesArg:
         assert proc.returncode != 0
 
 
+@pytest.mark.slow
 class TestPipelineAutoNStates:
     """Pipeline resolves n_states='auto' via BIC selection."""
 

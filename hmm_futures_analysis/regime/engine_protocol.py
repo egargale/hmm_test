@@ -1,4 +1,5 @@
 """RegimeEngine protocol, ClassifyResult, and ENGINE_REGISTRY."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -83,3 +84,7 @@ class _LazyRegistry(dict):
 
 
 ENGINE_REGISTRY: dict[str, type] = _LazyRegistry()
+
+# Engine sets derived from the registry.
+# HMM_ENGINES: engines that fit a GaussianHMM and provide posteriors.
+HMM_ENGINES: frozenset[str] = frozenset({"messina", "hmm", "robust_hmm", "fshmm"})

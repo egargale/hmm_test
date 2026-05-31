@@ -14,7 +14,7 @@ import time
 import numpy as np
 import pandas as pd
 
-from .engine_protocol import ENGINE_REGISTRY
+from .engine_protocol import ENGINE_REGISTRY, HMM_ENGINES
 from .engines._hmm_shared import select_n_states
 from .markov_chain import (
     build_transition_matrix,
@@ -26,7 +26,6 @@ from .markov_chain import (
 )
 from .walk_forward import walk_forward_backtest
 
-_HMM_ENGINES = frozenset({"messina", "hmm", "robust_hmm", "fshmm"})
 
 _STATE_NAMES = ("bear", "sideways", "bull")
 _FRAMEWORK_VERSION = "hmm_test v0.2.0"
@@ -105,7 +104,7 @@ def run(
     # --- Resolve n_states='auto' for HMM engines ---
     resolved_n_states: int = 3  # default for threshold
     if isinstance(n_states, str) and n_states == "auto":
-        if engine in _HMM_ENGINES:
+        if engine in HMM_ENGINES:
             # Need to precompute features first for BIC evaluation
             pass  # resolved below after precompute
         else:
@@ -239,7 +238,7 @@ def run(
         "robust_method": robust_method,
         "saliency_threshold": saliency_threshold,
     }
-    if engine in _HMM_ENGINES:
+    if engine in HMM_ENGINES:
         wf_kwargs["regimes"] = regimes
         wf_kwargs["posteriors"] = posteriors_all
     wf = walk_forward_backtest(prices, **wf_kwargs)

@@ -5,11 +5,7 @@ import pytest
 
 from hmm_futures_analysis.data_processing.csv_auto_detect import load_prices
 
-# conftest.py is adjacent; pull in the run_regime helper.
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from conftest import run_regime  # noqa: E402
+from tests.conftest import run_regime
 
 
 @pytest.fixture
@@ -39,17 +35,21 @@ class TestDunderAllExports:
 
     def test_load_prices_is_exported(self):
         import hmm_futures_analysis.data_processing as dp
+
         assert "load_prices" in dp.__all__
 
     def test_load_from_yfinance_not_in_all(self):
         import hmm_futures_analysis.data_processing as dp
+
         assert "load_from_yfinance" not in dp.__all__
 
     def test_load_price_series_not_in_all(self):
         import hmm_futures_analysis.data_processing as dp
+
         assert "load_price_series" not in dp.__all__
 
 
+@pytest.mark.slow
 class TestCliLoadPricesIntegration:
     """CLI main() uses load_prices internally — verifies end-to-end."""
 
@@ -58,6 +58,7 @@ class TestCliLoadPricesIntegration:
         result = run_regime("--csv", btc_csv, "--json", "--engine", "threshold")
         assert result.returncode == 0
         import json
+
         output = json.loads(result.stdout)
         assert output["source"] == btc_csv
         assert "current_regime" in output
@@ -71,16 +72,20 @@ class TestLoadPricesYfinancePath:
         # Build fake yfinance output with MultiIndex columns
         dates = pd.date_range("2024-01-01", periods=5, freq="B")
         # yfinance returns MultiIndex columns as (PriceType, Ticker)
-        fake_df = pd.DataFrame({
-            ("Close", "ES=F"): [104, 105, 106, 107, 108],
-            ("High", "ES=F"): [105, 106, 107, 108, 109],
-            ("Low", "ES=F"): [99, 100, 101, 102, 103],
-            ("Open", "ES=F"): [100, 101, 102, 103, 104],
-            ("Volume", "ES=F"): [1000, 1100, 1200, 1300, 1400],
-        }, index=dates)
+        fake_df = pd.DataFrame(
+            {
+                ("Close", "ES=F"): [104, 105, 106, 107, 108],
+                ("High", "ES=F"): [105, 106, 107, 108, 109],
+                ("Low", "ES=F"): [99, 100, 101, 102, 103],
+                ("Open", "ES=F"): [100, 101, 102, 103, 104],
+                ("Volume", "ES=F"): [1000, 1100, 1200, 1300, 1400],
+            },
+            index=dates,
+        )
         fake_df.columns = pd.MultiIndex.from_tuples(fake_df.columns)
 
         import yfinance as yf_mod
+
         monkeypatch.setattr(yf_mod, "download", lambda *a, **kw: fake_df)
 
         prices, ohlcv, label = load_prices(ticker="ES=F")
@@ -105,16 +110,20 @@ class TestLoadPricesMinRowsGuard:
     def test_raises_when_yfinance_returns_fewer_than_2_rows(self, monkeypatch):
         """Single-row yfinance result raises ValueError about needing 2 rows."""
         dates = pd.date_range("2024-01-01", periods=1, freq="B")
-        fake_df = pd.DataFrame({
-            ("Close", "X"): [100],
-            ("High", "X"): [101],
-            ("Low", "X"): [99],
-            ("Open", "X"): [99],
-            ("Volume", "X"): [1000],
-        }, index=dates)
+        fake_df = pd.DataFrame(
+            {
+                ("Close", "X"): [100],
+                ("High", "X"): [101],
+                ("Low", "X"): [99],
+                ("Open", "X"): [99],
+                ("Volume", "X"): [1000],
+            },
+            index=dates,
+        )
         fake_df.columns = pd.MultiIndex.from_tuples(fake_df.columns)
 
         import yfinance as yf_mod
+
         monkeypatch.setattr(yf_mod, "download", lambda *a, **kw: fake_df)
 
         with pytest.raises(ValueError, match="at least 2 rows"):

@@ -12,38 +12,17 @@ import pandas as pd
 from hmmlearn import hmm
 
 from ...data_processing.feature_engineering import add_features
+from ...data_processing.messina_features import MESSINA_FEATURE_COLUMNS
 from ...data_processing.messina_features import add_messina_features
 
 if TYPE_CHECKING:
     from sklearn.decomposition import PCA
 
-_MESSINA_COLS = [
-    "log_ret",
-    "sma_200",
-    "sma_13",
-    "atr_20",
-    "adx_14",
-    "adx_inflection",
-    "di_plus_14",
-    "di_minus_14",
-    "di_spread",
-    "vstop",
-    "vstop_trend",
-    "vstop_interaction",
-    "price_sma200_ratio",
-    "price_vstop_ratio",
-    "price_vstop_gap_atr",
-    "sma200_distance_atr",
-    "volume_ratio",
-    "true_range_pct",
-    "kdj_j",
-]
-
 
 def engineer_features(data: pd.DataFrame, use_messina: bool) -> pd.DataFrame:
     if use_messina:
         df = add_messina_features(data)
-        cols = [c for c in _MESSINA_COLS if c in df.columns]
+        cols = [c for c in MESSINA_FEATURE_COLUMNS if c in df.columns]
     else:
         df = add_features(data, min_periods=10)
         df = df.dropna(axis=1, how="all")

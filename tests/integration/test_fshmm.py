@@ -87,6 +87,7 @@ def _make_signal_noise_data(
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.slow
 class TestRegistry:
     """ENGINE_REGISTRY["fshmm"] returns FSHMMEngine."""
 
@@ -99,6 +100,7 @@ class TestRegistry:
         assert ENGINE_REGISTRY["fshmm"] is FSHMMEngine
 
 
+@pytest.mark.slow
 class TestClassifyResultExtension:
     """fshmm populates feature_saliency; other engines leave it None."""
 
@@ -124,6 +126,7 @@ class TestClassifyResultExtension:
         assert result.selected_features is None
 
 
+@pytest.mark.slow
 class TestNStatesAuto:
     """BIC-based state count selection works with fshmm."""
 
@@ -136,6 +139,7 @@ class TestNStatesAuto:
         assert result.regime in (0, 1, 2)
 
 
+@pytest.mark.slow
 class TestPCASupport:
     """pca_variance works with fshmm."""
 
@@ -153,6 +157,7 @@ class TestPCASupport:
         assert result.feature_saliency.ndim == 1
 
 
+@pytest.mark.slow
 class TestPipelineIntegration:
     """pipeline.run() with engine='fshmm' produces valid output."""
 
@@ -177,6 +182,7 @@ class TestPipelineIntegration:
         assert "walk_forward" in result
 
 
+@pytest.mark.slow
 class TestCLIIntegration:
     """--engine fshmm runs end-to-end."""
 
@@ -214,6 +220,7 @@ class TestCLIIntegration:
             pytest.fail("--saliency-threshold not recognized")
 
 
+@pytest.mark.slow
 class TestThresholdBehavior:
     """Different saliency_threshold values produce different selected_features."""
 
@@ -235,6 +242,7 @@ class TestThresholdBehavior:
         )
 
 
+@pytest.mark.slow
 class TestConvergence:
     """Saliency weights stabilize within tolerance."""
 
@@ -254,6 +262,7 @@ class TestConvergence:
         assert np.all(rho > 0) and np.all(rho < 1)
 
 
+@pytest.mark.slow
 class TestEngineIndependence:
     """fshmm produces different regime output than hmm for same input."""
 
@@ -272,6 +281,7 @@ class TestEngineIndependence:
         assert not np.allclose(result_fshmm.means, result_hmm.means, atol=1e-6)
 
 
+@pytest.mark.slow
 class TestTracerBullet:
     """Tracer bullet: FSHMM learns which features are signal vs noise."""
 

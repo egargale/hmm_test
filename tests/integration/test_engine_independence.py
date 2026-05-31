@@ -43,6 +43,7 @@ def btc_prices(btc_csv):
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.slow
 class TestEngineIndependence:
     """Assert the three regime engines produce genuinely different outputs."""
 

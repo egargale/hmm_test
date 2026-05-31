@@ -18,14 +18,13 @@ import pandas as pd
 
 from ..backtesting.performance_metrics import calculate_drawdown_metrics
 from ..backtesting.performance_metrics import calculate_sharpe_ratio
-from .engine_protocol import ENGINE_REGISTRY
+from .engine_protocol import ENGINE_REGISTRY, HMM_ENGINES
 
 if TYPE_CHECKING:
     from .engine_protocol import RegimeEngine
 
 _STATE_MAP = {0: -1, 1: 0, 2: 1}  # bear=short, sideways=flat, bull=long
 _VALID_ENGINES = frozenset(ENGINE_REGISTRY.keys())
-_HMM_ENGINES = frozenset({"messina", "hmm", "robust_hmm", "fshmm"})
 
 
 def _empty_result() -> dict:
@@ -88,7 +87,7 @@ def _resolve_engine(
             raise ValueError(
                 f"engine must be one of {sorted(_VALID_ENGINES)}, got {engine!r}"
             )
-        if engine in _HMM_ENGINES and ohlcv is None:
+        if engine in HMM_ENGINES and ohlcv is None:
             raise ValueError(
                 f"engine {engine!r} requires OHLCV data "
                 "(open/high/low/close/volume). Pass ohlcv= DataFrame."

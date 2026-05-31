@@ -53,6 +53,7 @@ def _make_contaminated_data(n_per_state=200, n_features=2, n_outliers=10, seed=4
     return X_clean, X_dirty, means_true
 
 
+@pytest.mark.slow
 class TestRegistry:
     def test_registry_contains_robust_hmm(self):
         assert "robust_hmm" in ENGINE_REGISTRY
@@ -63,6 +64,7 @@ class TestRegistry:
         assert ENGINE_REGISTRY["robust_hmm"] is RobustHMMEngine
 
 
+@pytest.mark.slow
 class TestProtocolCompliance:
     def test_robust_hmm_engine_satisfies_protocol(self):
         from hmm_futures_analysis.regime.engines.robust_hmm import RobustHMMEngine
@@ -78,6 +80,7 @@ class TestProtocolCompliance:
         assert callable(getattr(eng, "classify", None))
 
 
+@pytest.mark.slow
 class TestHuberRobustness:
     """Robust emission params should resist outlier influence."""
 
@@ -139,6 +142,7 @@ class TestHuberRobustness:
         )
 
 
+@pytest.mark.slow
 class TestMCDRobustness:
     """MinCovDet robust estimation should resist outlier influence."""
 
@@ -190,6 +194,7 @@ class TestMCDRobustness:
         )
 
 
+@pytest.mark.slow
 class TestMCDFallback:
     """MCD should fall back gracefully when a state has too few points."""
 
@@ -218,6 +223,7 @@ class TestMCDFallback:
         assert np.all(np.isfinite(model.means_))
 
 
+@pytest.mark.slow
 class TestBICCompatibility:
     """robust_hmm should work with n_states='auto' (BIC selection)."""
 
@@ -234,6 +240,7 @@ class TestBICCompatibility:
         assert result["engine_info"]["n_states"] >= 2
 
 
+@pytest.mark.slow
 class TestPCACompatibility:
     """Robust correction should work in PCA-whitened space."""
 
@@ -248,6 +255,7 @@ class TestPCACompatibility:
         assert result["engine"] == "robust_hmm"
 
 
+@pytest.mark.slow
 class TestEngineIndependence:
     """robust_hmm differs from hmm on contaminated data, similar on clean."""
 
@@ -282,6 +290,7 @@ class TestEngineIndependence:
         assert result_mcd["engine_info"].get("robust_method") == "mcd"
 
 
+@pytest.mark.slow
 class TestCLIIntegration:
     """--engine robust_hmm --robust-method huber runs end-to-end."""
 

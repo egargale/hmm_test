@@ -2,8 +2,10 @@
 import json
 
 from tests.conftest import run_regime
+import pytest
 
 
+@pytest.mark.slow
 class TestMessinaCLI:
     def test_engine_messina_csv_with_ohlcv_succeeds(self, btc_csv):
         """BTC.csv has OHLCV columns, so messina should work."""

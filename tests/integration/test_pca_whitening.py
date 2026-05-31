@@ -43,6 +43,7 @@ def _make_ohlcv(n: int = 400, seed: int = 42):
 # ===================================================================
 
 
+@pytest.mark.slow
 class TestFitHMMOnSlicePCA:
     """_fit_hmm_on_slice applies PCA whitening when pca_variance is set."""
 
@@ -95,6 +96,7 @@ class TestFitHMMOnSlicePCA:
 # ===================================================================
 
 
+@pytest.mark.slow
 class TestHMMGenericEnginePCA:
     """HMMGenericEngine with pca_variance produces valid regimes."""
 
@@ -154,6 +156,7 @@ class TestHMMGenericEnginePCA:
 # ===================================================================
 
 
+@pytest.mark.slow
 class TestHMMMMessinaEnginePCA:
     """HMMMMessinaEngine backward compat — pca_variance defaults to None."""
 
@@ -185,6 +188,7 @@ class TestHMMMMessinaEnginePCA:
 # ===================================================================
 
 
+@pytest.mark.slow
 class TestSelectNStatesPCA:
     """BIC-based state selection works in PCA-reduced space."""
 
@@ -223,6 +227,7 @@ class TestSelectNStatesPCA:
 # ===================================================================
 
 
+@pytest.mark.slow
 class TestWalkForwardPCA:
     """walk_forward_backtest accepts and threads pca_variance to engine."""
 
@@ -279,6 +284,7 @@ class TestWalkForwardPCA:
 # ===================================================================
 
 
+@pytest.mark.slow
 class TestPipelinePCA:
     """pipeline.run accepts and threads pca_variance through to engine + wf."""
 
