@@ -16,7 +16,7 @@ from hmm_futures_analysis.regime.pipeline import run as pipeline_run
 # ---------------------------------------------------------------------------
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def btc_ohlcv(btc_csv):
     """Load BTC OHLCV DataFrame for HMM engine tests."""
     df = pd.read_csv(btc_csv, parse_dates=["Date"], index_col="Date")
@@ -32,7 +32,7 @@ def btc_ohlcv(btc_csv):
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def btc_prices(btc_csv):
     """Load BTC close prices as pd.Series via the canonical loader."""
     return load_from_csv(btc_csv)
@@ -60,19 +60,12 @@ class TestEngineIndependence:
 
     # -- Transition matrix --------------------------------------------------
 
-    def test_transition_matrix_differs_threshold_vs_hmm(
-        self, btc_prices, btc_ohlcv
-    ):
+    def test_transition_matrix_differs_threshold_vs_hmm(self, btc_prices, btc_ohlcv):
         """HMM engine produces a different transition matrix than threshold."""
         common = dict(source="test", min_train=300)
         result_threshold = pipeline_run(btc_prices, engine="threshold", **common)
-        result_hmm = pipeline_run(
-            btc_prices, engine="hmm", ohlcv=btc_ohlcv, **common
-        )
-        assert (
-            result_hmm["transition_matrix"]
-            != result_threshold["transition_matrix"]
-        )
+        result_hmm = pipeline_run(btc_prices, engine="hmm", ohlcv=btc_ohlcv, **common)
+        assert result_hmm["transition_matrix"] != result_threshold["transition_matrix"]
 
     def test_transition_matrix_differs_threshold_vs_messina(
         self, btc_prices, btc_ohlcv
@@ -84,8 +77,7 @@ class TestEngineIndependence:
             btc_prices, engine="messina", ohlcv=btc_ohlcv, **common
         )
         assert (
-            result_messina["transition_matrix"]
-            != result_threshold["transition_matrix"]
+            result_messina["transition_matrix"] != result_threshold["transition_matrix"]
         )
 
     # -- Signal -------------------------------------------------------------
@@ -94,9 +86,7 @@ class TestEngineIndependence:
         """Signal from threshold must differ from hmm engine."""
         common = dict(source="test", min_train=300)
         result_threshold = pipeline_run(btc_prices, engine="threshold", **common)
-        result_hmm = pipeline_run(
-            btc_prices, engine="hmm", ohlcv=btc_ohlcv, **common
-        )
+        result_hmm = pipeline_run(btc_prices, engine="hmm", ohlcv=btc_ohlcv, **common)
         assert result_threshold["signal"] != result_hmm["signal"]
 
     def test_signal_differs_threshold_vs_messina(self, btc_prices, btc_ohlcv):
@@ -110,27 +100,18 @@ class TestEngineIndependence:
 
     # -- Regime counts ------------------------------------------------------
 
-    def test_regime_counts_differs_threshold_vs_hmm(
-        self, btc_prices, btc_ohlcv
-    ):
+    def test_regime_counts_differs_threshold_vs_hmm(self, btc_prices, btc_ohlcv):
         """Regime counts from threshold must differ from hmm engine."""
         common = dict(source="test", min_train=300)
         result_threshold = pipeline_run(btc_prices, engine="threshold", **common)
-        result_hmm = pipeline_run(
-            btc_prices, engine="hmm", ohlcv=btc_ohlcv, **common
-        )
+        result_hmm = pipeline_run(btc_prices, engine="hmm", ohlcv=btc_ohlcv, **common)
         assert result_threshold["regime_counts"] != result_hmm["regime_counts"]
 
-    def test_regime_counts_differs_threshold_vs_messina(
-        self, btc_prices, btc_ohlcv
-    ):
+    def test_regime_counts_differs_threshold_vs_messina(self, btc_prices, btc_ohlcv):
         """Regime counts from threshold must differ from messina engine."""
         common = dict(source="test", min_train=300)
         result_threshold = pipeline_run(btc_prices, engine="threshold", **common)
         result_messina = pipeline_run(
             btc_prices, engine="messina", ohlcv=btc_ohlcv, **common
         )
-        assert (
-            result_threshold["regime_counts"]
-            != result_messina["regime_counts"]
-        )
+        assert result_threshold["regime_counts"] != result_messina["regime_counts"]

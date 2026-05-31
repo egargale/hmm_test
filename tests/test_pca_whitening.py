@@ -13,6 +13,7 @@ import pytest
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_generic_features(n_rows: int = 300, n_features: int = 50, seed: int = 42):
     """Synthetic high-dimensional feature matrix for generic-engine tests."""
     rng = np.random.default_rng(seed)
@@ -41,6 +42,7 @@ def _make_ohlcv(n: int = 400, seed: int = 42):
 # Tracer bullet 1: _fit_hmm_on_slice with PCA reduces dimensionality
 # ===================================================================
 
+
 class TestFitHMMOnSlicePCA:
     """_fit_hmm_on_slice applies PCA whitening when pca_variance is set."""
 
@@ -51,7 +53,9 @@ class TestFitHMMOnSlicePCA:
 
         features = _make_generic_features(n_rows=300, n_features=50)
         model, center, scale, pca_n, pca_transform = _fit_hmm_on_slice(
-            features, n_states=3, pca_variance=0.95,
+            features,
+            n_states=3,
+            pca_variance=0.95,
         )
         # pca_n should be less than original feature count
         assert isinstance(pca_n, int)
@@ -65,7 +69,9 @@ class TestFitHMMOnSlicePCA:
         from hmm_futures_analysis.regime.engines._hmm_shared import _fit_hmm_on_slice
 
         features = _make_generic_features(n_rows=300, n_features=10)
-        model, center, scale, pca_n, pca_transform = _fit_hmm_on_slice(features, n_states=3)
+        model, center, scale, pca_n, pca_transform = _fit_hmm_on_slice(
+            features, n_states=3
+        )
         assert pca_n is None
         assert pca_transform is None
         assert model.means_.shape[1] == 10
@@ -75,8 +81,12 @@ class TestFitHMMOnSlicePCA:
         from hmm_futures_analysis.regime.engines._hmm_shared import _fit_hmm_on_slice
 
         features = _make_generic_features(n_rows=300, n_features=50)
-        _, _, _, pca_n_95, _ = _fit_hmm_on_slice(features, n_states=3, pca_variance=0.95)
-        _, _, _, pca_n_50, _ = _fit_hmm_on_slice(features, n_states=3, pca_variance=0.50)
+        _, _, _, pca_n_95, _ = _fit_hmm_on_slice(
+            features, n_states=3, pca_variance=0.95
+        )
+        _, _, _, pca_n_50, _ = _fit_hmm_on_slice(
+            features, n_states=3, pca_variance=0.50
+        )
         assert pca_n_50 < pca_n_95
 
 
@@ -84,10 +94,11 @@ class TestFitHMMOnSlicePCA:
 # Tracer bullet 3: HMMGenericEngine with PCA classifies correctly
 # ===================================================================
 
+
 class TestHMMGenericEnginePCA:
     """HMMGenericEngine with pca_variance produces valid regimes."""
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def ohlcv_data(self):
         return _make_ohlcv(n=400)
 
@@ -142,10 +153,11 @@ class TestHMMGenericEnginePCA:
 # Tracer bullet 4: HMMMMessinaEngine with PCA is unaffected by default
 # ===================================================================
 
+
 class TestHMMMMessinaEnginePCA:
     """HMMMMessinaEngine backward compat — pca_variance defaults to None."""
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def ohlcv_data(self):
         return _make_ohlcv(n=400)
 
@@ -172,10 +184,11 @@ class TestHMMMMessinaEnginePCA:
 # Tracer bullet 7: select_n_states with PCA
 # ===================================================================
 
+
 class TestSelectNStatesPCA:
     """BIC-based state selection works in PCA-reduced space."""
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def high_dim_3state_features(self):
         """3-state synthetic data in 50 dimensions."""
         rng = np.random.default_rng(42)
@@ -190,7 +203,9 @@ class TestSelectNStatesPCA:
         from hmm_futures_analysis.regime.engines._hmm_shared import select_n_states
 
         result = select_n_states(
-            high_dim_3state_features, max_states=6, pca_variance=0.95,
+            high_dim_3state_features,
+            max_states=6,
+            pca_variance=0.95,
         )
         assert isinstance(result, int)
         assert 2 <= result <= 6
@@ -207,10 +222,11 @@ class TestSelectNStatesPCA:
 # Tracer bullet 8: walk_forward_backtest threads pca_variance
 # ===================================================================
 
+
 class TestWalkForwardPCA:
     """walk_forward_backtest accepts and threads pca_variance to engine."""
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def prices_and_ohlcv(self):
         rng = np.random.default_rng(42)
         n = 500
@@ -235,7 +251,10 @@ class TestWalkForwardPCA:
 
         prices, ohlcv = prices_and_ohlcv
         result = walk_forward_backtest(
-            prices, engine="hmm", ohlcv=ohlcv, min_train=100,
+            prices,
+            engine="hmm",
+            ohlcv=ohlcv,
+            min_train=100,
             pca_variance=0.95,
         )
         assert "sharpe" in result
@@ -247,7 +266,10 @@ class TestWalkForwardPCA:
 
         prices, ohlcv = prices_and_ohlcv
         result = walk_forward_backtest(
-            prices, engine="hmm", ohlcv=ohlcv, min_train=100,
+            prices,
+            engine="hmm",
+            ohlcv=ohlcv,
+            min_train=100,
         )
         assert "sharpe" in result
 
@@ -256,10 +278,11 @@ class TestWalkForwardPCA:
 # Tracer bullet 9: pipeline.run threads pca_variance through
 # ===================================================================
 
+
 class TestPipelinePCA:
     """pipeline.run accepts and threads pca_variance through to engine + wf."""
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def prices_and_ohlcv(self):
         rng = np.random.default_rng(42)
         n = 500
@@ -284,7 +307,10 @@ class TestPipelinePCA:
 
         prices, ohlcv = prices_and_ohlcv
         output = pipeline_run(
-            prices, source="test", engine="hmm", ohlcv=ohlcv,
+            prices,
+            source="test",
+            engine="hmm",
+            ohlcv=ohlcv,
             pca_variance=0.95,
         )
         assert "engine_info" in output
@@ -296,6 +322,9 @@ class TestPipelinePCA:
 
         prices, ohlcv = prices_and_ohlcv
         output = pipeline_run(
-            prices, source="test", engine="hmm", ohlcv=ohlcv,
+            prices,
+            source="test",
+            engine="hmm",
+            ohlcv=ohlcv,
         )
         assert "engine_info" in output

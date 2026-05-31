@@ -36,7 +36,7 @@ def run_regime(*args, timeout=CLI_TIMEOUT):
     return result
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def btc_csv():
     """Path to BTC.csv test data."""
     p = ROOT / "test_data" / "BTC.csv"
@@ -45,7 +45,7 @@ def btc_csv():
     return str(p)
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def futures_csv():
     """Path to test_futures.csv test data."""
     p = ROOT / "test_data" / "test_futures.csv"
@@ -54,7 +54,7 @@ def futures_csv():
     return str(p)
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def sample_ohlcv():
     """Load SPY OHLCV sample for fast, realistic HMM tests."""
     p = ROOT / "test_data" / "SPY.csv"

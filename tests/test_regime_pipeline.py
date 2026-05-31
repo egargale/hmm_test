@@ -1,4 +1,5 @@
 """Integration tests for the regime detection pipeline."""
+
 import math
 
 import numpy as np
@@ -13,7 +14,11 @@ from hmm_futures_analysis.regime.markov_chain import (
     compute_stationary_distribution,
     forecast_n_steps,
 )
-from hmm_futures_analysis.regime.pipeline import _nan_to_none, _probs_to_dict, run as pipeline_run
+from hmm_futures_analysis.regime.pipeline import (
+    _nan_to_none,
+    _probs_to_dict,
+    run as pipeline_run,
+)
 from hmm_futures_analysis.regime.walk_forward import walk_forward_backtest
 from hmm_futures_analysis.data_processing.csv_auto_detect import load_from_csv
 
@@ -59,8 +64,12 @@ class TestThresholdPipeline:
         prices = load_from_csv(btc_csv)
         result = walk_forward_backtest(prices)
         expected = {
-            "sharpe", "max_drawdown", "n_trades",
-            "win_rate", "profit_factor", "total_return",
+            "sharpe",
+            "max_drawdown",
+            "n_trades",
+            "win_rate",
+            "profit_factor",
+            "total_return",
         }
         for key in expected:
             assert key in result, f"Missing key: {key}"
@@ -105,9 +114,7 @@ class TestPipelineRunInputValidation:
     @staticmethod
     def _make_series(n: int) -> pd.Series:
         dates = pd.date_range("2024-01-01", periods=n, freq="D")
-        return pd.Series(
-            [float(i) for i in range(1, n + 1)], index=dates, dtype=float
-        )
+        return pd.Series([float(i) for i in range(1, n + 1)], index=dates, dtype=float)
 
     def test_rejects_empty_series(self):
         with pytest.raises(ValueError, match="at least 2 rows"):
@@ -144,11 +151,21 @@ class TestPipelineRunInputValidation:
         result = pipeline_run(prices, source="test", engine="threshold")
         # Top-level keys
         expected_keys = {
-            "source", "engine", "dates",
-            "current_regime", "next_state_probabilities",
-            "signal", "transition_matrix", "persistence_diagonal",
-            "stationary_distribution", "regime_counts", "walk_forward",
-            "forecast", "engine_info", "framework", "disclaimer",
+            "source",
+            "engine",
+            "dates",
+            "current_regime",
+            "next_state_probabilities",
+            "signal",
+            "transition_matrix",
+            "persistence_diagonal",
+            "stationary_distribution",
+            "regime_counts",
+            "walk_forward",
+            "forecast",
+            "engine_info",
+            "framework",
+            "disclaimer",
         }
         for key in expected_keys:
             assert key in result, f"Missing required key: {key}"
@@ -179,8 +196,12 @@ class TestPipelineRunInputValidation:
         # Walk-forward has 6 keys
         wf = result["walk_forward"]
         assert set(wf.keys()) == {
-            "sharpe", "max_drawdown", "n_trades",
-            "win_rate", "profit_factor", "total_return",
+            "sharpe",
+            "max_drawdown",
+            "n_trades",
+            "win_rate",
+            "profit_factor",
+            "total_return",
         }
         assert isinstance(wf["n_trades"], int)
         # Forecast
@@ -212,8 +233,12 @@ class TestWalkForwardBacktest:
         prices = load_from_csv(btc_csv)
         result = walk_forward_backtest(prices, engine="threshold")
         expected = {
-            "sharpe", "max_drawdown", "n_trades",
-            "win_rate", "profit_factor", "total_return",
+            "sharpe",
+            "max_drawdown",
+            "n_trades",
+            "win_rate",
+            "profit_factor",
+            "total_return",
         }
         for key in expected:
             assert key in result, f"Missing key: {key}"
@@ -246,7 +271,7 @@ class TestWalkForwardBacktest:
 class TestHmmWalkForward:
     """Tests for HMM-based walk-forward backtest engines."""
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def ohlcv_small(self):
         """Small synthetic OHLCV dataset for fast HMM fitting."""
         np.random.seed(42)
@@ -284,8 +309,12 @@ class TestHmmWalkForward:
             prices, engine="hmm", ohlcv=ohlcv_small, min_train=300
         )
         expected = {
-            "sharpe", "max_drawdown", "n_trades",
-            "win_rate", "profit_factor", "total_return",
+            "sharpe",
+            "max_drawdown",
+            "n_trades",
+            "win_rate",
+            "profit_factor",
+            "total_return",
         }
         for key in expected:
             assert key in result, f"Missing key: {key}"
@@ -297,8 +326,12 @@ class TestHmmWalkForward:
             prices, engine="messina", ohlcv=ohlcv_small, min_train=300
         )
         expected = {
-            "sharpe", "max_drawdown", "n_trades",
-            "win_rate", "profit_factor", "total_return",
+            "sharpe",
+            "max_drawdown",
+            "n_trades",
+            "win_rate",
+            "profit_factor",
+            "total_return",
         }
         for key in expected:
             assert key in result, f"Missing key: {key}"
@@ -316,8 +349,12 @@ class TestPipelineRunEngine:
         # Walk-forward has 6 keys
         wf = result["walk_forward"]
         assert set(wf.keys()) == {
-            "sharpe", "max_drawdown", "n_trades",
-            "win_rate", "profit_factor", "total_return",
+            "sharpe",
+            "max_drawdown",
+            "n_trades",
+            "win_rate",
+            "profit_factor",
+            "total_return",
         }
 
     def test_run_rejects_invalid_engine(self, btc_csv):
@@ -404,7 +441,7 @@ class TestPipelineHelpers:
 class TestPipelineEngineTopLevelStats:
     """Top-level stats must reflect the chosen engine, not always threshold."""
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def ohlcv_pipeline(self):
         """Synthetic OHLCV for pipeline top-level stats testing."""
         np.random.seed(42)
@@ -428,9 +465,7 @@ class TestPipelineEngineTopLevelStats:
         prices = ohlcv_pipeline["close"]
         common = dict(source="test", min_train=300)
         result_threshold = pipeline_run(prices, engine="threshold", **common)
-        result_hmm = pipeline_run(
-            prices, engine="hmm", ohlcv=ohlcv_pipeline, **common
-        )
+        result_hmm = pipeline_run(prices, engine="hmm", ohlcv=ohlcv_pipeline, **common)
         assert result_hmm["transition_matrix"] != result_threshold["transition_matrix"]
 
     def test_messina_transition_matrix_differs_from_threshold(self, ohlcv_pipeline):
@@ -442,8 +477,7 @@ class TestPipelineEngineTopLevelStats:
             prices, engine="messina", ohlcv=ohlcv_pipeline, **common
         )
         assert (
-            result_messina["transition_matrix"]
-            != result_threshold["transition_matrix"]
+            result_messina["transition_matrix"] != result_threshold["transition_matrix"]
         )
 
     def test_hmm_engine_info_contains_warmup_bars(self, ohlcv_pipeline):
@@ -471,9 +505,7 @@ class TestPipelineEngineTopLevelStats:
     def test_threshold_engine_info_has_no_warmup_bars(self, ohlcv_pipeline):
         """Threshold engine does not report warmup_bars."""
         prices = ohlcv_pipeline["close"]
-        result = pipeline_run(
-            prices, engine="threshold", source="test", min_train=300
-        )
+        result = pipeline_run(prices, engine="threshold", source="test", min_train=300)
         assert "warmup_bars" not in result["engine_info"]
 
     def test_hmm_pipeline_requires_ohlcv(self, ohlcv_pipeline):

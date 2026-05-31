@@ -45,7 +45,7 @@ class TestProtocolConformance:
 class TestThresholdEngine:
     """ThresholdEngine classify returns expected regime indices."""
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def returns_series(self):
         np.random.seed(42)
         n = 100
@@ -100,7 +100,7 @@ class TestThresholdEngine:
 class TestHMMGenericEngine:
     """HMMGenericEngine precompute and classify."""
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def ohlcv_data(self):
         np.random.seed(42)
         n = 300
@@ -173,7 +173,7 @@ class TestHMMGenericEngine:
 class TestHMMMMessinaEngine:
     """HMMMMessinaEngine precompute and classify."""
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def ohlcv_data(self):
         np.random.seed(42)
         n = 400
@@ -232,7 +232,7 @@ class TestHMMMMessinaEngine:
 class TestSelectNStates:
     """BIC-based state count selection (Issue #17)."""
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def synthetic_3state_features(self):
         """3-state synthetic feature data (each state draws from a different mean)."""
         np.random.seed(42)
@@ -348,7 +348,7 @@ class TestEngineRegistry:
 class TestWalkForwardWithProtocol:
     """Walk-forward backtest works with protocol-based engine dispatch."""
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def prices(self):
         np.random.seed(42)
         n = 500
@@ -424,7 +424,7 @@ class TestCLINStatesArg:
 class TestPipelineAutoNStates:
     """Pipeline resolves n_states='auto' via BIC selection."""
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def prices_and_ohlcv(self):
         np.random.seed(42)
         n = 500
