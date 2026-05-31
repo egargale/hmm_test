@@ -149,6 +149,7 @@ def run(
             resolved_n_states = select_n_states(
                 precomputed.dropna().to_numpy(dtype=np.float64),
                 max_states=6,
+                profile=_phases if profile else False,
             )
             if profile:
                 _phases["bic_select_n_states"] = float(
@@ -178,7 +179,10 @@ def run(
             if refit_now:
                 features_slice = precomputed.iloc[:t]
                 try:
+                    t_cls_start = time.monotonic() if profile else 0.0
                     result = eng.classify(features_slice, prev_means=prev_means)
+                    if profile:
+                        _classify_times.append(time.monotonic() - t_cls_start)
                     last_regime = result.regime
                     prev_means = result.means
                     last_post = result.posteriors
@@ -308,10 +312,15 @@ def run(
 
     # --- Profiling ---
     if profile:
+        # Extract bic_detail from _phases if present (put there by select_n_states)
+        bic_detail = _phases.pop("bic_detail", None)
+
         timing: dict = {
             "total_wall_seconds": float(round(time.monotonic() - t_start, 6)),
             "phases": _phases,
         }
+        if bic_detail is not None:
+            timing["bic_detail"] = bic_detail
         if _classify_times:
             sorted_times = sorted(_classify_times)
             n_cls = len(sorted_times)

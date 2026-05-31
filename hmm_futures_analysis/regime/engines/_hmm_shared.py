@@ -211,6 +211,7 @@ def select_n_states(
     random_state: int = 42,
     n_restarts: int = 3,
     pca_variance: float | None = None,
+    profile: bool | dict = False,
 ) -> int:
     """Select optimal number of HMM states via Bayesian Information Criterion.
 
@@ -227,12 +228,17 @@ def select_n_states(
         Base random seed for reproducibility.
     n_restarts : int
         Number of random restarts per candidate state count.
+    profile : bool | dict
+        If a dict is provided, populates it with per-state-count timing
+        under key ``"bic_detail"`` — ``{k: {"total_s": float, "restarts": int}}``.
 
     Returns
     -------
     int
         Optimal number of states by BIC.
     """
+    import time as _time
+
     n = len(features)
 
     # Guard: cap max_states to avoid degenerate fits on short data
@@ -241,7 +247,10 @@ def select_n_states(
     best_bic = float("inf")
     best_k = 2
 
+    bic_detail: dict[int, dict] = {}
+
     for k in range(2, effective_max + 1):
+        k_start = _time.monotonic()
         for restart in range(n_restarts):
             seed = random_state + restart * 1000 + k
             model, center, scale, pca_n, pca_transform = _fit_hmm_on_slice(
@@ -262,6 +271,13 @@ def select_n_states(
             if bic < best_bic:
                 best_bic = bic
                 best_k = k
+        bic_detail[k] = {
+            "total_s": float(round(_time.monotonic() - k_start, 6)),
+            "restarts": n_restarts,
+        }
+
+    if isinstance(profile, dict):
+        profile["bic_detail"] = bic_detail
 
     return best_k
 
