@@ -33,6 +33,10 @@ node_modules/
 # OS specific
 .DS_Store
 
+# pi agent
+.pi/
+.pi-lens/
+
 # Task files
 # tasks.json
 # tasks/
