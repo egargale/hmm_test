@@ -109,11 +109,6 @@ def run(
         regimes = classify_regimes(returns, window=window, threshold=threshold)
         eng = resolve_engine(config)
     else:
-        if ohlcv is None:
-            raise ValueError(
-                f"engine {engine!r} requires OHLCV data "
-                "(open/high/low/close/volume). Pass ohlcv= DataFrame."
-            )
         eng_cls = ENGINE_REGISTRY[engine][0]
 
         # Precompute features (needed for BIC and for classification)
@@ -122,7 +117,9 @@ def run(
         t_pc = time.monotonic()
         try:
             precomputed = eng_temp.precompute(ohlcv)
-        except (ValueError, RuntimeError, KeyError):
+        except ValueError:
+            raise  # engine validation errors propagate directly
+        except (RuntimeError, KeyError):
             precomputed = None
         if profile:
             _phases["precompute"] = float(round(time.monotonic() - t_pc, 6))
@@ -242,7 +239,13 @@ def run(
         "features": features_label,
         "n_states": resolved_n_states,
     }
-    engine_info.update(config.engine_info_extras(warmup_bars=warmup_bars, eng=eng))
+    # Enrich via duck-typed enrich_info() on engine instances
+    if hasattr(eng, "enrich_info"):
+        engine_info.update(
+            eng.enrich_info(
+                {"warmup_bars": warmup_bars} if warmup_bars is not None else {}
+            )
+        )
 
     result = {
         "source": source,

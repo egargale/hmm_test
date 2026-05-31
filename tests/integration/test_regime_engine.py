@@ -777,63 +777,133 @@ class TestConfigWalkForwardKwargs:
         assert FSHMMConfig().is_hmm is True
 
 
-class TestConfigEngineInfoExtras:
-    """Config dataclasses produce correct engine_info extra fields."""
+class TestConfigNoEngineInfoExtras:
+    """engine_info_extras() has been removed from config dataclasses."""
 
-    def test_threshold_engine_info_extras_empty(self):
+    def test_threshold_has_no_engine_info_extras(self):
         from hmm_futures_analysis.regime.engine_protocol import ThresholdConfig
 
         cfg = ThresholdConfig()
-        assert cfg.engine_info_extras(warmup_bars=None) == {}
+        assert not hasattr(cfg, "engine_info_extras")
 
-    def test_hmm_generic_engine_info_extras_has_caveat(self):
+    def test_hmm_generic_has_no_engine_info_extras(self):
         from hmm_futures_analysis.regime.engine_protocol import HMMGenericConfig
 
         cfg = HMMGenericConfig()
-        extras = cfg.engine_info_extras(warmup_bars=252)
-        assert "caveat" in extras
-        assert "HMM states sorted by mean return" in extras["caveat"]
-        assert extras["warmup_bars"] == 252
+        assert not hasattr(cfg, "engine_info_extras")
 
-    def test_hmm_generic_no_warmup_omits_key(self):
-        from hmm_futures_analysis.regime.engine_protocol import HMMGenericConfig
-
-        cfg = HMMGenericConfig()
-        extras = cfg.engine_info_extras(warmup_bars=None)
-        assert "warmup_bars" not in extras
-        assert "caveat" in extras
-
-    def test_messina_engine_info_extras_has_caveat(self):
+    def test_messina_has_no_engine_info_extras(self):
         from hmm_futures_analysis.regime.engine_protocol import HMMMMessinaConfig
 
         cfg = HMMMMessinaConfig()
-        extras = cfg.engine_info_extras(warmup_bars=252)
-        assert "caveat" in extras
+        assert not hasattr(cfg, "engine_info_extras")
 
-    def test_robust_hmm_engine_info_extras_includes_method(self):
+    def test_robust_hmm_has_no_engine_info_extras(self):
         from hmm_futures_analysis.regime.engine_protocol import RobustHMMConfig
 
-        cfg = RobustHMMConfig(robust_method="mcd")
-        extras = cfg.engine_info_extras(warmup_bars=252)
-        assert extras["robust_method"] == "mcd"
-        assert "caveat" in extras
+        cfg = RobustHMMConfig()
+        assert not hasattr(cfg, "engine_info_extras")
 
-    def test_fshmm_engine_info_extras_no_saliency_without_engine(self):
+    def test_fshmm_has_no_engine_info_extras(self):
         from hmm_futures_analysis.regime.engine_protocol import FSHMMConfig
 
         cfg = FSHMMConfig()
-        extras = cfg.engine_info_extras(warmup_bars=252, eng=None)
-        assert "feature_saliency" not in extras
-        assert "caveat" in extras
+        assert not hasattr(cfg, "engine_info_extras")
 
-    def test_fshmm_engine_info_extras_with_saliency_engine(self):
-        from hmm_futures_analysis.regime.engine_protocol import FSHMMConfig
 
-        class FakeEngine:
-            _last_saliency = [0.1, 0.2, 0.3]
-            _last_selected_features = ["feat_a", "feat_b"]
+class TestPrecomputeValidatesOHLCV:
+    """Each HMM engine validates OHLCV input in precompute()."""
 
-        cfg = FSHMMConfig()
-        extras = cfg.engine_info_extras(warmup_bars=252, eng=FakeEngine())
-        assert extras["feature_saliency"] == [0.1, 0.2, 0.3]
-        assert extras["selected_features"] == ["feat_a", "feat_b"]
+    def test_hmm_generic_precompute_none_raises(self):
+        from hmm_futures_analysis.regime.engines.hmm_generic import HMMGenericEngine
+
+        eng = HMMGenericEngine(n_states=3)
+        with pytest.raises(ValueError, match="HMMGenericEngine"):
+            eng.precompute(None)
+
+    def test_hmm_messina_precompute_none_raises(self):
+        from hmm_futures_analysis.regime.engines.hmm_messina import HMMMMessinaEngine
+
+        eng = HMMMMessinaEngine(n_states=3)
+        with pytest.raises(ValueError, match="HMMMMessinaEngine"):
+            eng.precompute(None)
+
+    def test_robust_hmm_precompute_none_raises(self):
+        from hmm_futures_analysis.regime.engines.robust_hmm import RobustHMMEngine
+
+        eng = RobustHMMEngine(n_states=3)
+        with pytest.raises(ValueError, match="RobustHMMEngine"):
+            eng.precompute(None)
+
+    def test_fshmm_precompute_none_raises(self):
+        from hmm_futures_analysis.regime.engines.fshmm import FSHMMEngine
+
+        eng = FSHMMEngine(n_states=3)
+        with pytest.raises(ValueError, match="FSHMMEngine"):
+            eng.precompute(None)
+
+    def test_threshold_precompute_none_returns_none(self):
+        from hmm_futures_analysis.regime.engines.threshold import ThresholdEngine
+
+        eng = ThresholdEngine()
+        assert eng.precompute(None) is None
+
+
+class TestEnrichInfo:
+    """Engines that implement enrich_info() produce correct metadata."""
+
+    def test_hmm_generic_enrich_info(self):
+        from hmm_futures_analysis.regime.engines.hmm_generic import HMMGenericEngine
+
+        eng = HMMGenericEngine(n_states=3)
+        info = eng.enrich_info({})
+        assert "caveat" in info
+        assert "HMM states sorted by mean return" in info["caveat"]
+        assert "warmup_bars" not in info
+
+    def test_hmm_generic_enrich_info_with_warmup(self):
+        from hmm_futures_analysis.regime.engines.hmm_generic import HMMGenericEngine
+
+        eng = HMMGenericEngine(n_states=3)
+        info = eng.enrich_info({"warmup_bars": 252})
+        assert info["warmup_bars"] == 252
+
+    def test_hmm_messina_enrich_info(self):
+        from hmm_futures_analysis.regime.engines.hmm_messina import HMMMMessinaEngine
+
+        eng = HMMMMessinaEngine(n_states=3)
+        info = eng.enrich_info({})
+        assert "caveat" in info
+        assert "HMM states sorted by mean return" in info["caveat"]
+
+    def test_robust_hmm_enrich_info_adds_method(self):
+        from hmm_futures_analysis.regime.engines.robust_hmm import RobustHMMEngine
+
+        eng = RobustHMMEngine(n_states=3, robust_method="huber")
+        info = eng.enrich_info({})
+        assert info["robust_method"] == "huber"
+        assert "caveat" in info
+
+    def test_fshmm_enrich_info_without_saliency(self):
+        from hmm_futures_analysis.regime.engines.fshmm import FSHMMEngine
+
+        eng = FSHMMEngine(n_states=3)
+        info = eng.enrich_info({})
+        assert "caveat" in info
+        assert "feature_saliency" not in info
+
+    def test_fshmm_enrich_info_with_saliency(self):
+        from hmm_futures_analysis.regime.engines.fshmm import FSHMMEngine
+
+        eng = FSHMMEngine(n_states=3)
+        eng._last_saliency = [0.1, 0.2, 0.3]
+        eng._last_selected_features = ["feat_a", "feat_b"]
+        info = eng.enrich_info({})
+        assert info["feature_saliency"] == [0.1, 0.2, 0.3]
+        assert info["selected_features"] == ["feat_a", "feat_b"]
+
+    def test_threshold_has_no_enrich_info(self):
+        from hmm_futures_analysis.regime.engines.threshold import ThresholdEngine
+
+        eng = ThresholdEngine()
+        assert not hasattr(eng, "enrich_info")

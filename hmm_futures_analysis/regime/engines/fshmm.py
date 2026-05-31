@@ -36,7 +36,17 @@ class FSHMMEngine:
         self.random_state = random_state
 
     def precompute(self, data: pd.DataFrame) -> pd.DataFrame | None:
+        if data is None:
+            raise ValueError("FSHMMEngine requires OHLCV data for feature engineering")
         return engineer_features(data, use_messina=False)
+
+    def enrich_info(self, info: dict) -> dict:
+        result = {**info}
+        result["caveat"] = "HMM states sorted by mean return; labels may swap on re-fit"
+        if hasattr(self, "_last_saliency") and self._last_saliency is not None:
+            result["feature_saliency"] = self._last_saliency
+            result["selected_features"] = self._last_selected_features
+        return result
 
     def classify(
         self, data: pd.DataFrame, prev_means: np.ndarray | None = None

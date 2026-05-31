@@ -630,3 +630,55 @@ class TestPipelineRunEngineConfig:
         wf = result["walk_forward"]
         assert isinstance(wf["sharpe"], float)
         assert wf["n_trades"] > 0
+
+
+class TestPipelineEnrichInfo:
+    """Pipeline uses engine.enrich_info() for engine_info extras."""
+
+    def test_hmm_engine_info_has_caveat(self, ohlcv_pipeline):
+        """HMM engine_info gets caveat from enrich_info, not config."""
+        prices = ohlcv_pipeline["close"]
+        result = pipeline_run(
+            prices,
+            engine_config=HMMGenericConfig(),
+            ohlcv=ohlcv_pipeline,
+            source="test",
+            min_train=300,
+        )
+        assert "caveat" in result["engine_info"]
+        assert "HMM states sorted by mean return" in result["engine_info"]["caveat"]
+
+    def test_robust_hmm_engine_info_has_method(self, ohlcv_pipeline):
+        """RobustHMM engine_info gets robust_method from enrich_info."""
+        prices = ohlcv_pipeline["close"]
+        result = pipeline_run(
+            prices,
+            engine_config=RobustHMMConfig(robust_method="huber"),
+            ohlcv=ohlcv_pipeline,
+            source="test",
+            min_train=300,
+        )
+        assert result["engine_info"]["robust_method"] == "huber"
+        assert "caveat" in result["engine_info"]
+
+    def test_threshold_engine_info_has_no_caveat(self, btc_csv):
+        """Threshold engine_info has no caveat (no enrich_info method)."""
+        prices = load_from_csv(btc_csv)
+        result = pipeline_run(prices, source="test", engine_config=ThresholdConfig())
+        assert "caveat" not in result["engine_info"]
+
+
+class TestPipelineOHLCVFromEngine:
+    """Pipeline OHLCV validation comes from engines, not pipeline guard."""
+
+    def test_hmm_without_ohlcv_raises_engine_error(self, btc_csv):
+        """HMM engine without OHLCV raises ValueError from the engine."""
+        prices = load_from_csv(btc_csv)
+        with pytest.raises(ValueError, match="HMMGenericEngine"):
+            pipeline_run(prices, source="test", engine_config=HMMGenericConfig())
+
+    def test_messina_without_ohlcv_raises_engine_error(self, btc_csv):
+        """Messina engine without OHLCV raises ValueError from the engine."""
+        prices = load_from_csv(btc_csv)
+        with pytest.raises(ValueError, match="HMMMMessinaEngine"):
+            pipeline_run(prices, source="test", engine_config=HMMMMessinaConfig())

@@ -20,7 +20,16 @@ class HMMMMessinaEngine:
         self._pca_n_components: int | None = None
 
     def precompute(self, data: pd.DataFrame) -> pd.DataFrame | None:
+        if data is None:
+            raise ValueError(
+                "HMMMMessinaEngine requires OHLCV data for feature engineering"
+            )
         return engineer_features(data, use_messina=True)
+
+    def enrich_info(self, info: dict) -> dict:
+        result = {**info}
+        result["caveat"] = "HMM states sorted by mean return; labels may swap on re-fit"
+        return result
 
     def classify(
         self, data: pd.DataFrame, prev_means: np.ndarray | None = None

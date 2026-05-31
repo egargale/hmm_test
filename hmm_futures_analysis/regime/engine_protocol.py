@@ -43,9 +43,6 @@ class ThresholdConfig:
     def walk_forward_kwargs(self) -> dict:
         return {"window": self.window, "threshold": self.threshold}
 
-    def engine_info_extras(self, *, warmup_bars: int | None = None, eng: object = None) -> dict:
-        return {}
-
 
 @dataclass
 class HMMGenericConfig:
@@ -64,14 +61,6 @@ class HMMGenericConfig:
             kwargs["pca_variance"] = self.pca_variance
         return kwargs
 
-    def engine_info_extras(self, *, warmup_bars: int | None = None, eng: object = None) -> dict:
-        extras: dict = {
-            "caveat": "HMM states sorted by mean return; labels may swap on re-fit",
-        }
-        if warmup_bars is not None:
-            extras["warmup_bars"] = warmup_bars
-        return extras
-
 
 @dataclass
 class HMMMMessinaConfig:
@@ -89,14 +78,6 @@ class HMMMMessinaConfig:
         if self.pca_variance is not None:
             kwargs["pca_variance"] = self.pca_variance
         return kwargs
-
-    def engine_info_extras(self, *, warmup_bars: int | None = None, eng: object = None) -> dict:
-        extras: dict = {
-            "caveat": "HMM states sorted by mean return; labels may swap on re-fit",
-        }
-        if warmup_bars is not None:
-            extras["warmup_bars"] = warmup_bars
-        return extras
 
 
 @dataclass
@@ -118,15 +99,6 @@ class RobustHMMConfig:
         kwargs["robust_method"] = self.robust_method
         return kwargs
 
-    def engine_info_extras(self, *, warmup_bars: int | None = None, eng: object = None) -> dict:
-        extras: dict = {
-            "caveat": "HMM states sorted by mean return; labels may swap on re-fit",
-            "robust_method": self.robust_method,
-        }
-        if warmup_bars is not None:
-            extras["warmup_bars"] = warmup_bars
-        return extras
-
 
 @dataclass
 class FSHMMConfig:
@@ -146,17 +118,6 @@ class FSHMMConfig:
             kwargs["pca_variance"] = self.pca_variance
         kwargs["saliency_threshold"] = self.saliency_threshold
         return kwargs
-
-    def engine_info_extras(self, *, warmup_bars: int | None = None, eng: object = None) -> dict:
-        extras: dict = {
-            "caveat": "HMM states sorted by mean return; labels may swap on re-fit",
-        }
-        if warmup_bars is not None:
-            extras["warmup_bars"] = warmup_bars
-        if eng is not None and hasattr(eng, "_last_saliency"):
-            extras["feature_saliency"] = eng._last_saliency
-            extras["selected_features"] = eng._last_selected_features
-        return extras
 
 
 def _build_registry() -> dict[str, tuple[type, type]]:
