@@ -48,7 +48,17 @@ Five independent, self-contained engines. Pick one per invocation via `--engine`
 | **Robust HMM** | `robust_hmm` | ~50 (generic) | Robust GaussianHMM (Huber/MCD) on expanding window | OHLCV |
 | **FSHMM** | `fshmm` | ~50 (generic) | Feature Saliency HMM on expanding window | OHLCV |
 
-The Messina and HMM engines require OHLCV data and automatically receive it when using `--ticker`. For CSV mode, the CSV must contain open/high/low/close/volume columns.
+The Messina, HMM, robust_hmm, and fshmm engines require OHLCV data and automatically receive it when using `--ticker`. For CSV mode, the CSV must contain open/high/low/close/volume columns.
+
+## Engine Suitability
+
+| Engine | Best for | Pros | Cons |
+|--------|----------|------|------|
+| **Threshold** | Quick scans, close-only data, low latency | Fastest engine, no dependencies beyond numpy/pandas, stable labels | No posteriors (no hysteresis), no HMM dynamics, single-feature |
+| **Messina** | Short-to-mid-term trends with OHLCV | Wilder's features capture classic TA patterns, lightweight (~19 features) | Fewer features than generic HMM; OHLCV required |
+| **HMM** | Full-featured regime detection with ~50 generic features | Rich feature set (SMA, ROC, volatility, etc.), BIC auto-selection, PCA whitening | Slower than threshold; OHLCV required |
+| **Robust HMM** | Outlier-prone data (crypto, volatile equities) | Huber/MCD estimation dampens extreme observations, same rich feature set | May over-smooth legitimate regime changes in very volatile data |
+| **FSHMM** | Long histories with many features; best risk-adjusted returns | Learns which features matter per-dataset via saliency EM; automatic feature pruning | Slow (full EM per iteration), can converge to local optima; long data required |
 
 ## Arguments
 
@@ -68,6 +78,8 @@ The Messina and HMM engines require OHLCV data and automatically receive it when
 | `--duration-model` | str | `weibull` | Duration model: `weibull` (default) or `cox` (requires `lifelines`). |
 | `--robust-method` | str | `huber` | Robust estimator: `huber` (IRLS) or `mcd` (MinCovDet). Used by robust_hmm engine. |
 | `--saliency-threshold` | float | 0.5 | Features with saliency below this threshold are pruned. Used by fshmm engine. |
+| `--saliency-output` | path | — | Save fshmm saliency weights to CSV file (feature_index, saliency_weight, selected). Used by fshmm engine. |
+| `--pca-variance` | float | — | PCA variance threshold for dimensionality reduction (constructor-only, no CLI flag). E.g. `0.95` retains 95% variance. Used by HMM engines. |
 
 ### Removed flags (v0.2.0)
 
@@ -154,15 +166,20 @@ All values are floats (may be `null` for insufficient data):
 | `features` | Feature mode: `returns`, `messina`, or `generic` |
 | `n_states` | Number of HMM states (3 by default, may differ with `--n-states auto`) |
 | `warmup_bars` | Bars before walk-forward trading starts (`--min-train`) |
+| `robust_method` | Robust estimator: `huber` (IRLS) or `mcd` (MinCovDet). Used by robust_hmm engine |
 | `feature_saliency` | Per-feature saliency weights (fshmm engine only) |
 | `selected_features` | Feature names with saliency ≥ threshold (fshmm engine only) |
 | `caveat` | Present on HMM engines: warns about label instability on re-fit |
 
 ## Processing Pipeline
 
-1. **Load data** — CSV via auto-detection of date/close columns, or yfinance ticker download. For `--engine messina`/`hmm`, full OHLCV is loaded.
+1. **Load data** — CSV via auto-detection of date/close columns, or yfinance ticker download. For HMM engines (messina, hmm, robust_hmm, fshmm), full OHLCV is loaded.
 2. **Compute returns** — `pct_change().dropna()`.
-3. **Classify regimes** — Rolling sum of returns over `--window` bars vs `--threshold`.
+3. **Classify regimes** — Engine-specific logic:
+   - **threshold**: Rolling sum of returns over `--window` bars vs `--threshold`.
+   - **HMM engines** (messina, hmm, robust_hmm, fshmm): Precompute features (19 Messina or ~50 generic), fit a GaussianHMM on an expanding window up to bar `t`, then predict the regime for bar `t+1`. PCA whitening and BIC state selection apply when configured.
+   - **robust_hmm**: Uses Huber IRLS or MinCovDet (via `--robust-method`) for outlier-resistant emission estimation during HMM fitting.
+   - **fshmm**: Learns per-feature saliency weights during EM; features below `--saliency-threshold` are masked as irrelevant.
 4. **Build transition matrix** — Counts → row-normalised 3×3 probability matrix.
 5. **Compute statistics** — Stationary distribution, persistence diagonal, directional signal.
 6. **Walk-forward backtest** — No-lookahead: at each bar `t`, regime classification uses only data `[0:t)`. Discrete positions (−1, 0, +1) via `{bear: short, sideways: flat, bull: long}`. Optional **dwell-time** (`--dwell-bars`) and **hysteresis** (`--hysteresis`) filters gate position changes (AND logic — both must agree to switch). Trades fire on regime changes. Daily P&L from lagged positions × returns.
@@ -256,8 +273,8 @@ fields are `null` when insufficient data exists.
 
 ## Gotchas
 
-1. **HMM label instability**: Messina/hmm engines sort states by mean return. Labels may swap between re-fits on different data. Threshold engine labels are stable.
-2. **HMM engines need OHLCV**: `--csv` with `--engine messina` or `--engine hmm` requires open/high/low/close/volume columns. For close-only CSVs, use `--engine threshold`.
+1. **HMM label instability**: All HMM engines (messina, hmm, robust_hmm, fshmm) sort states by mean return. Labels may swap between re-fits on different data. Threshold engine labels are stable.
+2. **HMM engines need OHLCV**: `--csv` with `--engine messina`, `--engine hmm`, `--engine robust_hmm`, or `--engine fshmm` requires open/high/low/close/volume columns. For close-only CSVs, use `--engine threshold`.
 3. **Sharpe for intraday data**: The default `sqrt(252)` assumes daily bars. For intraday data, the Sharpe may be inflated.
 4. **Insufficient data**: If `len(prices) < min_train + 1`, walk_forward returns `null` for all fields except `n_trades` (0).
 5. **CSV format**: Auto-detects date and close columns. If detection fails, specify columns explicitly or reformat the CSV.
@@ -266,6 +283,8 @@ fields are `null` when insufficient data exists.
 8. **Threshold sensitivity**: Small `--threshold` values produce frequent regime switches. Large values make the regime "sticky".
 9. **Hysteresis + threshold engine**: `--hysteresis` has no effect with `--engine threshold` because the threshold engine does not produce posterior probabilities.
 10. **BIC auto + PCA**: When both `--n-states auto` and PCA whitening are active, BIC evaluation uses PCA-reduced features automatically.
+11. **FSHMM convergence**: The feature saliency EM algorithm may converge to local optima. If results look unstable, try adjusting `--saliency-threshold` or increasing data length. Plateau detection stops training after 3 flat iterations.
+12. **Robust HMM over-robustness**: Huber/MCD estimation can over-smooth, potentially missing real regime changes that produce moderate outliers. Compare with standard `--engine hmm` when in doubt.
 
 ## Reference Index
 
