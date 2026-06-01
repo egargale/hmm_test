@@ -290,29 +290,28 @@ def _match_states(
 
 def _classify_hmm_slice(
     model: hmm.GaussianHMM,
-    center: np.ndarray,
-    scale: np.ndarray,
-    pca_transform: PCA | None,
-    features_arr: np.ndarray,
+    X_last: np.ndarray,
     n_states: int,
-    prev_means: np.ndarray | None,
+    prev_means: np.ndarray | None = None,
 ) -> ClassifyResult:
     """Shared post-fit classify pipeline for HMM engines.
 
-    Pipeline: z-score last bar → optional PCA transform → model.predict()
-    → label map (sort means ascending, collapse to 3 regimes if n_states > 3)
-    → posteriors reorder/aggregate → _remap_to_prev_states if prev_means given.
+    Pipeline: model.predict(X_last) → label map (sort means ascending,
+    collapse to 3 regimes if n_states > 3) → posteriors reorder/aggregate
+    → _remap_to_prev_states if prev_means given.
+
+    Parameters
+    ----------
+    model : pre-fit GaussianHMM
+    X_last : already-normalized last observation, shape (1, n_features)
+        Caller is responsible for z-scoring and optional PCA transform.
+    n_states : number of HMM states
+    prev_means : previous-cycle means for state remapping, or None
     """
     means = model.means_
 
-    # Transform last bar through z-score → (optional PCA) for prediction
-    last_features = (features_arr[-1:] - center) / scale
-    if pca_transform is not None:
-        last_features = pca_transform.transform(last_features)
-    raw_state = model.predict(last_features.astype(np.float64))[0]
-
-    # Compute posteriors for the last observation
-    posteriors = model.predict_proba(last_features.astype(np.float64))[-1]
+    raw_state = model.predict(X_last.astype(np.float64))[0]
+    posteriors = model.predict_proba(X_last.astype(np.float64))[-1]
 
     # Map HMM states to regime indices (0=bear, 1=sideways, 2=bull)
     # based on ascending mean return order, collapsed to 3 buckets

@@ -9,7 +9,7 @@ import pandas as pd
 from hmmlearn import hmm
 
 from ..engine_protocol import ClassifyResult
-from ._hmm_shared import _match_states, engineer_features
+from ._hmm_shared import _classify_hmm_slice, engineer_features
 
 
 class FSHMMEngine:
@@ -80,65 +80,24 @@ class FSHMMEngine:
         # Run Feature Saliency EM
         model, rho = self._fit_fshmm(X_norm)
 
-        # Predict last bar
-        last = X_norm[-1:]
-        raw_state = model.predict(last.astype(np.float64))[0]
-        posteriors = model.predict_proba(last.astype(np.float64))[-1]
+        # Last bar (already normalized)
+        X_last = X_norm[-1:]
 
-        means = model.means_
+        # Delegate regime-mapping to shared pipeline
+        result = _classify_hmm_slice(
+            model,
+            X_last,
+            self.n_states,
+            prev_means,
+        )
 
-        # Map HMM states → regime indices (0=bear, 1=sideways, 2=bull)
-        state_means = means[:, 0]
-        order = np.argsort(state_means)
-        if self.n_states <= 3:
-            label_map = {int(order[i]): i for i in range(len(order))}
-        else:
-            n = len(order)
-            label_map = {}
-            for i, state_idx in enumerate(order):
-                label_map[int(state_idx)] = min(2, i * 3 // n)
-
-        regime = label_map.get(int(raw_state), 1)
-
-        # Reorder/aggregate posteriors to regime labels
-        if self.n_states <= 3:
-            reordered = np.zeros(self.n_states)
-            for state_idx in range(self.n_states):
-                reordered[label_map[state_idx]] = posteriors[state_idx]
-            posteriors = reordered
-        else:
-            agg = np.zeros(3)
-            for state_idx in range(self.n_states):
-                agg[label_map[state_idx]] += posteriors[state_idx]
-            posteriors = agg
-
-        # State matching with prev_means
-        if prev_means is not None:
-            prev_order = np.argsort(prev_means[:, 0])
-            prev_n = len(prev_order)
-            if prev_n <= 3:
-                prev_label_map = {int(prev_order[i]): i for i in range(prev_n)}
-            else:
-                prev_label_map = {}
-                for i, si in enumerate(prev_order):
-                    prev_label_map[int(si)] = min(2, i * 3 // prev_n)
-            assignment = _match_states(means, prev_means)
-            old_state = assignment.get(int(raw_state))
-            if old_state is not None:
-                regime = prev_label_map.get(old_state, regime)
-
-        # Saliency output
+        # Attach saliency metadata
         selected_features = [
             name for name, r in zip(feature_names, rho) if r >= self.saliency_threshold
         ]
 
-        result = ClassifyResult(
-            regime=int(regime),
-            means=means,
-            posteriors=posteriors,
-            feature_saliency=rho,
-            selected_features=selected_features or None,
-        )
+        result.feature_saliency = rho
+        result.selected_features = selected_features or None
 
         # Store on instance for pipeline access
         self._last_saliency = rho.tolist() if rho is not None else None

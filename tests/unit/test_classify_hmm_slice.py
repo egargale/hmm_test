@@ -1,6 +1,7 @@
 """Tests for _classify_hmm_slice post-fit pipeline.
 
 Issue #44 — https://github.com/egargale/hmm_test/issues/44
+Issue #61 — signature changed to accept pre-normalized X_last
 """
 
 import numpy as np
@@ -26,22 +27,22 @@ def _make_model(n_states: int = 3, n_features: int = 2) -> hmm.GaussianHMM:
     return model
 
 
+def _make_last_bar(n_features: int = 2, *, seed: int = 42) -> np.ndarray:
+    """Generate a single pre-normalized last bar, shape (1, n_features)."""
+    rng = np.random.RandomState(seed)
+    return rng.randn(1, n_features).astype(np.float64)
+
+
 class TestClassifyBasic3State:
     """3-state, no PCA, no prev_means — the happy path."""
 
     def test_returns_classify_result(self):
         model = _make_model(n_states=3)
-        n_features = model.means_.shape[1]
-        center = np.zeros(n_features)
-        scale = np.ones(n_features)
-        features_arr = np.random.randn(20, n_features)
+        X_last = _make_last_bar(model.means_.shape[1])
 
         result = _classify_hmm_slice(
             model=model,
-            center=center,
-            scale=scale,
-            pca_transform=None,
-            features_arr=features_arr,
+            X_last=X_last,
             n_states=3,
             prev_means=None,
         )
@@ -50,17 +51,11 @@ class TestClassifyBasic3State:
 
     def test_regime_in_valid_range(self):
         model = _make_model(n_states=3)
-        n_features = model.means_.shape[1]
-        center = np.zeros(n_features)
-        scale = np.ones(n_features)
-        features_arr = np.random.randn(20, n_features)
+        X_last = _make_last_bar(model.means_.shape[1])
 
         result = _classify_hmm_slice(
             model=model,
-            center=center,
-            scale=scale,
-            pca_transform=None,
-            features_arr=features_arr,
+            X_last=X_last,
             n_states=3,
             prev_means=None,
         )
@@ -69,37 +64,25 @@ class TestClassifyBasic3State:
 
     def test_means_shape(self):
         model = _make_model(n_states=3)
-        n_features = model.means_.shape[1]
-        center = np.zeros(n_features)
-        scale = np.ones(n_features)
-        features_arr = np.random.randn(20, n_features)
+        X_last = _make_last_bar(model.means_.shape[1])
 
         result = _classify_hmm_slice(
             model=model,
-            center=center,
-            scale=scale,
-            pca_transform=None,
-            features_arr=features_arr,
+            X_last=X_last,
             n_states=3,
             prev_means=None,
         )
 
         assert result.means is not None
-        assert result.means.shape == (3, n_features)
+        assert result.means.shape == (3, model.means_.shape[1])
 
     def test_posteriors_shape_and_sums_to_one(self):
         model = _make_model(n_states=3)
-        n_features = model.means_.shape[1]
-        center = np.zeros(n_features)
-        scale = np.ones(n_features)
-        features_arr = np.random.randn(20, n_features)
+        X_last = _make_last_bar(model.means_.shape[1])
 
         result = _classify_hmm_slice(
             model=model,
-            center=center,
-            scale=scale,
-            pca_transform=None,
-            features_arr=features_arr,
+            X_last=X_last,
             n_states=3,
             prev_means=None,
         )
@@ -114,17 +97,11 @@ class TestClassify4StateCollapse:
 
     def test_regime_in_valid_range(self):
         model = _make_model(n_states=4)
-        n_features = model.means_.shape[1]
-        center = np.zeros(n_features)
-        scale = np.ones(n_features)
-        features_arr = np.random.randn(20, n_features)
+        X_last = _make_last_bar(model.means_.shape[1])
 
         result = _classify_hmm_slice(
             model=model,
-            center=center,
-            scale=scale,
-            pca_transform=None,
-            features_arr=features_arr,
+            X_last=X_last,
             n_states=4,
             prev_means=None,
         )
@@ -133,17 +110,11 @@ class TestClassify4StateCollapse:
 
     def test_posteriors_aggregated_to_3(self):
         model = _make_model(n_states=4)
-        n_features = model.means_.shape[1]
-        center = np.zeros(n_features)
-        scale = np.ones(n_features)
-        features_arr = np.random.randn(20, n_features)
+        X_last = _make_last_bar(model.means_.shape[1])
 
         result = _classify_hmm_slice(
             model=model,
-            center=center,
-            scale=scale,
-            pca_transform=None,
-            features_arr=features_arr,
+            X_last=X_last,
             n_states=4,
             prev_means=None,
         )
@@ -154,23 +125,17 @@ class TestClassify4StateCollapse:
 
     def test_means_shape_4x_features(self):
         model = _make_model(n_states=4)
-        n_features = model.means_.shape[1]
-        center = np.zeros(n_features)
-        scale = np.ones(n_features)
-        features_arr = np.random.randn(20, n_features)
+        X_last = _make_last_bar(model.means_.shape[1])
 
         result = _classify_hmm_slice(
             model=model,
-            center=center,
-            scale=scale,
-            pca_transform=None,
-            features_arr=features_arr,
+            X_last=X_last,
             n_states=4,
             prev_means=None,
         )
 
         assert result.means is not None
-        assert result.means.shape == (4, n_features)
+        assert result.means.shape == (4, model.means_.shape[1])
 
 
 class TestClassifyPrevMeansRemap:
@@ -179,21 +144,13 @@ class TestClassifyPrevMeansRemap:
     def test_prev_means_produces_valid_regime(self):
         """prev_means triggers the remap path; regime is still valid."""
         model = _make_model(n_states=3)
-        n_features = model.means_.shape[1]
-        center = np.zeros(n_features)
-        scale = np.ones(n_features)
-        features_arr = np.random.randn(20, n_features)
+        X_last = _make_last_bar(model.means_.shape[1])
 
-        prev_means = np.array(
-            [[-1.0] * n_features, [0.0] * n_features, [1.0] * n_features]
-        )
+        prev_means = np.array([[-1.0, -1.0], [0.0, 0.0], [1.0, 1.0]])
 
         result = _classify_hmm_slice(
             model=model,
-            center=center,
-            scale=scale,
-            pca_transform=None,
-            features_arr=features_arr,
+            X_last=X_last,
             n_states=3,
             prev_means=prev_means,
         )
@@ -217,34 +174,22 @@ class TestClassifyPrevMeansRemap:
         model.transmat_ = np.full((3, 3), 1.0 / 3)
         model.startprob_ = np.array([1.0, 0.0, 0.0])
 
-        center = np.zeros(n_features)
-        scale = np.ones(n_features)
-        # Generate data near zero → model should predict state 1 (mean=0)
-        features_arr = np.full((20, n_features), 0.01)
+        # Data near zero → model should predict state 1 (mean=0)
+        X_last = np.full((1, n_features), 0.01, dtype=np.float64)
 
         result_no_prev = _classify_hmm_slice(
             model=model,
-            center=center,
-            scale=scale,
-            pca_transform=None,
-            features_arr=features_arr,
+            X_last=X_last,
             n_states=3,
             prev_means=None,
         )
 
         # With 2-state prev: prev state 0 → −100, state 1 → 100
-        # _match_states: current state 1 (mean=0) ↔ closest prev state 0 (mean=−100)
-        #   → old_state=0 → prev_label_map[0]=0 → regime 0 (bear)
-        # OR ↔ prev state 1 (mean=100), dist=100 vs dist=100 → ambiguous
-        # Greedy picks first unmatched closest.
         prev_means = np.array([[-100.0] * n_features, [100.0] * n_features])
 
         result = _classify_hmm_slice(
             model=model,
-            center=center,
-            scale=scale,
-            pca_transform=None,
-            features_arr=features_arr,
+            X_last=X_last,
             n_states=3,
             prev_means=prev_means,
         )
@@ -254,16 +199,15 @@ class TestClassifyPrevMeansRemap:
 
 
 class TestClassifyPCATransform:
-    """With PCA, last bar is transformed before predict."""
+    """With PCA, the caller transforms X_last before calling _classify_hmm_slice."""
 
     def test_pca_produces_valid_result(self):
-        """Pass a fitted PCA; regime is valid, posteriors sum to 1."""
+        """Caller applies PCA to last bar; regime is valid, posteriors sum to 1."""
         from sklearn.decomposition import PCA
 
-        n_features = 5
+        n_features_orig = 5
         rng = np.random.RandomState(42)
-        # Create enough data to fit a PCA that reduces to 2 components
-        raw = rng.randn(50, n_features)
+        raw = rng.randn(50, n_features_orig)
         pca = PCA(n_components=2, random_state=42)
         pca.fit(raw)
 
@@ -275,16 +219,16 @@ class TestClassifyPCATransform:
         model.transmat_ = np.full((3, 3), 1.0 / 3)
         model.startprob_ = np.array([1.0, 0.0, 0.0])
 
-        center = np.zeros(n_features)
-        scale = np.ones(n_features)
-        features_arr = rng.randn(20, n_features)
+        # Caller normalizes and PCA-transforms the last bar
+        features_arr = rng.randn(20, n_features_orig)
+        center = np.zeros(n_features_orig)
+        scale = np.ones(n_features_orig)
+        X_last = (features_arr[-1:] - center) / scale
+        X_last = pca.transform(X_last)
 
         result = _classify_hmm_slice(
             model=model,
-            center=center,
-            scale=scale,
-            pca_transform=pca,
-            features_arr=features_arr,
+            X_last=X_last,
             n_states=3,
             prev_means=None,
         )

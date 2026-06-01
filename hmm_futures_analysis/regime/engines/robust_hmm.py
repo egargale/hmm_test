@@ -55,12 +55,14 @@ class RobustHMMEngine:
         if pca_n is not None and self._pca_n_components is None:
             self._pca_n_components = pca_n
 
+        # Normalize last bar for prediction
+        X_last = (features_arr[-1:] - center) / scale
+        if pca_transform is not None:
+            X_last = pca_transform.transform(X_last)
+
         return _classify_hmm_slice(
             model,
-            center,
-            scale,
-            pca_transform,
-            features_arr,
+            X_last,
             self.n_states,
             prev_means,
         )
