@@ -146,3 +146,27 @@ The dead code uses `n_iter=100`, `tol=1e-6` (strict convergence). The live adapt
 - **GMMHMMModel** — Gaussian Mixture emissions for more complex within-state distributions
 
 If any of these become needed, extract the relevant functions as standalone utilities rather than reviving the class hierarchy.
+
+## Postscript: follow-up removals consistent with ADR-0008
+
+Several modules listed as "Alive (do NOT delete)" in the tables above were
+subsequently removed in later cleanup passes. Each passes ADR-0008's own
+"deletion test" (zero callers in any engine path) — their continued presence
+in the "alive" table was a conservative choice at the time, and the follow-up
+removals below are strictly consistent with the original ADR's trajectory.
+
+### Removals
+
+| Module | ADR-0008 status | Removed in | Closes |
+|--------|-----------------|------------|--------|
+| `data_processing/csv_parser.py` | Alive | `e0b772e` | #54 |
+| `data_processing/csv_format_detector.py` | Alive | `e0b772e` | #54 |
+| `data_processing/data_validation.py` | Alive | `e0b772e` | #54 |
+| 8 dead dataclasses in `utils/data_types.py` | "Keep whole file" | `bbbb91c` | #56 |
+| Dead functions in `backtesting/performance_metrics.py` and `data_processing/technical_indicators.py` | "Trim dead code within" | `6cc0c79` | #55 |
+
+All three commits passed the same deletion test used in ADR-0008: no callers
+in any engine path required changes.
+
+The alive/dead tables and notes above are kept intact as a historical record
+of the original decision context.
