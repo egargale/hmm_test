@@ -20,6 +20,7 @@ ADRs use a flat, sequential 4-digit numbering scheme (`0001-`, `0002-`, …).
 | 0010 | `0010-trim-feature-engineering.md` | Trim feature engineering monolith |
 | 0011 | `0011-engine-dispatch-consolidation.md` | Engine dispatch consolidation |
 | 0012 | `0012-pipeline-run-decomposition.md` | Pipeline `run()` decomposition |
+| 0013 | `0013-fshmm-engine.md` | Feature Saliency HMM (FSHMM) engine |
 
 ## Rules for contributors
 
