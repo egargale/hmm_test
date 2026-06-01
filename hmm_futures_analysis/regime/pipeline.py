@@ -194,7 +194,7 @@ def _classify_hmm(
     returns: pd.Series,
     min_train: int,
     *,
-    profile: bool = False,
+    profile: bool = True,
     _phases: dict[str, float] | None = None,
     _classify_times: list[float] | None = None,
 ) -> ClassifyOutput:
@@ -205,6 +205,8 @@ def _classify_hmm(
     adaptive intervals.  Returns a :class:`ClassifyOutput` carrying
     regimes, posteriors, last regime, warmup bars, and the engine
     instance.
+
+    Profiling is enabled by default (low overhead).
     """
     _phases = _phases if _phases is not None else {}
     _classify_times = _classify_times if _classify_times is not None else []
@@ -331,9 +333,12 @@ def run(
     hysteresis_delta: float = 0.0,
     duration_forecast: bool = False,
     duration_model: str = "weibull",
-    profile: bool = False,
+    profile: bool = True,
 ) -> dict:
-    """Run the full regime-detection pipeline and return a JSON-compatible dict."""
+    """Run the full regime-detection pipeline and return a JSON-compatible dict.
+
+    Profiling is enabled by default (low overhead).
+    """
     t_start = time.monotonic() if profile else 0.0
     _phases: dict[str, float] = {}
     _classify_times: list[float] = []
