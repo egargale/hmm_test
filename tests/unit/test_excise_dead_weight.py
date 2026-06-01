@@ -88,6 +88,13 @@ DEAD_PERFORMANCE_FUNCTIONS = [
     "infer_trading_frequency",
     "validate_performance_metrics",
     "create_performance_summary",
+    # Issue #59: additional dead functions removed
+    "calculate_returns",
+    "calculate_annualized_return",
+    "calculate_annualized_volatility",
+    "calculate_calmar_ratio",
+    "get_annualization_factor",
+    "_infer_frequency",
 ]
 
 
@@ -150,6 +157,56 @@ def test_dead_indicator_function_removed(func_name):
     assert not hasattr(ti, func_name), (
         f"Dead function still present: technical_indicators.{func_name}"
     )
+
+
+# -- Issue #59: module exports exactly two public functions ----------------
+
+EXPECTED_PERFORMANCE_EXPORTS = {
+    "calculate_sharpe_ratio",
+    "calculate_drawdown_metrics",
+}
+
+
+def test_performance_metrics_exports_only_expected_functions():
+    """performance_metrics must export exactly the two expected functions."""
+    import hmm_futures_analysis.backtesting.performance_metrics as pm
+    import types
+
+    def _is_module_function(name, val):
+        """True for functions defined in this module (not re-exported imports)."""
+        return (
+            callable(val)
+            and not isinstance(val, types.ModuleType)
+            and not name.startswith("_")
+            and getattr(val, "__module__", None) == pm.__name__
+        )
+
+    public = {name for name, val in vars(pm).items() if _is_module_function(name, val)}
+    assert public == EXPECTED_PERFORMANCE_EXPORTS, (
+        f"Unexpected exports: {public - EXPECTED_PERFORMANCE_EXPORTS}, "
+        f"missing: {EXPECTED_PERFORMANCE_EXPORTS - public}"
+    )
+
+
+def test_sharpe_ratio_behavioral_parity():
+    """Sharpe ratio must produce identical values after inlining helpers."""
+    import numpy as np
+    import pandas as pd
+    from hmm_futures_analysis.backtesting.performance_metrics import (
+        calculate_sharpe_ratio,
+    )
+
+    dates = pd.date_range("2024-01-01", periods=100, freq="B")
+    np.random.seed(42)
+    equity = pd.Series(np.cumprod(1 + np.random.normal(0.001, 0.02, 100)), index=dates)
+
+    # Baseline captured before the refactor
+    assert calculate_sharpe_ratio(equity) == pytest.approx(-1.1086003540194103)
+    assert calculate_sharpe_ratio(equity, frequency="daily") == pytest.approx(
+        -1.1086003540194103
+    )
+    assert calculate_sharpe_ratio(pd.Series([100.0], index=dates[:1])) == 0.0
+    assert calculate_sharpe_ratio(pd.Series([100.0] * 10, index=dates[:10])) == 0.0
 
 
 DEAD_DATACLASSES = [
