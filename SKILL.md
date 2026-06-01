@@ -81,10 +81,6 @@ The Messina, HMM, robust_hmm, and fshmm engines require OHLCV data and automatic
 | `--saliency-output` | path | — | Save fshmm saliency weights to CSV file (feature_index, saliency_weight, selected). Used by fshmm engine. |
 | `--pca-variance` | float | — | PCA variance threshold for dimensionality reduction (constructor-only, no CLI flag). E.g. `0.95` retains 95% variance. Used by HMM engines. |
 
-### Removed flags (v0.2.0)
-
-`--hmm`/`--no-hmm` and `--messina` have been replaced by `--engine`. Old invocations will error.
-
 ## State Interpretation
 
 | Regime | Index | Position |

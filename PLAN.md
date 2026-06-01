@@ -26,18 +26,25 @@
 
 ```
 hmm_test/
-├── SKILL.md                    # Agent-facing skill definition
 ├── AGENTS.md                   # Agent guidance
 ├── CONTEXT.md                  # Domain language & terminology
-├── pyproject.toml              # Package config (hmm-futures-analysis)
-├── .python-version
+├── GEMINI.md                   # Gemini provider configuration
 ├── LICENSE
 ├── PLAN.md                     # this file
+├── PRD_HMM_BEST.md             # Original product requirements
+├── README.md
+├── SKILL.md                    # Agent-facing skill definition
+├── USAGE.md                    # CLI reference and usage guide
+├── pyproject.toml              # Package config (hmm-futures-analysis)
+├── .python-version
+├── review-1-correctness.md
+├── review-2-integration.md
 ├── run.sh                      # Self-bootstrapping entry point for skill consumers
 ├── test_data/
 │   ├── test_futures.csv
 │   ├── BTC.csv
-│   └── sample_ohlcv.csv
+│   ├── SPY.csv
+│   └── KO.csv
 ├── hmm_futures_analysis/
 │   ├── __init__.py
 │   ├── cli.py                  # CLI entry point (hmm-regime console script)
@@ -46,26 +53,25 @@ hmm_test/
 │   │   └── performance_metrics.py
 │   ├── data_processing/
 │   │   ├── __init__.py
-│   │   ├── csv_parser.py
-│   │   ├── csv_format_detector.py
 │   │   ├── csv_auto_detect.py
-│   │   ├── data_validation.py
 │   │   ├── feature_engineering.py
 │   │   ├── messina_features.py
 │   │   └── technical_indicators.py
 │   ├── regime/
 │   │   ├── __init__.py
-│   │   ├── engine_protocol.py  # RegimeEngine protocol + ENGINE_REGISTRY
-│   │   ├── engines/
-│   │   │   ├── __init__.py
-│   │   │   ├── threshold.py
-│   │   │   ├── hmm_generic.py
-│   │   │   ├── hmm_messina.py
-│   │   │   └── _hmm_shared.py
-│   │   ├── hmm_adapter.py      # Legacy HMM adapter (deprecated)
+│   │   ├── engine_protocol.py   # RegimeEngine protocol + ENGINE_REGISTRY
+│   │   ├── duration_forecast.py  # Weibull and Cox PH survival analysis
 │   │   ├── markov_chain.py
 │   │   ├── pipeline.py
-│   │   └── walk_forward.py
+│   │   ├── walk_forward.py
+│   │   └── engines/
+│   │       ├── __init__.py
+│   │       ├── threshold.py
+│   │       ├── hmm_generic.py
+│   │       ├── hmm_messina.py
+│   │       ├── robust_hmm.py      # Outlier-resistant estimation
+│   │       ├── fshmm.py           # Feature saliency selection
+│   │       └── _hmm_shared.py
 │   └── utils/
 │       ├── __init__.py
 │       ├── data_types.py
@@ -75,34 +81,43 @@ hmm_test/
 │   ├── feature_engineering.md
 │   ├── backtesting_detail.md
 │   ├── configuration.md
-│   └── troubleshooting.md
+│   ├── troubleshooting.md
+│   └── hmm_silent_failure.md
 ├── docs/
 │   ├── adr/
+│   │   ├── README.md
 │   │   ├── 0001-three-independent-engines.md
 │   │   ├── 0002-same-repo-dual-distribution.md
 │   │   ├── 0003-engine-self-containment.md
-│   │   └── 0004-cli-data-loading-seam.md
-│   ├── architecture/
-│   │   ├── 001-excise-dead-weight.md
-│   │   ├── 002-deepen-engine-seam.md
-│   │   └── 003-trim-feature-engineering.md
-│   └── agents/
-│       ├── domain.md
-│       ├── issue-tracker.md
-│       └── triage-labels.md
-└── tests/
-    ├── conftest.py
-    ├── test_engine_independence.py
-    ├── test_excise_dead_weight.py
-    ├── test_feature_engineering.py
-    ├── test_indicator_config.py
-    ├── test_load_prices.py
-    ├── test_messina_features.py
-    ├── test_messina_integration.py
-    ├── test_packaging.py
-    ├── test_regime_contract.py
-    ├── test_regime_engine.py
-    └── test_regime_pipeline.py
+│   │   ├── 0004-cli-data-loading-seam.md
+│   │   ├── 0005-pca-in-model-layer.md
+│   │   ├── 0006-bic-state-count-selection.md
+│   │   ├── 0007-hysteresis-dwell-time-filters.md
+│   │   ├── 0008-excise-dead-weight.md (+ postscript: later follow-ups)
+│   │   ├── 0009-deepen-engine-seam.md
+│   │   ├── 0010-trim-feature-engineering.md
+│   │   ├── 0011-engine-dispatch-consolidation.md
+│   │   └── 0012-pipeline-run-decomposition.md
+│   ├── agents/
+│   │   ├── domain.md
+│   │   ├── issue-tracker.md
+│   │   └── triage-labels.md
+│   └── research/
+│       └── technology-scan-2026-05.md
+├── tests/
+│   ├── __init__.py
+│   ├── conftest.py
+│   ├── unit/
+│   │   └── 16× unit tests (messina, filters, packaging, pipeline types, etc.)
+│   └── integration/
+│       └── 10× integration tests (engines, PCA, whipsaw, profiling, etc.)
+├── .out-of-scope/
+│   ├── ensemble-engine.md
+│   ├── gh-hmm-engine.md
+│   ├── hdp-hmm-engine.md
+│   ├── student-t-standalone-engine.md
+│   └── wasserstein-hmm.md
+└── logs/                         # Per-run profiling output
 ```
 
 ## Completed Steps
@@ -125,12 +140,25 @@ All 9 implementation steps from the original plan are complete. Key milestones:
 
 | Change | Commit | PR/Issue |
 |--------|--------|----------|
-| Excise dead weight modules (~5,650 lines) | `1e2736b` | PR #9, ADR-001 |
-| Implement RegimeEngine protocol | `0b13329` | ADR-002 |
+| Excise dead weight modules (~5,650 lines) | `1e2736b` | PR #9, ADR-0008 |
+| Implement RegimeEngine protocol | `0b13329` | ADR-0009 |
 | Documentation update (CONTEXT, README, SKILL, PLAN) | `07f8043` | — |
 | HMM engines drive top-level pipeline stats | `3e4d7da` | Issue #10 |
 | Engine self-containment ADR | `a020239` | PR #13, ADR-0003 |
 | Integration test: engines produce different regimes | `274e401` | PR #11 |
-| Delete unused FeatureEngineer class | `e47ebf5` | PR #14, ADR-003 |
+| Delete unused FeatureEngineer class | `e47ebf5` | PR #14, ADR-0010 |
 | Messina feature set refined to 18 indicators (19 cols incl log_ret) | `68863fe` | — |
 | CLI data loading seam (`load_prices()`) | `0070e96` | ADR-0004 |
+| PCA whitening in model layer | `57d6d19` | PR #18, ADR-0005 |
+| BIC-based state count selection (`--n-states auto`) | `1466099` | Issue #17, ADR-0006 |
+| Hysteresis/dwell-time whipsaw filters | `a9e8523` | Issue #19, ADR-0007 |
+| robust_hmm engine (Huber IRLS + MinCovDet) | `af08b7f` | Issue #24 |
+| fshmm engine (feature saliency EM) | `3e939af` | Issue #24 |
+| Cox PH duration forecasting | `6683429` | Issue #29 |
+| Weibull duration forecasting | `ecefe4e` | Issue #29 |
+| Per-phase pipeline timing instrumentation | `b266abd` | Issue #37 |
+| Engine config dataclasses + dispatch consolidation | `74ccfab` + `a5d86ee` | ADR-0011, Issue #53 |
+| Pipeline `run()` decomposition helpers | `f0c36cf` + `9756704` | ADR-0012 |
+| Delete 3 dead CSV modules (csv_parser, csv_format_detector, data_validation) | `e0b772e` | Issue #54 |
+| Delete dead functions in performance_metrics.py + technical_indicators.py | `6cc0c79` | Issue #55 |
+| Remove dead dataclasses from utils/data_types.py | `bbbb91c` | Issue #56 |
