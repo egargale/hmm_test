@@ -29,6 +29,7 @@ from .regime.engine_protocol import (
     ThresholdConfig,
 )
 from .regime.pipeline import run as pipeline_run
+from .utils.logging_config import suppress_stdout_logging
 
 _STATE_NAMES = ("bear", "sideways", "bull")
 _FRAMEWORK_VERSION = "hmm_test v0.2.0"
@@ -68,34 +69,6 @@ def _build_engine_config(args: argparse.Namespace) -> object:
         raise ValueError(f"Unknown engine: {engine!r}")
 
 
-def _suppress_stdout_logging() -> None:
-    """Redirect all logging away from stdout so --json emits only JSON."""
-    # 1. loguru: remove all handlers
-    try:
-        from loguru import logger as _loguru_logger
-
-        _loguru_logger.remove()
-    except ImportError:
-        pass
-
-    # 2. structlog: reconfigure to print to stderr
-    try:
-        import structlog
-
-        structlog.configure(
-            logger_factory=structlog.PrintLoggerFactory(file=sys.stderr)
-        )
-    except ImportError:
-        pass
-
-    # 3. stdlib: remove any stdout handlers
-    import logging
-
-    for handler in logging.root.handlers[:]:
-        if getattr(handler, "stream", None) is sys.stdout:
-            logging.root.removeHandler(handler)
-
-
 def _write_saliency_csv(output: dict, path: str) -> None:
     """Write fshmm saliency weights to a CSV file."""
     import csv as csv_mod
@@ -127,7 +100,10 @@ def _print_terminal(output: dict) -> None:
     header("REGIME DETECTION")
     print(f"  Source      : {sr['source']}", file=sys.stderr)
     print(f"  Engine      : {sr['engine']}", file=sys.stderr)
-    print(f"  Date range  : {sr['dates']['start']} → {sr['dates']['end']}", file=sys.stderr)
+    print(
+        f"  Date range  : {sr['dates']['start']} → {sr['dates']['end']}",
+        file=sys.stderr,
+    )
 
     ei = sr["engine_info"]
     print(f"  Method      : {ei['method']}", file=sys.stderr)
@@ -137,7 +113,9 @@ def _print_terminal(output: dict) -> None:
 
     header("CURRENT REGIME")
     cr = sr["current_regime"]
-    print(f"  Regime      : {cr['name'].upper()} (index {cr['index']})", file=sys.stderr)
+    print(
+        f"  Regime      : {cr['name'].upper()} (index {cr['index']})", file=sys.stderr
+    )
     print(f"  Signal      : {sr['signal']:+.4f}", file=sys.stderr)
 
     header("REGIME DISTRIBUTION")
@@ -158,7 +136,9 @@ def _print_terminal(output: dict) -> None:
 
     header("TRANSITION MATRIX")
     names = [s.capitalize() for s in _STATE_NAMES]
-    print(f"  {'':>10s}  {names[0]:>8s}  {names[1]:>8s}  {names[2]:>8s}", file=sys.stderr)
+    print(
+        f"  {'':>10s}  {names[0]:>8s}  {names[1]:>8s}  {names[2]:>8s}", file=sys.stderr
+    )
     for i, row in enumerate(sr["transition_matrix"]):
         cells = "  ".join(f"{v:8.3f}" for v in row)
         print(f"  {names[i]:>10s}  {cells}", file=sys.stderr)
@@ -196,9 +176,15 @@ def _print_terminal(output: dict) -> None:
         print(f"  Current regime     : {df['current_regime'].upper()}", file=sys.stderr)
         print(f"  Days in regime     : {df['days_in_regime']}", file=sys.stderr)
         if df["expected_remaining_days"] is not None:
-            print(f"  Expected remaining  : {df['expected_remaining_days']:.1f} days", file=sys.stderr)
+            print(
+                f"  Expected remaining  : {df['expected_remaining_days']:.1f} days",
+                file=sys.stderr,
+            )
             print(f"  Hazard rate         : {df['hazard_rate']:.4f}", file=sys.stderr)
-            print(f"  Median survival     : {df['survival_50pct']:.1f} days", file=sys.stderr)
+            print(
+                f"  Median survival     : {df['survival_50pct']:.1f} days",
+                file=sys.stderr,
+            )
             print(f"  Weibull shape       : {df['weibull_shape']:.4f}", file=sys.stderr)
             print(f"  Weibull scale       : {df['weibull_scale']:.2f}", file=sys.stderr)
         else:
@@ -251,7 +237,7 @@ def main() -> None:
         type=str,
         default="threshold",
         choices=["threshold", "messina", "hmm", "robust_hmm", "fshmm"],
-        help="Analysis engine: threshold (fast, close-only), messina (HMM+19 features), hmm (HMM+50 features), robust_hmm (HMM with outlier-resistant emissions), fshmm (HMM+feature saliency). Default: threshold."
+        help="Analysis engine: threshold (fast, close-only), messina (HMM+19 features), hmm (HMM+50 features), robust_hmm (HMM with outlier-resistant emissions), fshmm (HMM+feature saliency). Default: threshold.",
     )
     parser.add_argument(
         "--window",
@@ -336,7 +322,7 @@ def main() -> None:
     try:
         # In JSON mode, suppress logging to stdout so only the JSON object is emitted
         if args.json:
-            _suppress_stdout_logging()
+            suppress_stdout_logging()
 
         # Load data
         prices, ohlcv, source = load_prices(csv=args.csv, ticker=args.ticker)
