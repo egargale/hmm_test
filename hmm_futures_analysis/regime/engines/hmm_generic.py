@@ -34,7 +34,7 @@ class HMMGenericEngine:
     def classify(
         self, data: pd.DataFrame, prev_means: np.ndarray | None = None
     ) -> ClassifyResult:
-        features_clean = data.dropna()
+        features_clean = data.bfill().dropna()
         if len(features_clean) < self.n_states + 1:
             raise ValueError(
                 f"Not enough clean rows ({len(features_clean)}) "

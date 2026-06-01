@@ -76,9 +76,7 @@ def _fit_weibull(durations: np.ndarray) -> tuple[float, float]:
     return shape, scale
 
 
-def _conditional_expected_remaining(
-    shape: float, scale: float, t: float
-) -> float:
+def _conditional_expected_remaining(shape: float, scale: float, t: float) -> float:
     """E[T − t | T > t] for a Weibull(shape, scale).
 
     Uses numerical integration of the survival function:
@@ -127,18 +125,22 @@ def _build_spell_covariates(
             spell_return = 0.0
         else:
             log_returns = np.log(price_window / price_window.shift(1)).dropna()
-            realized_vol = float(log_returns.std(ddof=0)) if len(log_returns) > 0 else 0.0
+            realized_vol = (
+                float(log_returns.std(ddof=0)) if len(log_returns) > 0 else 0.0
+            )
             if np.isnan(realized_vol):
                 realized_vol = 0.0
             spell_return = float(np.log(price_window.iloc[-1] / price_window.iloc[0]))
 
-        rows.append({
-            "duration": spell.duration,
-            "event": not spell.censored,
-            "regime_idx": spell.regime,
-            "realized_vol": realized_vol,
-            "spell_return": spell_return,
-        })
+        rows.append(
+            {
+                "duration": spell.duration,
+                "event": not spell.censored,
+                "regime_idx": spell.regime,
+                "realized_vol": realized_vol,
+                "spell_return": spell_return,
+            }
+        )
         start = end
 
     return pd.DataFrame(rows)
@@ -190,22 +192,36 @@ def _fit_coxph(
     if len(current_covs) == 0:
         return None
 
-    current_row = pd.DataFrame({
-        "realized_vol": [float(current_covs["realized_vol"].iloc[0])],
-        "spell_return": [float(current_covs["spell_return"].iloc[0])],
-    })
+    current_row = pd.DataFrame(
+        {
+            "realized_vol": [float(current_covs["realized_vol"].iloc[0])],
+            "spell_return": [float(current_covs["spell_return"].iloc[0])],
+        }
+    )
 
     # Conditional survival prediction
+    # NOTE: lifelines' conditional_after does NOT normalize to S(t|T>t)=1,
+    # so we manually compute: S(u|T>t) = S(u)/S(t) for u >= t.
     try:
-        sf = cph.predict_survival_function(current_row, conditional_after=float(days_in_regime))
-        # Expected remaining = integral of conditional survival function
-        # sf starts at conditional_after and gives S(t | T > conditional_after)
-        t_vals = sf.index.values.astype(float)
-        s_vals = sf.iloc[:, 0].values.astype(float)
-        if len(t_vals) < 2:
-            expected_remaining = float(t_vals[0]) if len(t_vals) > 0 else 0.0
+        t_cond = float(days_in_regime)
+        sf_raw = cph.predict_survival_function(current_row)
+        sf = sf_raw.loc[sf_raw.index >= t_cond]
+        if len(sf) == 0:
+            expected_remaining = 0.0
         else:
-            expected_remaining = float(np.trapezoid(s_vals, t_vals))
+            s_at_t = float(sf.iloc[0])
+            if s_at_t <= 0:
+                expected_remaining = 0.0
+            else:
+                sf_normalized = sf / s_at_t
+                t_vals = sf_normalized.index.values.astype(float)
+                s_vals = sf_normalized.iloc[:, 0].values.astype(float)
+                expected_remaining = float(np.trapezoid(s_vals, t_vals))
+
+        # NOTE: realized_vol coefficient can be large in magnitude on short
+        # historical windows (e.g. -65 on 89 spells). This is a known limitation
+        # of Cox PH with few observations — the model may overfit. Consider
+        # increasing MIN_SPELLS or adding L2 regularization for small samples.
 
         baseline_hazard_at_t = None
         bh = cph.baseline_hazard_
@@ -221,7 +237,9 @@ def _fit_coxph(
     return {
         "cox_coefficients": coefficients,
         "concordance_index": round(concordance, 4),
-        "baseline_hazard_at_t": round(baseline_hazard_at_t, 4) if baseline_hazard_at_t is not None else None,
+        "baseline_hazard_at_t": round(baseline_hazard_at_t, 4)
+        if baseline_hazard_at_t is not None
+        else None,
         "cox_expected_remaining_days": round(expected_remaining, 2),
     }
 
@@ -273,7 +291,11 @@ def forecast_duration(
 
     # Collect completed spells for the current regime
     completed = np.array(
-        [s.duration for s in spells if s.regime == current_regime_idx and not s.censored],
+        [
+            s.duration
+            for s in spells
+            if s.regime == current_regime_idx and not s.censored
+        ],
         dtype=float,
     )
 
@@ -296,7 +318,9 @@ def forecast_duration(
         return result
 
     shape, scale = _fit_weibull(completed)
-    expected_remaining = _conditional_expected_remaining(shape, scale, float(days_in_regime))
+    expected_remaining = _conditional_expected_remaining(
+        shape, scale, float(days_in_regime)
+    )
     h_rate = _hazard_rate(shape, scale, float(days_in_regime))
     median = _median_survival(shape, scale)
 

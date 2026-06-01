@@ -76,6 +76,95 @@ def _nan_to_none(value: float) -> float | None:
     return value
 
 
+def _compute_dynamic_threshold(
+    duration_forecast: dict | None,
+    base_threshold: float = 0.1,
+) -> float:
+    """Compute a regime-aging-adjusted threshold for Sideways verdict.
+
+    Uses the Weibull expected duration to detect when the current regime
+    has outlasted its historical norm. When ``days_in_regime >
+    expected_total``, the threshold shrinks linearly from 1.0x at exactly
+    expected up to 0.3x at 1.7x expected.
+
+    Returns ``base_threshold`` when duration data is unavailable or the
+    regime is within its expected life.
+    """
+    if duration_forecast is None:
+        return base_threshold
+
+    days_in = duration_forecast.get("days_in_regime")
+    scale = duration_forecast.get("weibull_scale")
+    shape = duration_forecast.get("weibull_shape")
+
+    if days_in is None or scale is None or shape is None or shape <= 0:
+        return base_threshold
+
+    from scipy.special import gamma as _gamma  # type: ignore[unused-ignore]
+
+    _days = float(days_in)
+    _scale = float(scale)
+    _shape = float(shape)
+    expected_total = _scale * _gamma(1.0 + 1.0 / _shape)
+    if expected_total <= 0:
+        return base_threshold
+
+    aging_ratio = _days / expected_total
+
+    if aging_ratio <= 1.0:
+        return base_threshold
+
+    # Linear ramp: 1.0x at aging_ratio=1, 0.3x at aging_ratio >= 1.7
+    threshold_mult = max(0.3, 2.0 - aging_ratio)
+    return base_threshold * threshold_mult
+
+
+def _compute_verdict(
+    current_regime: int,
+    signal: float,
+    forecast_20: dict[str, float],
+    sideways_threshold: float = 0.1,
+) -> dict[str, object]:
+    """Synthesize regime + forecasts into a single actionable verdict.
+
+    Parameters
+    ----------
+    sideways_threshold :
+        Signal magnitude below which the verdict stays ``"neutral"``
+        when in a Sideways regime.  Use :func:`_compute_dynamic_threshold`
+        to generate a regime-aging-adjusted value.
+
+    Returns a dict with ``verdict`` (one of ``"bullish"``, ``"bearish"``,
+    ``"neutral"``, ``"transition_bull"``, ``"transition_bear"``) and
+    ``confidence`` (abs(signal), range 0-1).
+    """
+    names = ("bear", "sideways", "bull")
+    current_name = names[current_regime]
+
+    if current_regime == 2:  # Bull
+        if forecast_20["bull"] > forecast_20.get(current_name, 0):
+            verdict = "bullish"
+        else:
+            verdict = "transition_bear"
+    elif current_regime == 0:  # Bear
+        if forecast_20["bear"] > forecast_20.get(current_name, 0):
+            verdict = "bearish"
+        else:
+            verdict = "transition_bull"
+    else:  # Sideways
+        if abs(signal) < sideways_threshold:
+            verdict = "neutral"
+        elif signal > 0:
+            verdict = "transition_bull"
+        else:
+            verdict = "transition_bear"
+
+    return {
+        "verdict": verdict,
+        "confidence": round(float(abs(signal)), 4),
+    }
+
+
 def _validate_prices(prices: pd.Series) -> pd.Series:
     """Validate prices Series and return computed returns.
 
@@ -403,13 +492,24 @@ def run(
         "disclaimer": _DISCLAIMER,
     }
 
-    # --- Duration forecast (optional post-processing) ---
+    # --- Duration forecast ---
+    df_result: dict | None = None
     if duration_forecast:
         from .duration_forecast import forecast_duration
 
-        result["duration_forecast"] = forecast_duration(
+        df_result = forecast_duration(
             classify_out.regimes, model=duration_model, prices=prices
         )
+        result["duration_forecast"] = df_result
+
+    # --- Synthesized verdict (dynamic threshold from duration forecast) ---
+    sideways_threshold = _compute_dynamic_threshold(df_result)
+    result["verdict"] = _compute_verdict(
+        markov.current_regime,
+        markov.signal,
+        forecast_20,
+        sideways_threshold=sideways_threshold,
+    )
 
     # --- Profiling ---
     if profile:

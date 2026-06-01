@@ -2,9 +2,10 @@
 name: hmm-regime-detection
 description: >
   Detect the current market regime (Bull/Bear/Sideways) for any asset using
-  threshold-based classification or Hidden Markov Models. Three independent
+  threshold-based classification or Hidden Markov Models. Five independent
   engines: threshold (fast, close-only), messina (HMM + 19 Messina features),
-  hmm (HMM + ~50 generic features). Each engine produces a self-contained
+  hmm (HMM + ~50 generic features), robust_hmm (outlier-resistant), fshmm
+  (feature saliency HMM). Each engine produces a self-contained
   output with bias-free walk-forward backtest and trade-level analytics.
   Use when the user wants regime detection, Markov transition analysis,
   walk-forward backtesting, or regime-based risk gating — on a ticker
@@ -13,7 +14,7 @@ description: >
 
 # HMM Regime Detection Skill
 
-Detect whether an asset is in a **Bull** (uptrend), **Bear** (downtrend), or **Sideways** (range-bound) regime. Three independent engines are available, each producing a complete, self-contained analysis with bias-free walk-forward backtest and trade-level analytics.
+Detect whether an asset is in a **Bull** (uptrend), **Bear** (downtrend), or **Sideways** (range-bound) regime. Five independent engines are available, each producing a complete, self-contained analysis with bias-free walk-forward backtest and trade-level analytics.
 
 ## Quick Invocation
 
@@ -37,13 +38,15 @@ SKILL_DIR="$SKILL_DIR"
 
 ## Engines
 
-Three independent, self-contained engines. Pick one per invocation via `--engine`:
+Five independent, self-contained engines. Pick one per invocation via `--engine`:
 
 | Engine | `--engine` | Features | Model | Data required |
 |--------|-----------|----------|-------|---------------|
 | **Threshold** | `threshold` (default) | 1 (returns) | Rolling return vs. threshold | Close prices |
 | **Messina** | `messina` | 19 (Wilder's) | GaussianHMM on expanding window | OHLCV |
 | **HMM** | `hmm` | ~50 (SMA-based) | GaussianHMM on expanding window | OHLCV |
+| **Robust HMM** | `robust_hmm` | ~50 (generic) | Robust GaussianHMM (Huber/MCD) on expanding window | OHLCV |
+| **FSHMM** | `fshmm` | ~50 (generic) | Feature Saliency HMM on expanding window | OHLCV |
 
 The Messina and HMM engines require OHLCV data and automatically receive it when using `--ticker`. For CSV mode, the CSV must contain open/high/low/close/volume columns.
 
@@ -54,13 +57,17 @@ The Messina and HMM engines require OHLCV data and automatically receive it when
 | `--csv` | path | — | Path to CSV file with price data. |
 | `--ticker` | str | — | yfinance ticker (e.g. `ES=F`, `SPY`, `BTC-USD`). |
 | `--json` | flag | off | Output JSON to stdout. On error: `{"error": "..."}` + exit 1. |
-| `--engine` | str | `threshold` | One of `threshold`, `messina`, `hmm`. |
+| `--engine` | str | `threshold` | One of `threshold`, `messina`, `hmm`, `robust_hmm`, `fshmm`. |
 | `--window` | int | 20 | Rolling window for regime classification. |
 | `--threshold` | float | 0.05 | Return threshold for bull/bear classification. |
 | `--min-train` | int | 252 | Minimum bars before walk-forward trading starts. |
 | `--n-states` | int/`auto` | 3 | Number of HMM states. Pass `auto` for BIC-based selection (ignored by threshold engine). |
 | `--dwell-bars` | int | 0 | Dwell-time filter: require N consecutive same-regime bars before switching position. 0 = disabled. |
 | `--hysteresis` | float | 0.0 | Hysteresis filter: require posterior probability margin > D to switch regime. 0.0 = disabled. No-op for threshold engine. |
+| `--duration-forecast` | flag | off | Enable regime duration forecasting via survival analysis (Weibull). |
+| `--duration-model` | str | `weibull` | Duration model: `weibull` (default) or `cox` (requires `lifelines`). |
+| `--robust-method` | str | `huber` | Robust estimator: `huber` (IRLS) or `mcd` (MinCovDet). Used by robust_hmm engine. |
+| `--saliency-threshold` | float | 0.5 | Features with saliency below this threshold are pruned. Used by fshmm engine. |
 
 ### Removed flags (v0.2.0)
 
@@ -81,34 +88,47 @@ The threshold engine uses rolling return to classify: above `+threshold` = Bull,
 ```json
 {
   "source": "ES=F",
-  "engine": "threshold",
-  "dates": {"start": "2016-01-04", "end": "2026-05-21"},
+  "engine": "fshmm",
+  "dates": {"start": "2016-05-31", "end": "2026-05-29"},
   "current_regime": {"name": "bull", "index": 2},
-  "signal": 0.62,
-  "next_state_probabilities": {"bear": 0.08, "sideways": 0.30, "bull": 0.62},
-  "transition_matrix": [[0.88, 0.07, 0.05], [0.12, 0.70, 0.18], [0.04, 0.19, 0.77]],
-  "stationary_distribution": {"bear": 0.22, "sideways": 0.35, "bull": 0.43},
-  "persistence_diagonal": {"bear": 0.88, "sideways": 0.70, "bull": 0.77},
-  "regime_counts": {"bear": 480, "sideways": 760, "bull": 960},
+  "signal": 0.82,
+  "next_state_probabilities": {"bear": 0.02, "sideways": 0.16, "bull": 0.82},
+  "transition_matrix": [[0.85, 0.10, 0.05], [0.03, 0.92, 0.05], [0.01, 0.07, 0.92]],
+  "stationary_distribution": {"bear": 0.10, "sideways": 0.45, "bull": 0.45},
+  "persistence_diagonal": {"bear": 0.85, "sideways": 0.92, "bull": 0.92},
+  "regime_counts": {"bear": 200, "sideways": 1200, "bull": 1100},
   "walk_forward": {
-    "sharpe": 0.51,
-    "max_drawdown": -0.15,
-    "n_trades": 42,
-    "win_rate": 0.57,
-    "profit_factor": 1.80,
-    "total_return": 0.23
+    "sharpe": 0.65,
+    "max_drawdown": -0.24,
+    "n_trades": 20,
+    "win_rate": 0.55,
+    "profit_factor": 4.88,
+    "total_return": 2.07
   },
   "forecast": {
-    "1_step":  {"bear": 0.08, "sideways": 0.30, "bull": 0.62},
-    "5_step":  {"bear": 0.12, "sideways": 0.33, "bull": 0.55},
-    "20_step": {"bear": 0.18, "sideways": 0.35, "bull": 0.47}
+    "1_step":  {"bear": 0.02, "sideways": 0.16, "bull": 0.82},
+    "5_step":  {"bear": 0.07, "sideways": 0.28, "bull": 0.65},
+    "20_step": {"bear": 0.15, "sideways": 0.42, "bull": 0.43}
   },
   "engine_info": {
-    "method": "threshold",
-    "features": "returns",
-    "n_states": 3
+    "method": "fshmm",
+    "features": "generic",
+    "n_states": 3,
+    "warmup_bars": 252,
+    "caveat": "HMM states sorted by mean return; labels may swap on re-fit",
+    "feature_saliency": [0.85, 0.92, 0.32, 0.11, 0.88],
+    "selected_features": ["log_ret", "rsi_14", "sma_50"]
   },
-  "framework": "hmm_test v0.2.0",
+  "duration_forecast": {
+    "current_regime": "bull",
+    "days_in_regime": 45,
+    "expected_remaining_days": 32.5,
+    "hazard_rate": 0.0154,
+    "survival_50pct": 60.0,
+    "weibull_shape": 1.25,
+    "weibull_scale": 80.0
+  },
+  "framework": "hmm_regime_detection v0.5.0",
   "disclaimer": "Regime detection is probabilistic. Past transitions do not guarantee future regimes. Not financial advice."
 }
 ```
@@ -130,9 +150,12 @@ All values are floats (may be `null` for insufficient data):
 
 | Field | Description |
 |-------|-------------|
-| `method` | Engine name: `threshold`, `messina`, or `hmm` |
+| `method` | Engine name: `threshold`, `messina`, `hmm`, `robust_hmm`, or `fshmm` |
 | `features` | Feature mode: `returns`, `messina`, or `generic` |
 | `n_states` | Number of HMM states (3 by default, may differ with `--n-states auto`) |
+| `warmup_bars` | Bars before walk-forward trading starts (`--min-train`) |
+| `feature_saliency` | Per-feature saliency weights (fshmm engine only) |
+| `selected_features` | Feature names with saliency ≥ threshold (fshmm engine only) |
 | `caveat` | Present on HMM engines: warns about label instability on re-fit |
 
 ## Processing Pipeline
@@ -204,6 +227,32 @@ Two optional filters reduce excessive position switching in walk-forward backtes
 - **Dwell-time** (`--dwell-bars N`): Requires N consecutive bars of the same new regime before switching position. Default 0 = disabled.
 - **Hysteresis** (`--hysteresis D`): Requires the posterior probability margin (new regime's probability minus current regime's probability) to exceed D before switching. Default 0.0 = disabled. No-op for the threshold engine (no posteriors).
 - **Logic**: AND — both filters must agree to allow a switch.
+
+### Duration Forecasting (`--duration-forecast`)
+
+Adds a survival analysis post-processor that estimates **how long the current
+regime is likely to last**. Fits a Weibull distribution to historical regime
+spell lengths. Optional Cox PH model with volatility/spell-return covariates
+(`--duration-model cox`, requires `lifelines`).
+
+```bash
+"$SKILL_DIR/run.sh" --ticker SPY --engine messina --duration-forecast --json
+```
+
+The `--duration-forecast` block in the output contains:
+
+| Field | Description |
+|-------|-------------|
+| `current_regime` | Which regime (bear/sideways/bull) |
+| `days_in_regime` | Bars spent in current regime so far |
+| `expected_remaining_days` | Expected bars remaining (conditional on survival) |
+| `hazard_rate` | Instantaneous risk of regime ending |
+| `survival_50pct` | Median total spell length for this regime |
+| `weibull_shape` | Shape parameter k (>1 = aging, <1 = infant mortality) |
+| `weibull_scale` | Scale parameter λ |
+
+Requires at least **3 completed spells** for the current regime. Output
+fields are `null` when insufficient data exists.
 
 ## Gotchas
 

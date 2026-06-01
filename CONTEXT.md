@@ -77,10 +77,28 @@ A flat dataclass that encapsulates all constructor parameters for one engine. Ea
 _Avoid_: engine settings, engine params
 
 **Duration forecast**:
-Optional post-processing that estimates how long the current regime will persist. Two survival models: `weibull` (Weibull distribution fit to historical regime durations) and `cox` (Cox proportional hazards with realized-volatility covariate). Outputs median expected remaining days and conditional survival curve per regime. Opt-in via `--duration-forecast`.
+Post-processing, now on by default, that estimates how long the current regime will persist. Two survival models: `weibull` (Weibull distribution fit to historical regime durations — default, no extra dependencies) and `cox` (Cox proportional hazards with realized-volatility and spell-return covariates — requires `lifelines`). Outputs expected remaining days, hazard rate, 50%-survival point, and Weibull shape/scale. The Cox model adds covariate-adjusted predictions (`cox_expected_remaining_days`, `cox_coefficients`, `concordance_index`). Opt-out via `duration_forecast=False` on `pipeline.run()`.
 _Avoid_: regime length prediction, time-to-transition
 
-## Flagged ambiguities
+**Verdict**:
+A synthesized signal computed by `_compute_verdict()` in `pipeline.py`, always present in pipeline output. One of ``"bullish"``, ``"bearish"``, ``"neutral"``, ``"transition_bull"``, ``"transition_bear"``. For Bull/Bear regimes, compares the 20-step forecast probability to the current distribution — continuation if the forecast reinforces, transition if it reverses. For Sideways, uses ``|signal|`` against a dynamic threshold (see below). Includes a ``confidence`` field = ``abs(signal)``.
+_Avoid_: prediction, outlook, recommendation
+
+**Dynamic threshold**:
+A regime-aging-adjusted threshold for the Sideways → transition verdict boundary. Computed by ``_compute_dynamic_threshold()`` from the duration forecast's Weibull fit. When ``days_in_regime > expected_total`` (Weibull unconditional mean), the threshold shrinks linearly from 1.0× at aging_ratio=1 down to 0.3× at aging_ratio=1.7. Makes the verdict more sensitive to transition signals as the regime ages past its historical norm. Falls back to 0.1 when duration data is unavailable.
+_Avoid_: adaptive threshold, variable cutoff
+
+## Engine suitability
+
+| Engine | Best for | Weakness |
+|---|---|---|
+| `threshold` | Crypto, high-vol assets, close-only data | Whipsaw-heavy without dwell-bars; negative Sharpe on low-vol equities |
+| `hmm` (generic) | Low-vol equities (e.g. KO, SPY), OHLCV-rich data | Degenerates on high-vol crypto — classifies 100% Sideways; `~50 features overwhelm HMM on short/noisy windows |
+| `messina` | Medium-vol assets, regime-aware feature set | 19 features are less discriminative than 50 — often returns 100% Sideways |
+| `robust_hmm` | Data with outlier bars | Same asset-vol sensitivity as `hmm`; Huber/MCD correction helps emission stability but not regime separation |
+| `fshmm` | Feature selection diagnostics | Saliency weights (ρ) identify dead features but don't fix the high-vol degeneration problem |
+
+**Rule of thumb**: If daily std > 2%, prefer `threshold` with dwell-bars ≥ 5. If daily std < 1.5% and OHLCV is available, `hmm` with n_states=3 often outperforms threshold. `n_states=auto` (BIC) tends to over-select states on financial data — cap at 4 for trading use.
 
 - **"state"**: Use **regime** for the labeled market condition (Bear/Sideways/Bull) and **HMM latent state** for the raw model output index. Never use "state" alone.
 - **"method"**: Use **engine** for the selected analysis pipeline. The old term "method" appears in the JSON `params.method` field; this is legacy from when threshold was the only engine and should migrate to `engine_info.method`.
