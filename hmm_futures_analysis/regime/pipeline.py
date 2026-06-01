@@ -16,11 +16,13 @@ import dataclasses
 import numpy as np
 import pandas as pd
 
-from .engine_protocol import ENGINE_REGISTRY, RegimeEngine, resolve_engine
-from .engines._hmm_shared import select_n_states
+from .engine_protocol import (
+    ENGINE_REGISTRY,
+    ClassifyOutput,
+    resolve_engine,
+)
 from .markov_chain import (
     build_transition_matrix,
-    classify_regimes,
     compute_persistence_diagonal,
     compute_signal,
     compute_stationary_distribution,
@@ -35,17 +37,6 @@ _DISCLAIMER = (
     "Regime detection is probabilistic. Past transitions do not guarantee "
     "future regimes. Not financial advice."
 )
-
-
-@dataclasses.dataclass
-class ClassifyOutput:
-    """Intermediate state from the classify phase."""
-
-    regimes: np.ndarray
-    posteriors: np.ndarray | None = None
-    last_regime: int = 1
-    warmup_bars: int | None = None
-    engine_instance: RegimeEngine | None = None
 
 
 @dataclasses.dataclass
@@ -337,88 +328,36 @@ def run(
     if engine_config is None:
         raise ValueError("engine_config is required")
 
-    engine: str = getattr(engine_config, "name", None)
-    if engine not in ENGINE_REGISTRY:
+    engine_name: str = getattr(engine_config, "name", None)
+    if engine_name not in ENGINE_REGISTRY:
         raise ValueError(
-            f"engine must be one of {sorted(ENGINE_REGISTRY.keys())}, got {engine!r}"
+            f"engine must be one of {sorted(ENGINE_REGISTRY.keys())}, got {engine_name!r}"
         )
 
     returns = _validate_prices(prices)
 
-    # --- Resolve n_states='auto' for HMM engines ---
-    config = engine_config  # shorthand
-    raw_n_states = getattr(config, "n_states", 3)
-    features_label: str = getattr(config, "features", engine)
-    resolved_n_states: int = 3  # default for threshold
+    config = engine_config
+    resolved_n_states: int = getattr(config, "n_states", 3)
+    if isinstance(resolved_n_states, str):
+        resolved_n_states = 3  # auto will be resolved inside classify_pipeline
 
-    # --- Engine-specific regime classification ---
-    eng: object | None = None
+    # --- Regime classification (uniform across all engines) ---
+    eng = resolve_engine(config)
+    classify_out = eng.classify_pipeline(
+        prices,
+        ohlcv,
+        returns,
+        min_train,
+        profile=profile,
+        _phases=_phases,
+        _classify_times=_classify_times,
+    )
 
-    if engine == "threshold":
-        window = getattr(config, "window", 20)
-        threshold = getattr(config, "threshold", 0.05)
-        regimes = classify_regimes(returns, window=window, threshold=threshold)
-        eng = resolve_engine(config)
-        classify_out = ClassifyOutput(
-            regimes=regimes,
-            posteriors=None,
-            last_regime=int(regimes[-1]),
-            warmup_bars=None,
-            engine_instance=eng,
-        )
-    else:
-        eng_cls = ENGINE_REGISTRY[engine][0]
-
-        # Precompute features (needed for BIC and for classification)
-        eng_temp = eng_cls(n_states=3)  # n_states doesn't affect precompute
-        precomputed = None
-        t_pc = time.monotonic()
-        try:
-            precomputed = eng_temp.precompute(ohlcv)
-        except ValueError:
-            raise  # engine validation errors propagate directly
-        except (RuntimeError, KeyError):
-            precomputed = None
-        if profile:
-            _phases["precompute"] = float(round(time.monotonic() - t_pc, 6))
-        if precomputed is None:
-            raise ValueError(
-                f"engine {engine!r} failed to precompute features from OHLCV data"
-            )
-
-        # Resolve 'auto' now that we have features
-        if isinstance(raw_n_states, str) and raw_n_states == "auto":
-            t_bic = time.monotonic()
-            resolved_n_states = select_n_states(
-                precomputed.dropna().to_numpy(dtype=np.float64),
-                max_states=6,
-                profile=_phases if profile else False,
-            )
-            if profile:
-                _phases["bic_select_n_states"] = float(
-                    round(time.monotonic() - t_bic, 6)
-                )
-            config = dataclasses.replace(config, n_states=resolved_n_states)
-        elif isinstance(raw_n_states, int):
-            resolved_n_states = raw_n_states
-        else:
-            raise ValueError(f"n_states must be int or 'auto', got {raw_n_states!r}")
-
-        eng = resolve_engine(config)
-
-        classify_out = _classify_hmm(
-            eng,
-            precomputed,
-            returns,
-            min_train,
-            profile=profile,
-            _phases=_phases,
-            _classify_times=_classify_times,
-        )
+    # If engine resolved n_states internally (HMM engines set it), use that
+    if classify_out.n_states is not None:
+        resolved_n_states = classify_out.n_states
 
     markov = _build_markov_stats(classify_out.regimes, prices.index)
-
-    # Forecasts
     forecast_1 = _probs_to_dict(
         forecast_n_steps(markov.transmat, markov.current_probs, 1)
     )
@@ -462,7 +401,7 @@ def run(
 
     result = {
         "source": source,
-        "engine": engine,
+        "engine": engine_name,
         "dates": {
             "start": markov.dates["start"],
             "end": markov.dates["end"],
