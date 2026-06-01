@@ -164,6 +164,7 @@ removals below are strictly consistent with the original ADR's trajectory.
 | `data_processing/data_validation.py` | Alive | `e0b772e` | #54 |
 | 8 dead dataclasses in `utils/data_types.py` | "Keep whole file" | `bbbb91c` | #56 |
 | Dead functions in `backtesting/performance_metrics.py` and `data_processing/technical_indicators.py` | "Trim dead code within" | `6cc0c79` | #55 |
+| 6 more dead functions in `backtesting/performance_metrics.py` (`calculate_returns`, `calculate_annualized_return`, `calculate_annualized_volatility`, `calculate_calmar_ratio`, `get_annualization_factor`, `_infer_frequency`) | "Trim dead code within" | pending | #59 |
 
 All three commits passed the same deletion test used in ADR-0008: no callers
 in any engine path required changes.
