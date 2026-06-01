@@ -22,6 +22,7 @@ ADRs use a flat, sequential 4-digit numbering scheme (`0001-`, `0002-`, …).
 | 0012 | `0012-pipeline-run-decomposition.md` | Pipeline `run()` decomposition |
 | 0013 | `0013-fshmm-engine.md` | Feature Saliency HMM (FSHMM) engine |
 | 0014 | `0014-per-phase-timing-instrumentation.md` | Per-phase timing instrumentation |
+| 0015 | `0015-regime-duration-forecasting.md` | Regime duration forecasting via survival analysis (Weibull + Cox PH) |
 
 ## Rules for contributors
 
