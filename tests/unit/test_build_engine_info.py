@@ -1,6 +1,6 @@
 """Unit tests for pipeline._build_engine_info helper."""
 
-from hmm_futures_analysis.regime.engine_protocol import ThresholdConfig
+from hmm_futures_analysis.regime.engine_configs import ThresholdConfig
 from hmm_futures_analysis.regime.pipeline import _build_engine_info
 
 
@@ -15,7 +15,7 @@ class TestBuildEngineInfo:
         assert result["n_states"] == 3
 
     def test_hmm_config_base_info(self):
-        from hmm_futures_analysis.regime.engine_protocol import HMMGenericConfig
+        from hmm_futures_analysis.regime.engine_configs import HMMGenericConfig
 
         config = HMMGenericConfig()
         result = _build_engine_info(config, resolved_n_states=3, eng=None)

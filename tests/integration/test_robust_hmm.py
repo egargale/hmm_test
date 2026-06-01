@@ -141,7 +141,7 @@ class TestHuberRobustness:
         mle_means_raw = model.means_[order_mle] * scale + center
 
         # Apply Huber correction
-        from hmm_futures_analysis.regime.engines._hmm_shared import _huber_correction
+        from hmm_futures_analysis.regime.engines._hmm_engine import _huber_correction
 
         post = model.predict_proba(X_norm)
         _huber_correction(model, X_norm, post)
@@ -202,7 +202,7 @@ class TestMCDRobustness:
         mle_means_raw = model.means_[order_mle] * scale + center
 
         # Use perfect posteriors to isolate the MCD correction logic
-        from hmm_futures_analysis.regime.engines._hmm_shared import _mcd_correction
+        from hmm_futures_analysis.regime.engines._hmm_engine import _mcd_correction
 
         perfect_post = np.zeros((3 * n_per_state, 3))
         for k in range(3):
@@ -226,7 +226,7 @@ class TestMCDFallback:
     def test_mcd_no_crash_on_sparse_states(self):
         """n_states=6 on short data — some states get very few points."""
         from hmmlearn import hmm as hmm_mod
-        from hmm_futures_analysis.regime.engines._hmm_shared import _mcd_correction
+        from hmm_futures_analysis.regime.engines._hmm_engine import _mcd_correction
 
         rng = np.random.RandomState(42)
         # Only 30 points — too few for 6 states to each have enough for MCD
@@ -258,7 +258,7 @@ class TestBICCompatibility:
     """robust_hmm should work with n_states='auto' (BIC selection)."""
 
     def test_robust_hmm_with_auto_n_states(self, btc_ohlcv, btc_prices):
-        from hmm_futures_analysis.regime.engine_protocol import RobustHMMConfig
+        from hmm_futures_analysis.regime.engine_configs import RobustHMMConfig
         from hmm_futures_analysis.regime.pipeline import run as pipeline_run
 
         result = pipeline_run(
@@ -269,9 +269,9 @@ class TestBICCompatibility:
             min_train=300,
         )
         assert "error" not in result
-        assert result["engine"] == "robust_hmm"
-        assert isinstance(result["engine_info"]["n_states"], int)
-        assert result["engine_info"]["n_states"] >= 2
+        assert result.engine == "robust_hmm"
+        assert isinstance(result.engine_info["n_states"], int)
+        assert result.engine_info["n_states"] >= 2
 
 
 @pytest.mark.slow
@@ -279,7 +279,7 @@ class TestPCACompatibility:
     """Robust correction should work in PCA-whitened space."""
 
     def test_robust_hmm_with_pca(self, btc_ohlcv, btc_prices):
-        from hmm_futures_analysis.regime.engine_protocol import RobustHMMConfig
+        from hmm_futures_analysis.regime.engine_configs import RobustHMMConfig
         from hmm_futures_analysis.regime.pipeline import run as pipeline_run
 
         result = pipeline_run(
@@ -290,7 +290,7 @@ class TestPCACompatibility:
             min_train=300,
         )
         assert "error" not in result
-        assert result["engine"] == "robust_hmm"
+        assert result.engine == "robust_hmm"
 
 
 @pytest.mark.slow
@@ -298,7 +298,7 @@ class TestEngineIndependence:
     """robust_hmm differs from hmm on contaminated data, similar on clean."""
 
     def test_robust_differs_from_hmm_on_contaminated(self, btc_ohlcv, btc_prices):
-        from hmm_futures_analysis.regime.engine_protocol import HMMGenericConfig, RobustHMMConfig
+        from hmm_futures_analysis.regime.engine_configs import HMMGenericConfig, RobustHMMConfig
         from hmm_futures_analysis.regime.pipeline import run as pipeline_run
 
         common = dict(source="test", min_train=300)
@@ -318,11 +318,11 @@ class TestEngineIndependence:
         # They use the same underlying HMM structure but robust applies correction,
         # so they should produce the same or very similar results on clean data
         # (correction has little effect without outliers)
-        assert result_robust["engine"] == "robust_hmm"
-        assert result_hmm["engine"] == "hmm"
+        assert result_robust.engine == "robust_hmm"
+        assert result_hmm.engine == "hmm"
 
     def test_robust_uses_robust_method(self, btc_ohlcv, btc_prices):
-        from hmm_futures_analysis.regime.engine_protocol import RobustHMMConfig
+        from hmm_futures_analysis.regime.engine_configs import RobustHMMConfig
         from hmm_futures_analysis.regime.pipeline import run as pipeline_run
 
         common = dict(source="test", min_train=300, ohlcv=btc_ohlcv)
@@ -336,8 +336,8 @@ class TestEngineIndependence:
             engine_config=RobustHMMConfig(robust_method="mcd"),
             **common,
         )
-        assert result_hub["engine_info"].get("robust_method") == "huber"
-        assert result_mcd["engine_info"].get("robust_method") == "mcd"
+        assert result_hub.engine_info.get("robust_method") == "huber"
+        assert result_mcd.engine_info.get("robust_method") == "mcd"
 
 
 @pytest.mark.slow
@@ -356,8 +356,8 @@ class TestCLIIntegration:
         )
         assert result.returncode == 0, f"stderr: {result.stderr}"
         data = json.loads(result.stdout)
-        assert data["engine"] == "robust_hmm"
-        assert data["engine_info"]["robust_method"] == "huber"
+        assert data.engine == "robust_hmm"
+        assert data.engine_info["robust_method"] == "huber"
 
     def test_cli_robust_hmm_mcd(self, btc_csv):
         result = run_regime(
@@ -371,7 +371,7 @@ class TestCLIIntegration:
         )
         assert result.returncode == 0, f"stderr: {result.stderr}"
         data = json.loads(result.stdout)
-        assert data["engine_info"]["robust_method"] == "mcd"
+        assert data.engine_info["robust_method"] == "mcd"
 
     def test_cli_robust_hmm_default_method(self, btc_csv):
         result = run_regime(
@@ -383,4 +383,4 @@ class TestCLIIntegration:
         )
         assert result.returncode == 0, f"stderr: {result.stderr}"
         data = json.loads(result.stdout)
-        assert data["engine_info"]["robust_method"] == "huber"
+        assert data.engine_info["robust_method"] == "huber"

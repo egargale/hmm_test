@@ -60,7 +60,7 @@ class TestCliLoadPricesIntegration:
         import json
 
         output = json.loads(result.stdout)
-        assert output["source"] == btc_csv
+        assert output.source == btc_csv
         assert "current_regime" in output
 
 

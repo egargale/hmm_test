@@ -1,4 +1,5 @@
 """Tests for regime duration forecasting (issues #28, #29)."""
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -108,12 +109,12 @@ class TestHazardRate:
         scale = 45.0
         t = 20.0
 
-        expected = weibull_min.pdf(t, shape, scale=scale) / weibull_min.sf(t, shape, scale=scale)
+        expected = weibull_min.pdf(t, shape, scale=scale) / weibull_min.sf(
+            t, shape, scale=scale
+        )
         result = _hazard_rate(shape, scale, t)
 
-        assert abs(result - expected) < 1e-6, (
-            f"hazard={result}, expected={expected}"
-        )
+        assert abs(result - expected) < 1e-6, f"hazard={result}, expected={expected}"
 
 
 class TestMedianSurvival:
@@ -130,9 +131,7 @@ class TestMedianSurvival:
         expected = scale * (np.log(2) ** (1.0 / shape))
         result = _median_survival(shape, scale)
 
-        assert abs(result - expected) < 1e-6, (
-            f"median={result}, expected={expected}"
-        )
+        assert abs(result - expected) < 1e-6, f"median={result}, expected={expected}"
 
 
 class TestForecastDuration:
@@ -233,14 +232,19 @@ class TestPipelineIntegration:
     def test_pipeline_with_duration_forecast_flag(self, btc_csv):
         """pipeline.run(duration_forecast=True) → output contains duration_forecast key."""
         from hmm_futures_analysis.data_processing.csv_auto_detect import load_from_csv
-        from hmm_futures_analysis.regime.engine_protocol import ThresholdConfig
+        from hmm_futures_analysis.regime.engine_configs import ThresholdConfig
         from hmm_futures_analysis.regime.pipeline import run as pipeline_run
 
         prices = load_from_csv(btc_csv)
-        result = pipeline_run(prices, source="test", engine_config=ThresholdConfig(), duration_forecast=True)
+        result = pipeline_run(
+            prices,
+            source="test",
+            engine_config=ThresholdConfig(),
+            duration_forecast=True,
+        )
 
-        assert "duration_forecast" in result
-        df = result["duration_forecast"]
+        assert result.duration_forecast is not None
+        df = result.duration_forecast
         assert df is not None or df is None  # may be None if insufficient spells
         if df is not None:
             assert "current_regime" in df
@@ -249,7 +253,7 @@ class TestPipelineIntegration:
     def test_pipeline_default_no_duration_forecast(self, btc_csv):
         """pipeline.run() without flag → no duration_forecast key."""
         from hmm_futures_analysis.data_processing.csv_auto_detect import load_from_csv
-        from hmm_futures_analysis.regime.engine_protocol import ThresholdConfig
+        from hmm_futures_analysis.regime.engine_configs import ThresholdConfig
         from hmm_futures_analysis.regime.pipeline import run as pipeline_run
 
         prices = load_from_csv(btc_csv)
@@ -314,6 +318,7 @@ class TestCoxModelWithoutLifelines:
         try:
             # Force reimport to pick up the blocked lifelines
             import hmm_futures_analysis.regime.duration_forecast as mod
+
             importlib.reload(mod)
 
             # Directly call _fit_coxph — the lazy import should fail
@@ -435,7 +440,9 @@ class TestFitCoxPH:
         prices = pd.Series(price_list)
         spells = _extract_spells(regimes)
 
-        result = _fit_coxph(regimes, spells, prices, current_regime_idx=0, days_in_regime=5)
+        result = _fit_coxph(
+            regimes, spells, prices, current_regime_idx=0, days_in_regime=5
+        )
 
         assert result is not None
         assert "cox_coefficients" in result
@@ -470,13 +477,24 @@ class TestForecastDurationCox:
 
         assert result is not None
         # Weibull fields always present
-        for key in ["current_regime", "days_in_regime", "expected_remaining_days",
-                     "hazard_rate", "survival_50pct", "weibull_shape", "weibull_scale"]:
+        for key in [
+            "current_regime",
+            "days_in_regime",
+            "expected_remaining_days",
+            "hazard_rate",
+            "survival_50pct",
+            "weibull_shape",
+            "weibull_scale",
+        ]:
             assert key in result, f"missing Weibull field: {key}"
 
         # Cox fields present
-        for key in ["cox_coefficients", "concordance_index", "baseline_hazard_at_t",
-                     "cox_expected_remaining_days"]:
+        for key in [
+            "cox_coefficients",
+            "concordance_index",
+            "baseline_hazard_at_t",
+            "cox_expected_remaining_days",
+        ]:
             assert key in result, f"missing Cox field: {key}"
 
         # Cox fields should be populated (enough spells)
@@ -510,17 +528,20 @@ class TestPipelineCoxIntegration:
     def test_pipeline_cox_produces_cox_fields(self, btc_csv):
         """pipeline.run(duration_model='cox') → output has both Weibull and Cox fields."""
         from hmm_futures_analysis.data_processing.csv_auto_detect import load_from_csv
-        from hmm_futures_analysis.regime.engine_protocol import ThresholdConfig
+        from hmm_futures_analysis.regime.engine_configs import ThresholdConfig
         from hmm_futures_analysis.regime.pipeline import run as pipeline_run
 
         prices = load_from_csv(btc_csv)
         result = pipeline_run(
-            prices, source="test", engine_config=ThresholdConfig(),
-            duration_forecast=True, duration_model="cox",
+            prices,
+            source="test",
+            engine_config=ThresholdConfig(),
+            duration_forecast=True,
+            duration_model="cox",
         )
 
-        assert "duration_forecast" in result
-        df = result["duration_forecast"]
+        assert result.duration_forecast is not None
+        df = result.duration_forecast
         if df is not None:
             # Weibull fields always present
             assert "weibull_shape" in df
@@ -530,17 +551,20 @@ class TestPipelineCoxIntegration:
     def test_pipeline_weibull_no_cox_fields(self, btc_csv):
         """pipeline.run(duration_model='weibull') → no Cox fields (backward compat)."""
         from hmm_futures_analysis.data_processing.csv_auto_detect import load_from_csv
-        from hmm_futures_analysis.regime.engine_protocol import ThresholdConfig
+        from hmm_futures_analysis.regime.engine_configs import ThresholdConfig
         from hmm_futures_analysis.regime.pipeline import run as pipeline_run
 
         prices = load_from_csv(btc_csv)
         result = pipeline_run(
-            prices, source="test", engine_config=ThresholdConfig(),
-            duration_forecast=True, duration_model="weibull",
+            prices,
+            source="test",
+            engine_config=ThresholdConfig(),
+            duration_forecast=True,
+            duration_model="weibull",
         )
 
-        assert "duration_forecast" in result
-        df = result["duration_forecast"]
+        assert result.duration_forecast is not None
+        df = result.duration_forecast
         if df is not None:
             assert "cox_coefficients" not in df
 
@@ -554,12 +578,19 @@ class TestCLICoxIntegration:
         import subprocess
         import sys
 
-        cmd = [sys.executable, "-m", "hmm_futures_analysis.cli",
-               "--csv", btc_csv,
-               "--engine", "threshold",
-               "--duration-forecast",
-               "--duration-model", "cox",
-               "--json"]
+        cmd = [
+            sys.executable,
+            "-m",
+            "hmm_futures_analysis.cli",
+            "--csv",
+            btc_csv,
+            "--engine",
+            "threshold",
+            "--duration-forecast",
+            "--duration-model",
+            "cox",
+            "--json",
+        ]
         proc = subprocess.run(cmd, capture_output=True, text=True)
 
         # Should succeed (lifelines is installed)

@@ -1,4 +1,4 @@
-"""RegimeEngine protocol, ClassifyResult, config dataclasses, and ENGINE_REGISTRY."""
+"""RegimeEngine protocol, result types, ENGINE_REGISTRY, and engine factory."""
 
 from __future__ import annotations
 
@@ -7,6 +7,14 @@ from typing import Protocol, runtime_checkable
 
 import numpy as np
 import pandas as pd
+
+from .engine_configs import (
+    FSHMMConfig,
+    HMMGenericConfig,
+    HMMMMessinaConfig,
+    RobustHMMConfig,
+    ThresholdConfig,
+)
 
 
 @dataclass
@@ -18,28 +26,6 @@ class ClassifyResult:
     selected_features: list[str] | None = None
 
 
-@runtime_checkable
-class RegimeEngine(Protocol):
-    def precompute(self, data: pd.DataFrame) -> pd.DataFrame | None: ...
-    def classify(
-        self, data: pd.DataFrame, prev_means: np.ndarray | None = None
-    ) -> ClassifyResult: ...
-    def classify_pipeline(
-        self,
-        prices: pd.Series,
-        ohlcv: pd.DataFrame | None,
-        returns: pd.Series,
-        min_train: int = 252,
-        *,
-        profile: bool = True,
-        _phases: dict[str, float] | None = None,
-        _classify_times: list[float] | None = None,
-    ) -> ClassifyOutput: ...
-
-
-# --- Config dataclasses (ADR-0004) ---
-
-
 @dataclass
 class ClassifyOutput:
     """Intermediate state from the classify phase."""
@@ -48,70 +34,21 @@ class ClassifyOutput:
     posteriors: np.ndarray | None = None
     last_regime: int = 1
     warmup_bars: int | None = None
-    engine_instance: RegimeEngine | None = None
+    engine_instance: RegimeEngine | None = None  # type: ignore[name-defined]
     n_states: int = 3
 
 
-@dataclass
-class ThresholdConfig:
-    name: str = "threshold"
-    features: str = "returns"
-    window: int = 20
-    threshold: float = 0.05
-
-    @property
-    def is_hmm(self) -> bool:
-        return False
+@runtime_checkable
+class RegimeEngine(Protocol):
+    def precompute(self, data: pd.DataFrame) -> pd.DataFrame | None: ...
+    def classify(
+        self, data: pd.DataFrame, prev_means: np.ndarray | None = None
+    ) -> ClassifyResult: ...
 
 
-@dataclass
-class HMMGenericConfig:
-    name: str = "hmm"
-    features: str = "generic"
-    n_states: int | str = 3
-    pca_variance: float | None = None
-
-    @property
-    def is_hmm(self) -> bool:
-        return True
-
-
-@dataclass
-class HMMMMessinaConfig:
-    name: str = "messina"
-    features: str = "messina"
-    n_states: int | str = 3
-    pca_variance: float | None = None
-
-    @property
-    def is_hmm(self) -> bool:
-        return True
-
-
-@dataclass
-class RobustHMMConfig:
-    name: str = "robust_hmm"
-    features: str = "generic"
-    n_states: int | str = 3
-    pca_variance: float | None = None
-    robust_method: str = "huber"
-
-    @property
-    def is_hmm(self) -> bool:
-        return True
-
-
-@dataclass
-class FSHMMConfig:
-    name: str = "fshmm"
-    features: str = "generic"
-    n_states: int | str = 3
-    pca_variance: float | None = None
-    saliency_threshold: float = 0.5
-
-    @property
-    def is_hmm(self) -> bool:
-        return True
+# ---------------------------------------------------------------------------
+# Engine registry — lazy to avoid circular imports
+# ---------------------------------------------------------------------------
 
 
 def _build_registry() -> dict[str, tuple[type, type]]:
@@ -130,45 +67,40 @@ def _build_registry() -> dict[str, tuple[type, type]]:
     }
 
 
-class _LazyRegistry(dict):
-    """Dict subclass that lazily builds on first access."""
+class _LazyRegistry:
+    """Lazily-built engine registry. Resolves on first access.
 
-    def __init__(self) -> None:
-        super().__init__()
-        self._built = False
+    Exists to avoid a circular import: configs import from
+    ``.engine_configs``, engines import from here, and the registry
+    references both.  Building on first access defers the import
+    until after all modules are loaded.
+    """
 
-    def _ensure_built(self) -> None:
-        if not self._built:
-            self._built = True
-            self.update(_build_registry())
+    _cache: dict | None = None
+
+    @classmethod
+    def _data(cls) -> dict:
+        if cls._cache is None:
+            cls._cache = _build_registry()
+        return cls._cache
 
     def __contains__(self, key: object) -> bool:
-        self._ensure_built()
-        return super().__contains__(key)
+        return key in self._data()
 
-    def __getitem__(self, key: str) -> type:
-        self._ensure_built()
-        return super().__getitem__(key)
-
-    def __iter__(self):
-        self._ensure_built()
-        return super().__iter__()
+    def __getitem__(self, key: str) -> tuple:
+        return self._data()[key]
 
     def keys(self):
-        self._ensure_built()
-        return super().keys()
-
-    def values(self):
-        self._ensure_built()
-        return super().values()
+        return self._data().keys()
 
     def items(self):
-        self._ensure_built()
-        return super().items()
+        return self._data().items()
 
     def __len__(self) -> int:
-        self._ensure_built()
-        return super().__len__()
+        return len(self._data())
+
+
+ENGINE_REGISTRY: dict[str, tuple[type, type]] = _LazyRegistry()  # type: ignore[assignment]
 
 
 def resolve_engine(config) -> RegimeEngine:
@@ -189,8 +121,6 @@ def resolve_engine(config) -> RegimeEngine:
     }
     return engine_cls(**kwargs)
 
-
-ENGINE_REGISTRY: dict[str, tuple[type, type]] = _LazyRegistry()
 
 # Engine sets derived from the registry.
 # HMM_ENGINES: engines that fit a GaussianHMM and provide posteriors.

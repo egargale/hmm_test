@@ -8,7 +8,7 @@ import numpy as np
 from hmmlearn import hmm
 
 from hmm_futures_analysis.regime.engine_protocol import ClassifyResult
-from hmm_futures_analysis.regime.engines._hmm_shared import _classify_hmm_slice
+from hmm_futures_analysis.regime.engines._hmm_engine import _classify_hmm_slice
 
 
 def _make_model(n_states: int = 3, n_features: int = 2) -> hmm.GaussianHMM:

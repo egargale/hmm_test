@@ -165,7 +165,7 @@ class TestPipelineIntegration:
     """pipeline.run() with engine='fshmm' produces valid output."""
 
     def test_pipeline_runs_fshmm(self, btc_ohlcv, btc_prices):
-        from hmm_futures_analysis.regime.engine_protocol import FSHMMConfig
+        from hmm_futures_analysis.regime.engine_configs import FSHMMConfig
         from hmm_futures_analysis.regime.pipeline import run as pipeline_run
 
         # Use only last 80 bars with min_train=40 to minimise refit points
@@ -179,10 +179,10 @@ class TestPipelineIntegration:
             ohlcv=ohlcv,
             min_train=40,
         )
-        assert result["engine"] == "fshmm"
-        assert result["current_regime"]["index"] in (0, 1, 2)
-        assert result["engine_info"]["features"] == "generic"
-        assert "walk_forward" in result
+        assert result.engine == "fshmm"
+        assert result.current_regime["index"] in (0, 1, 2)
+        assert result.engine_info["features"] == "generic"
+        assert result.walk_forward is not None
 
 
 @pytest.mark.slow

@@ -15,7 +15,7 @@ from hmm_futures_analysis.regime.markov_chain import (
     compute_stationary_distribution,
     forecast_n_steps,
 )
-from hmm_futures_analysis.regime.engine_protocol import (  # noqa: F401
+from hmm_futures_analysis.regime.engine_configs import (  # noqa: F401
     HMMGenericConfig,
     HMMMMessinaConfig,
     RobustHMMConfig,
@@ -91,7 +91,7 @@ class TestThresholdPipeline:
         prices = load_from_csv(btc_csv)
         engine = ThresholdEngine()
         result = walk_forward_backtest(prices, engine=engine)
-        assert result["max_drawdown"] <= 0 or np.isnan(result["max_drawdown"])
+        assert result.max_drawdown <= 0 or np.isnan(result.max_drawdown)
 
     def test_forecast_n_steps(self, btc_csv):
         prices = load_from_csv(btc_csv)
@@ -193,31 +193,31 @@ class TestPipelineRunInputValidation:
         for key in expected_keys:
             assert key in result, f"Missing required key: {key}"
         # Engine
-        assert result["engine"] == "threshold"
+        assert result.engine == "threshold"
         # Dates
-        assert "start" in result["dates"]
-        assert "end" in result["dates"]
+        assert "start" in result.dates
+        assert "end" in result.dates
         # Current regime
-        assert result["current_regime"]["name"] in ("bear", "sideways", "bull")
-        assert isinstance(result["current_regime"]["index"], int)
+        assert result.current_regime["name"] in ("bear", "sideways", "bull")
+        assert isinstance(result.current_regime["index"], int)
         # Signal range
-        assert -1.0 <= result["signal"] <= 1.0
+        assert -1.0 <= result.signal <= 1.0
         # Transition matrix
-        tm = result["transition_matrix"]
+        tm = result.transition_matrix
         assert len(tm) == 3
         assert all(len(row) == 3 for row in tm)
         for row in tm:
             assert abs(sum(row) - 1.0) < 0.01
         # Persistence diagonal
         for name in ("bear", "sideways", "bull"):
-            assert name in result["persistence_diagonal"]
-            assert 0.0 <= result["persistence_diagonal"][name] <= 1.0
+            assert name in result.persistence_diagonal
+            assert 0.0 <= result.persistence_diagonal[name] <= 1.0
         # Stationary distribution
-        sd = result["stationary_distribution"]
+        sd = result.stationary_distribution
         total = sd["bear"] + sd["sideways"] + sd["bull"]
         assert abs(total - 1.0) < 0.01
         # Walk-forward has 6 keys
-        wf = result["walk_forward"]
+        wf = result.walk_forward
         assert set(wf.keys()) == {
             "sharpe",
             "max_drawdown",
@@ -226,18 +226,18 @@ class TestPipelineRunInputValidation:
             "profit_factor",
             "total_return",
         }
-        assert isinstance(wf["n_trades"], int)
+        assert isinstance(wf.n_trades, int)
         # Forecast
         for step in ("1_step", "5_step", "20_step"):
-            assert step in result["forecast"]
-            f = result["forecast"][step]
+            assert step in result.forecast
+            f = result.forecast[step]
             assert set(f.keys()) == {"bear", "sideways", "bull"}
             assert abs(sum(f.values()) - 1.0) < 0.01
         # Engine info
-        ei = result["engine_info"]
+        ei = result.engine_info
         assert ei["method"] == "threshold"
         # Regime counts
-        rc = result["regime_counts"]
+        rc = result.regime_counts
         assert set(rc.keys()) == {"bear", "sideways", "bull"}
         assert all(isinstance(v, int) for v in rc.values())
 
@@ -277,7 +277,7 @@ class TestWalkForwardBacktest:
         prices = load_from_csv(btc_csv)
         engine = ThresholdEngine()
         result = walk_forward_backtest(prices, engine=engine)
-        wr = result["win_rate"]
+        wr = result.win_rate
         assert 0.0 <= wr <= 1.0 or np.isnan(wr)
 
     def test_threshold_engine_raises_on_invalid_engine(self, btc_csv):
@@ -293,12 +293,12 @@ class TestWalkForwardBacktest:
         prices = load_from_csv(btc_csv).iloc[:5]
         engine = ThresholdEngine()
         result = walk_forward_backtest(prices, engine=engine, min_train=252)
-        assert np.isnan(result["sharpe"])
-        assert np.isnan(result["max_drawdown"])
-        assert result["n_trades"] == 0
-        assert np.isnan(result["win_rate"])
-        assert np.isnan(result["profit_factor"])
-        assert np.isnan(result["total_return"])
+        assert np.isnan(result.sharpe)
+        assert np.isnan(result.max_drawdown)
+        assert result.n_trades == 0
+        assert np.isnan(result.win_rate)
+        assert np.isnan(result.profit_factor)
+        assert np.isnan(result.total_return)
 
 
 @pytest.mark.slow
@@ -418,10 +418,10 @@ class TestPipelineRunEngine:
         """pipeline.run(engine_config=ThresholdConfig()) produces valid output."""
         prices = load_from_csv(btc_csv)
         result = pipeline_run(prices, source="test", engine_config=ThresholdConfig())
-        assert result["engine"] == "threshold"
-        assert result["engine_info"]["method"] == "threshold"
+        assert result.engine == "threshold"
+        assert result.engine_info["method"] == "threshold"
         # Walk-forward has 6 keys
-        wf = result["walk_forward"]
+        wf = result.walk_forward
         assert set(wf.keys()) == {
             "sharpe",
             "max_drawdown",
@@ -447,7 +447,7 @@ class TestPipelineRunEngine:
         """engine_info block has required fields."""
         prices = load_from_csv(btc_csv)
         result = pipeline_run(prices, source="test", engine_config=ThresholdConfig())
-        ei = result["engine_info"]
+        ei = result.engine_info
         assert ei["method"] == "threshold"
         assert "features" in ei
         assert "n_states" in ei
@@ -463,13 +463,13 @@ class TestPipelineRunEngine:
         """With sufficient data, walk_forward produces numeric values."""
         prices = load_from_csv(btc_csv)
         result = pipeline_run(prices, source="test", engine_config=ThresholdConfig())
-        wf = result["walk_forward"]
-        assert isinstance(wf["sharpe"], float)
-        assert not np.isnan(wf["sharpe"])
-        assert isinstance(wf["max_drawdown"], float)
-        assert wf["max_drawdown"] <= 0 or np.isnan(wf["max_drawdown"])
-        assert isinstance(wf["n_trades"], int)
-        assert wf["n_trades"] > 0
+        wf = result.walk_forward
+        assert isinstance(wf.sharpe, float)
+        assert not np.isnan(wf.sharpe)
+        assert isinstance(wf.max_drawdown, float)
+        assert wf.max_drawdown <= 0 or np.isnan(wf.max_drawdown)
+        assert isinstance(wf.n_trades, int)
+        assert wf.n_trades > 0
 
 
 @pytest.mark.slow
@@ -552,7 +552,7 @@ class TestPipelineEngineTopLevelStats:
         result_hmm = pipeline_run(
             prices, engine_config=HMMGenericConfig(), ohlcv=ohlcv_pipeline, **common
         )
-        assert result_hmm["transition_matrix"] != result_threshold["transition_matrix"]
+        assert result_hmm.transition_matrix != result_threshold.transition_matrix
 
     def test_messina_transition_matrix_differs_from_threshold(self, ohlcv_pipeline):
         """Messina engine must produce a different transition matrix than threshold."""
@@ -565,7 +565,7 @@ class TestPipelineEngineTopLevelStats:
             prices, engine_config=HMMMMessinaConfig(), ohlcv=ohlcv_pipeline, **common
         )
         assert (
-            result_messina["transition_matrix"] != result_threshold["transition_matrix"]
+            result_messina.transition_matrix != result_threshold.transition_matrix
         )
 
     def test_hmm_engine_info_contains_warmup_bars(self, ohlcv_pipeline):
@@ -578,8 +578,8 @@ class TestPipelineEngineTopLevelStats:
             source="test",
             min_train=300,
         )
-        assert "warmup_bars" in result["engine_info"]
-        assert result["engine_info"]["warmup_bars"] == 300
+        assert "warmup_bars" in result.engine_info
+        assert result.engine_info["warmup_bars"] == 300
 
     def test_messina_engine_info_contains_warmup_bars(self, ohlcv_pipeline):
         """Messina engine_info documents the warmup period."""
@@ -591,8 +591,8 @@ class TestPipelineEngineTopLevelStats:
             source="test",
             min_train=300,
         )
-        assert "warmup_bars" in result["engine_info"]
-        assert result["engine_info"]["warmup_bars"] == 300
+        assert "warmup_bars" in result.engine_info
+        assert result.engine_info["warmup_bars"] == 300
 
     def test_threshold_engine_info_has_no_warmup_bars(self, ohlcv_pipeline):
         """Threshold engine does not report warmup_bars."""
@@ -600,7 +600,7 @@ class TestPipelineEngineTopLevelStats:
         result = pipeline_run(
             prices, engine_config=ThresholdConfig(), source="test", min_train=300
         )
-        assert "warmup_bars" not in result["engine_info"]
+        assert "warmup_bars" not in result.engine_info
 
     def test_hmm_pipeline_requires_ohlcv(self, ohlcv_pipeline):
         """engine=hmm without OHLCV raises ValueError at top-level."""
@@ -623,13 +623,13 @@ class TestPipelineRunEngineConfig:
         """pipeline.run(engine_config=ThresholdConfig()) produces valid output."""
         prices = load_from_csv(btc_csv)
         result = pipeline_run(prices, source="test", engine_config=ThresholdConfig())
-        assert result["engine"] == "threshold"
-        assert result["engine_info"]["method"] == "threshold"
-        assert result["engine_info"]["features"] == "returns"
-        assert "walk_forward" in result
-        wf = result["walk_forward"]
-        assert isinstance(wf["sharpe"], float)
-        assert wf["n_trades"] > 0
+        assert result.engine == "threshold"
+        assert result.engine_info["method"] == "threshold"
+        assert result.engine_info["features"] == "returns"
+        assert result.walk_forward is not None
+        wf = result.walk_forward
+        assert isinstance(wf.sharpe, float)
+        assert wf.n_trades > 0
 
 
 class TestPipelineEnrichInfo:
@@ -645,8 +645,8 @@ class TestPipelineEnrichInfo:
             source="test",
             min_train=300,
         )
-        assert "caveat" in result["engine_info"]
-        assert "HMM states sorted by mean return" in result["engine_info"]["caveat"]
+        assert "caveat" in result.engine_info
+        assert "HMM states sorted by mean return" in result.engine_info["caveat"]
 
     def test_robust_hmm_engine_info_has_method(self, ohlcv_pipeline):
         """RobustHMM engine_info gets robust_method from enrich_info."""
@@ -658,14 +658,14 @@ class TestPipelineEnrichInfo:
             source="test",
             min_train=300,
         )
-        assert result["engine_info"]["robust_method"] == "huber"
-        assert "caveat" in result["engine_info"]
+        assert result.engine_info["robust_method"] == "huber"
+        assert "caveat" in result.engine_info
 
     def test_threshold_engine_info_has_no_caveat(self, btc_csv):
         """Threshold engine_info has no caveat (no enrich_info method)."""
         prices = load_from_csv(btc_csv)
         result = pipeline_run(prices, source="test", engine_config=ThresholdConfig())
-        assert "caveat" not in result["engine_info"]
+        assert "caveat" not in result.engine_info
 
 
 class TestPipelineOHLCVFromEngine:

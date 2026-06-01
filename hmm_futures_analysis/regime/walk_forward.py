@@ -86,7 +86,7 @@ def _walk_forward_positions(
     Consumes the generator, applies dwell/hysteresis filters, and maps
     regimes to discrete positions via _STATE_MAP.
     """
-    from .engines._hmm_shared import _walk_forward_classify
+    from .engines._hmm_pipeline import _walk_forward_classify
 
     n = len(returns)
     positions = np.zeros(n, dtype=int)

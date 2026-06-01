@@ -3,7 +3,7 @@
 import numpy as np
 import pandas as pd
 
-from hmm_futures_analysis.regime.engines._hmm_shared import _walk_forward_classify
+from hmm_futures_analysis.regime.engines._hmm_pipeline import _walk_forward_classify
 
 
 class _StubEngine:

@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from hmm_futures_analysis.regime.engine_protocol import (  # noqa: F401
+from hmm_futures_analysis.regime.engine_configs import (  # noqa: F401
     HMMGenericConfig,
     HMMMMessinaConfig,
     ThresholdConfig,
@@ -57,17 +57,21 @@ class TestProfileThreshold:
 
     def test_profile_returns_timing_dict(self):
         prices = _make_prices(400)
-        result = pipeline_run(prices, source="test", engine_config=ThresholdConfig(), profile=True)
-        timing = result["timing"]
+        result = pipeline_run(
+            prices, source="test", engine_config=ThresholdConfig(), profile=True
+        )
+        timing = result.timing
         assert "total_wall_seconds" in timing
         assert timing["total_wall_seconds"] > 0
 
     def test_timing_has_no_classify_stats_for_threshold(self):
         """Threshold engine doesn't call eng.classify() in a loop."""
         prices = _make_prices(400)
-        result = pipeline_run(prices, source="test", engine_config=ThresholdConfig(), profile=True)
+        result = pipeline_run(
+            prices, source="test", engine_config=ThresholdConfig(), profile=True
+        )
 
-        timing = result["timing"]
+        timing = result.timing
         # Threshold has no HMM classify loop, so no classify stats
         assert (
             timing.get("walk_forward_classify_stats") is None
@@ -77,9 +81,11 @@ class TestProfileThreshold:
     def test_threshold_timing_has_phases_dict(self):
         """Threshold engine timing includes a phases sub-dict."""
         prices = _make_prices(400)
-        result = pipeline_run(prices, source="test", engine_config=ThresholdConfig(), profile=True)
+        result = pipeline_run(
+            prices, source="test", engine_config=ThresholdConfig(), profile=True
+        )
 
-        timing = result["timing"]
+        timing = result.timing
         assert "phases" in timing
         assert isinstance(timing["phases"], dict)
 
@@ -105,8 +111,8 @@ class TestProfileHMMClassify:
             profile=True,
         )
 
-        assert "timing" in result
-        timing = result["timing"]
+        assert result.timing is not None
+        timing = result.timing
 
         # Must have classify stats with actual call counts
         assert "walk_forward_classify_stats" in timing, (
@@ -131,7 +137,7 @@ class TestProfileHMMClassify:
             profile=True,
         )
 
-        stats = result["timing"]["walk_forward_classify_stats"]
+        stats = result.timing["walk_forward_classify_stats"]
         assert stats["min"] <= stats["median"]
         assert stats["median"] <= stats["p99"]
 
@@ -157,8 +163,8 @@ class TestProfileBICSelection:
             profile=True,
         )
 
-        assert "timing" in result
-        timing = result["timing"]
+        assert result.timing is not None
+        timing = result.timing
         # BIC selection phase should appear in phases dict
         phases = timing.get("phases", {})
         assert "bic_select_n_states" in phases, (
@@ -179,7 +185,7 @@ class TestProfileBICSelection:
             profile=True,
         )
 
-        timing = result["timing"]
+        timing = result.timing
         assert "bic_detail" in timing, (
             f"Expected bic_detail in timing keys: {list(timing.keys())}"
         )
@@ -215,7 +221,7 @@ class TestProfileWalkForwardBacktest:
             profile=True,
         )
 
-        phases = result["timing"]["phases"]
+        phases = result.timing["phases"]
         assert "walk_forward_backtest" in phases
         assert phases["walk_forward_backtest"] > 0
 
@@ -232,7 +238,7 @@ class TestProfileWalkForwardBacktest:
             profile=True,
         )
 
-        phases = result["timing"]["phases"]
+        phases = result.timing["phases"]
         for phase in ("precompute", "walk_forward_classify", "walk_forward_backtest"):
             assert phase in phases, f"Missing phase: {phase}"
             assert phases[phase] >= 0, f"Phase {phase} has negative time"
@@ -253,14 +259,16 @@ class TestProfileAllEngines:
     )
     def test_engine_timing_structure(self, engine_config):
         prices = _make_prices(300)
-        kwargs = dict(source="test", engine_config=engine_config, profile=True, min_train=50)
+        kwargs = dict(
+            source="test", engine_config=engine_config, profile=True, min_train=50
+        )
         if not isinstance(engine_config, ThresholdConfig):
             kwargs["ohlcv"] = _make_ohlcv(prices)
 
         result = pipeline_run(prices, **kwargs)
 
-        assert "timing" in result
-        timing = result["timing"]
+        assert result.timing is not None
+        timing = result.timing
         assert timing["total_wall_seconds"] > 0
         # All phases that ran should have non-negative times
         for phase_name, phase_time in timing.get("phases", {}).items():

@@ -50,7 +50,7 @@ class TestFitHMMOnSlicePCA:
     def test_pca_reduces_feature_count(self):
         """With pca_variance=0.95 on high-dim data, returned model means
         should have fewer dimensions than the original feature count."""
-        from hmm_futures_analysis.regime.engines._hmm_shared import _fit_hmm_on_slice
+        from hmm_futures_analysis.regime.engines._hmm_engine import _fit_hmm_on_slice
 
         features = _make_generic_features(n_rows=300, n_features=50)
         model, center, scale, pca_n, pca_transform = _fit_hmm_on_slice(
@@ -67,7 +67,7 @@ class TestFitHMMOnSlicePCA:
 
     def test_no_pca_returns_none_component_count(self):
         """With pca_variance=None (default), pca_n_components_used is None."""
-        from hmm_futures_analysis.regime.engines._hmm_shared import _fit_hmm_on_slice
+        from hmm_futures_analysis.regime.engines._hmm_engine import _fit_hmm_on_slice
 
         features = _make_generic_features(n_rows=300, n_features=10)
         model, center, scale, pca_n, pca_transform = _fit_hmm_on_slice(
@@ -79,7 +79,7 @@ class TestFitHMMOnSlicePCA:
 
     def test_pca_variance_threshold_controls_components(self):
         """Lower variance threshold → fewer components."""
-        from hmm_futures_analysis.regime.engines._hmm_shared import _fit_hmm_on_slice
+        from hmm_futures_analysis.regime.engines._hmm_engine import _fit_hmm_on_slice
 
         features = _make_generic_features(n_rows=300, n_features=50)
         _, _, _, pca_n_95, _ = _fit_hmm_on_slice(
@@ -204,7 +204,7 @@ class TestSelectNStatesPCA:
         return np.vstack([block_a, block_b, block_c])
 
     def test_select_n_states_with_pca_picks_3(self, high_dim_3state_features):
-        from hmm_futures_analysis.regime.engines._hmm_shared import select_n_states
+        from hmm_futures_analysis.regime.engines._hmm_pipeline import select_n_states
 
         result = select_n_states(
             high_dim_3state_features,
@@ -215,7 +215,7 @@ class TestSelectNStatesPCA:
         assert 2 <= result <= 6
 
     def test_select_n_states_without_pca_same_as_before(self, high_dim_3state_features):
-        from hmm_futures_analysis.regime.engines._hmm_shared import select_n_states
+        from hmm_futures_analysis.regime.engines._hmm_pipeline import select_n_states
 
         result = select_n_states(high_dim_3state_features, max_states=4)
         assert isinstance(result, int)
@@ -276,7 +276,7 @@ class TestWalkForwardPCA:
         )
         assert "sharpe" in wf
         assert "n_trades" in wf
-        assert isinstance(wf["n_trades"], int)
+        assert isinstance(wf.n_trades, int)
 
     def test_walk_forward_hmm_without_pca_unaffected(self, prices_and_ohlcv):
         import numpy as np
@@ -333,7 +333,7 @@ class TestPipelinePCA:
         return prices, ohlcv
 
     def test_pipeline_hmm_with_pca_returns_valid_output(self, prices_and_ohlcv):
-        from hmm_futures_analysis.regime.engine_protocol import HMMGenericConfig
+        from hmm_futures_analysis.regime.engine_configs import HMMGenericConfig
         from hmm_futures_analysis.regime.pipeline import run as pipeline_run
 
         prices, ohlcv = prices_and_ohlcv
@@ -344,11 +344,11 @@ class TestPipelinePCA:
             ohlcv=ohlcv,
         )
         assert "engine_info" in output
-        assert output["engine"] == "hmm"
+        assert output.engine == "hmm"
         assert "walk_forward" in output
 
     def test_pipeline_hmm_without_pca_unaffected(self, prices_and_ohlcv):
-        from hmm_futures_analysis.regime.engine_protocol import HMMGenericConfig
+        from hmm_futures_analysis.regime.engine_configs import HMMGenericConfig
         from hmm_futures_analysis.regime.pipeline import run as pipeline_run
 
         prices, ohlcv = prices_and_ohlcv

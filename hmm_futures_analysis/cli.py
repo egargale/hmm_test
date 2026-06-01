@@ -21,7 +21,7 @@ import json
 import sys
 
 from .data_processing.csv_auto_detect import load_prices
-from .regime.engine_protocol import (
+from .regime.engine_configs import (
     FSHMMConfig,
     HMMGenericConfig,
     HMMMMessinaConfig,
@@ -69,12 +69,12 @@ def _build_engine_config(args: argparse.Namespace) -> object:
         raise ValueError(f"Unknown engine: {engine!r}")
 
 
-def _write_saliency_csv(output: dict, path: str) -> None:
+def _write_saliency_csv(output, path: str) -> None:
     """Write fshmm saliency weights to a CSV file."""
     import csv as csv_mod
 
-    saliency = output.get("engine_info", {}).get("feature_saliency")
-    selected = output.get("engine_info", {}).get("selected_features")
+    saliency = output.engine_info.get("feature_saliency")
+    selected = output.engine_info.get("selected_features")
     if saliency is None:
         return
 
@@ -86,7 +86,7 @@ def _write_saliency_csv(output: dict, path: str) -> None:
             writer.writerow([i, f"{w:.6f}", is_sel])
 
 
-def _print_terminal(output: dict) -> None:
+def _print_terminal(output) -> None:
     """Pretty-print regime analysis results to stderr."""
     width = 54
     sep = "─" * width
@@ -98,40 +98,40 @@ def _print_terminal(output: dict) -> None:
 
     sr = output
     header("REGIME DETECTION")
-    print(f"  Source      : {sr['source']}", file=sys.stderr)
-    print(f"  Engine      : {sr['engine']}", file=sys.stderr)
+    print(f"  Source      : {sr.source}", file=sys.stderr)
+    print(f"  Engine      : {sr.engine}", file=sys.stderr)
     print(
-        f"  Date range  : {sr['dates']['start']} → {sr['dates']['end']}",
+        f"  Date range  : {sr.dates['start']} → {sr.dates['end']}",
         file=sys.stderr,
     )
 
-    ei = sr["engine_info"]
+    ei = sr.engine_info
     print(f"  Method      : {ei['method']}", file=sys.stderr)
     print(f"  Features    : {ei['features']}", file=sys.stderr)
     if "caveat" in ei:
         print(f"  Caveat      : {ei['caveat']}", file=sys.stderr)
 
     header("CURRENT REGIME")
-    cr = sr["current_regime"]
+    cr = sr.current_regime
     print(
         f"  Regime      : {cr['name'].upper()} (index {cr['index']})", file=sys.stderr
     )
-    print(f"  Signal      : {sr['signal']:+.4f}", file=sys.stderr)
+    print(f"  Signal      : {sr.signal:+.4f}", file=sys.stderr)
 
     header("REGIME DISTRIBUTION")
-    rc = sr["regime_counts"]
+    rc = sr.regime_counts
     for name in _STATE_NAMES:
         print(f"  {name.capitalize():<12s}: {rc.get(name, 0):>6d}", file=sys.stderr)
 
     header("NEXT-STATE PROBABILITIES")
     for name in _STATE_NAMES:
-        prob = sr["next_state_probabilities"][name]
+        prob = sr.next_state_probabilities[name]
         bar = "█" * int(prob * 30)
         print(f"  {name.capitalize():<12s}: {prob:.3f}  {bar}", file=sys.stderr)
 
     header("PERSISTENCE")
     for name in _STATE_NAMES:
-        p = sr["persistence_diagonal"][name]
+        p = sr.persistence_diagonal[name]
         print(f"  {name.capitalize():<12s}: {p:.3f}", file=sys.stderr)
 
     header("TRANSITION MATRIX")
@@ -139,24 +139,24 @@ def _print_terminal(output: dict) -> None:
     print(
         f"  {'':>10s}  {names[0]:>8s}  {names[1]:>8s}  {names[2]:>8s}", file=sys.stderr
     )
-    for i, row in enumerate(sr["transition_matrix"]):
+    for i, row in enumerate(sr.transition_matrix):
         cells = "  ".join(f"{v:8.3f}" for v in row)
         print(f"  {names[i]:>10s}  {cells}", file=sys.stderr)
 
     header("STATIONARY DISTRIBUTION")
     for name in _STATE_NAMES:
-        prob = sr["stationary_distribution"][name]
+        prob = sr.stationary_distribution[name]
         print(f"  {name.capitalize():<12s}: {prob:.3f}", file=sys.stderr)
 
     header("FORECAST (n-step)")
     for step_key in ("1_step", "5_step", "20_step"):
-        f = sr["forecast"][step_key]
+        f = sr.forecast[step_key]
         print(f"  {step_key.replace('_', ' ').capitalize()}:", file=sys.stderr)
         for name in _STATE_NAMES:
             print(f"    {name.capitalize():<10s}: {f[name]:.3f}", file=sys.stderr)
 
     header("WALK-FORWARD BACKTEST")
-    wf = sr["walk_forward"]
+    wf = sr.walk_forward
     sharpe_str = f"{wf['sharpe']:.2f}" if wf["sharpe"] is not None else "N/A"
     dd_str = f"{wf['max_drawdown']:.2%}" if wf["max_drawdown"] is not None else "N/A"
     wr_str = f"{wf['win_rate']:.1%}" if wf["win_rate"] is not None else "N/A"
@@ -170,8 +170,8 @@ def _print_terminal(output: dict) -> None:
     print(f"  Win rate       : {wr_str}", file=sys.stderr)
     print(f"  Profit factor  : {pf_str}", file=sys.stderr)
 
-    if "duration_forecast" in sr and sr["duration_forecast"] is not None:
-        df = sr["duration_forecast"]
+    if sr.duration_forecast is not None and sr.duration_forecast is not None:
+        df = sr.duration_forecast
         header("DURATION FORECAST")
         print(f"  Current regime     : {df['current_regime'].upper()}", file=sys.stderr)
         print(f"  Days in regime     : {df['days_in_regime']}", file=sys.stderr)
@@ -191,7 +191,7 @@ def _print_terminal(output: dict) -> None:
             print("  (insufficient historical spells for fitting)", file=sys.stderr)
 
     header("DISCLAIMER")
-    print(f"  {sr['disclaimer']}", file=sys.stderr)
+    print(f"  {sr.disclaimer}", file=sys.stderr)
     print(sep, file=sys.stderr)
 
 
@@ -344,7 +344,7 @@ def main() -> None:
         )
 
         if args.json:
-            json.dump(output, sys.stdout, indent=2, allow_nan=False)
+            json.dump(output._asdict(), sys.stdout, indent=2, allow_nan=False)
             sys.stdout.write("\n")
         else:
             _print_terminal(output)

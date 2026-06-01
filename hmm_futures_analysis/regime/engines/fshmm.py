@@ -8,8 +8,8 @@ import numpy as np
 import pandas as pd
 from hmmlearn import hmm
 
-from ..engine_protocol import ClassifyOutput, ClassifyResult
-from ._hmm_shared import _classify_hmm_slice, _hmm_classify_pipeline, engineer_features
+from ..engine_protocol import ClassifyResult
+from ._hmm_engine import _classify_hmm_slice, engineer_features
 
 
 class FSHMMEngine:
@@ -104,28 +104,6 @@ class FSHMMEngine:
         self._last_selected_features = selected_features
 
         return result
-
-    def classify_pipeline(
-        self,
-        prices: pd.Series,
-        ohlcv: pd.DataFrame | None,
-        returns: pd.Series,
-        min_train: int = 252,
-        *,
-        profile: bool = True,
-        _phases: dict[str, float] | None = None,
-        _classify_times: list[float] | None = None,
-    ) -> ClassifyOutput:
-        return _hmm_classify_pipeline(
-            self,
-            prices,
-            ohlcv,
-            returns,
-            min_train,
-            profile=profile,
-            _phases=_phases,
-            _classify_times=_classify_times,
-        )
 
     # ------------------------------------------------------------------
     # Core FSHMM EM

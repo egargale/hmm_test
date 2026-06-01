@@ -12,6 +12,7 @@ import math
 import time
 
 import dataclasses
+from typing import NamedTuple
 
 import numpy as np
 import pandas as pd
@@ -23,6 +24,7 @@ from .engine_protocol import (
 )
 from .markov_chain import (
     build_transition_matrix,
+    classify_regimes as _classify_regimes,
     compute_persistence_diagonal,
     compute_signal,
     compute_stationary_distribution,
@@ -51,6 +53,32 @@ class MarkovStats:
     current_probs: np.ndarray
     regime_counts: dict[str, int]
     dates: dict[str, str]
+
+
+class PipelineResult(NamedTuple):
+    """Immutable result from :func:`run`.
+
+    Call ``._asdict()`` to get a JSON-compatible dict for serialization.
+    """
+
+    source: str
+    engine: str
+    dates: dict[str, str]
+    current_regime: dict[str, str | int]
+    signal: float
+    next_state_probabilities: dict[str, float]
+    transition_matrix: list
+    stationary_distribution: dict[str, float]
+    persistence_diagonal: dict[str, float]
+    regime_counts: dict[str, int]
+    walk_forward: dict
+    forecast: dict
+    engine_info: dict
+    framework: str
+    disclaimer: str
+    verdict: dict
+    duration_forecast: dict | None = None
+    timing: dict | None = None
 
 
 def _probs_to_dict(probs: np.ndarray) -> dict[str, float]:
@@ -199,7 +227,7 @@ def _classify_hmm(
 
     Profiling is enabled by default (low overhead).
     """
-    from .engines._hmm_shared import _walk_forward_classify
+    from .engines._hmm_pipeline import _walk_forward_classify
 
     _phases = _phases if _phases is not None else {}
     _classify_times = _classify_times if _classify_times is not None else []
@@ -304,6 +332,34 @@ def _build_markov_stats(
     )
 
 
+def _classify_threshold_pipeline(
+    engine,
+    prices: pd.Series,
+    ohlcv: pd.DataFrame | None,
+    returns: pd.Series,
+    min_train: int = 252,
+    *,
+    profile: bool = True,
+    _phases: dict[str, float] | None = None,
+    _classify_times: list[float] | None = None,
+) -> ClassifyOutput:
+    """Threshold-specific classify-pipeline phase.
+
+    Runs ``classify_regimes`` over the full return series (no walk-forward)
+    and wraps the result in a ``ClassifyOutput``.
+    """
+    regimes = _classify_regimes(
+        returns, window=engine.window, threshold=engine.threshold
+    )
+    return ClassifyOutput(
+        regimes=regimes,
+        posteriors=None,
+        last_regime=int(regimes[-1]),
+        warmup_bars=None,
+        engine_instance=engine,
+    )
+
+
 def run(
     prices: pd.Series,
     *,
@@ -343,15 +399,30 @@ def run(
 
     # --- Regime classification (uniform across all engines) ---
     eng = resolve_engine(config)
-    classify_out = eng.classify_pipeline(
-        prices,
-        ohlcv,
-        returns,
-        min_train,
-        profile=profile,
-        _phases=_phases,
-        _classify_times=_classify_times,
-    )
+    if getattr(config, "is_hmm", False):
+        from .engines._hmm_pipeline import _hmm_classify_pipeline
+
+        classify_out = _hmm_classify_pipeline(
+            eng,
+            prices,
+            ohlcv,
+            returns,
+            min_train,
+            profile=profile,
+            _phases=_phases,
+            _classify_times=_classify_times,
+        )
+    else:
+        classify_out = _classify_threshold_pipeline(
+            eng,
+            prices,
+            ohlcv,
+            returns,
+            min_train,
+            profile=profile,
+            _phases=_phases,
+            _classify_times=_classify_times,
+        )
 
     # If engine resolved n_states internally (HMM engines set it), use that
     if classify_out.n_states is not None:
@@ -399,35 +470,7 @@ def run(
         warmup_bars=classify_out.warmup_bars,
     )
 
-    result = {
-        "source": source,
-        "engine": engine_name,
-        "dates": {
-            "start": markov.dates["start"],
-            "end": markov.dates["end"],
-        },
-        "current_regime": {
-            "name": _STATE_NAMES[markov.current_regime],
-            "index": markov.current_regime,
-        },
-        "signal": markov.signal,
-        "next_state_probabilities": _probs_to_dict(markov.current_probs),
-        "transition_matrix": markov.transmat.tolist(),
-        "stationary_distribution": _probs_to_dict(markov.stationary),
-        "persistence_diagonal": markov.persistence,
-        "regime_counts": markov.regime_counts,
-        "walk_forward": walk_forward,
-        "forecast": {
-            "1_step": forecast_1,
-            "5_step": forecast_5,
-            "20_step": forecast_20,
-        },
-        "engine_info": engine_info,
-        "framework": _FRAMEWORK_VERSION,
-        "disclaimer": _DISCLAIMER,
-    }
-
-    # --- Duration forecast ---
+    # --- Duration forecast (compute before result assembly) ---
     df_result: dict | None = None
     if duration_forecast:
         from .duration_forecast import forecast_duration
@@ -435,11 +478,10 @@ def run(
         df_result = forecast_duration(
             classify_out.regimes, model=duration_model, prices=prices
         )
-        result["duration_forecast"] = df_result
 
-    # --- Synthesized verdict (dynamic threshold from duration forecast) ---
+    # --- Synthesized verdict ---
     sideways_threshold = _compute_dynamic_threshold(df_result)
-    result["verdict"] = _compute_verdict(
+    verdict_out = _compute_verdict(
         markov.current_regime,
         markov.signal,
         forecast_20,
@@ -447,11 +489,10 @@ def run(
     )
 
     # --- Profiling ---
+    timing: dict | None = None
     if profile:
-        # Extract bic_detail from _phases if present (put there by select_n_states)
         bic_detail = _phases.pop("bic_detail", None)
-
-        timing: dict = {
+        timing = {
             "total_wall_seconds": float(round(time.monotonic() - t_start, 6)),
             "phases": _phases,
         }
@@ -472,6 +513,34 @@ def run(
                 "p99": float(round(sorted_times[p99_idx], 6)),
                 "n_calls": n_cls,
             }
-        result["timing"] = timing
 
-    return result
+    return PipelineResult(
+        source=source,
+        engine=engine_name,
+        dates={
+            "start": markov.dates["start"],
+            "end": markov.dates["end"],
+        },
+        current_regime={
+            "name": _STATE_NAMES[markov.current_regime],
+            "index": markov.current_regime,
+        },
+        signal=markov.signal,
+        next_state_probabilities=_probs_to_dict(markov.current_probs),
+        transition_matrix=markov.transmat.tolist(),
+        stationary_distribution=_probs_to_dict(markov.stationary),
+        persistence_diagonal=markov.persistence,
+        regime_counts=markov.regime_counts,
+        walk_forward=walk_forward,
+        forecast={
+            "1_step": forecast_1,
+            "5_step": forecast_5,
+            "20_step": forecast_20,
+        },
+        engine_info=engine_info,
+        framework=_FRAMEWORK_VERSION,
+        disclaimer=_DISCLAIMER,
+        verdict=verdict_out,
+        duration_forecast=df_result,
+        timing=timing,
+    )

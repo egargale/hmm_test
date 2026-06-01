@@ -1,6 +1,7 @@
-"""Tests for classify_pipeline on RegimeEngine protocol and engine implementations.
+"""Tests for classify-pipeline phase dispatch and engine implementations.
 
-Issue #62: Add classify_pipeline to RegimeEngine Protocol, remove str-based dispatch.
+Issue #62: classify_pipeline removed from RegimeEngine Protocol.
+Dispatch now lives in pipeline.py via config.is_hmm check.
 """
 
 from __future__ import annotations
@@ -8,11 +9,9 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from hmm_futures_analysis.regime.engine_protocol import (
-    ENGINE_REGISTRY,
-    ClassifyOutput,
-    RegimeEngine,
-)
+from hmm_futures_analysis.regime.engine_protocol import ClassifyOutput
+from hmm_futures_analysis.regime.engines._hmm_pipeline import _hmm_classify_pipeline
+from hmm_futures_analysis.regime.pipeline import _classify_threshold_pipeline
 
 
 # ---------------------------------------------------------------------------
@@ -41,15 +40,15 @@ def _make_ohlcv(prices: pd.Series) -> pd.DataFrame:
 
 
 # ---------------------------------------------------------------------------
-# Tracer bullet 2: ThresholdEngine.classify_pipeline
+# Tracer bullet 2: _classify_threshold_pipeline
 # ---------------------------------------------------------------------------
 
 
 class TestThresholdClassifyPipeline:
-    """ThresholdEngine.classify_pipeline wraps classify_regimes."""
+    """_classify_threshold_pipeline wraps classify_regimes."""
 
     def test_returns_classify_output(self):
-        """classify_pipeline returns ClassifyOutput with regimes."""
+        """Returns ClassifyOutput with regimes."""
         from hmm_futures_analysis.regime.engines.threshold import ThresholdEngine
 
         prices = _make_prices(300)
@@ -57,7 +56,7 @@ class TestThresholdClassifyPipeline:
         returns = prices.pct_change(fill_method=None).dropna()
         eng = ThresholdEngine(window=20, threshold=0.05)
 
-        result = eng.classify_pipeline(prices, ohlcv, returns, min_train=50)
+        result = _classify_threshold_pipeline(eng, prices, ohlcv, returns, min_train=50)
 
         assert isinstance(result, ClassifyOutput)
         assert isinstance(result.regimes, np.ndarray)
@@ -76,20 +75,20 @@ class TestThresholdClassifyPipeline:
         returns = prices.pct_change(fill_method=None).dropna()
         eng = ThresholdEngine()
 
-        result = eng.classify_pipeline(prices, ohlcv, returns)
+        result = _classify_threshold_pipeline(eng, prices, ohlcv, returns)
         assert set(np.unique(result.regimes)).issubset({0, 1, 2})
 
 
 # ---------------------------------------------------------------------------
-# Tracer bullet 3: HMMGenericEngine.classify_pipeline
+# Tracer bullet 3: _hmm_classify_pipeline
 # ---------------------------------------------------------------------------
 
 
 class TestHMMGenericClassifyPipeline:
-    """HMMGenericEngine.classify_pipeline runs walk-forward classify."""
+    """_hmm_classify_pipeline runs walk-forward classify for HMM engines."""
 
     def test_returns_classify_output_with_posteriors(self):
-        """classify_pipeline returns ClassifyOutput with regimes and posteriors."""
+        """Returns ClassifyOutput with regimes and posteriors."""
         from hmm_futures_analysis.regime.engines.hmm_generic import HMMGenericEngine
 
         prices = _make_prices(300)
@@ -97,7 +96,7 @@ class TestHMMGenericClassifyPipeline:
         returns = prices.pct_change(fill_method=None).dropna()
         eng = HMMGenericEngine(n_states=3)
 
-        result = eng.classify_pipeline(prices, ohlcv, returns, min_train=50)
+        result = _hmm_classify_pipeline(eng, prices, ohlcv, returns, min_train=50)
 
         assert isinstance(result, ClassifyOutput)
         assert isinstance(result.regimes, np.ndarray)
@@ -117,54 +116,21 @@ class TestHMMGenericClassifyPipeline:
         returns = prices.pct_change(fill_method=None).dropna()
         eng = HMMGenericEngine(n_states=3)
 
-        result = eng.classify_pipeline(prices, ohlcv, returns, min_train=80)
+        result = _hmm_classify_pipeline(eng, prices, ohlcv, returns, min_train=80)
         assert result.warmup_bars == 80
 
 
 # ---------------------------------------------------------------------------
-# Tracer bullet 1: Protocol contract
-# ---------------------------------------------------------------------------
-
-
-class TestProtocolContract:
-    """classify_pipeline exists on RegimeEngine protocol."""
-
-    def test_classify_pipeline_on_protocol(self):
-        """RegimeEngine protocol declares classify_pipeline method."""
-        import inspect
-
-        assert hasattr(RegimeEngine, "classify_pipeline"), (
-            "RegimeEngine protocol must declare classify_pipeline"
-        )
-        sig = inspect.signature(
-            RegimeEngine.classify_pipeline  # type: ignore[attr-defined]
-        )
-        params = list(sig.parameters.keys())
-        # self, prices, ohlcv, returns, min_train
-        assert "prices" in params
-        assert "ohlcv" in params
-        assert "returns" in params
-        assert "min_train" in params
-
-    def test_all_registry_engines_have_classify_pipeline(self):
-        """Every engine in ENGINE_REGISTRY implements classify_pipeline."""
-        for name, (engine_cls, _) in ENGINE_REGISTRY.items():
-            assert hasattr(engine_cls, "classify_pipeline"), (
-                f"{engine_cls.__name__} must implement classify_pipeline"
-            )
-
-
-# ---------------------------------------------------------------------------
-# Tracer bullet 4: pipeline.run() uses classify_pipeline uniformly
+# Tracer bullet 4: pipeline.run() uses dispatch consistently
 # ---------------------------------------------------------------------------
 
 
 class TestPipelineUniformDispatch:
-    """pipeline.run() calls classify_pipeline on the engine, no string dispatch."""
+    """pipeline.run() dispatches classify-pipeline via config.is_hmm."""
 
     def test_threshold_produces_valid_result(self):
         """pipeline.run() with threshold engine produces valid output."""
-        from hmm_futures_analysis.regime.engine_protocol import ThresholdConfig
+        from hmm_futures_analysis.regime.engine_configs import ThresholdConfig
         from hmm_futures_analysis.regime.pipeline import run
 
         prices = _make_prices(300)
@@ -179,14 +145,12 @@ class TestPipelineUniformDispatch:
             profile=False,
         )
 
-        assert result["engine"] == "threshold"
-        assert "current_regime" in result
-        assert result["current_regime"]["index"] in (0, 1, 2)
-        assert "walk_forward" in result
+        assert result.engine == "threshold"
+        assert result.current_regime["index"] in (0, 1, 2)
 
     def test_hmm_generic_produces_valid_result(self):
         """pipeline.run() with hmm generic produces valid output."""
-        from hmm_futures_analysis.regime.engine_protocol import HMMGenericConfig
+        from hmm_futures_analysis.regime.engine_configs import HMMGenericConfig
         from hmm_futures_analysis.regime.pipeline import run
 
         prices = _make_prices(300)
@@ -201,15 +165,13 @@ class TestPipelineUniformDispatch:
             profile=False,
         )
 
-        assert result["engine"] == "hmm"
-        assert "current_regime" in result
-        assert result["current_regime"]["index"] in (0, 1, 2)
-        assert "walk_forward" in result
+        assert result.engine == "hmm"
+        assert result.current_regime["index"] in (0, 1, 2)
 
     def test_pipeline_no_string_dispatch(self):
         """pipeline.run() source has no if-engine-threshold or if-engine-hmm branches."""
-        import inspect
         import ast
+        import inspect
 
         from hmm_futures_analysis.regime import pipeline as pipeline_mod
 

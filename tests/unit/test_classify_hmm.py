@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from hmm_futures_analysis.regime.engine_protocol import HMMGenericConfig
+from hmm_futures_analysis.regime.engine_configs import HMMGenericConfig
 from hmm_futures_analysis.regime.pipeline import ClassifyOutput, _classify_hmm
 
 
