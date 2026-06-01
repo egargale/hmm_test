@@ -24,9 +24,32 @@ class RegimeEngine(Protocol):
     def classify(
         self, data: pd.DataFrame, prev_means: np.ndarray | None = None
     ) -> ClassifyResult: ...
+    def classify_pipeline(
+        self,
+        prices: pd.Series,
+        ohlcv: pd.DataFrame | None,
+        returns: pd.Series,
+        min_train: int = 252,
+        *,
+        profile: bool = True,
+        _phases: dict[str, float] | None = None,
+        _classify_times: list[float] | None = None,
+    ) -> ClassifyOutput: ...
 
 
 # --- Config dataclasses (ADR-0004) ---
+
+
+@dataclass
+class ClassifyOutput:
+    """Intermediate state from the classify phase."""
+
+    regimes: np.ndarray
+    posteriors: np.ndarray | None = None
+    last_regime: int = 1
+    warmup_bars: int | None = None
+    engine_instance: RegimeEngine | None = None
+    n_states: int = 3
 
 
 @dataclass

@@ -7,7 +7,7 @@ import time
 import warnings
 from contextlib import redirect_stderr, redirect_stdout
 from collections.abc import Iterator
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import pandas as pd
@@ -16,7 +16,7 @@ from hmmlearn import hmm
 from ...data_processing.feature_engineering import add_features
 from ...data_processing.messina_features import MESSINA_FEATURE_COLUMNS
 from ...data_processing.messina_features import add_messina_features
-from ..engine_protocol import ClassifyResult, RegimeEngine
+from ..engine_protocol import ClassifyOutput, ClassifyResult, RegimeEngine
 
 if TYPE_CHECKING:
     from sklearn.decomposition import PCA
@@ -262,6 +262,87 @@ def select_n_states(
         profile["bic_detail"] = bic_detail
 
     return best_k
+
+
+def _hmm_classify_pipeline(
+    engine: Any,
+    prices: pd.Series,
+    ohlcv: pd.DataFrame | None,
+    returns: pd.Series,
+    min_train: int = 252,
+    *,
+    profile: bool = True,
+    _phases: dict[str, float] | None = None,
+    _classify_times: list[float] | None = None,
+) -> ClassifyOutput:
+    """Shared classify_pipeline implementation for all HMM engines.
+
+    Handles: precompute → BIC auto-resolve → walk-forward classify.
+    """
+    import time as _time
+
+    _phases = _phases if _phases is not None else {}
+    _classify_times = _classify_times if _classify_times is not None else []
+
+    # 1. Precompute features
+    precomputed = None
+    t_pc = _time.monotonic()
+    try:
+        precomputed = engine.precompute(ohlcv)
+    except (ValueError, RuntimeError, KeyError):
+        precomputed = None
+    if profile:
+        _phases["precompute"] = float(round(_time.monotonic() - t_pc, 6))
+    if precomputed is None:
+        raise ValueError(
+            f"{type(engine).__name__} failed to precompute features from OHLCV data"
+        )
+
+    # 2. Resolve n_states='auto' via BIC
+    if isinstance(engine.n_states, str) and engine.n_states == "auto":
+        t_bic = _time.monotonic()
+        resolved = select_n_states(
+            precomputed.dropna().to_numpy(dtype=np.float64),
+            max_states=6,
+            profile=_phases if profile else False,
+        )
+        if profile:
+            _phases["bic_select_n_states"] = float(round(_time.monotonic() - t_bic, 6))
+        engine.n_states = resolved
+    elif isinstance(engine.n_states, int):
+        pass  # already resolved
+    else:
+        raise ValueError(f"n_states must be int or 'auto', got {engine.n_states!r}")
+
+    # 3. Walk-forward classify
+    n = len(returns)
+    regimes = np.ones(n, dtype=int)
+    posteriors_all = np.zeros((n, 3), dtype=float)
+
+    t_wf = _time.monotonic()
+    for t, result in _walk_forward_classify(
+        returns,
+        eng=engine,
+        precomputed=precomputed,
+        min_train=min_train,
+        profile=profile,
+        _phases=_phases,
+        _classify_times=_classify_times,
+    ):
+        regimes[t] = result.regime
+        if result.posteriors is not None:
+            posteriors_all[t] = result.posteriors
+    if profile:
+        _phases["walk_forward_classify"] = float(round(_time.monotonic() - t_wf, 6))
+
+    return ClassifyOutput(
+        regimes=regimes,
+        posteriors=posteriors_all,
+        last_regime=int(regimes[-1]),
+        warmup_bars=min_train,
+        engine_instance=engine,
+        n_states=engine.n_states,
+    )
 
 
 def _match_states(
