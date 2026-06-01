@@ -185,3 +185,134 @@ class TestAllFiveEnginesNamed:
         text = _skill().lower()
         missing = [e for e in FIVE_ENGINES if e not in text]
         assert not missing, f"SKILL.md missing engine name(s): {missing}"
+
+
+# ── Issue #67: configuration.md currency ────────────────────────────────
+
+
+CONFIG_MD = REPO_ROOT / "references" / "configuration.md"
+
+
+def _config() -> str:
+    return CONFIG_MD.read_text()
+
+
+EXPECTED_PARAMS = [
+    "--engine",
+    "--window",
+    "--threshold",
+    "--min-train",
+    "--n-states",
+    "--dwell-bars",
+    "--hysteresis",
+    "--duration-forecast",
+    "--saliency-threshold",
+    "--saliency-output",
+    "--robust-method",
+]
+
+
+class TestConfigurationMdAllFiveEngines:
+    """Issue #67: All five engines documented with CLI params."""
+
+    def test_config_mentions_all_five_engines(self):
+        """configuration.md must mention all five engine names."""
+        text = _config().lower()
+        missing = [e for e in FIVE_ENGINES if e not in text]
+        assert not missing, f"configuration.md missing engine name(s): {missing}"
+
+    def test_config_has_engine_dispatch_section(self):
+        """configuration.md must document --engine flag."""
+        text = _config()
+        assert "--engine" in text, "configuration.md must document the --engine flag"
+
+
+class TestConfigurationMdDefaultsWithEngine:
+    """Issue #67: Recommended defaults include engine choice per asset class."""
+
+    def test_defaults_table_has_engine_column(self):
+        """Default recommendations table must include engine column."""
+        text = _config()
+        # Find the recommended defaults table
+        rd_start = text.find("### Recommended Defaults by Asset Class")
+        assert rd_start >= 0, "No Recommended Defaults section found"
+        rd_section = text[rd_start : rd_start + 1500]
+        assert "engine" in rd_section.lower(), (
+            "Recommended defaults table should include an engine column"
+        )
+
+    def test_defaults_table_has_multiple_engines(self):
+        """Defaults table should recommend different engines per asset class."""
+        text = _config()
+        rd_start = text.find("### Recommended Defaults by Asset Class")
+        assert rd_start >= 0
+        rd_section = text[rd_start : rd_start + 1500].lower()
+        # Should mention at least two different engines
+        engines_found = [e for e in FIVE_ENGINES if e in rd_section]
+        assert len(engines_found) >= 2, (
+            f"Defaults table should recommend at least 2 different engines, "
+            f"found only: {engines_found}"
+        )
+
+
+class TestConfigurationMdGridSearchExamples:
+    """Issue #67: Grid search covers both threshold and HMM tuning."""
+
+    def test_grid_search_has_threshold_example(self):
+        """Grid search section must include threshold window/threshold example."""
+        text = _config()
+        assert "window" in text and "threshold" in text, (
+            "Grid search should include threshold tuning (window, threshold)"
+        )
+
+    def test_grid_search_has_hmm_example(self):
+        """Grid search section must include HMM engine tuning example."""
+        text = _config()
+        # The grid search section should reference engine and n-states in tuning context
+        # Find the grid search subsection
+        gs_start = text.find("### Grid Search Pattern")
+        assert gs_start >= 0, "No Grid Search Pattern section found"
+        gs_section = text[gs_start : gs_start + 4000]
+        assert "HMMGenericEngine" in gs_section or "--engine" in gs_section, (
+            "Grid search should include HMM engine tuning"
+        )
+        assert "n_states" in gs_section, (
+            "Grid search should include HMM state count tuning (n_states)"
+        )
+
+    def test_grid_search_mentions_dwell_or_hysteresis(self):
+        """Grid search should mention dwell-bars or hysteresis tuning."""
+        text = _config()
+        assert "dwell" in text.lower() or "hysteresis" in text.lower(), (
+            "Grid search should mention dwell-bars or hysteresis tuning"
+        )
+
+
+class TestConfigurationMdAllCLIParams:
+    """Issue #67: All current CLI parameters documented."""
+
+    def test_all_params_documented(self):
+        """configuration.md must document every expected CLI parameter."""
+        text = _config()
+        missing = [p for p in EXPECTED_PARAMS if p not in text]
+        assert not missing, f"configuration.md missing CLI parameter docs: {missing}"
+
+
+class TestConfigurationMdNoStaleHmmFlags:
+    """Issue #67: No stale --hmm/--no-hmm references."""
+
+    def test_no_hmm_flag_in_section_header(self):
+        """The `--hmm` / `--no-hmm` section header is removed."""
+        text = _config()
+        assert "--hmm" not in text, (
+            "configuration.md should not contain stale '--hmm' references; "
+            "use '--engine' instead"
+        )
+
+    def test_no_hmm_flag_in_descriptions(self):
+        """The `--n-states` section no longer says 'Only relevant when --hmm'."""
+        text = _config()
+        assert "Only relevant when" not in text, (
+            "configuration.md should not qualify --n-states as HMM-only"
+        )
+        assert "--no-hmm" not in text, "configuration.md should not contain '--no-hmm'"
