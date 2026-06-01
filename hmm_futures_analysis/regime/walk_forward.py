@@ -70,27 +70,49 @@ def _compute_trade_stats(
     return n_trades, float(win_rate), float(profit_factor)
 
 
-def _walk_forward_from_arrays(
-    regimes: np.ndarray,
+def _walk_forward_positions(
+    returns: pd.Series,
+    *,
+    engine: RegimeEngine,
+    precomputed: pd.DataFrame | None = None,
+    regimes: np.ndarray | None = None,
     posteriors: np.ndarray | None = None,
+    min_train: int = 252,
     dwell_bars: int = 0,
     hysteresis_delta: float = 0.0,
 ) -> np.ndarray:
-    """Apply dwell/hysteresis filters to pre-computed regime labels."""
-    n = len(regimes)
+    """Build position array using the shared _walk_forward_classify generator.
+
+    Consumes the generator, applies dwell/hysteresis filters, and maps
+    regimes to discrete positions via _STATE_MAP.
+    """
+    from .engines._hmm_shared import _walk_forward_classify
+
+    n = len(returns)
     positions = np.zeros(n, dtype=int)
     current_regime: int = 1
     consecutive_count = 0
     current_posteriors: np.ndarray | None = None
 
-    for t in range(n):
-        new_regime = int(regimes[t])
-        new_posteriors = posteriors[t] if posteriors is not None else None
+    for t, result in _walk_forward_classify(
+        returns,
+        eng=engine,
+        precomputed=precomputed,
+        regimes=regimes,
+        min_train=min_train,
+        profile=False,
+    ):
+        new_regime = result.regime
+        # Regimes mode: posteriors come from the separate array
+        if regimes is not None and posteriors is not None:
+            new_posteriors_arr: np.ndarray | None = posteriors[t]
+        else:
+            new_posteriors_arr = result.posteriors
 
         should_switch, consecutive_count = _apply_filters(
             new_regime,
             current_regime,
-            new_posteriors,
+            new_posteriors_arr,
             current_posteriors,
             consecutive_count,
             dwell_bars,
@@ -98,7 +120,7 @@ def _walk_forward_from_arrays(
         )
         if should_switch:
             current_regime = new_regime
-            current_posteriors = new_posteriors
+            current_posteriors = new_posteriors_arr
 
         positions[t] = _STATE_MAP.get(current_regime, 0)
 
@@ -160,40 +182,23 @@ def walk_forward_backtest(
     if n < min_train:
         return _empty_result()
 
-    positions = np.zeros(n, dtype=int)
-
-    if regimes is not None:
-        positions = _walk_forward_from_arrays(
-            regimes,
-            posteriors=posteriors,
-            dwell_bars=dwell_bars,
-            hysteresis_delta=hysteresis_delta,
-        )
-    else:
-        # Precompute features (returns None for threshold engine)
+    # Attempt precomputation (returns None for threshold engine)
+    precomputed = None
+    try:
+        precomputed = eng.precompute(prices.to_frame("close"))
+    except (ValueError, RuntimeError, KeyError):
         precomputed = None
-        try:
-            precomputed = eng.precompute(prices.to_frame("close"))
-        except (ValueError, RuntimeError, KeyError):
-            precomputed = None
 
-        if precomputed is not None:
-            positions = _walk_forward_precomputed(
-                eng,
-                precomputed,
-                returns,
-                min_train,
-                dwell_bars=dwell_bars,
-                hysteresis_delta=hysteresis_delta,
-            )
-        else:
-            positions = _walk_forward_raw(
-                eng,
-                returns,
-                min_train,
-                dwell_bars=dwell_bars,
-                hysteresis_delta=hysteresis_delta,
-            )
+    positions = _walk_forward_positions(
+        returns,
+        engine=eng,
+        precomputed=precomputed,
+        regimes=regimes,
+        posteriors=posteriors,
+        min_train=min_train,
+        dwell_bars=dwell_bars,
+        hysteresis_delta=hysteresis_delta,
+    )
 
     # --- Daily P&L from lagged discrete positions ---
     pnl = np.zeros(n, dtype=float)
@@ -262,87 +267,3 @@ def _apply_filters(
     if dwell_pass and hyst_pass:
         return True, 0  # switch, reset counter
     return False, new_count  # hold, keep counting
-
-
-def _walk_forward_raw(
-    eng: RegimeEngine,
-    returns: pd.Series,
-    min_train: int,
-    dwell_bars: int = 0,
-    hysteresis_delta: float = 0.0,
-) -> np.ndarray:
-    n = len(returns)
-    positions = np.zeros(n, dtype=int)
-    current_regime = 1  # sideways default
-    consecutive_count = 0
-    current_posteriors: np.ndarray | None = None
-
-    for t in range(min_train, n):
-        result = eng.classify(returns.iloc[:t])
-        new_regime = result.regime
-
-        should_switch, consecutive_count = _apply_filters(
-            new_regime,
-            current_regime,
-            result.posteriors,
-            current_posteriors,
-            consecutive_count,
-            dwell_bars,
-            hysteresis_delta,
-        )
-        if should_switch:
-            current_regime = new_regime
-            current_posteriors = result.posteriors
-
-        positions[t] = _STATE_MAP.get(current_regime, 0)
-
-    return positions
-
-
-def _walk_forward_precomputed(
-    eng: RegimeEngine,
-    features: pd.DataFrame,
-    returns: pd.Series,
-    min_train: int,
-    dwell_bars: int = 0,
-    hysteresis_delta: float = 0.0,
-) -> np.ndarray:
-    n = len(returns)
-    positions = np.zeros(n, dtype=int)
-    prev_means: np.ndarray | None = None
-    current_regime: int = 1
-    consecutive_count = 0
-    current_posteriors: np.ndarray | None = None
-
-    refit_every = max(1, (n - min_train) // 100)
-    refit_every = min(refit_every, 20)
-
-    for t in range(min_train, n):
-        refit_now = (t == min_train) or ((t - min_train) % refit_every == 0)
-
-        if refit_now:
-            features_slice = features.iloc[:t]
-            try:
-                result = eng.classify(features_slice, prev_means=prev_means)
-                new_regime = result.regime
-                prev_means = result.means
-
-                should_switch, consecutive_count = _apply_filters(
-                    new_regime,
-                    current_regime,
-                    result.posteriors,
-                    current_posteriors,
-                    consecutive_count,
-                    dwell_bars,
-                    hysteresis_delta,
-                )
-                if should_switch:
-                    current_regime = new_regime
-                    current_posteriors = result.posteriors
-
-            except (ValueError, RuntimeError):
-                pass
-
-        positions[t] = _STATE_MAP.get(current_regime, 0)
-
-    return positions

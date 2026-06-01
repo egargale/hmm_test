@@ -201,44 +201,35 @@ def _classify_hmm(
     """Run the walk-forward classify loop for HMM engines.
 
     Receives a pre-constructed engine, precomputed features, and returns.
-    Walks forward from ``min_train`` to ``len(returns)``, refitting at
-    adaptive intervals.  Returns a :class:`ClassifyOutput` carrying
-    regimes, posteriors, last regime, warmup bars, and the engine
+    Walks forward from ``min_train`` to ``len(returns)`` via the shared
+    :func:`_walk_forward_classify` generator.  Returns a :class:`ClassifyOutput`
+    carrying regimes, posteriors, last regime, warmup bars, and the engine
     instance.
 
     Profiling is enabled by default (low overhead).
     """
+    from .engines._hmm_shared import _walk_forward_classify
+
     _phases = _phases if _phases is not None else {}
     _classify_times = _classify_times if _classify_times is not None else []
 
     n = len(returns)
     regimes = np.ones(n, dtype=int)
     posteriors_all = np.zeros((n, 3), dtype=float)
-    prev_means: np.ndarray | None = None
-    last_regime = 1
-    last_post: np.ndarray | None = None
-
-    refit_every = max(1, (n - min_train) // 100)
-    refit_every = min(refit_every, 20)
 
     t_wf = time.monotonic()
-    for t in range(min_train, n):
-        refit_now = (t == min_train) or ((t - min_train) % refit_every == 0)
-        if refit_now:
-            features_slice = precomputed.iloc[:t]
-            try:
-                t_cls_start = time.monotonic() if profile else 0.0
-                result = eng.classify(features_slice, prev_means=prev_means)
-                if profile:
-                    _classify_times.append(time.monotonic() - t_cls_start)
-                last_regime = result.regime
-                prev_means = result.means
-                last_post = result.posteriors
-            except (ValueError, RuntimeError):
-                pass
-        regimes[t] = last_regime
-        if last_post is not None:
-            posteriors_all[t] = last_post
+    for t, result in _walk_forward_classify(
+        returns,
+        eng=eng,
+        precomputed=precomputed,
+        min_train=min_train,
+        profile=profile,
+        _phases=_phases,
+        _classify_times=_classify_times,
+    ):
+        regimes[t] = result.regime
+        if result.posteriors is not None:
+            posteriors_all[t] = result.posteriors
     if profile:
         _phases["walk_forward_classify"] = float(round(time.monotonic() - t_wf, 6))
 

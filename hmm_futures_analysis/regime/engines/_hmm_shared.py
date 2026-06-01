@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import os
+import time
 import warnings
 from contextlib import redirect_stderr, redirect_stdout
+from collections.abc import Iterator
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -14,7 +16,7 @@ from hmmlearn import hmm
 from ...data_processing.feature_engineering import add_features
 from ...data_processing.messina_features import MESSINA_FEATURE_COLUMNS
 from ...data_processing.messina_features import add_messina_features
-from ..engine_protocol import ClassifyResult
+from ..engine_protocol import ClassifyResult, RegimeEngine
 
 if TYPE_CHECKING:
     from sklearn.decomposition import PCA
@@ -380,3 +382,79 @@ def _remap_to_prev_states(
         return prev_label_map.get(old_state, default)
 
     return default
+
+
+def _walk_forward_classify(
+    returns: pd.Series,
+    *,
+    eng: RegimeEngine | None = None,
+    precomputed: pd.DataFrame | None = None,
+    regimes: np.ndarray | None = None,
+    min_train: int = 252,
+    profile: bool = True,
+    _phases: dict[str, float] | None = None,
+    _classify_times: list[float] | None = None,
+) -> Iterator[tuple[int, ClassifyResult]]:
+    """Walk-forward classify generator, yielding (t, ClassifyResult) per bar.
+
+    Three mutually-exclusive input modes determined by which kwargs are set:
+
+    - **regimes** is not None: replay pre-computed regime labels without
+      calling ``eng.classify``.  Yields a ``ClassifyResult(regime=…)`` with
+      ``means=None, posteriors=None``.
+    - **precomputed** is not None: adaptive skip-N refit calling
+      ``eng.classify(precomputed.iloc[:t], prev_means=…)``.  Carries the
+      last result forward on non-refit bars.
+    - Neither: per-bar ``eng.classify(returns.iloc[:t])``.
+
+    Yields
+    ------
+    (t, ClassifyResult) for every bar t in [min_train, len(returns)).
+    """
+    _phases = _phases if _phases is not None else {}
+    _classify_times = _classify_times if _classify_times is not None else []
+
+    n = len(returns)
+
+    if regimes is not None:
+        # Mode 1: pre-computed regime labels — replay without classifying.
+        for t in range(min_train, n):
+            yield t, ClassifyResult(regime=int(regimes[t]))
+        return
+
+    # Modes 2 & 3: require an engine.
+    if eng is None:
+        raise ValueError("eng is required when regimes is not set")
+
+    if precomputed is not None:
+        # Mode 2: precomputed features, adaptive skip-N refit.
+        prev_means: np.ndarray | None = None
+        last_result = ClassifyResult(regime=1)
+
+        refit_every = max(1, (n - min_train) // 100)
+        refit_every = min(refit_every, 20)
+
+        for t in range(min_train, n):
+            refit_now = (t == min_train) or ((t - min_train) % refit_every == 0)
+            if refit_now:
+                features_slice = precomputed.iloc[:t]
+                try:
+                    t_cls_start = time.monotonic() if profile else 0.0
+                    result = eng.classify(features_slice, prev_means=prev_means)
+                    if profile:
+                        _classify_times.append(time.monotonic() - t_cls_start)
+                    prev_means = result.means
+                    last_result = result
+                except (ValueError, RuntimeError):
+                    pass
+            yield t, last_result
+    else:
+        # Mode 3: raw returns, per-bar classify.
+        last_result = ClassifyResult(regime=1)
+        for t in range(min_train, n):
+            try:
+                result = eng.classify(returns.iloc[:t])
+                last_result = result
+            except (ValueError, RuntimeError):
+                pass
+            yield t, last_result
