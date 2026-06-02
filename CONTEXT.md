@@ -45,7 +45,7 @@ The threshold engine's method for mapping classified regimes to trading position
 _Avoid_: signal-gating, conviction filtering
 
 **BIC state selection** (`--n-states auto`):
-Automatic selection of the number of HMM latent states via Bayesian Information Criterion. `select_n_states()` in `_hmm_shared.py` fits GaussianHMM for each candidate `k` in `[2, max_states]` with multiple restarts and returns the count with the lowest BIC. Default remains `--n-states 3`. The BIC penalty naturally guards against overfitting on short data windows.
+Automatic selection of the number of HMM latent states via Bayesian Information Criterion. `select_n_states()` in `_hmm_engine.py` fits GaussianHMM for each candidate `k` in `[2, max_states]` with multiple restarts and returns the count with the lowest BIC. Default remains `--n-states 3`. The BIC penalty naturally guards against overfitting on short data windows.
 _Avoid_: auto-tuning, state optimization
 
 **PCA whitening**:
@@ -73,7 +73,7 @@ Feature Saliency HMM (Adams et al. 2016). Learns per-feature saliency weights ρ
 _Avoid_: saliency model, feature selection engine
 
 **Engine config**:
-A flat dataclass that encapsulates all constructor parameters for one engine. Each engine has its own config class (e.g. `ThresholdConfig`, `RobustHMMConfig`) with fields matching the engine's `__init__`. Configs also carry `name` (the registry key) and `features` (the feature-engineering mode label). The CLI constructs the right config from CLI args; pipeline and walk-forward never see engine-specific kwargs. Per ADR-0004.
+A flat dataclass that encapsulates all constructor parameters for one engine. Each engine has its own config class (e.g. `ThresholdConfig`, `RobustHMMConfig`) with fields matching the engine's `__init__`. Configs also carry `name` (the registry key) and `features` (the feature-engineering mode label). The CLI constructs the right config from CLI args; pipeline and walk-forward never see engine-specific kwargs. Per ADR-0011.
 _Avoid_: engine settings, engine params
 
 **Duration forecast**:

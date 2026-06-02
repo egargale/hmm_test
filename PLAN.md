@@ -28,17 +28,13 @@
 hmm_test/
 ├── AGENTS.md                   # Agent guidance
 ├── CONTEXT.md                  # Domain language & terminology
-├── GEMINI.md                   # Gemini provider configuration
 ├── LICENSE
 ├── PLAN.md                     # this file
-├── PRD_HMM_BEST.md             # Original product requirements
 ├── README.md
 ├── SKILL.md                    # Agent-facing skill definition
 ├── USAGE.md                    # CLI reference and usage guide
 ├── pyproject.toml              # Package config (hmm-futures-analysis)
 ├── .python-version
-├── review-1-correctness.md
-├── review-2-integration.md
 ├── run.sh                      # Self-bootstrapping entry point for skill consumers
 ├── test_data/
 │   ├── test_futures.csv
@@ -60,6 +56,7 @@ hmm_test/
 │   ├── regime/
 │   │   ├── __init__.py
 │   │   ├── engine_protocol.py   # RegimeEngine protocol + ENGINE_REGISTRY
+│   │   ├── engine_configs.py     # Per-engine config dataclasses (ADR-0011)
 │   │   ├── duration_forecast.py  # Weibull and Cox PH survival analysis
 │   │   ├── markov_chain.py
 │   │   ├── pipeline.py
@@ -71,7 +68,8 @@ hmm_test/
 │   │       ├── hmm_messina.py
 │   │       ├── robust_hmm.py      # Outlier-resistant estimation
 │   │       ├── fshmm.py           # Feature saliency selection
-│   │       └── _hmm_shared.py
+│   │       ├── _hmm_engine.py     # Shared HMM fitting, BIC, state matching
+│   │       └── _hmm_pipeline.py   # Shared HMM walk-forward classification
 │   └── utils/
 │       ├── __init__.py
 │       ├── data_types.py
@@ -97,13 +95,20 @@ hmm_test/
 │   │   ├── 0009-deepen-engine-seam.md
 │   │   ├── 0010-trim-feature-engineering.md
 │   │   ├── 0011-engine-dispatch-consolidation.md
-│   │   └── 0012-pipeline-run-decomposition.md
+│   │   ├── 0012-pipeline-run-decomposition.md
+│   │   ├── 0013-fshmm-engine.md
+│   │   ├── 0014-per-phase-timing-instrumentation.md
+│   │   ├── 0015-regime-duration-forecasting.md
+│   │   └── 0016-robust-hmm-engine.md
 │   ├── agents/
 │   │   ├── domain.md
 │   │   ├── issue-tracker.md
 │   │   └── triage-labels.md
 │   └── research/
 │       └── technology-scan-2026-05.md
+│   └── reviews/
+│       ├── review-1-correctness.md
+│       └── review-2-integration.md
 ├── tests/
 │   ├── __init__.py
 │   ├── conftest.py
@@ -116,7 +121,8 @@ hmm_test/
 │   ├── gh-hmm-engine.md
 │   ├── hdp-hmm-engine.md
 │   ├── student-t-standalone-engine.md
-│   └── wasserstein-hmm.md
+│   ├── wasserstein-hmm.md
+│   └── PRD_HMM_BEST.md         # Archived original product requirements
 └── logs/                         # Per-run profiling output
 ```
 

@@ -488,6 +488,10 @@ spells to fit, and the output will contain `null` values.
     "feature_saliency": [0.32, 0.85, ...],
     "selected_features": ["log_ret", "rsi_14", ...]
   },
+  "verdict": {
+    "verdict": "bullish",
+    "confidence": 0.82
+  },
   "duration_forecast": {
     "current_regime": "bull",
     "days_in_regime": 45,
@@ -496,6 +500,11 @@ spells to fit, and the output will contain `null` values.
     "survival_50pct": 60.0,
     "weibull_shape": 1.25,
     "weibull_scale": 80.0
+  },
+  "timing": {
+    "total_s": 12.4,
+    "phases": { "feature_engineering": 1.2, "regime_classification": 8.1, "walk_forward": 2.3, "forecast": 0.1 },
+    "walk_forward_classify_stats": { "min": 0.001, "median": 0.012, "p99": 0.045, "n_calls": 2000 }
   },
   "framework": "hmm_test v0.2.0",
   "disclaimer": "Regime detection is probabilistic. Past transitions do not guarantee future regimes. Not financial advice."
@@ -511,6 +520,10 @@ spells to fit, and the output will contain `null` values.
 | `walk_forward.sharpe` | real | Annualised Sharpe ratio of walk-forward strategy. |
 | `walk_forward.total_return` | real | Cumulative return (1.0 = +100%, −0.5 = −50%). |
 | `walk_forward.profit_factor` | ≥ 0 | Gross profits / gross losses. > 1 = profitable. 0 = no winning trades. |
+| `verdict.verdict` | string | One of `"bullish"`, `"bearish"`, `"neutral"`, `"transition_bull"`, `"transition_bear"`. Always present. |
+| `verdict.confidence` | 0 to 1 | `abs(signal)`. Higher = stronger conviction. |
+| `timing.total_s` | float | Total wall-clock time in seconds. Always present. |
+| `timing.phases` | dict | Per-phase timing: `feature_engineering`, `regime_classification`, `walk_forward`, `forecast`. |
 
 ---
 
