@@ -5,7 +5,7 @@ Detect market regimes (Bull/Bear/Sideways) using threshold-based classification 
 ## Language
 
 **Engine**:
-A self-contained analysis pipeline that produces a full output block (regime classification, transition matrix, forecasts, walk-forward backtest) from a single methodology. Three engines exist: `threshold` (fast, close-only), `messina` (HMM with 19 Messina features), `hmm` (HMM with ~50 generic features). The user selects one per invocation.
+A self-contained regime classifier that produces regime labels and posterior probabilities via `run_classify()`. Each engine owns its execution model — one-shot vectorized (threshold) or walk-forward HMM refitting (messina, hmm, robust_hmm, fshmm). The pipeline consumes the engine’s `ClassifyOutput` and assembles the full output block (transition matrix, forecasts, walk-forward backtest) downstream. Five engines exist: `threshold` (fast, close-only), `messina` (HMM with 19 Messina features), `hmm` (HMM with ~50 generic features), `robust_hmm` (HMM with outlier-resistant emissions via Huber IRLS or MinCovDet), and `fshmm` (HMM with per-feature saliency weights learned during EM). The user selects one per invocation.
 _Avoid_: model, mode, method, strategy
 
 **Walk-forward backtest**:
@@ -45,7 +45,7 @@ The threshold engine's method for mapping classified regimes to trading position
 _Avoid_: signal-gating, conviction filtering
 
 **BIC state selection** (`--n-states auto`):
-Automatic selection of the number of HMM latent states via Bayesian Information Criterion. `select_n_states()` in `_hmm_shared.py` fits GaussianHMM for each candidate `k` in `[2, max_states]` with multiple restarts and returns the count with the lowest BIC. Default remains `--n-states 3`. The BIC penalty naturally guards against overfitting on short data windows.
+Automatic selection of the number of HMM latent states via Bayesian Information Criterion. `select_n_states()` in `_hmm_engine.py` fits GaussianHMM for each candidate `k` in `[2, max_states]` with multiple restarts and returns the count with the lowest BIC. Default remains `--n-states 3`. The BIC penalty naturally guards against overfitting on short data windows.
 _Avoid_: auto-tuning, state optimization
 
 **PCA whitening**:
@@ -64,7 +64,41 @@ _Avoid_: probability threshold, confidence filter
 Posterior probability array over regimes, returned by HMM engines via `ClassifyResult.posteriors`. Computed from `model.predict_proba()`. When `n_states > 3`, aggregated by regime bucket (Bear/Sideways/Bull). Used by the hysteresis filter. `None` for the threshold engine.
 _Avoid_: probabilities, confidence scores
 
-## Flagged ambiguities
+**Robust HMM engine** (`robust_hmm`):
+An HMM engine that applies outlier-resistant emission estimation after standard GaussianHMM fitting. Two methods: `huber` (Huber IRLS correction of means and variances) and `mcd` (Minimum Covariance Determinant replacement of emission covariance). Opt-in via `--robust-method`. Uses the same ~50 generic features as the `hmm` engine.
+_Avoid_: robust model, outlier engine
+
+**FSHMM engine** (`fshmm`):
+Feature Saliency HMM (Adams et al. 2016). Learns per-feature saliency weights ρ during EM, automatically identifying which of the ~50 generic features are most informative for regime detection. Features with ρ < `--saliency-threshold` (default 0.5) are masked as irrelevant. Outputs `feature_saliency` and `selected_features` in `engine_info`.
+_Avoid_: saliency model, feature selection engine
+
+**Engine config**:
+A flat dataclass that encapsulates all constructor parameters for one engine. Each engine has its own config class (e.g. `ThresholdConfig`, `RobustHMMConfig`) with fields matching the engine's `__init__`. Configs also carry `name` (the registry key) and `features` (the feature-engineering mode label). The CLI constructs the right config from CLI args; pipeline and walk-forward never see engine-specific kwargs. Per ADR-0011.
+_Avoid_: engine settings, engine params
+
+**Duration forecast**:
+Post-processing, now on by default, that estimates how long the current regime will persist. Two survival models: `weibull` (Weibull distribution fit to historical regime durations — default, no extra dependencies) and `cox` (Cox proportional hazards with realized-volatility and spell-return covariates — requires `lifelines`). Outputs expected remaining days, hazard rate, 50%-survival point, and Weibull shape/scale. The Cox model adds covariate-adjusted predictions (`cox_expected_remaining_days`, `cox_coefficients`, `concordance_index`). Opt-out via `duration_forecast=False` on `pipeline.run()`.
+_Avoid_: regime length prediction, time-to-transition
+
+**Verdict**:
+A synthesized signal computed by `_compute_verdict()` in `pipeline.py`, always present in pipeline output. One of ``"bullish"``, ``"bearish"``, ``"neutral"``, ``"transition_bull"``, ``"transition_bear"``. For Bull/Bear regimes, compares the 20-step forecast probability to the current distribution — continuation if the forecast reinforces, transition if it reverses. For Sideways, uses ``|signal|`` against a dynamic threshold (see below). Includes a ``confidence`` field = ``abs(signal)``.
+_Avoid_: prediction, outlook, recommendation
+
+**Dynamic threshold**:
+A regime-aging-adjusted threshold for the Sideways → transition verdict boundary. Computed by ``_compute_dynamic_threshold()`` from the duration forecast's Weibull fit. When ``days_in_regime > expected_total`` (Weibull unconditional mean), the threshold shrinks linearly from 1.0× at aging_ratio=1 down to 0.3× at aging_ratio=1.7. Makes the verdict more sensitive to transition signals as the regime ages past its historical norm. Falls back to 0.1 when duration data is unavailable.
+_Avoid_: adaptive threshold, variable cutoff
+
+## Engine suitability
+
+| Engine | Best for | Weakness |
+|---|---|---|
+| `threshold` | Crypto, high-vol assets, close-only data | Whipsaw-heavy without dwell-bars; negative Sharpe on low-vol equities |
+| `hmm` (generic) | Low-vol equities (e.g. KO, SPY), OHLCV-rich data | Degenerates on high-vol crypto — classifies 100% Sideways; `~50 features overwhelm HMM on short/noisy windows |
+| `messina` | Medium-vol assets, regime-aware feature set | 19 features are less discriminative than 50 — often returns 100% Sideways |
+| `robust_hmm` | Data with outlier bars | Same asset-vol sensitivity as `hmm`; Huber/MCD correction helps emission stability but not regime separation |
+| `fshmm` | Feature selection diagnostics | Saliency weights (ρ) identify dead features but don't fix the high-vol degeneration problem |
+
+**Rule of thumb**: If daily std > 2%, prefer `threshold` with dwell-bars ≥ 5. If daily std < 1.5% and OHLCV is available, `hmm` with n_states=3 often outperforms threshold. `n_states=auto` (BIC) tends to over-select states on financial data — cap at 4 for trading use.
 
 - **"state"**: Use **regime** for the labeled market condition (Bear/Sideways/Bull) and **HMM latent state** for the raw model output index. Never use "state" alone.
 - **"method"**: Use **engine** for the selected analysis pipeline. The old term "method" appears in the JSON `params.method` field; this is legacy from when threshold was the only engine and should migrate to `engine_info.method`.
@@ -81,4 +115,4 @@ _Avoid_: probabilities, confidence scores
 >
 > **Dev**: What happens if someone runs `--engine messina` on a CSV that only has close prices?
 >
-> **Domain expert**: It errors. Messina and HMM engines require OHLCV. The threshold engine is the only one that works with close-only data. If a caller passes a Series for engine=messina, `hmm_adapter.py` can synthetic-upgrade it (all columns = close), but that produces degenerate features.
+> **Domain expert**: It errors. Messina and HMM engines require OHLCV. The threshold engine is the only one that works with close-only data.

@@ -28,27 +28,37 @@ Given a ticker or CSV with price data, it outputs a structured JSON with:
 - **Current regime** — Bull, Bear, or Sideways
 - **Transition matrix** — probabilities of switching between regimes
 - **Signal** — `P(bull) - P(bear)` in `[-1, 1]`
-- **Walk-forward backtest** — Sharpe, max drawdown, trade count
+- **Walk-forward backtest** — Sharpe, max drawdown, trade count, win rate, profit factor
 - **Forecasts** — 1-step, 5-step, 20-step regime probabilities
-- **Three independent engines** — threshold (close-only), messina (HMM + 19 features), hmm (HMM + ~50 features)
+- **Duration forecast** — expected remaining bars of current regime via Weibull or Cox survival analysis
+- **Five independent engines** — threshold (close-only), messina (HMM + 19 features), hmm (HMM + ~50 features), robust_hmm (outlier-resistant), fshmm (feature saliency HMM)
 
 ## Usage
 
 ```bash
 # From CSV (threshold engine, default)
-./run.sh --csv data.csv --json
+./scripts/run.sh --csv data.csv --json
 
-# From ticker (needs yfinance, installed automatically by run.sh)
-./run.sh --ticker ES=F --json
+# From ticker (needs yfinance, installed automatically by run.sh in scripts/)
+./scripts/run.sh --ticker ES=F --json
 
 # Messina engine (HMM with 19 Wilder's-smoothed features, requires OHLCV)
-./run.sh --csv data.csv --json --engine messina
+./scripts/run.sh --csv data.csv --json --engine messina
 
 # Generic HMM engine (~50 SMA-based features, requires OHLCV)
-./run.sh --ticker SPY --json --engine hmm
+./scripts/run.sh --ticker SPY --json --engine hmm
+
+# Robust HMM engine (outlier-resistant with Huber IRLS or MCD)
+./scripts/run.sh --csv data.csv --json --engine robust_hmm --robust-method mcd
+
+# Feature Saliency HMM engine (learns per-feature relevance weights)
+./scripts/run.sh --ticker SPY --json --engine fshmm --saliency-threshold 0.5
+
+# Duration forecasting (survival analysis on regime spell lengths)
+./scripts/run.sh --ticker SPY --json --engine messina --duration-forecast
 
 # Custom parameters
-./run.sh --csv data.csv --json --window 10 --threshold 0.03
+./scripts/run.sh --csv data.csv --json --window 10 --threshold 0.03
 ```
 
 ## Output Contract
@@ -56,30 +66,47 @@ Given a ticker or CSV with price data, it outputs a structured JSON with:
 ```json
 {
   "source": "ES=F",
-  "engine": "threshold",
-  "dates": {"start": "2016-01-04", "end": "2026-05-21"},
+  "engine": "fshmm",
+  "dates": {"start": "2016-05-31", "end": "2026-05-29"},
   "current_regime": {"name": "bull", "index": 2},
-  "signal": 0.62,
-  "next_state_probabilities": {"bear": 0.08, "sideways": 0.30, "bull": 0.62},
-  "transition_matrix": [[0.88, 0.07, 0.05], [0.12, 0.70, 0.18], [0.04, 0.19, 0.77]],
-  "stationary_distribution": {"bear": 0.22, "sideways": 0.35, "bull": 0.43},
-  "persistence_diagonal": {"bear": 0.88, "sideways": 0.70, "bull": 0.77},
-  "regime_counts": {"bear": 480, "sideways": 760, "bull": 960},
+  "signal": 0.82,
+  "next_state_probabilities": {"bear": 0.02, "sideways": 0.16, "bull": 0.82},
+  "transition_matrix": [[0.85, 0.10, 0.05], [0.03, 0.92, 0.05], [0.01, 0.07, 0.92]],
+  "stationary_distribution": {"bear": 0.10, "sideways": 0.45, "bull": 0.45},
+  "persistence_diagonal": {"bear": 0.85, "sideways": 0.92, "bull": 0.92},
+  "regime_counts": {"bear": 200, "sideways": 1200, "bull": 1100},
   "walk_forward": {
-    "sharpe": 0.51, "max_drawdown": -0.15, "n_trades": 42,
-    "win_rate": 0.57, "profit_factor": 1.80, "total_return": 0.23
+    "sharpe": 0.65,
+    "max_drawdown": -0.24,
+    "n_trades": 20,
+    "win_rate": 0.55,
+    "profit_factor": 4.88,
+    "total_return": 2.07
   },
   "forecast": {
-    "1_step":  {"bear": 0.08, "sideways": 0.30, "bull": 0.62},
-    "5_step":  {"bear": 0.12, "sideways": 0.33, "bull": 0.55},
-    "20_step": {"bear": 0.18, "sideways": 0.35, "bull": 0.47}
+    "1_step":  {"bear": 0.02, "sideways": 0.16, "bull": 0.82},
+    "5_step":  {"bear": 0.07, "sideways": 0.28, "bull": 0.65},
+    "20_step": {"bear": 0.15, "sideways": 0.42, "bull": 0.43}
   },
   "engine_info": {
-    "method": "threshold",
-    "features": "returns",
-    "n_states": 3
+    "method": "fshmm",
+    "features": "generic",
+    "n_states": 3,
+    "warmup_bars": 252,
+    "caveat": "HMM states sorted by mean return; labels may swap on re-fit",
+    "feature_saliency": [0.85, 0.92, 0.32, 0.11, 0.88],
+    "selected_features": ["log_ret", "rsi_14", "sma_50"]
   },
-  "framework": "hmm_test v0.2.0",
+  "duration_forecast": {
+    "current_regime": "bull",
+    "days_in_regime": 45,
+    "expected_remaining_days": 32.5,
+    "hazard_rate": 0.0154,
+    "survival_50pct": 60.0,
+    "weibull_shape": 1.25,
+    "weibull_scale": 80.0
+  },
+  "framework": "hmm_regime_detection v0.5.0",
   "disclaimer": "Regime detection is probabilistic. Past transitions do not guarantee future regimes. Not financial advice."
 }
 ```

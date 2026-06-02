@@ -40,3 +40,7 @@ node_modules/
 # Task files
 # tasks.json
 # tasks/
+
+# pi agent artifacts
+.pi/
+.pi-lens/

@@ -1,11 +1,12 @@
 """HMM generic-feature regime classification engine."""
+
 from __future__ import annotations
 
 import numpy as np
 import pandas as pd
 
-from ..engine_protocol import ClassifyResult
-from ._hmm_shared import _fit_hmm_on_slice, _match_states, engineer_features
+from ..engine_protocol import ClassifyOutput, ClassifyResult
+from ._hmm_engine import _classify_hmm_slice, _fit_hmm_on_slice, engineer_features
 
 
 class HMMGenericEngine:
@@ -19,12 +20,35 @@ class HMMGenericEngine:
         self._pca_n_components: int | None = None
 
     def precompute(self, data: pd.DataFrame) -> pd.DataFrame | None:
+        if data is None:
+            raise ValueError(
+                "HMMGenericEngine requires OHLCV data for feature engineering"
+            )
         return engineer_features(data, use_messina=False)
+
+    def enrich_info(self, info: dict) -> dict:
+        result = {**info}
+        result["caveat"] = "HMM states sorted by mean return; labels may swap on re-fit"
+        return result
+
+    def run_classify(
+        self,
+        prices: pd.Series,
+        ohlcv: pd.DataFrame | None,
+        returns: pd.Series,
+        min_train: int,
+        **kwargs,
+    ) -> ClassifyOutput:
+        from ._hmm_pipeline import _hmm_classify_pipeline
+
+        return _hmm_classify_pipeline(
+            self, prices, ohlcv, returns, min_train, **kwargs
+        )
 
     def classify(
         self, data: pd.DataFrame, prev_means: np.ndarray | None = None
     ) -> ClassifyResult:
-        features_clean = data.dropna()
+        features_clean = data.bfill().dropna()
         if len(features_clean) < self.n_states + 1:
             raise ValueError(
                 f"Not enough clean rows ({len(features_clean)}) "
@@ -32,71 +56,24 @@ class HMMGenericEngine:
             )
         features_arr = features_clean.to_numpy(dtype=np.float64)
 
-        # Use sticky component count if available, otherwise let PCA determine it
-        pca_var = self.pca_variance
         model, center, scale, pca_n, pca_transform = _fit_hmm_on_slice(
-            features_arr, n_states=self.n_states, pca_variance=pca_var,
+            features_arr,
+            n_states=self.n_states,
+            pca_variance=self.pca_variance,
         )
 
         # Sticky component count: first refit determines, subsequent reuse
         if pca_n is not None and self._pca_n_components is None:
             self._pca_n_components = pca_n
 
-        means = model.means_
-
-        # Transform last bar through z-score → (optional PCA) for prediction
-        last_features = (features_arr[-1:] - center) / scale
+        # Normalize last bar for prediction
+        X_last = (features_arr[-1:] - center) / scale
         if pca_transform is not None:
-            last_features = pca_transform.transform(last_features)
-        raw_state = model.predict(last_features.astype(np.float64))[0]
+            X_last = pca_transform.transform(X_last)
 
-        # Compute posteriors for the last observation
-        posteriors = model.predict_proba(last_features.astype(np.float64))[-1]
-
-        # Map HMM states to regime indices (0=bear, 1=sideways, 2=bull)
-        # based on ascending mean return order, collapsed to 3 buckets
-        state_means = means[:, 0]
-        order = np.argsort(state_means)
-        if self.n_states <= 3:
-            label_map = {int(order[i]): i for i in range(len(order))}
-        else:
-            # Collapse n_states into 3 regimes: low/middle/high terciles
-            n = len(order)
-            label_map = {}
-            for i, state_idx in enumerate(order):
-                # Bottom third → bear(0), middle → sideways(1), top → bull(2)
-                regime = min(2, i * 3 // n)
-                label_map[int(state_idx)] = regime
-
-        regime = label_map.get(int(raw_state), 1)
-
-        # Reorder posteriors to match regime labels (0=bear, 1=sideways, 2=bull)
-        if self.n_states <= 3:
-            # Reorder: posteriors[state] → posteriors_by_regime[label_of_state]
-            reordered = np.zeros(self.n_states)
-            for state_idx in range(self.n_states):
-                reordered[label_map[state_idx]] = posteriors[state_idx]
-            posteriors = reordered
-        else:
-            # Aggregate posteriors by regime bucket
-            agg = np.zeros(3)
-            for state_idx in range(self.n_states):
-                agg[label_map[state_idx]] += posteriors[state_idx]
-            posteriors = agg
-
-        if prev_means is not None:
-            # Map through: raw_state -> matched old state -> old regime
-            prev_order = np.argsort(prev_means[:, 0])
-            prev_n = len(prev_order)
-            if prev_n <= 3:
-                prev_label_map = {int(prev_order[i]): i for i in range(prev_n)}
-            else:
-                prev_label_map = {}
-                for i, si in enumerate(prev_order):
-                    prev_label_map[int(si)] = min(2, i * 3 // prev_n)
-            assignment = _match_states(means, prev_means)
-            old_state = assignment.get(int(raw_state))
-            if old_state is not None:
-                regime = prev_label_map.get(old_state, regime)
-
-        return ClassifyResult(regime=int(regime), means=means, posteriors=posteriors)
+        return _classify_hmm_slice(
+            model,
+            X_last,
+            self.n_states,
+            prev_means,
+        )

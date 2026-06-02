@@ -1,0 +1,214 @@
+{
+  "source": "test_data/hmm-eval-2026-06-02/0700_HK.csv",
+  "engine": "robust_hmm",
+  "dates": {
+    "start": "2016-06-01",
+    "end": "2026-06-01"
+  },
+  "current_regime": {
+    "name": "bull",
+    "index": 2
+  },
+  "signal": 0.962566844631016,
+  "next_state_probabilities": {
+    "bear": 0.010695187262566843,
+    "sideways": 0.01604278084385027,
+    "bull": 0.9732620318935828
+  },
+  "transition_matrix": [
+    [
+      0.9666666664766667,
+      0.016666666761666667,
+      0.016666666761666667
+    ],
+    [
+      0.0019120459885277245,
+      0.9966539194950765,
+      0.0014340345163957936
+    ],
+    [
+      0.010695187262566843,
+      0.01604278084385027,
+      0.9732620318935828
+    ]
+  ],
+  "stationary_distribution": {
+    "bear": 0.0773579324437494,
+    "sideways": 0.8299117250405819,
+    "bull": 0.0927303425156688
+  },
+  "persistence_diagonal": {
+    "bear": 0.9666666664766667,
+    "sideways": 0.9966539194950765,
+    "bull": 0.9732620318935828
+  },
+  "regime_counts": {
+    "bear": 180,
+    "sideways": 2092,
+    "bull": 188
+  },
+  "walk_forward": {
+    "sharpe": -0.05193828408924675,
+    "max_drawdown": -0.46614324095912163,
+    "n_trades": 7,
+    "win_rate": 0.5714285714285714,
+    "profit_factor": 1.2841253442399414,
+    "total_return": 0.015347909960385042
+  },
+  "forecast": {
+    "1_step": {
+      "bear": 0.02077857523985468,
+      "sideways": 0.03178118301099189,
+      "bull": 0.9474402417491533
+    },
+    "5_step": {
+      "bear": 0.055566411366705704,
+      "sideways": 0.09180007917420879,
+      "bull": 0.8526335094590852
+    },
+    "20_step": {
+      "bear": 0.1285050894671448,
+      "sideways": 0.27980899353157845,
+      "bull": 0.5916859170012758
+    }
+  },
+  "engine_info": {
+    "method": "robust_hmm",
+    "features": "generic",
+    "n_states": 3,
+    "warmup_bars": 252,
+    "caveat": "HMM states sorted by mean return; labels may swap on re-fit",
+    "robust_method": "huber"
+  },
+  "framework": "hmm_test v0.2.0",
+  "disclaimer": "Regime detection is probabilistic. Past transitions do not guarantee future regimes. Not financial advice.",
+  "verdict": {
+    "verdict": "bullish",
+    "confidence": 0.9626
+  },
+  "duration_forecast": null,
+  "regime_transitions": [
+    {
+      "date": "2017-10-31",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 352
+    },
+    {
+      "date": "2017-11-28",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 372
+    },
+    {
+      "date": "2017-12-28",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 392
+    },
+    {
+      "date": "2018-04-27",
+      "from_regime": "bear",
+      "to_regime": "bull",
+      "bar_index": 472
+    },
+    {
+      "date": "2018-05-29",
+      "from_regime": "bull",
+      "to_regime": "bear",
+      "bar_index": 492
+    },
+    {
+      "date": "2018-06-27",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 512
+    },
+    {
+      "date": "2021-03-01",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 1172
+    },
+    {
+      "date": "2021-03-29",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 1192
+    },
+    {
+      "date": "2021-04-29",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 1212
+    },
+    {
+      "date": "2021-05-28",
+      "from_regime": "bear",
+      "to_regime": "bull",
+      "bar_index": 1232
+    },
+    {
+      "date": "2021-06-28",
+      "from_regime": "bull",
+      "to_regime": "bear",
+      "bar_index": 1252
+    },
+    {
+      "date": "2021-07-27",
+      "from_regime": "bear",
+      "to_regime": "bull",
+      "bar_index": 1272
+    },
+    {
+      "date": "2021-08-24",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1292
+    },
+    {
+      "date": "2022-12-08",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 1612
+    },
+    {
+      "date": "2023-01-10",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 1632
+    },
+    {
+      "date": "2025-11-18",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 2332
+    },
+    {
+      "date": "2025-12-16",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 2352
+    },
+    {
+      "date": "2026-01-16",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 2372
+    }
+  ],
+  "timing": {
+    "total_wall_seconds": 447.426119,
+    "phases": {
+      "precompute": 0.403108,
+      "walk_forward_classify": 445.498614,
+      "walk_forward_backtest": 0.325797
+    },
+    "walk_forward_classify_stats": {
+      "min": 0.350816,
+      "median": 4.120251,
+      "p99": 9.076381,
+      "n_calls": 111
+    }
+  }
+}

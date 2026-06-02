@@ -1,0 +1,267 @@
+{
+  "source": "test_data/hmm-eval-2026-06-02/0700_HK.csv",
+  "engine": "messina",
+  "dates": {
+    "start": "2016-06-01",
+    "end": "2026-06-01"
+  },
+  "current_regime": {
+    "name": "sideways",
+    "index": 1
+  },
+  "signal": 0.003934794827374929,
+  "next_state_probabilities": {
+    "bear": 0.0011242271935356942,
+    "sideways": 0.9938167507855536,
+    "bull": 0.005059022020910623
+  },
+  "transition_matrix": [
+    [
+      0.9727272725354545,
+      0.022727272820454548,
+      0.004545454644090908
+    ],
+    [
+      0.0011242271935356942,
+      0.9938167507855536,
+      0.005059022020910623
+    ],
+    [
+      0.008695652271304347,
+      0.01304347835695652,
+      0.9782608693717392
+    ]
+  ],
+  "stationary_distribution": {
+    "bear": 0.08946726611268327,
+    "sideways": 0.7234648185212611,
+    "bull": 0.18706791536605563
+  },
+  "persistence_diagonal": {
+    "bear": 0.9727272725354545,
+    "sideways": 0.9938167507855536,
+    "bull": 0.9782608693717392
+  },
+  "regime_counts": {
+    "bear": 220,
+    "sideways": 1780,
+    "bull": 460
+  },
+  "walk_forward": {
+    "sharpe": 0.06276564522974253,
+    "max_drawdown": -0.5394245198675798,
+    "n_trades": 11,
+    "win_rate": 0.45454545454545453,
+    "profit_factor": 1.3466547581028352,
+    "total_return": 0.04720876860021406
+  },
+  "forecast": {
+    "1_step": {
+      "bear": 0.00225483376462928,
+      "sideways": 0.9877632720043321,
+      "bull": 0.00998189423103863
+    },
+    "5_step": {
+      "bear": 0.006817729137264574,
+      "sideways": 0.9647989207750902,
+      "bull": 0.02838335008764494
+    },
+    "20_step": {
+      "bear": 0.023661421578858914,
+      "sideways": 0.8943744632162605,
+      "bull": 0.08196411520488045
+    }
+  },
+  "engine_info": {
+    "method": "messina",
+    "features": "messina",
+    "n_states": 3,
+    "warmup_bars": 252,
+    "caveat": "HMM states sorted by mean return; labels may swap on re-fit"
+  },
+  "framework": "hmm_test v0.2.0",
+  "disclaimer": "Regime detection is probabilistic. Past transitions do not guarantee future regimes. Not financial advice.",
+  "verdict": {
+    "verdict": "neutral",
+    "confidence": 0.0039
+  },
+  "duration_forecast": null,
+  "regime_transitions": [
+    {
+      "date": "2017-06-09",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 252
+    },
+    {
+      "date": "2017-08-04",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 292
+    },
+    {
+      "date": "2017-09-01",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 312
+    },
+    {
+      "date": "2018-01-26",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 412
+    },
+    {
+      "date": "2019-09-13",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 812
+    },
+    {
+      "date": "2019-11-12",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 852
+    },
+    {
+      "date": "2020-02-11",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 912
+    },
+    {
+      "date": "2020-03-10",
+      "from_regime": "bull",
+      "to_regime": "bear",
+      "bar_index": 932
+    },
+    {
+      "date": "2020-04-07",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 952
+    },
+    {
+      "date": "2020-06-08",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 992
+    },
+    {
+      "date": "2020-07-08",
+      "from_regime": "bull",
+      "to_regime": "bear",
+      "bar_index": 1012
+    },
+    {
+      "date": "2020-08-05",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 1032
+    },
+    {
+      "date": "2020-11-03",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1092
+    },
+    {
+      "date": "2020-12-01",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1112
+    },
+    {
+      "date": "2020-12-30",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1132
+    },
+    {
+      "date": "2021-03-01",
+      "from_regime": "bull",
+      "to_regime": "bear",
+      "bar_index": 1172
+    },
+    {
+      "date": "2021-03-29",
+      "from_regime": "bear",
+      "to_regime": "bull",
+      "bar_index": 1192
+    },
+    {
+      "date": "2021-06-28",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1252
+    },
+    {
+      "date": "2021-07-27",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1272
+    },
+    {
+      "date": "2021-10-25",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1332
+    },
+    {
+      "date": "2021-11-22",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1352
+    },
+    {
+      "date": "2022-02-18",
+      "from_regime": "bull",
+      "to_regime": "bear",
+      "bar_index": 1412
+    },
+    {
+      "date": "2022-03-18",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 1432
+    },
+    {
+      "date": "2022-04-20",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1452
+    },
+    {
+      "date": "2022-09-14",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1552
+    },
+    {
+      "date": "2022-10-13",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1572
+    },
+    {
+      "date": "2022-12-08",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1612
+    }
+  ],
+  "timing": {
+    "total_wall_seconds": 553.920845,
+    "phases": {
+      "precompute": 2.530442,
+      "walk_forward_classify": 549.57521,
+      "walk_forward_backtest": 0.222956
+    },
+    "walk_forward_classify_stats": {
+      "min": 0.372865,
+      "median": 5.191575,
+      "p99": 10.906649,
+      "n_calls": 111
+    }
+  }
+}

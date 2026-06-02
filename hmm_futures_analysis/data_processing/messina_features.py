@@ -4,12 +4,39 @@ Messina-specific features for HMM regime detection.
 Computes the exact indicators used by the Messina Signals framework:
 SMA200, SMA13, ATR20 (Wilder's), ADX14/DI, VSTOP, and derived ratios.
 """
+
 import numpy as np
 import pandas as pd
 
 from ..utils.logging_config import get_logger
 
 logger = get_logger(__name__)
+
+# ── canonical column list ────────────────────────────────────────────────
+# Every feature produced by add_messina_features(), in the order the HMM
+# engines expect them.  This is the single source of truth — engines and
+# tests import from here, not the other way around.
+MESSINA_FEATURE_COLUMNS: list[str] = [
+    "log_ret",
+    "sma_200",
+    "sma_13",
+    "atr_20",
+    "adx_14",
+    "adx_inflection",
+    "di_plus_14",
+    "di_minus_14",
+    "di_spread",
+    "vstop",
+    "vstop_trend",
+    "vstop_interaction",
+    "price_sma200_ratio",
+    "price_vstop_ratio",
+    "price_vstop_gap_atr",
+    "sma200_distance_atr",
+    "volume_ratio",
+    "true_range_pct",
+    "kdj_j",
+]
 
 # ── helpers ─────────────────────────────────────────────────────────────
 
@@ -21,7 +48,9 @@ def _wilder_smooth(series: pd.Series, period: int) -> pd.Series:
     first = series.iloc[:period].mean()
     result.iloc[period - 1] = first
     for i in range(period, len(series)):
-        result.iloc[i] = result.iloc[i - 1] + (series.iloc[i] - result.iloc[i - 1]) / period
+        result.iloc[i] = (
+            result.iloc[i - 1] + (series.iloc[i] - result.iloc[i - 1]) / period
+        )
     # NaN prior to period
     result.iloc[: period - 1] = np.nan
     return result
@@ -127,7 +156,9 @@ def add_messina_features(
     required = {"open", "high", "low", "close", "volume"}
     missing = required - set(df.columns)
     if missing:
-        raise ValueError(f"add_messina_features requires OHLCV columns, missing: {sorted(missing)}")
+        raise ValueError(
+            f"add_messina_features requires OHLCV columns, missing: {sorted(missing)}"
+        )
 
     df = df.copy()
     close = df["close"]
@@ -148,8 +179,13 @@ def add_messina_features(
     up_move = df["high"] - df["high"].shift(1)
     down_move = df["low"].shift(1) - df["low"]
 
-    dm_plus = pd.Series(np.where((up_move > down_move) & (up_move > 0), up_move, 0.0), index=df.index)
-    dm_minus = pd.Series(np.where((down_move > up_move) & (down_move > 0), down_move, 0.0), index=df.index)
+    dm_plus = pd.Series(
+        np.where((up_move > down_move) & (up_move > 0), up_move, 0.0), index=df.index
+    )
+    dm_minus = pd.Series(
+        np.where((down_move > up_move) & (down_move > 0), down_move, 0.0),
+        index=df.index,
+    )
     dm_plus.iloc[0] = 0.0
     dm_minus.iloc[0] = 0.0
 
@@ -177,7 +213,9 @@ def add_messina_features(
     df["di_spread"] = di_plus - di_minus
 
     # ── VSTOP ─────────────────────────────────────────────────────────
-    df["vstop"], trend_series = _calc_vstop(df["sma_13"], df["atr_20"], vstop_multiplier)
+    df["vstop"], trend_series = _calc_vstop(
+        df["sma_13"], df["atr_20"], vstop_multiplier
+    )
     df["vstop_trend"] = trend_series  # 1 = uptrend, -1 = downtrend
 
     # VSTOP interaction — encodes whether VSTOP acts as support or resistance
@@ -222,8 +260,12 @@ def add_messina_features(
         kdj_d.iloc[first_k] = rsv.iloc[first_k]
         for i in range(first_k + 1, len(df)):
             if pd.notna(rsv.iloc[i]):
-                kdj_k.iloc[i] = kdj_k.iloc[i - 1] + (rsv.iloc[i] - kdj_k.iloc[i - 1]) / kdj_smooth
-                kdj_d.iloc[i] = kdj_d.iloc[i - 1] + (kdj_k.iloc[i] - kdj_d.iloc[i - 1]) / kdj_smooth
+                kdj_k.iloc[i] = (
+                    kdj_k.iloc[i - 1] + (rsv.iloc[i] - kdj_k.iloc[i - 1]) / kdj_smooth
+                )
+                kdj_d.iloc[i] = (
+                    kdj_d.iloc[i - 1] + (kdj_k.iloc[i] - kdj_d.iloc[i - 1]) / kdj_smooth
+                )
     df["kdj_j"] = 3.0 * kdj_k - 2.0 * kdj_d
 
     # Replace infinities from division by zero

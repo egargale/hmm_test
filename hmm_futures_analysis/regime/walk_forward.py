@@ -1,31 +1,25 @@
 """No-lookahead walk-forward backtest with discrete trade model.
 
 At each bar *t* from ``min_train`` to end:
-1. Classify regime using only data ``[0:t]``.
+1. Replay pre-computed regime labels.
 2. Map regime to discrete position via ``{0: -1, 1: 0, 2: 1}``.
 3. Apply position at bar *t*, trade in/out on regime changes.
 
 Produces trade-level analytics: Sharpe, max drawdown, trade count,
 win rate, profit factor, total return.
+
+ADR-0017: engine param removed; regimes always pre-computed by pipeline.
 """
 
 from __future__ import annotations
-
-from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
 
 from ..backtesting.performance_metrics import calculate_drawdown_metrics
 from ..backtesting.performance_metrics import calculate_sharpe_ratio
-from .engine_protocol import ENGINE_REGISTRY
-
-if TYPE_CHECKING:
-    from .engine_protocol import RegimeEngine
 
 _STATE_MAP = {0: -1, 1: 0, 2: 1}  # bear=short, sideways=flat, bull=long
-_VALID_ENGINES = frozenset(ENGINE_REGISTRY.keys())
-_HMM_ENGINES = frozenset({"messina", "hmm"})
 
 
 def _empty_result() -> dict:
@@ -68,50 +62,66 @@ def _compute_trade_stats(
     losing = [p for p in trade_pnls if p < 0]
 
     win_rate = len(winning) / n_trades
-    profit_factor = (
-        sum(winning) / abs(sum(losing))
-        if losing
-        else float("inf")
-    )
+    profit_factor = sum(winning) / abs(sum(losing)) if losing else float("inf")
 
     return n_trades, float(win_rate), float(profit_factor)
 
 
-def _resolve_engine(
-    engine: str | RegimeEngine,
-    window: int,
-    threshold: float,
-    n_states: int,
-    ohlcv: pd.DataFrame | None,
-    pca_variance: float | None = None,
-) -> RegimeEngine:
-    if isinstance(engine, str):
-        if engine not in _VALID_ENGINES:
-            raise ValueError(
-                f"engine must be one of {sorted(_VALID_ENGINES)}, got {engine!r}"
-            )
-        if engine in _HMM_ENGINES and ohlcv is None:
-            raise ValueError(
-                f"engine {engine!r} requires OHLCV data "
-                "(open/high/low/close/volume). Pass ohlcv= DataFrame."
-            )
-        cls = ENGINE_REGISTRY[engine]
-        if engine == "threshold":
-            return cls(window=window, threshold=threshold)
-        return cls(n_states=n_states, pca_variance=pca_variance)
-    return engine
+def _walk_forward_positions(
+    returns: pd.Series,
+    *,
+    regimes: np.ndarray,
+    posteriors: np.ndarray | None = None,
+    min_train: int = 252,
+    dwell_bars: int = 0,
+    hysteresis_delta: float = 0.0,
+) -> np.ndarray:
+    """Build position array from pre-computed regime labels.
+
+    Replays regimes through _walk_forward_classify mode 1,
+    applies dwell/hysteresis filters, and maps regimes to discrete
+    positions via _STATE_MAP.
+    """
+    from .engines._hmm_pipeline import _walk_forward_classify
+
+    n = len(returns)
+    positions = np.zeros(n, dtype=int)
+    current_regime: int = 1
+    consecutive_count = 0
+    current_posteriors: np.ndarray | None = None
+
+    for t, result in _walk_forward_classify(
+        returns,
+        regimes=regimes,
+        min_train=min_train,
+    ):
+        new_regime = result.regime
+        new_posteriors_arr: np.ndarray | None = posteriors[t] if posteriors is not None else None
+
+        should_switch, consecutive_count = _apply_filters(
+            new_regime,
+            current_regime,
+            new_posteriors_arr,
+            current_posteriors,
+            consecutive_count,
+            dwell_bars,
+            hysteresis_delta,
+        )
+        if should_switch:
+            current_regime = new_regime
+            current_posteriors = new_posteriors_arr
+
+        positions[t] = _STATE_MAP.get(current_regime, 0)
+
+    return positions
 
 
 def walk_forward_backtest(
     prices: pd.Series,
     *,
-    engine: str | RegimeEngine = "threshold",
-    window: int = 20,
-    threshold: float = 0.05,
+    regimes: np.ndarray,
+    posteriors: np.ndarray | None = None,
     min_train: int = 252,
-    ohlcv: pd.DataFrame | None = None,
-    n_states: int = 3,
-    pca_variance: float | None = None,
     dwell_bars: int = 0,
     hysteresis_delta: float = 0.0,
 ) -> dict:
@@ -121,21 +131,13 @@ def walk_forward_backtest(
     ----------
     prices : pd.Series
         Close prices with DatetimeIndex.
-    engine : str | RegimeEngine
-        Engine name (``"threshold"``, ``"messina"``, or ``"hmm"``) or a
-        ``RegimeEngine`` instance.
-    window : int
-        Rolling window for threshold-based regime classification.
-    threshold : float
-        Return threshold for bull/bear classification.
+    regimes : np.ndarray
+        Pre-computed regime label per bar (0=Bear, 1=Sideways, 2=Bull).
+    posteriors : np.ndarray | None
+        Pre-computed (n_bars, 3) posterior probabilities, used by the
+        hysteresis filter. Hysteresis is a no-op when posteriors is None.
     min_train : int
         Minimum number of bars before trading starts.
-    ohlcv : pd.DataFrame | None
-        OHLCV data required for messina/hmm engines.
-    n_states : int
-        Number of HMM states (ignored by threshold engine).
-    pca_variance : float | None
-        Optional PCA whitening threshold for HMM engines.
     dwell_bars : int
         Minimum consecutive bars with same regime before switching position.
         0 disables the filter (default).
@@ -148,7 +150,6 @@ def walk_forward_backtest(
     dict
         ``{sharpe, max_drawdown, n_trades, win_rate, profit_factor, total_return}``
     """
-    eng = _resolve_engine(engine, window, threshold, n_states, ohlcv, pca_variance)
 
     if len(prices) < min_train + 1:
         return _empty_result()
@@ -158,26 +159,14 @@ def walk_forward_backtest(
     if n < min_train:
         return _empty_result()
 
-    # Precompute features (returns None for threshold engine)
-    precomputed = None
-    if ohlcv is not None:
-        try:
-            precomputed = eng.precompute(ohlcv)
-        except (ValueError, RuntimeError, KeyError):
-            precomputed = None
-
-    positions = np.zeros(n, dtype=int)
-
-    if precomputed is not None:
-        positions = _walk_forward_precomputed(
-            eng, precomputed, returns, min_train, n_states,
-            dwell_bars=dwell_bars, hysteresis_delta=hysteresis_delta,
-        )
-    else:
-        positions = _walk_forward_raw(
-            eng, returns, min_train, window, threshold,
-            dwell_bars=dwell_bars, hysteresis_delta=hysteresis_delta,
-        )
+    positions = _walk_forward_positions(
+        returns,
+        regimes=regimes,
+        posteriors=posteriors,
+        min_train=min_train,
+        dwell_bars=dwell_bars,
+        hysteresis_delta=hysteresis_delta,
+    )
 
     # --- Daily P&L from lagged discrete positions ---
     pnl = np.zeros(n, dtype=float)
@@ -234,7 +223,11 @@ def _apply_filters(
 
     # Hysteresis: check posterior margin
     hyst_pass = True
-    if hysteresis_delta > 0.0 and posteriors is not None and current_posteriors is not None:
+    if (
+        hysteresis_delta > 0.0
+        and posteriors is not None
+        and current_posteriors is not None
+    ):
         if new_regime < len(posteriors) and current_regime < len(current_posteriors):
             margin = posteriors[new_regime] - current_posteriors[current_regime]
             hyst_pass = margin > hysteresis_delta
@@ -242,81 +235,3 @@ def _apply_filters(
     if dwell_pass and hyst_pass:
         return True, 0  # switch, reset counter
     return False, new_count  # hold, keep counting
-
-
-def _walk_forward_raw(
-    eng: RegimeEngine,
-    returns: pd.Series,
-    min_train: int,
-    window: int,
-    threshold: float,
-    dwell_bars: int = 0,
-    hysteresis_delta: float = 0.0,
-) -> np.ndarray:
-    n = len(returns)
-    positions = np.zeros(n, dtype=int)
-    current_regime = 1  # sideways default
-    consecutive_count = 0
-    current_posteriors: np.ndarray | None = None
-
-    for t in range(min_train, n):
-        result = eng.classify(returns.iloc[:t])
-        new_regime = result.regime
-
-        should_switch, consecutive_count = _apply_filters(
-            new_regime, current_regime, result.posteriors, current_posteriors,
-            consecutive_count, dwell_bars, hysteresis_delta,
-        )
-        if should_switch:
-            current_regime = new_regime
-            current_posteriors = result.posteriors
-
-        positions[t] = _STATE_MAP.get(current_regime, 0)
-
-    return positions
-
-
-def _walk_forward_precomputed(
-    eng: RegimeEngine,
-    features: pd.DataFrame,
-    returns: pd.Series,
-    min_train: int,
-    n_states: int,
-    dwell_bars: int = 0,
-    hysteresis_delta: float = 0.0,
-) -> np.ndarray:
-    n = len(returns)
-    positions = np.zeros(n, dtype=int)
-    prev_means: np.ndarray | None = None
-    current_regime: int = 1
-    consecutive_count = 0
-    current_posteriors: np.ndarray | None = None
-
-    refit_every = max(1, (n - min_train) // 100)
-    refit_every = min(refit_every, 20)
-
-    for t in range(min_train, n):
-        refit_now = (t == min_train) or ((t - min_train) % refit_every == 0)
-
-        if refit_now:
-            features_slice = features.iloc[:t]
-            try:
-                result = eng.classify(features_slice, prev_means=prev_means)
-                new_regime = result.regime
-                prev_means = result.means
-
-                should_switch, consecutive_count = _apply_filters(
-                    new_regime, current_regime, result.posteriors,
-                    current_posteriors, consecutive_count,
-                    dwell_bars, hysteresis_delta,
-                )
-                if should_switch:
-                    current_regime = new_regime
-                    current_posteriors = result.posteriors
-
-            except (ValueError, RuntimeError):
-                pass
-
-        positions[t] = _STATE_MAP.get(current_regime, 0)
-
-    return positions
