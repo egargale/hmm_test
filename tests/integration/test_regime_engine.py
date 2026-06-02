@@ -367,14 +367,13 @@ class TestWalkForwardWithProtocol:
         from hmm_futures_analysis.regime.engine_protocol import ClassifyResult
         from hmm_futures_analysis.regime.walk_forward import walk_forward_backtest
 
-        class MockEngine:
-            def precompute(self, data):
-                return None
+        # ADR-0017: walk_forward_backtest takes pre-computed regimes, not engine.
+        # Generate regimes to pass.
+        returns = prices.pct_change(fill_method=None).dropna()
+        n = len(returns)
+        regimes = np.ones(n, dtype=int)  # all sideways = 1
 
-            def classify(self, data, prev_means=None):
-                return ClassifyResult(regime=2)
-
-        result = walk_forward_backtest(prices, engine=MockEngine(), min_train=50)
+        result = walk_forward_backtest(prices, regimes=regimes, min_train=50)
         assert "sharpe" in result
         assert "n_trades" in result
         assert isinstance(result.n_trades, int)
@@ -382,26 +381,29 @@ class TestWalkForwardWithProtocol:
     def test_walk_forward_rejects_string_engine(self, prices):
         from hmm_futures_analysis.regime.walk_forward import walk_forward_backtest
 
-        with pytest.raises(TypeError, match=r"engine"):
-            walk_forward_backtest(prices, engine="nonexistent")
+        # ADR-0017: engine param removed. Missing regimes raises TypeError.
+        with pytest.raises(TypeError):
+            walk_forward_backtest(prices)  # noqa: missing required regimes
 
-    def test_walk_forward_hmm_engine_needs_features(self, prices):
-        """HMM engine can't classify raw returns (needs precomputed features)."""
-        from hmm_futures_analysis.regime.engines.hmm_generic import HMMGenericEngine
+    def test_walk_forward_regimes_required(self, prices):
+        """regimes is a required kwarg (ADR-0017)."""
         from hmm_futures_analysis.regime.walk_forward import walk_forward_backtest
 
-        engine = HMMGenericEngine(n_states=3)
-        # HMM engine requires features, not raw returns
-        with pytest.raises((ValueError, TypeError)):
-            walk_forward_backtest(prices, engine=engine)
+        with pytest.raises(TypeError):
+            walk_forward_backtest(prices, min_train=50)  # noqa: missing regimes
 
     def test_walk_forward_threshold_engine_works(self, prices):
-        """ThresholdEngine instance works with walk_forward_backtest."""
+        """ThresholdEngine.run_classify() → regimes → walk_forward_backtest."""
         from hmm_futures_analysis.regime.engines.threshold import ThresholdEngine
         from hmm_futures_analysis.regime.walk_forward import walk_forward_backtest
 
         engine = ThresholdEngine()
-        result = walk_forward_backtest(prices, engine=engine, min_train=50)
+        returns = prices.pct_change(fill_method=None).dropna()
+        # ADR-0017: engine owns classify, walk_forward replays regimes
+        classify_out = engine.run_classify(prices, None, returns, min_train=50)
+        result = walk_forward_backtest(
+            prices, regimes=classify_out.regimes, min_train=50
+        )
         assert "sharpe" in result
         assert isinstance(result.n_trades, int)
 

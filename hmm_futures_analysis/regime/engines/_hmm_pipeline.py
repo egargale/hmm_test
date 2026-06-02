@@ -191,7 +191,7 @@ def _walk_forward_classify(
 ) -> Iterator[tuple[int, ClassifyResult]]:
     """Walk-forward classify generator, yielding (t, ClassifyResult) per bar.
 
-    Three mutually-exclusive input modes determined by which kwargs are set:
+    Two mutually-exclusive input modes determined by which kwargs are set:
 
     - **regimes** is not None: replay pre-computed regime labels without
       calling ``eng.classify``.  Yields a ``ClassifyResult(regime=…)`` with
@@ -199,7 +199,6 @@ def _walk_forward_classify(
     - **precomputed** is not None: adaptive skip-N refit calling
       ``eng.classify(precomputed.iloc[:t], prev_means=…)``.  Carries the
       last result forward on non-refit bars.
-    - Neither: per-bar ``eng.classify(returns.iloc[:t])``.
 
     Yields
     ------
@@ -216,39 +215,29 @@ def _walk_forward_classify(
             yield t, ClassifyResult(regime=int(regimes[t]))
         return
 
-    # Modes 2 & 3: require an engine.
+    # Mode 2: precomputed features, adaptive skip-N refit (requires engine).
     if eng is None:
         raise ValueError("eng is required when regimes is not set")
+    if precomputed is None:
+        raise ValueError("precomputed is required when regimes is not set")
 
-    if precomputed is not None:
-        # Mode 2: precomputed features, adaptive skip-N refit.
-        prev_means: np.ndarray | None = None
-        last_result = ClassifyResult(regime=1)
+    prev_means: np.ndarray | None = None
+    last_result = ClassifyResult(regime=1)
 
-        refit_every = max(1, (n - min_train) // 100)
-        refit_every = min(refit_every, 20)
+    refit_every = max(1, (n - min_train) // 100)
+    refit_every = min(refit_every, 20)
 
-        for t in range(min_train, n):
-            refit_now = (t == min_train) or ((t - min_train) % refit_every == 0)
-            if refit_now:
-                features_slice = precomputed.iloc[:t]
-                try:
-                    t_cls_start = time.monotonic() if profile else 0.0
-                    result = eng.classify(features_slice, prev_means=prev_means)
-                    if profile:
-                        _classify_times.append(time.monotonic() - t_cls_start)
-                    prev_means = result.means
-                    last_result = result
-                except (ValueError, RuntimeError):
-                    pass
-            yield t, last_result
-    else:
-        # Mode 3: raw returns, per-bar classify.
-        last_result = ClassifyResult(regime=1)
-        for t in range(min_train, n):
+    for t in range(min_train, n):
+        refit_now = (t == min_train) or ((t - min_train) % refit_every == 0)
+        if refit_now:
+            features_slice = precomputed.iloc[:t]
             try:
-                result = eng.classify(returns.iloc[:t])
+                t_cls_start = time.monotonic() if profile else 0.0
+                result = eng.classify(features_slice, prev_means=prev_means)
+                if profile:
+                    _classify_times.append(time.monotonic() - t_cls_start)
+                prev_means = result.means
                 last_result = result
             except (ValueError, RuntimeError):
                 pass
-            yield t, last_result
+        yield t, last_result

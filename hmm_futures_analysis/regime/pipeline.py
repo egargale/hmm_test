@@ -24,7 +24,6 @@ from .engine_protocol import (
 )
 from .markov_chain import (
     build_transition_matrix,
-    classify_regimes as _classify_regimes,
     compute_persistence_diagonal,
     compute_signal,
     compute_stationary_distribution,
@@ -332,34 +331,6 @@ def _build_markov_stats(
     )
 
 
-def _classify_threshold_pipeline(
-    engine,
-    prices: pd.Series,
-    ohlcv: pd.DataFrame | None,
-    returns: pd.Series,
-    min_train: int = 252,
-    *,
-    profile: bool = True,
-    _phases: dict[str, float] | None = None,
-    _classify_times: list[float] | None = None,
-) -> ClassifyOutput:
-    """Threshold-specific classify-pipeline phase.
-
-    Runs ``classify_regimes`` over the full return series (no walk-forward)
-    and wraps the result in a ``ClassifyOutput``.
-    """
-    regimes = _classify_regimes(
-        returns, window=engine.window, threshold=engine.threshold
-    )
-    return ClassifyOutput(
-        regimes=regimes,
-        posteriors=None,
-        last_regime=int(regimes[-1]),
-        warmup_bars=None,
-        engine_instance=engine,
-    )
-
-
 def run(
     prices: pd.Series,
     *,
@@ -397,32 +368,17 @@ def run(
     if isinstance(resolved_n_states, str):
         resolved_n_states = 3  # auto will be resolved inside classify_pipeline
 
-    # --- Regime classification (uniform across all engines) ---
+    # --- Regime classification (uniform across all engines, ADR-0017) ---
     eng = resolve_engine(config)
-    if getattr(config, "is_hmm", False):
-        from .engines._hmm_pipeline import _hmm_classify_pipeline
-
-        classify_out = _hmm_classify_pipeline(
-            eng,
-            prices,
-            ohlcv,
-            returns,
-            min_train,
-            profile=profile,
-            _phases=_phases,
-            _classify_times=_classify_times,
-        )
-    else:
-        classify_out = _classify_threshold_pipeline(
-            eng,
-            prices,
-            ohlcv,
-            returns,
-            min_train,
-            profile=profile,
-            _phases=_phases,
-            _classify_times=_classify_times,
-        )
+    classify_out = eng.run_classify(
+        prices,
+        ohlcv,
+        returns,
+        min_train,
+        profile=profile,
+        _phases=_phases,
+        _classify_times=_classify_times,
+    )
 
     # If engine resolved n_states internally (HMM engines set it), use that
     if classify_out.n_states is not None:
@@ -439,18 +395,15 @@ def run(
         forecast_n_steps(markov.transmat, markov.current_probs, 20)
     )
 
-    # Walk-forward backtest (reuse pre-computed regime labels for HMM engines)
+    # Walk-forward backtest (reuse pre-computed regime labels, ADR-0017)
     t_wfb = time.monotonic()
     wf_kwargs: dict = {
-        "engine": eng,
+        "regimes": classify_out.regimes,
+        "posteriors": classify_out.posteriors,
         "min_train": min_train,
         "dwell_bars": dwell_bars,
         "hysteresis_delta": hysteresis_delta,
     }
-    # HMM engines: reuse pre-computed regime labels
-    if config.is_hmm:
-        wf_kwargs["regimes"] = classify_out.regimes
-        wf_kwargs["posteriors"] = classify_out.posteriors
     wf = walk_forward_backtest(prices, **wf_kwargs)
     walk_forward = {
         "sharpe": _nan_to_none(wf["sharpe"]),

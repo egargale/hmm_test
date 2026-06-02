@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 from hmmlearn import hmm
 
-from ..engine_protocol import ClassifyResult
+from ..engine_protocol import ClassifyOutput, ClassifyResult
 from ._hmm_engine import _classify_hmm_slice, engineer_features
 
 
@@ -47,6 +47,20 @@ class FSHMMEngine:
             result["feature_saliency"] = self._last_saliency
             result["selected_features"] = self._last_selected_features
         return result
+
+    def run_classify(
+        self,
+        prices: pd.Series,
+        ohlcv: pd.DataFrame | None,
+        returns: pd.Series,
+        min_train: int,
+        **kwargs,
+    ) -> ClassifyOutput:
+        from ._hmm_pipeline import _hmm_classify_pipeline
+
+        return _hmm_classify_pipeline(
+            self, prices, ohlcv, returns, min_train, **kwargs
+        )
 
     def classify(
         self, data: pd.DataFrame, prev_means: np.ndarray | None = None

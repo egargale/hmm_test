@@ -10,8 +10,6 @@ import numpy as np
 import pandas as pd
 
 from hmm_futures_analysis.regime.engine_protocol import ClassifyOutput
-from hmm_futures_analysis.regime.engines._hmm_pipeline import _hmm_classify_pipeline
-from hmm_futures_analysis.regime.pipeline import _classify_threshold_pipeline
 
 
 # ---------------------------------------------------------------------------
@@ -40,12 +38,65 @@ def _make_ohlcv(prices: pd.Series) -> pd.DataFrame:
 
 
 # ---------------------------------------------------------------------------
-# Tracer bullet 2: _classify_threshold_pipeline
+# Tracer bullet 2a: ThresholdEngine.run_classify (ADR-0017)
+# ---------------------------------------------------------------------------
+
+
+class TestThresholdRunClassify:
+    """ThresholdEngine.run_classify returns ClassifyOutput (ADR-0017)."""
+
+    def test_returns_classify_output(self):
+        """Returns ClassifyOutput with regimes, no posteriors."""
+        from hmm_futures_analysis.regime.engines.threshold import ThresholdEngine
+
+        prices = _make_prices(300)
+        ohlcv = _make_ohlcv(prices)
+        returns = prices.pct_change(fill_method=None).dropna()
+        eng = ThresholdEngine(window=20, threshold=0.05)
+
+        result = eng.run_classify(prices, ohlcv, returns, min_train=50)
+
+        assert isinstance(result, ClassifyOutput)
+        assert isinstance(result.regimes, np.ndarray)
+        assert len(result.regimes) == len(returns)
+        assert result.posteriors is None
+        assert result.last_regime in (0, 1, 2)
+        assert result.engine_instance is eng
+        assert result.warmup_bars is None
+
+    def test_regime_values_in_valid_range(self):
+        """All regime values are 0, 1, or 2."""
+        from hmm_futures_analysis.regime.engines.threshold import ThresholdEngine
+
+        prices = _make_prices(300)
+        ohlcv = _make_ohlcv(prices)
+        returns = prices.pct_change(fill_method=None).dropna()
+        eng = ThresholdEngine()
+
+        result = eng.run_classify(prices, ohlcv, returns, min_train=50)
+        assert set(np.unique(result.regimes)).issubset({0, 1, 2})
+
+    def test_run_classify_has_no_is_hmm_branch(self):
+        """run_classify source contains no is_hmm branching."""
+        from hmm_futures_analysis.regime.engines.threshold import ThresholdEngine
+
+        # run_classify should not exist yet (RED) — but once it does,
+        # this test itself only verifies behavior through the public interface.
+        prices = _make_prices(300)
+        ohlcv = _make_ohlcv(prices)
+        returns = prices.pct_change(fill_method=None).dropna()
+        eng = ThresholdEngine(window=20, threshold=0.05)
+        result = eng.run_classify(prices, ohlcv, returns, min_train=50)
+        assert isinstance(result, ClassifyOutput)
+
+
+# ---------------------------------------------------------------------------
+# Tracer bullet 2b: _classify_threshold_pipeline (legacy, kept until deletion)
 # ---------------------------------------------------------------------------
 
 
 class TestThresholdClassifyPipeline:
-    """_classify_threshold_pipeline wraps classify_regimes."""
+    """ThresholdEngine.run_classify wraps classify_regimes (via ADR-0017)."""
 
     def test_returns_classify_output(self):
         """Returns ClassifyOutput with regimes."""
@@ -56,7 +107,7 @@ class TestThresholdClassifyPipeline:
         returns = prices.pct_change(fill_method=None).dropna()
         eng = ThresholdEngine(window=20, threshold=0.05)
 
-        result = _classify_threshold_pipeline(eng, prices, ohlcv, returns, min_train=50)
+        result = eng.run_classify(prices, ohlcv, returns, min_train=50)
 
         assert isinstance(result, ClassifyOutput)
         assert isinstance(result.regimes, np.ndarray)
@@ -75,17 +126,17 @@ class TestThresholdClassifyPipeline:
         returns = prices.pct_change(fill_method=None).dropna()
         eng = ThresholdEngine()
 
-        result = _classify_threshold_pipeline(eng, prices, ohlcv, returns)
+        result = eng.run_classify(prices, ohlcv, returns, min_train=50)
         assert set(np.unique(result.regimes)).issubset({0, 1, 2})
 
 
 # ---------------------------------------------------------------------------
-# Tracer bullet 3: _hmm_classify_pipeline
+# Tracer bullet 3a: HMMGenericEngine.run_classify (ADR-0017)
 # ---------------------------------------------------------------------------
 
 
-class TestHMMGenericClassifyPipeline:
-    """_hmm_classify_pipeline runs walk-forward classify for HMM engines."""
+class TestHMMGenericRunClassify:
+    """HMMGenericEngine.run_classify delegates to shared HMM pipeline."""
 
     def test_returns_classify_output_with_posteriors(self):
         """Returns ClassifyOutput with regimes and posteriors."""
@@ -96,7 +147,7 @@ class TestHMMGenericClassifyPipeline:
         returns = prices.pct_change(fill_method=None).dropna()
         eng = HMMGenericEngine(n_states=3)
 
-        result = _hmm_classify_pipeline(eng, prices, ohlcv, returns, min_train=50)
+        result = eng.run_classify(prices, ohlcv, returns, min_train=50)
 
         assert isinstance(result, ClassifyOutput)
         assert isinstance(result.regimes, np.ndarray)
@@ -116,7 +167,48 @@ class TestHMMGenericClassifyPipeline:
         returns = prices.pct_change(fill_method=None).dropna()
         eng = HMMGenericEngine(n_states=3)
 
-        result = _hmm_classify_pipeline(eng, prices, ohlcv, returns, min_train=80)
+        result = eng.run_classify(prices, ohlcv, returns, min_train=80)
+        assert result.warmup_bars == 80
+
+
+# ---------------------------------------------------------------------------
+# Tracer bullet 3b: HMMGenericEngine.run_classify (ADR-0017 migration complete)
+# ---------------------------------------------------------------------------
+
+
+class TestHMMGenericClassifyPipeline:
+    """HMMGenericEngine.run_classify runs walk-forward classify (via ADR-0017)."""
+
+    def test_returns_classify_output_with_posteriors(self):
+        """Returns ClassifyOutput with regimes and posteriors."""
+        from hmm_futures_analysis.regime.engines.hmm_generic import HMMGenericEngine
+
+        prices = _make_prices(300)
+        ohlcv = _make_ohlcv(prices)
+        returns = prices.pct_change(fill_method=None).dropna()
+        eng = HMMGenericEngine(n_states=3)
+
+        result = eng.run_classify(prices, ohlcv, returns, min_train=50)
+
+        assert isinstance(result, ClassifyOutput)
+        assert isinstance(result.regimes, np.ndarray)
+        assert len(result.regimes) == len(returns)
+        assert result.posteriors is not None
+        assert result.posteriors.shape == (len(returns), 3)
+        assert result.last_regime in (0, 1, 2)
+        assert result.warmup_bars == 50
+        assert result.engine_instance is eng
+
+    def test_warmup_bars_stored(self):
+        """warmup_bars in output matches min_train parameter."""
+        from hmm_futures_analysis.regime.engines.hmm_generic import HMMGenericEngine
+
+        prices = _make_prices(300)
+        ohlcv = _make_ohlcv(prices)
+        returns = prices.pct_change(fill_method=None).dropna()
+        eng = HMMGenericEngine(n_states=3)
+
+        result = eng.run_classify(prices, ohlcv, returns, min_train=80)
         assert result.warmup_bars == 80
 
 

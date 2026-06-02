@@ -44,6 +44,14 @@ class RegimeEngine(Protocol):
     def classify(
         self, data: pd.DataFrame, prev_means: np.ndarray | None = None
     ) -> ClassifyResult: ...
+    def run_classify(
+        self,
+        prices: pd.Series,
+        ohlcv: pd.DataFrame | None,
+        returns: pd.Series,
+        min_train: int,
+        **kwargs,
+    ) -> ClassifyOutput: ...
 
 
 # ---------------------------------------------------------------------------

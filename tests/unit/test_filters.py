@@ -1,8 +1,9 @@
 """Tests for whipsaw-reduction filters: dwell-time and hysteresis.
 
 Issue #19 — https://github.com/egargale/hmm_test/issues/19
-Acceptance criteria: https://github.com/egargale/hmm_test/issues/19#issuecomment-4566724433
+ADR-0017: engine param removed; regimes always pre-computed.
 """
+
 import numpy as np
 import pandas as pd
 
@@ -61,7 +62,6 @@ class TestHMMEnginesPopulatePosteriors:
         result = engine.classify(features)
         assert result.posteriors is not None
         assert len(result.posteriors) == 3
-        # Posteriors should sum to ~1.0
         np.testing.assert_allclose(np.sum(result.posteriors), 1.0, atol=1e-6)
 
     def test_hmm_messina_returns_posteriors(self):
@@ -87,45 +87,9 @@ class TestHMMEnginesPopulatePosteriors:
         assert result.regime in {0, 1, 2}
 
 
-class _MockEngine:
-    """Controllable engine that returns a predetermined sequence of regimes."""
-
-    def __init__(self, regimes: list[int]):
-        self._regimes = list(regimes)
-        self._call_idx = 0
-
-    def precompute(self, data: pd.DataFrame) -> None:
-        return None
-
-    def classify(self, data: pd.DataFrame, prev_means=None):
-        from hmm_futures_analysis.regime.engine_protocol import ClassifyResult
-
-        idx = min(self._call_idx, len(self._regimes) - 1)
-        regime = self._regimes[idx]
-        self._call_idx += 1
-        return ClassifyResult(regime=regime)
-
-
-class _MockEngineWithPosteriors:
-    """Controllable engine returning regimes + posteriors."""
-
-    def __init__(self, regimes: list[int], posteriors: list[np.ndarray]):
-        self._regimes = list(regimes)
-        self._posteriors = list(posteriors)
-        self._call_idx = 0
-
-    def precompute(self, data: pd.DataFrame) -> None:
-        return None
-
-    def classify(self, data: pd.DataFrame, prev_means=None):
-        from hmm_futures_analysis.regime.engine_protocol import ClassifyResult
-
-        idx = min(self._call_idx, len(self._regimes) - 1)
-        self._call_idx += 1
-        return ClassifyResult(
-            regime=self._regimes[idx],
-            posteriors=self._posteriors[idx],
-        )
+# ---------------------------------------------------------------------------
+# Helpers for filter tests (ADR-0017: engine param removed, regimes required)
+# ---------------------------------------------------------------------------
 
 
 def _make_prices(n: int = 100) -> pd.Series:
@@ -135,6 +99,14 @@ def _make_prices(n: int = 100) -> pd.Series:
     return prices
 
 
+def _build_regimes(min_train: int, regimes_after_train: list[int], n_bars: int) -> np.ndarray:
+    """Build a regimes array (length n_bars) with warmup and training+osc regions."""
+    all_regimes = [1] * min_train + regimes_after_train
+    while len(all_regimes) < n_bars:
+        all_regimes.append(1)
+    return np.array(all_regimes[:n_bars], dtype=int)
+
+
 class TestDwellTimeFilter:
     """Dwell-time filter: position only changes after N consecutive same-regime bars."""
 
@@ -142,28 +114,15 @@ class TestDwellTimeFilter:
         """With dwell_bars=3, position stays until 3 consecutive new regimes."""
         from hmm_futures_analysis.regime.walk_forward import walk_forward_backtest
 
-        # Build regime sequence: sideways(1) for warmup, then oscillating,
-        # then 3 consecutive bull(2)
         min_train = 10
         n_bars = 30
-        # regimes for each bar after min_train:
-        # bars 10-14: regime 2 (bull) - should switch after 3 consecutive
-        # bars 15-17: regime 0 (bear) - should switch after 3 consecutive
         regimes_after_train = [2, 2, 1, 2, 2, 2, 0, 0, 1, 0, 0, 0, 1, 1, 1, 2, 2, 2, 1, 2]
-        # Warmup regimes (don't matter, just fill):
-        all_regimes = [1] * min_train + regimes_after_train
-        # Pad to n_bars
-        while len(all_regimes) < n_bars:
-            all_regimes.append(1)
-
-        engine = _MockEngine(all_regimes)
+        regimes = _build_regimes(min_train, regimes_after_train, n_bars)
         prices = _make_prices(n_bars)
 
         result = walk_forward_backtest(
-            prices, engine=engine, min_train=min_train,
-            dwell_bars=3,
+            prices, regimes=regimes, min_train=min_train, dwell_bars=3,
         )
-        # Should return valid results
         assert isinstance(result["n_trades"], int)
 
     def test_dwell_0_is_disabled_no_behavior_change(self):
@@ -172,20 +131,15 @@ class TestDwellTimeFilter:
 
         min_train = 10
         n_bars = 25
-        regimes = [1] * min_train + [2, 0, 2, 0, 2, 1, 0, 1, 2, 0, 1, 0, 2, 1, 2]
-        while len(regimes) < n_bars:
-            regimes.append(1)
-
-        engine = _MockEngine(regimes)
+        regimes_after = [2, 0, 2, 0, 2, 1, 0, 1, 2, 0, 1, 0, 2, 1, 2]
+        regimes = _build_regimes(min_train, regimes_after, n_bars)
         prices = _make_prices(n_bars)
 
         result_disabled = walk_forward_backtest(
-            prices, engine=engine, min_train=min_train, dwell_bars=0,
+            prices, regimes=regimes, min_train=min_train, dwell_bars=0,
         )
-        # Reset engine with same regimes
-        engine2 = _MockEngine(regimes)
         result_default = walk_forward_backtest(
-            prices, engine=engine2, min_train=min_train,
+            prices, regimes=regimes, min_train=min_train,
         )
         assert result_disabled == result_default
 
@@ -195,28 +149,19 @@ class TestDwellTimeFilter:
 
         min_train = 10
         n_bars = 50
-        # Heavy oscillation: 2, 0, 2, 0, 2, 0, ... then steady 2
         osc = []
         for i in range(20):
             osc.append(2 if i % 2 == 0 else 0)
-        osc += [2] * 20  # then steady bull
-        regimes = [1] * min_train + osc
-        while len(regimes) < n_bars:
-            regimes.append(2)
-
+        osc += [2] * 20
+        regimes = _build_regimes(min_train, osc, n_bars)
         prices = _make_prices(n_bars)
 
-        engine_no_filter = _MockEngine(regimes)
         result_raw = walk_forward_backtest(
-            prices, engine=engine_no_filter, min_train=min_train,
+            prices, regimes=regimes, min_train=min_train,
         )
-
-        engine_dwell = _MockEngine(regimes)
         result_filtered = walk_forward_backtest(
-            prices, engine=engine_dwell, min_train=min_train, dwell_bars=3,
+            prices, regimes=regimes, min_train=min_train, dwell_bars=3,
         )
-
-        # Dwell must produce fewer or equal trades
         assert result_filtered["n_trades"] <= result_raw["n_trades"]
 
 
@@ -224,24 +169,20 @@ class TestBothFiltersActive:
     """AND logic: both filters must agree to switch."""
 
     def test_hysteresis_noop_when_posteriors_none(self):
-        """Hysteresis is a no-op when posteriors=None (threshold engine)."""
+        """Hysteresis is a no-op when posteriors=None."""
         from hmm_futures_analysis.regime.walk_forward import walk_forward_backtest
 
         min_train = 10
         n_bars = 25
-        regimes = [1] * min_train + [2, 0, 2, 0, 2, 1, 0, 1, 2, 0, 1, 0, 2, 1, 2]
-        while len(regimes) < n_bars:
-            regimes.append(1)
-
-        engine = _MockEngine(regimes)  # posteriors=None
+        regimes_after = [2, 0, 2, 0, 2, 1, 0, 1, 2, 0, 1, 0, 2, 1, 2]
+        regimes = _build_regimes(min_train, regimes_after, n_bars)
         prices = _make_prices(n_bars)
 
         result_hyst = walk_forward_backtest(
-            prices, engine=engine, min_train=min_train, hysteresis_delta=0.3,
+            prices, regimes=regimes, min_train=min_train, hysteresis_delta=0.3,
         )
-        engine2 = _MockEngine(regimes)
         result_no_hyst = walk_forward_backtest(
-            prices, engine=engine2, min_train=min_train,
+            prices, regimes=regimes, min_train=min_train,
         )
         assert result_hyst == result_no_hyst
 
@@ -251,43 +192,30 @@ class TestBothFiltersActive:
 
         min_train = 5
         n_bars = 25
-        # After warmup: 5 bars regime 2, then 5 bars regime 0
-        regimes = [1] * min_train + [2, 2, 2, 2, 2, 0, 0, 0, 0, 0,
-                                      2, 2, 2, 2, 2, 0, 0, 0, 0, 0]
-        while len(regimes) < n_bars:
-            regimes.append(0)
+        regimes_after = [2, 2, 2, 2, 2, 0, 0, 0, 0, 0,
+                         2, 2, 2, 2, 2, 0, 0, 0, 0, 0]
+        regimes = _build_regimes(min_train, regimes_after, n_bars)
 
-        # Posteriors: regime 2 has high confidence, regime 0 has low margin over current
-        # regime 2 posteriors: [0.1, 0.1, 0.8]  (bull=0.8)
-        # regime 0 posteriors: [0.35, 0.1, 0.55] (bear=0.35, bull=0.55)
-        #   -> margin of bear over current(bull): 0.35 - 0.8 = -0.45 (fails hyst=0.3)
-        posteriors = []
-        for r in regimes:
+        # Posteriors: regime 2 has high confidence, regime 0 has low margin
+        posteriors = np.zeros((n_bars, 3), dtype=float)
+        for i, r in enumerate(regimes):
             if r == 2:
-                posteriors.append(np.array([0.1, 0.1, 0.8]))
+                posteriors[i] = [0.1, 0.1, 0.8]
             elif r == 0:
-                posteriors.append(np.array([0.35, 0.1, 0.55]))
+                posteriors[i] = [0.35, 0.1, 0.55]
             else:
-                posteriors.append(np.array([0.1, 0.8, 0.1]))
+                posteriors[i] = [0.1, 0.8, 0.1]
 
         prices = _make_prices(n_bars)
 
-        # Dwell-only: should switch (5 consecutive same regime)
-        engine1 = _MockEngineWithPosteriors(regimes, posteriors)
         result_dwell_only = walk_forward_backtest(
-            prices, engine=engine1, min_train=min_train, dwell_bars=3,
+            prices, regimes=regimes, posteriors=posteriors,
+            min_train=min_train, dwell_bars=3,
         )
-
-        # Both filters: hysteresis should block the switch to bear
-        # because posteriors[0] - posteriors[2] = 0.35 - 0.8 = -0.45 < 0.3
-        engine2 = _MockEngineWithPosteriors(regimes, posteriors)
         result_both = walk_forward_backtest(
-            prices, engine=engine2, min_train=min_train,
-            dwell_bars=3, hysteresis_delta=0.3,
+            prices, regimes=regimes, posteriors=posteriors,
+            min_train=min_train, dwell_bars=3, hysteresis_delta=0.3,
         )
-
-        # With both filters, the switch to bear should be blocked
-        # so we should have fewer trades
         assert result_both["n_trades"] <= result_dwell_only["n_trades"]
 
 
@@ -295,28 +223,22 @@ class TestFiltersDefaultDisabled:
     """Both filters disabled by default — existing behavior unchanged."""
 
     def test_default_params_match_original(self):
-        """walk_forward_backtest with defaults produces identical results to before."""
+        """walk_forward_backtest with defaults produces identical results."""
         from hmm_futures_analysis.regime.walk_forward import walk_forward_backtest
 
         min_train = 10
         n_bars = 30
-        regimes = [1] * min_train + [2, 0, 2, 0, 2, 1, 0, 1, 2, 0, 1, 0, 2, 1, 2, 0, 1, 2, 0, 2]
-        while len(regimes) < n_bars:
-            regimes.append(1)
-
+        regimes_after = [2, 0, 2, 0, 2, 1, 0, 1, 2, 0, 1, 0, 2, 1, 2, 0, 1, 2, 0, 2]
+        regimes = _build_regimes(min_train, regimes_after, n_bars)
         prices = _make_prices(n_bars)
 
-        engine1 = _MockEngine(regimes)
         result_explicit = walk_forward_backtest(
-            prices, engine=engine1, min_train=min_train,
+            prices, regimes=regimes, min_train=min_train,
             dwell_bars=0, hysteresis_delta=0.0,
         )
-
-        engine2 = _MockEngine(regimes)
         result_default = walk_forward_backtest(
-            prices, engine=engine2, min_train=min_train,
+            prices, regimes=regimes, min_train=min_train,
         )
-
         assert result_explicit == result_default
 
 

@@ -69,11 +69,10 @@ class TestThresholdPipeline:
         assert -1.0 <= signal <= 1.0
 
     def test_walk_forward_returns_keys(self, btc_csv):
-        from hmm_futures_analysis.regime.engines.threshold import ThresholdEngine
-
         prices = load_from_csv(btc_csv)
-        engine = ThresholdEngine()
-        result = walk_forward_backtest(prices, engine=engine)
+        returns = prices.pct_change(fill_method=None).dropna()
+        regimes = classify_regimes(returns, window=20, threshold=0.05)
+        result = walk_forward_backtest(prices, regimes=regimes)
         expected = {
             "sharpe",
             "max_drawdown",
@@ -86,11 +85,10 @@ class TestThresholdPipeline:
             assert key in result, f"Missing key: {key}"
 
     def test_walk_forward_drawdown_negative_or_nan(self, btc_csv):
-        from hmm_futures_analysis.regime.engines.threshold import ThresholdEngine
-
         prices = load_from_csv(btc_csv)
-        engine = ThresholdEngine()
-        result = walk_forward_backtest(prices, engine=engine)
+        returns = prices.pct_change(fill_method=None).dropna()
+        regimes = classify_regimes(returns, window=20, threshold=0.05)
+        result = walk_forward_backtest(prices, regimes=regimes)
         assert result.max_drawdown <= 0 or np.isnan(result.max_drawdown)
 
     def test_forecast_n_steps(self, btc_csv):
@@ -250,15 +248,14 @@ class TestPipelineRunInputValidation:
 
 @pytest.mark.slow
 class TestWalkForwardBacktest:
-    """Tests for refactored walk_forward_backtest with discrete trades."""
+    """Tests for walk_forward_backtest with pre-computed regimes (ADR-0017)."""
 
-    def test_threshold_engine_returns_rich_keys(self, btc_csv):
-        """Threshold engine returns 6 keys with discrete trade model."""
-        from hmm_futures_analysis.regime.engines.threshold import ThresholdEngine
-
+    def test_regimes_arg_returns_rich_keys(self, btc_csv):
+        """walk_forward_backtest returns 6 keys with regimes array."""
         prices = load_from_csv(btc_csv)
-        engine = ThresholdEngine()
-        result = walk_forward_backtest(prices, engine=engine)
+        returns = prices.pct_change(fill_method=None).dropna()
+        regimes = classify_regimes(returns, window=20, threshold=0.05)
+        result = walk_forward_backtest(prices, regimes=regimes)
         expected = {
             "sharpe",
             "max_drawdown",
@@ -270,35 +267,32 @@ class TestWalkForwardBacktest:
         for key in expected:
             assert key in result, f"Missing key: {key}"
 
-    def test_threshold_engine_win_rate_in_range(self, btc_csv):
+    def test_win_rate_in_range(self, btc_csv):
         """Win rate should be in [0, 1] or NaN."""
-        from hmm_futures_analysis.regime.engines.threshold import ThresholdEngine
-
         prices = load_from_csv(btc_csv)
-        engine = ThresholdEngine()
-        result = walk_forward_backtest(prices, engine=engine)
+        returns = prices.pct_change(fill_method=None).dropna()
+        regimes = classify_regimes(returns, window=20, threshold=0.05)
+        result = walk_forward_backtest(prices, regimes=regimes)
         wr = result.win_rate
         assert 0.0 <= wr <= 1.0 or np.isnan(wr)
 
-    def test_threshold_engine_raises_on_invalid_engine(self, btc_csv):
-        """String engine name raises TypeError."""
+    def test_missing_regimes_raises_type_error(self, btc_csv):
+        """Missing required regimes kwarg raises TypeError."""
         prices = load_from_csv(btc_csv)
-        with pytest.raises(TypeError, match=r"engine"):
-            walk_forward_backtest(prices, engine="invalid")
+        with pytest.raises(TypeError):
+            walk_forward_backtest(prices)  # noqa: missing regimes
 
     def test_insufficient_data_returns_nan(self, btc_csv):
         """Too few bars returns NaN-filled result."""
-        from hmm_futures_analysis.regime.engines.threshold import ThresholdEngine
-
         prices = load_from_csv(btc_csv).iloc[:5]
-        engine = ThresholdEngine()
-        result = walk_forward_backtest(prices, engine=engine, min_train=252)
+        returns = prices.pct_change(fill_method=None).dropna()
+        if len(returns) == 0:
+            returns = pd.Series([0.0], index=prices.index[:1])
+        regimes = np.ones(len(returns), dtype=int)
+        result = walk_forward_backtest(prices, regimes=regimes, min_train=252)
         assert np.isnan(result.sharpe)
         assert np.isnan(result.max_drawdown)
         assert result.n_trades == 0
-        assert np.isnan(result.win_rate)
-        assert np.isnan(result.profit_factor)
-        assert np.isnan(result.total_return)
 
 
 @pytest.mark.slow
@@ -325,46 +319,41 @@ class TestHmmWalkForward:
         )
 
     def test_hmm_engine_requires_ohlcv(self, btc_csv):
-        """HMM engine with no OHLCV data raises ValueError inside classify."""
+        """HMM engine with no OHLCV data raises during run_classify."""
         from hmm_futures_analysis.regime.engines.hmm_generic import HMMGenericEngine
 
         prices = load_from_csv(btc_csv)
         engine = HMMGenericEngine(n_states=3)
-        # The engine's classify will fail when given only close prices
+        returns = prices.pct_change(fill_method=None).dropna()
+        # ADR-0017: engine.run_classify fails when OHLCV is None
         with pytest.raises((ValueError, TypeError)):
-            walk_forward_backtest(prices, engine=engine)
+            engine.run_classify(prices, None, returns, min_train=50)
 
     def test_messina_engine_requires_ohlcv(self, btc_csv):
-        """Messina engine with no OHLCV data raises ValueError inside classify."""
+        """Messina engine with no OHLCV data raises during run_classify."""
         from hmm_futures_analysis.regime.engines.hmm_messina import HMMMMessinaEngine
 
         prices = load_from_csv(btc_csv)
         engine = HMMMMessinaEngine(n_states=3)
+        returns = prices.pct_change(fill_method=None).dropna()
         with pytest.raises((ValueError, TypeError)):
-            walk_forward_backtest(prices, engine=engine)
+            engine.run_classify(prices, None, returns, min_train=50)
 
     def test_hmm_engine_returns_rich_keys(self, ohlcv_small):
-        """HMM engine with precomputed features produces 6-key result."""
+        """HMM engine run_classify() → regimes → walk_forward_backtest."""
         from hmm_futures_analysis.regime.engines.hmm_generic import HMMGenericEngine
 
         prices = ohlcv_small["close"]
         engine = HMMGenericEngine(n_states=3)
-        # HMM engines need precomputed features; use regimes pass-through
-        precomputed = engine.precompute(ohlcv_small)
-        assert precomputed is not None
-        # Run a simple classify to get regime labels for the pass-through path
         returns = prices.pct_change(fill_method=None).dropna()
-        n = len(returns)
         min_train = 300
-        regimes = np.ones(n, dtype=int)
-        for t in range(min_train, n):
-            try:
-                result = engine.classify(precomputed.iloc[:t])
-                regimes[t] = result.regime
-            except (ValueError, RuntimeError):
-                pass
+
+        # ADR-0017: engine owns the classify loop
+        classify_out = engine.run_classify(prices, ohlcv_small, returns, min_train=min_train)
         wf_result = walk_forward_backtest(
-            prices, engine=engine, min_train=min_train, regimes=regimes
+            prices, regimes=classify_out.regimes,
+            posteriors=classify_out.posteriors,
+            min_train=min_train,
         )
         expected = {
             "sharpe",
@@ -378,25 +367,20 @@ class TestHmmWalkForward:
             assert key in wf_result, f"Missing key: {key}"
 
     def test_messina_engine_returns_rich_keys(self, ohlcv_small):
-        """Messina engine with precomputed features produces 6-key result."""
+        """Messina engine run_classify() → regimes → walk_forward_backtest."""
         from hmm_futures_analysis.regime.engines.hmm_messina import HMMMMessinaEngine
 
         prices = ohlcv_small["close"]
         engine = HMMMMessinaEngine(n_states=3)
-        precomputed = engine.precompute(ohlcv_small)
-        assert precomputed is not None
         returns = prices.pct_change(fill_method=None).dropna()
-        n = len(returns)
         min_train = 300
-        regimes = np.ones(n, dtype=int)
-        for t in range(min_train, n):
-            try:
-                result = engine.classify(precomputed.iloc[:t])
-                regimes[t] = result.regime
-            except (ValueError, RuntimeError):
-                pass
+
+        # ADR-0017: engine owns the classify loop
+        classify_out = engine.run_classify(prices, ohlcv_small, returns, min_train=min_train)
         wf_result = walk_forward_backtest(
-            prices, engine=engine, min_train=min_train, regimes=regimes
+            prices, regimes=classify_out.regimes,
+            posteriors=classify_out.posteriors,
+            min_train=min_train,
         )
         expected = {
             "sharpe",

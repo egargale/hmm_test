@@ -1,26 +1,23 @@
 """No-lookahead walk-forward backtest with discrete trade model.
 
 At each bar *t* from ``min_train`` to end:
-1. Classify regime using only data ``[0:t]``.
+1. Replay pre-computed regime labels.
 2. Map regime to discrete position via ``{0: -1, 1: 0, 2: 1}``.
 3. Apply position at bar *t*, trade in/out on regime changes.
 
 Produces trade-level analytics: Sharpe, max drawdown, trade count,
 win rate, profit factor, total return.
+
+ADR-0017: engine param removed; regimes always pre-computed by pipeline.
 """
 
 from __future__ import annotations
-
-from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
 
 from ..backtesting.performance_metrics import calculate_drawdown_metrics
 from ..backtesting.performance_metrics import calculate_sharpe_ratio
-
-if TYPE_CHECKING:
-    from .engine_protocol import RegimeEngine
 
 _STATE_MAP = {0: -1, 1: 0, 2: 1}  # bear=short, sideways=flat, bull=long
 
@@ -73,18 +70,17 @@ def _compute_trade_stats(
 def _walk_forward_positions(
     returns: pd.Series,
     *,
-    engine: RegimeEngine,
-    precomputed: pd.DataFrame | None = None,
-    regimes: np.ndarray | None = None,
+    regimes: np.ndarray,
     posteriors: np.ndarray | None = None,
     min_train: int = 252,
     dwell_bars: int = 0,
     hysteresis_delta: float = 0.0,
 ) -> np.ndarray:
-    """Build position array using the shared _walk_forward_classify generator.
+    """Build position array from pre-computed regime labels.
 
-    Consumes the generator, applies dwell/hysteresis filters, and maps
-    regimes to discrete positions via _STATE_MAP.
+    Replays regimes through _walk_forward_classify mode 1,
+    applies dwell/hysteresis filters, and maps regimes to discrete
+    positions via _STATE_MAP.
     """
     from .engines._hmm_pipeline import _walk_forward_classify
 
@@ -96,18 +92,11 @@ def _walk_forward_positions(
 
     for t, result in _walk_forward_classify(
         returns,
-        eng=engine,
-        precomputed=precomputed,
         regimes=regimes,
         min_train=min_train,
-        profile=False,
     ):
         new_regime = result.regime
-        # Regimes mode: posteriors come from the separate array
-        if regimes is not None and posteriors is not None:
-            new_posteriors_arr: np.ndarray | None = posteriors[t]
-        else:
-            new_posteriors_arr = result.posteriors
+        new_posteriors_arr: np.ndarray | None = posteriors[t] if posteriors is not None else None
 
         should_switch, consecutive_count = _apply_filters(
             new_regime,
@@ -130,12 +119,11 @@ def _walk_forward_positions(
 def walk_forward_backtest(
     prices: pd.Series,
     *,
-    engine: RegimeEngine,
+    regimes: np.ndarray,
+    posteriors: np.ndarray | None = None,
     min_train: int = 252,
     dwell_bars: int = 0,
     hysteresis_delta: float = 0.0,
-    regimes: np.ndarray | None = None,
-    posteriors: np.ndarray | None = None,
 ) -> dict:
     """No-lookahead walk-forward backtest with discrete position sizing.
 
@@ -143,9 +131,11 @@ def walk_forward_backtest(
     ----------
     prices : pd.Series
         Close prices with DatetimeIndex.
-    engine : RegimeEngine
-        A ``RegimeEngine`` instance used for regime classification.
-        Ignored when ``regimes`` is provided.
+    regimes : np.ndarray
+        Pre-computed regime label per bar (0=Bear, 1=Sideways, 2=Bull).
+    posteriors : np.ndarray | None
+        Pre-computed (n_bars, 3) posterior probabilities, used by the
+        hysteresis filter. Hysteresis is a no-op when posteriors is None.
     min_train : int
         Minimum number of bars before trading starts.
     dwell_bars : int
@@ -154,25 +144,12 @@ def walk_forward_backtest(
     hysteresis_delta : float
         Minimum posterior probability margin required to switch regimes.
         0.0 disables the filter (default). No-op when posteriors are None.
-    regimes : np.ndarray | None
-        Pre-computed regime label per bar (0=Bear, 1=Sideways, 2=Bull).
-        When provided, skips engine-based classification and applies
-        dwell/hysteresis filters to these labels.
-    posteriors : np.ndarray | None
-        Pre-computed (n_bars, 3) posterior probabilities, used by the
-        hysteresis filter. Ignored unless ``regimes`` is also provided.
 
     Returns
     -------
     dict
         ``{sharpe, max_drawdown, n_trades, win_rate, profit_factor, total_return}``
     """
-    if not hasattr(engine, "classify"):
-        raise TypeError(
-            f"engine must be a RegimeEngine instance, got {type(engine).__name__}"
-        )
-
-    eng = engine
 
     if len(prices) < min_train + 1:
         return _empty_result()
@@ -182,17 +159,8 @@ def walk_forward_backtest(
     if n < min_train:
         return _empty_result()
 
-    # Attempt precomputation (returns None for threshold engine)
-    precomputed = None
-    try:
-        precomputed = eng.precompute(prices.to_frame("close"))
-    except (ValueError, RuntimeError, KeyError):
-        precomputed = None
-
     positions = _walk_forward_positions(
         returns,
-        engine=eng,
-        precomputed=precomputed,
         regimes=regimes,
         posteriors=posteriors,
         min_train=min_train,
