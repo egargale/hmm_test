@@ -16,6 +16,8 @@ class ThresholdConfig:
     features: str = "returns"
     window: int = 20
     threshold: float = 0.05
+    default_dwell_bars: int = 3
+    default_hysteresis_delta: float = 0.0
 
     @property
     def is_hmm(self) -> bool:
@@ -28,6 +30,8 @@ class HMMGenericConfig:
     features: str = "generic"
     n_states: int | str = 3
     pca_variance: float | None = None
+    default_dwell_bars: int = 0
+    default_hysteresis_delta: float = 0.1
 
     @property
     def is_hmm(self) -> bool:
@@ -40,6 +44,8 @@ class HMMMMessinaConfig:
     features: str = "messina"
     n_states: int | str = 3
     pca_variance: float | None = None
+    default_dwell_bars: int = 0
+    default_hysteresis_delta: float = 0.1
 
     @property
     def is_hmm(self) -> bool:
@@ -53,6 +59,8 @@ class RobustHMMConfig:
     n_states: int | str = 3
     pca_variance: float | None = None
     robust_method: str = "huber"
+    default_dwell_bars: int = 0
+    default_hysteresis_delta: float = 0.1
 
     @property
     def is_hmm(self) -> bool:
@@ -66,6 +74,8 @@ class FSHMMConfig:
     n_states: int | str = 3
     pca_variance: float | None = None
     saliency_threshold: float = 0.5
+    default_dwell_bars: int = 2
+    default_hysteresis_delta: float = 0.05
 
     @property
     def is_hmm(self) -> bool:

@@ -391,8 +391,8 @@ def run(
     engine_config: object = None,
     min_train: int = 252,
     ohlcv: pd.DataFrame | None = None,
-    dwell_bars: int = 0,
-    hysteresis_delta: float = 0.0,
+    dwell_bars: int | str = 0,
+    hysteresis_delta: float | str = 0.0,
     duration_forecast: bool = False,
     duration_model: str = "weibull",
     profile: bool = True,
@@ -415,6 +415,12 @@ def run(
         )
 
     returns = _validate_prices(prices)
+
+    # Resolve 'auto' filter params to engine config defaults
+    if dwell_bars == "auto":
+        dwell_bars = getattr(engine_config, "default_dwell_bars", 0)
+    if hysteresis_delta == "auto":
+        hysteresis_delta = getattr(engine_config, "default_hysteresis_delta", 0.0)
 
     config = engine_config
     resolved_n_states: int = getattr(config, "n_states", 3)

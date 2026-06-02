@@ -346,8 +346,8 @@ These parameters apply to all engines.
 | Parameter | Default | Description |
 |---|---|---|
 | `--min-train` | 252 | Minimum bars before walk-forward trading starts. Lower values trade earlier but with less stable models. |
-| `--dwell-bars` | 0 | **Dwell-time filter.** Require N consecutive same-regime bars before switching position. 0 = disabled. |
-| `--hysteresis` | 0.0 | **Hysteresis filter.** Require posterior probability margin > D to switch regime. 0.0 = disabled. HMM engines only. |
+| `--dwell-bars` | 0 | **Dwell-time filter.** Require N consecutive same-regime bars before switching position. 0 = disabled, `auto` = use engine default. |
+| `--hysteresis` | 0.0 | **Hysteresis filter.** Require posterior probability margin > D to switch regime. 0.0 = disabled, `auto` = use engine default. HMM engines only. |
 | `--n-states` | 3 | Number of HMM states. Integer ≥ 2, or `auto` for BIC-based selection (2–6). HMM engines only. |
 | `--duration-forecast` | off | Enable regime duration forecasting via survival analysis. See [Duration Forecasting](#duration-forecasting). |
 | `--duration-model` | `weibull` | Survival model: `weibull` or `cox` (requires `lifelines`). |
@@ -369,6 +369,31 @@ filters applied to the raw regime labels during walk-forward backtesting.
 They do **not** affect the regime labels themselves — only the trading
 positions derived from them.
 
+### Using `auto` for Engine Defaults
+
+Each engine has built-in default filter values tuned to its trade-frequency
+characteristics. Pass `auto` to use them:
+
+```bash
+python -m hmm_futures_analysis.cli --ticker SPY --engine fshmm --dwell-bars auto --hysteresis auto --json
+```
+
+### Per-Engine Filter Defaults
+
+| Engine | `dwell_bars` | `hysteresis_delta` | Rationale |
+|---|---|---|---|
+| `threshold` | 3 | 0.0 | High trade frequency (100+ trades); dwell filters noise |
+| `hmm` | 0 | 0.1 | Already sticky; hysteresis on signal strength only |
+| `messina` | 0 | 0.1 | Low frequency; hysteresis only |
+| `robust_hmm` | 0 | 0.1 | Very low frequency; hysteresis only |
+| `fshmm` | 2 | 0.05 | Low-medium frequency; light dwell + light hysteresis |
+
+> **Key insight:** HMM engines are typically **too sticky** (3–20 trades over
+> 10 years), not whipsawing. Adding dwell-bars to them would make things worse.
+> For HMM engines, hysteresis (which works on posterior probability margin) is
+> more appropriate than dwell-bars (which works on time). The threshold engine
+> is the only one that benefits from dwell filtering.
+
 ### Dwell-Time Filter (`--dwell-bars N`)
 
 Requires N consecutive bars with the same regime label before switching
@@ -376,7 +401,7 @@ trading position. This eliminates brief whipsaw flips.
 
 ```bash
 # Require 3 consecutive bull bars before going long
-python -m hmm_futures_analysis.cli --ticker SPY --engine hmm --dwell-bars 3 --json
+python -m hmm_futures_analysis.cli --ticker SPY --engine threshold --dwell-bars 3 --json
 ```
 
 **Effect:** Reduces trade count, delays entry, eliminates transient regime blips.
@@ -396,6 +421,8 @@ python -m hmm_futures_analysis.cli --ticker SPY --engine hmm --hysteresis 0.2 --
 in the new regime before acting.
 
 > Both filters can be combined: `--dwell-bars 3 --hysteresis 0.1`.
+> Use `auto` for both to get the recommended defaults per engine:
+> `--dwell-bars auto --hysteresis auto`.
 
 ---
 
@@ -687,7 +714,7 @@ python -m hmm_futures_analysis.cli --ticker AAPL --json
 
 # Best-quality analysis on S&P 500
 python -m hmm_futures_analysis.cli --ticker "^GSPC" --engine fshmm \
-  --duration-forecast --dwell-bars 3 --json
+  --duration-forecast --dwell-bars auto --hysteresis auto --json
 
 # Bitcoin with robust fitting
 python -m hmm_futures_analysis.cli --ticker BTC-USD --engine robust_hmm \

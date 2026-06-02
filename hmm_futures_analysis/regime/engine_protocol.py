@@ -120,11 +120,17 @@ def resolve_engine(config) -> RegimeEngine:
             f"Unknown engine name {name!r}. Available: {sorted(ENGINE_REGISTRY.keys())}"
         )
     engine_cls, _ = ENGINE_REGISTRY[name]
-    # Strip name/features — they're config metadata, not constructor params
+    # Strip name/features/defaults — they're config metadata, not constructor params
     kwargs = {
         k: v
         for k, v in dataclasses.asdict(config).items()
-        if k not in ("name", "features")
+        if k
+        not in (
+            "name",
+            "features",
+            "default_dwell_bars",
+            "default_hysteresis_delta",
+        )
     }
     return engine_cls(**kwargs)
 

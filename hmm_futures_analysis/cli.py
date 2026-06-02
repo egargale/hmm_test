@@ -216,6 +216,38 @@ def _parse_n_states(value: str) -> str | int:
     return iv
 
 
+def _parse_dwell_bars(value: str) -> str | int:
+    """Parse --dwell-bars: accept 'auto' or a non-negative integer."""
+    if value == "auto":
+        return "auto"
+    try:
+        iv = int(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            f"--dwell-bars must be 'auto' or an integer, got {value!r}"
+        )
+    if iv < 0:
+        raise argparse.ArgumentTypeError(f"--dwell-bars must be >= 0, got {iv}")
+    return iv
+
+
+def _parse_hysteresis(value: str) -> str | float:
+    """Parse --hysteresis: accept 'auto' or a float in [0, 1)."""
+    if value == "auto":
+        return "auto"
+    try:
+        fv = float(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            f"--hysteresis must be 'auto' or a number, got {value!r}"
+        )
+    if fv < 0.0 or fv >= 1.0:
+        raise argparse.ArgumentTypeError(
+            f"--hysteresis must be in [0, 1), got {fv}"
+        )
+    return fv
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Detect market regimes (Bull/Bear/Sideways) using Markov analysis.",
@@ -271,15 +303,15 @@ def main() -> None:
     )
     parser.add_argument(
         "--dwell-bars",
-        type=int,
+        type=_parse_dwell_bars,
         default=0,
-        help="Dwell-time filter: require N consecutive same-regime bars before switching position (default: 0 = disabled).",
+        help="Dwell-time filter: require N consecutive same-regime bars before switching position. Accepts 'auto' for engine defaults (default: 0 = disabled).",
     )
     parser.add_argument(
         "--hysteresis",
-        type=float,
+        type=_parse_hysteresis,
         default=0.0,
-        help="Hysteresis filter: require posterior probability margin > D to switch regime (default: 0.0 = disabled).",
+        help="Hysteresis filter: require posterior probability margin > D to switch regime. Accepts 'auto' for engine defaults (default: 0.0 = disabled).",
     )
     parser.add_argument(
         "--robust-method",
