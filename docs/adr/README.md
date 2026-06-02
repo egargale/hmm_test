@@ -24,6 +24,7 @@ ADRs use a flat, sequential 4-digit numbering scheme (`0001-`, `0002-`, …).
 | 0014 | `0014-per-phase-timing-instrumentation.md` | Per-phase timing instrumentation |
 | 0015 | `0015-regime-duration-forecasting.md` | Regime duration forecasting via survival analysis (Weibull + Cox PH) |
 | 0016 | `0016-robust-hmm-engine.md` | Robust HMM engine with outlier-resistant emission estimation (Huber IRLS / MinCovDet) |
+| 0017 | `0017-push-run-classify-into-engine-protocol.md` | Push per-engine execution model into `run_classify()` on engine protocol |
 
 ## Rules for contributors
 
