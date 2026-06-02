@@ -563,6 +563,82 @@ spells to fit, and the output will contain `null` values.
 
 ---
 
+---
+
+## Eval Mode
+
+Run multiple engines across multiple tickers for batch comparison.
+
+### `--eval-csv` — Evaluate from CSV directory
+
+```bash
+python -m hmm_futures_analysis.cli --eval-csv test_data/eval-results/ --json
+```
+
+Reads all `.csv` files from the directory. The filename stem (without extension)
+becomes the ticker label. Each CSV is run through all engines (or a subset with
+`--eval-engines`).
+
+### `--eval-tickers` — Evaluate from ticker symbols
+
+```bash
+python -m hmm_futures_analysis.cli --eval-tickers CRM,0700.HK,SPY --json
+```
+
+Fetches each ticker via yfinance and runs all engines. Use `--eval-cache-dir`
+to save the downloaded data as CSVs for reproducibility:
+
+```bash
+python -m hmm_futures_analysis.cli --eval-tickers CRM,SPY \
+  --eval-cache-dir ./csv-cache/ --json
+```
+
+### `--eval-engines` — Filter engines
+
+```bash
+# Only run threshold and messina
+python -m hmm_futures_analysis.cli --eval-csv data/ --eval-engines threshold,messina --json
+```
+
+Default: all five engines (`threshold`, `messina`, `hmm`, `robust_hmm`, `fshmm`).
+
+### Output
+
+| Flag | Output |
+|---|---|
+| (default) | Markdown comparison table to **stderr** |
+| `--json` | JSON array to **stdout** |
+
+#### Table columns
+
+| Column | Description |
+|---|---|
+| ticker | Ticker symbol or CSV filename stem |
+| engine | Engine name |
+| regime | Current regime (bear/sideways/bull) |
+| signal | Bull−bear signal (−1 to +1) |
+| sharpe | Walk-forward annualised Sharpe ratio |
+| max_dd | Maximum drawdown |
+| trades | Number of walk-forward trades |
+| win_rate | Fraction of profitable trades |
+| pf | Profit factor (gross wins / gross losses) |
+| total_ret | Cumulative return |
+| wall_s | Wall-clock time in seconds |
+
+### Flags summary
+
+| Flag | Description |
+|---|---|
+| `--eval-tickers LIST` | Comma-separated ticker symbols |
+| `--eval-csv DIR` | Directory of CSV files |
+| `--eval-engines LIST` | Comma-separated engine names (default: all) |
+| `--eval-cache-dir DIR` | Save yfinance data to CSV (used with `--eval-tickers`) |
+
+> `--eval-tickers` and `--eval-csv` are mutually exclusive with each other and with
+> `--ticker`/`--csv`.
+
+---
+
 ## Common Issues
 
 ### "ta library not available" warnings

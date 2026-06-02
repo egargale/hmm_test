@@ -1,0 +1,183 @@
+{
+  "source": "test_data/hmm-eval-2026-06-02/0700_HK.csv",
+  "engine": "hmm",
+  "dates": {
+    "start": "2016-06-01",
+    "end": "2026-06-01"
+  },
+  "current_regime": {
+    "name": "bull",
+    "index": 2
+  },
+  "signal": 0.9812734079453183,
+  "next_state_probabilities": {
+    "bear": 0.007490636801872659,
+    "sideways": 0.0037453184509363296,
+    "bull": 0.9887640447471909
+  },
+  "transition_matrix": [
+    [
+      0.9749999998075,
+      0.015000000095499998,
+      0.010000000097
+    ],
+    [
+      0.001506024195933735,
+      0.9974899596401104,
+      0.0010040161639558232
+    ],
+    [
+      0.007490636801872659,
+      0.0037453184509363296,
+      0.9887640447471909
+    ]
+  ],
+  "stationary_distribution": {
+    "bear": 0.09032796450226957,
+    "sideways": 0.7612562410919779,
+    "bull": 0.14841579440575253
+  },
+  "persistence_diagonal": {
+    "bear": 0.9749999998075,
+    "sideways": 0.9974899596401104,
+    "bull": 0.9887640447471909
+  },
+  "regime_counts": {
+    "bear": 200,
+    "sideways": 1992,
+    "bull": 268
+  },
+  "walk_forward": {
+    "sharpe": 0.019569888995279432,
+    "max_drawdown": -0.46173117686211507,
+    "n_trades": 5,
+    "win_rate": 0.6,
+    "profit_factor": 1.5249311493653985,
+    "total_return": 0.09988931811893376
+  },
+  "forecast": {
+    "1_step": {
+      "bear": 0.014715483762544255,
+      "sideways": 0.0075515133236213755,
+      "bull": 0.9777330029138342
+    },
+    "5_step": {
+      "bear": 0.04111871611032393,
+      "sideways": 0.023319305174462804,
+      "bull": 0.9355619787152128
+    },
+    "20_step": {
+      "bear": 0.11114003437820402,
+      "sideways": 0.08756803420151368,
+      "bull": 0.8012919314202808
+    }
+  },
+  "engine_info": {
+    "method": "hmm",
+    "features": "generic",
+    "n_states": 3,
+    "warmup_bars": 252,
+    "caveat": "HMM states sorted by mean return; labels may swap on re-fit"
+  },
+  "framework": "hmm_test v0.2.0",
+  "disclaimer": "Regime detection is probabilistic. Past transitions do not guarantee future regimes. Not financial advice.",
+  "verdict": {
+    "verdict": "bullish",
+    "confidence": 0.9813
+  },
+  "duration_forecast": null,
+  "regime_transitions": [
+    {
+      "date": "2017-08-04",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 292
+    },
+    {
+      "date": "2017-12-28",
+      "from_regime": "bull",
+      "to_regime": "bear",
+      "bar_index": 392
+    },
+    {
+      "date": "2018-06-27",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 512
+    },
+    {
+      "date": "2021-03-01",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 1172
+    },
+    {
+      "date": "2021-03-29",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 1192
+    },
+    {
+      "date": "2021-04-29",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 1212
+    },
+    {
+      "date": "2021-05-28",
+      "from_regime": "bear",
+      "to_regime": "bull",
+      "bar_index": 1232
+    },
+    {
+      "date": "2021-06-28",
+      "from_regime": "bull",
+      "to_regime": "bear",
+      "bar_index": 1252
+    },
+    {
+      "date": "2021-07-27",
+      "from_regime": "bear",
+      "to_regime": "bull",
+      "bar_index": 1272
+    },
+    {
+      "date": "2021-08-24",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1292
+    },
+    {
+      "date": "2022-12-08",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 1612
+    },
+    {
+      "date": "2023-01-10",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 1632
+    },
+    {
+      "date": "2025-11-18",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 2332
+    }
+  ],
+  "timing": {
+    "total_wall_seconds": 529.911609,
+    "phases": {
+      "precompute": 0.252435,
+      "walk_forward_classify": 528.318988,
+      "walk_forward_backtest": 0.186237
+    },
+    "walk_forward_classify_stats": {
+      "min": 0.272263,
+      "median": 5.144713,
+      "p99": 10.655268,
+      "n_calls": 111
+    }
+  }
+}

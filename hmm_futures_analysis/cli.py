@@ -29,6 +29,12 @@ from .regime.engine_configs import (
     ThresholdConfig,
 )
 from .regime.pipeline import run as pipeline_run
+from .eval import (
+    ALL_ENGINES as EVAL_ALL_ENGINES,
+    format_table,
+    run_eval_csv,
+    run_eval_tickers,
+)
 from .utils.logging_config import suppress_stdout_logging
 
 _STATE_NAMES = ("bear", "sideways", "bull")
@@ -296,6 +302,39 @@ def main() -> None:
         help="Save fshmm saliency weights to CSV file.",
     )
 
+    # --- Eval mode arguments ---
+    eval_group = parser.add_argument_group(
+        "eval mode",
+        "Run multiple engines across multiple tickers/CSVs.",
+    )
+    eval_group.add_argument(
+        "--eval-tickers",
+        type=str,
+        default=None,
+        help="Comma-separated ticker list for batch eval (e.g. CRM,0700.HK,SPY).",
+    )
+    eval_group.add_argument(
+        "--eval-csv",
+        type=str,
+        default=None,
+        help="Directory of CSV files for batch eval (filename stem = ticker).",
+    )
+    eval_group.add_argument(
+        "--eval-engines",
+        type=str,
+        default=None,
+        help=(
+            "Comma-separated engine list for eval mode "
+            f"(default: all). Choices: {','.join(EVAL_ALL_ENGINES)}."
+        ),
+    )
+    eval_group.add_argument(
+        "--eval-cache-dir",
+        type=str,
+        default=None,
+        help="Directory to save yfinance CSVs (used with --eval-tickers for reproducibility).",
+    )
+
     parser.add_argument(
         "--duration-forecast",
         action="store_true",
@@ -312,13 +351,73 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    # Validate source arguments
-    if args.csv is None and args.ticker is None:
-        parser.error("one of the arguments --ticker --csv is required")
+    # --- Determine mode: eval vs single-run ---
+    eval_mode = args.eval_tickers is not None or args.eval_csv is not None
+    single_mode = args.csv is not None or args.ticker is not None
 
-    if args.csv is not None and args.ticker is not None:
-        parser.error("arguments --ticker and --csv are mutually exclusive")
+    if eval_mode and single_mode:
+        parser.error(
+            "eval flags (--eval-tickers, --eval-csv) are mutually exclusive "
+            "with single-run flags (--ticker, --csv)"
+        )
 
+    if not eval_mode and not single_mode:
+        parser.error(
+            "provide one of: --ticker, --csv, --eval-tickers, or --eval-csv"
+        )
+
+    # --- Eval mode ---
+    if eval_mode:
+        if args.eval_tickers is not None and args.eval_csv is not None:
+            parser.error("--eval-tickers and --eval-csv are mutually exclusive")
+
+        # Parse engine filter
+        engines = EVAL_ALL_ENGINES
+        if args.eval_engines is not None:
+            requested = [e.strip() for e in args.eval_engines.split(",")]
+            invalid = set(requested) - set(EVAL_ALL_ENGINES)
+            if invalid:
+                parser.error(
+                    f"unknown engines: {','.join(sorted(invalid))}. "
+                    f"Valid: {','.join(EVAL_ALL_ENGINES)}"
+                )
+            engines = tuple(requested)
+
+        try:
+            if args.json:
+                suppress_stdout_logging()
+
+            if args.eval_csv:
+                results = run_eval_csv(
+                    csv_dir=args.eval_csv,
+                    engines=engines,
+                    min_train=args.min_train,
+                )
+            else:
+                tickers = tuple(t.strip() for t in args.eval_tickers.split(","))
+                results = run_eval_tickers(
+                    tickers=tickers,
+                    csv_cache_dir=args.eval_cache_dir,
+                    engines=engines,
+                    min_train=args.min_train,
+                )
+
+            if args.json:
+                json.dump(results, sys.stdout, indent=2, allow_nan=False)
+                sys.stdout.write("\n")
+            else:
+                print(format_table(results), file=sys.stderr)
+
+        except Exception as exc:
+            if args.json:
+                json.dump({"error": str(exc)}, sys.stdout)
+                sys.stdout.write("\n")
+            else:
+                print(f"Error: {exc}", file=sys.stderr)
+            sys.exit(1)
+        return
+
+    # --- Single-run mode (original behaviour) ---
     try:
         # In JSON mode, suppress logging to stdout so only the JSON object is emitted
         if args.json:
