@@ -1,0 +1,103 @@
+{
+  "source": "CRM",
+  "engine": "hmm",
+  "dates": {
+    "start": "2016-06-02",
+    "end": "2026-06-01"
+  },
+  "current_regime": {
+    "name": "sideways",
+    "index": 1
+  },
+  "signal": -0.0019342359762088974,
+  "next_state_probabilities": {
+    "bear": 0.0019342360762088975,
+    "sideways": 0.9980657638237911,
+    "bull": 9.999999997e-11
+  },
+  "transition_matrix": [
+    [
+      0.9967391302357608,
+      0.0010869566214130435,
+      0.002173913142826087
+    ],
+    [
+      0.0019342360762088975,
+      0.9980657638237911,
+      9.999999997e-11
+    ],
+    [
+      9.999999997e-11,
+      0.050000000085,
+      0.9499999998149999
+    ]
+  ],
+  "stationary_distribution": {
+    "bear": 0.3663878906935212,
+    "sideways": 0.6176821991110344,
+    "bull": 0.015929910195444402
+  },
+  "persistence_diagonal": {
+    "bear": 0.9967391302357608,
+    "sideways": 0.9980657638237911,
+    "bull": 0.9499999998149999
+  },
+  "regime_counts": {
+    "bear": 920,
+    "sideways": 1552,
+    "bull": 40
+  },
+  "walk_forward": {
+    "sharpe": -0.3953376143948304,
+    "max_drawdown": -0.6003296611183488,
+    "n_trades": 3,
+    "win_rate": 0.3333333333333333,
+    "profit_factor": 0.03379389227834368,
+    "total_return": -0.4926652964635456
+  },
+  "forecast": {
+    "1_step": {
+      "bear": 0.0038584235910880532,
+      "sideways": 0.9961373713528779,
+      "bull": 4.205056033975188e-06
+    },
+    "5_step": {
+      "bear": 0.011455572598479343,
+      "sideways": 0.9884858236863523,
+      "bull": 5.860371516829689e-05
+    },
+    "20_step": {
+      "bear": 0.0385682670670971,
+      "sideways": 0.9607978288637519,
+      "bull": 0.0006339040691506166
+    }
+  },
+  "engine_info": {
+    "method": "hmm",
+    "features": "generic",
+    "n_states": 3,
+    "warmup_bars": 252,
+    "caveat": "HMM states sorted by mean return; labels may swap on re-fit"
+  },
+  "framework": "hmm_test v0.2.0",
+  "disclaimer": "Regime detection is probabilistic. Past transitions do not guarantee future regimes. Not financial advice.",
+  "verdict": {
+    "verdict": "neutral",
+    "confidence": 0.0019
+  },
+  "duration_forecast": null,
+  "timing": {
+    "total_wall_seconds": 21.600715,
+    "phases": {
+      "precompute": 0.13912,
+      "walk_forward_classify": 20.755061,
+      "walk_forward_backtest": 0.083449
+    },
+    "walk_forward_classify_stats": {
+      "min": 0.048343,
+      "median": 0.159885,
+      "p99": 0.380768,
+      "n_calls": 113
+    }
+  }
+}

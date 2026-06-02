@@ -1,0 +1,93 @@
+{
+  "source": "CRM",
+  "engine": "threshold",
+  "dates": {
+    "start": "2016-06-02",
+    "end": "2026-06-01"
+  },
+  "current_regime": {
+    "name": "bull",
+    "index": 2
+  },
+  "signal": 0.8287752672900119,
+  "next_state_probabilities": {
+    "bear": 0.0023781213834720566,
+    "sideways": 0.166468489943044,
+    "bull": 0.831153388673484
+  },
+  "transition_matrix": [
+    [
+      0.8727598564689963,
+      0.1254480287362007,
+      0.0017921147948028674
+    ],
+    [
+      0.06205035979361511,
+      0.8102517984180755,
+      0.12769784178830937
+    ],
+    [
+      0.0023781213834720566,
+      0.166468489943044,
+      0.831153388673484
+    ]
+  ],
+  "stationary_distribution": {
+    "bear": 0.22173344525893915,
+    "sideways": 0.44178974623514816,
+    "bull": 0.3364768085059127
+  },
+  "persistence_diagonal": {
+    "bear": 0.8727598564689963,
+    "sideways": 0.8102517984180755,
+    "bull": 0.831153388673484
+  },
+  "regime_counts": {
+    "bear": 558,
+    "sideways": 1112,
+    "bull": 842
+  },
+  "walk_forward": {
+    "sharpe": -0.14857642573198293,
+    "max_drawdown": -0.5589098111617911,
+    "n_trades": 188,
+    "win_rate": 0.3723404255319149,
+    "profit_factor": 0.8703472658066136,
+    "total_return": -0.4333004026692262
+  },
+  "forecast": {
+    "1_step": {
+      "bear": 0.014381542219120276,
+      "sideways": 0.2735405735194635,
+      "bull": 0.7120778842614164
+    },
+    "5_step": {
+      "bear": 0.08692228131551846,
+      "sideways": 0.42920480582250825,
+      "bull": 0.4838729128619734
+    },
+    "20_step": {
+      "bear": 0.20681268317256782,
+      "sideways": 0.4445662219738436,
+      "bull": 0.3486210948535888
+    }
+  },
+  "engine_info": {
+    "method": "threshold",
+    "features": "returns",
+    "n_states": 3
+  },
+  "framework": "hmm_test v0.2.0",
+  "disclaimer": "Regime detection is probabilistic. Past transitions do not guarantee future regimes. Not financial advice.",
+  "verdict": {
+    "verdict": "bullish",
+    "confidence": 0.8288
+  },
+  "duration_forecast": null,
+  "timing": {
+    "total_wall_seconds": 0.735109,
+    "phases": {
+      "walk_forward_backtest": 0.084728
+    }
+  }
+}
