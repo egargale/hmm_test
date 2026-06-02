@@ -19,7 +19,6 @@ import pandas as pd
 
 from .engine_protocol import (
     ENGINE_REGISTRY,
-    ClassifyOutput,
     resolve_engine,
 )
 from .markov_chain import (
@@ -156,16 +155,15 @@ def _compute_verdict(
     ``"neutral"``, ``"transition_bull"``, ``"transition_bear"``) and
     ``confidence`` (abs(signal), range 0-1).
     """
-    names = ("bear", "sideways", "bull")
-    current_name = names[current_regime]
-
     if current_regime == 2:  # Bull
-        if forecast_20["bull"] > forecast_20.get(current_name, 0):
+        # Bull forecast > bear forecast: bull dominance continues
+        if forecast_20["bull"] > forecast_20.get("bear", 0):
             verdict = "bullish"
         else:
             verdict = "transition_bear"
     elif current_regime == 0:  # Bear
-        if forecast_20["bear"] > forecast_20.get(current_name, 0):
+        # Bear forecast > bull forecast: bear dominance continues
+        if forecast_20["bear"] > forecast_20.get("bull", 0):
             verdict = "bearish"
         else:
             verdict = "transition_bull"
@@ -204,59 +202,6 @@ def _validate_prices(prices: pd.Series) -> pd.Series:
             f"prices must yield at least 2 valid returns, got {len(returns)}"
         )
     return returns
-
-
-def _classify_hmm(
-    eng: object,
-    precomputed: pd.DataFrame,
-    returns: pd.Series,
-    min_train: int,
-    *,
-    profile: bool = True,
-    _phases: dict[str, float] | None = None,
-    _classify_times: list[float] | None = None,
-) -> ClassifyOutput:
-    """Run the walk-forward classify loop for HMM engines.
-
-    Receives a pre-constructed engine, precomputed features, and returns.
-    Walks forward from ``min_train`` to ``len(returns)`` via the shared
-    :func:`_walk_forward_classify` generator.  Returns a :class:`ClassifyOutput`
-    carrying regimes, posteriors, last regime, warmup bars, and the engine
-    instance.
-
-    Profiling is enabled by default (low overhead).
-    """
-    from .engines._hmm_pipeline import _walk_forward_classify
-
-    _phases = _phases if _phases is not None else {}
-    _classify_times = _classify_times if _classify_times is not None else []
-
-    n = len(returns)
-    regimes = np.ones(n, dtype=int)
-    posteriors_all = np.zeros((n, 3), dtype=float)
-
-    t_wf = time.monotonic()
-    for t, result in _walk_forward_classify(
-        returns,
-        eng=eng,
-        precomputed=precomputed,
-        min_train=min_train,
-        profile=profile,
-        _phases=_phases,
-        _classify_times=_classify_times,
-    ):
-        regimes[t] = result.regime
-        if result.posteriors is not None:
-            posteriors_all[t] = result.posteriors
-    if profile:
-        _phases["walk_forward_classify"] = float(round(time.monotonic() - t_wf, 6))
-
-    return ClassifyOutput(
-        regimes=regimes,
-        posteriors=posteriors_all,
-        last_regime=int(regimes[-1]),
-        warmup_bars=min_train,
-    )
 
 
 def _build_engine_info(
