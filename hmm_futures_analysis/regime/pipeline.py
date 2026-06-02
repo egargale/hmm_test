@@ -204,6 +204,115 @@ def _validate_prices(prices: pd.Series) -> pd.Series:
     return returns
 
 
+def detect_degenerate_fit(
+    regime_counts: dict[str, int],
+    n_bars: int,
+    n_features: int,
+    engine_name: str,
+    n_states: int,
+    *,
+    n_states_was_auto: bool = False,
+    hmm_regime_counts: dict[str, int] | None = None,
+) -> dict[str, object]:
+    """Detect degenerate HMM fits per ADR-0018.
+
+    Pure function: inspects regime balance, data dimensions, and engine
+    identity. Returns diagnostic fields to merge into engine_info.
+    Detection only — no regime assignment changes.
+    """
+    diagnostics: dict[str, object] = {}
+    hmm_with_collapse = {"hmm", "messina", "robust_hmm"}
+    hmm_all = hmm_with_collapse | {"fshmm"}
+
+    # --- Mode 2: Low-data warning ---
+    if engine_name in hmm_all:
+        min_bars = 4 * n_features * n_states
+        if n_bars < min_bars:
+            diagnostics["low_data_warning"] = True
+            diagnostics["low_data_caveat"] = (
+                f"{n_bars} bars with {n_features} features × {n_states} states; "
+                f"recommend minimum {min_bars} bars"
+            )
+
+    # --- Mode 1: State collapse (hmm, messina, robust_hmm) ---
+    if engine_name in hmm_with_collapse:
+        total = sum(regime_counts.values())
+        if total > 0:
+            min_fraction = 0.05
+            collapsed = [
+                (name, count)
+                for name, count in regime_counts.items()
+                if count / total < min_fraction
+            ]
+            if collapsed:
+                diagnostics["degenerate_fit"] = True
+                parts = []
+                for name, count in collapsed:
+                    pct = count / total * 100
+                    parts.append(f"{name} state has {pct:.1f}% of bars ({count}/{total})")
+                caveat = "; ".join(parts) + "; model is effectively "
+                n_effective = n_states - len(collapsed)
+                caveat += f"{n_effective}-regime"
+                if not n_states_was_auto:
+                    caveat += ". Consider --n-states auto"
+                diagnostics["degenerate_caveat"] = caveat
+
+    # --- Mode 3: Over-robustness (robust_hmm vs hmm) ---
+    if engine_name == "robust_hmm" and hmm_regime_counts is not None:
+        total_robust = sum(regime_counts.values())
+        total_hmm = sum(hmm_regime_counts.values())
+        if total_robust > 0 and total_hmm > 0:
+            all_below_10pct = all(
+                abs(regime_counts.get(k, 0) / total_robust
+                    - hmm_regime_counts.get(k, 0) / total_hmm) < 0.10
+                for k in ("bear", "sideways", "bull")
+            )
+            if all_below_10pct:
+                diagnostics["over_robustness"] = True
+                diagnostics["over_robustness_caveat"] = (
+                    "regime counts differ from hmm by <10% on all states; "
+                    "robust correction not adding value"
+                )
+
+    return diagnostics
+
+
+def _apply_confidence_penalty(
+    verdict: dict[str, object],
+    engine_info: dict[str, object],
+    regime_counts: dict[str, int],
+) -> dict[str, object]:
+    """Scale verdict confidence when degenerate_fit is detected.
+
+    Per ADR-0018: adjusted_confidence = raw_confidence × min(state_fraction) / 0.05
+    """
+    if not engine_info.get("degenerate_fit"):
+        return verdict
+
+    total = sum(regime_counts.values())
+    if total == 0:
+        return {**verdict, "confidence": 0.0}
+
+    min_fraction = min(regime_counts.values()) / total
+    penalty = min_fraction / 0.05
+    adjusted = float(verdict.get("confidence", 0)) * penalty
+    return {**verdict, "confidence": round(max(adjusted, 0.0), 4)}
+
+
+def _count_features(config: object) -> int:
+    """Return the number of features an engine config requires.
+
+    Uses the config's ``features`` attribute to determine feature count.
+    """
+    features_label = getattr(config, "features", None)
+    if features_label == "returns":
+        return 1
+    if features_label == "messina":
+        return 19
+    # Generic features (hmm, robust_hmm, fshmm)
+    return 50
+
+
 def _build_engine_info(
     engine_config: object,
     resolved_n_states: int,
@@ -367,6 +476,19 @@ def run(
         warmup_bars=classify_out.warmup_bars,
     )
 
+    # --- Degenerate-fit detection (ADR-0018) ---
+    n_features = _count_features(config)
+    n_states_was_auto = isinstance(getattr(config, "n_states", 3), str)
+    deg_diagnostics = detect_degenerate_fit(
+        regime_counts=markov.regime_counts,
+        n_bars=len(classify_out.regimes),
+        n_features=n_features,
+        engine_name=engine_name,
+        n_states=resolved_n_states,
+        n_states_was_auto=n_states_was_auto,
+    )
+    engine_info.update(deg_diagnostics)
+
     # --- Duration forecast (compute before result assembly) ---
     df_result: dict | None = None
     if duration_forecast:
@@ -383,6 +505,11 @@ def run(
         markov.signal,
         forecast_20,
         sideways_threshold=sideways_threshold,
+    )
+
+    # --- Confidence penalty for degenerate fits (ADR-0018) ---
+    verdict_out = _apply_confidence_penalty(
+        verdict_out, engine_info, markov.regime_counts
     )
 
     # --- Profiling ---
