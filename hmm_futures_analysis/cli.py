@@ -86,7 +86,7 @@ def _write_saliency_csv(output, path: str) -> None:
             writer.writerow([i, f"{w:.6f}", is_sel])
 
 
-def _print_terminal(output) -> None:
+def _print_terminal(output, *, transitions_limit=None) -> None:
     """Pretty-print regime analysis results to stderr."""
     width = 54
     sep = "─" * width
@@ -189,6 +189,25 @@ def _print_terminal(output) -> None:
             print(f"  Weibull scale       : {df['weibull_scale']:.2f}", file=sys.stderr)
         else:
             print("  (insufficient historical spells for fitting)", file=sys.stderr)
+
+    # --- Regime transitions (issue #63) ---
+    if transitions_limit is not None and sr.regime_transitions:
+        header("REGIME TRANSITIONS")
+        all_transitions = sr.regime_transitions
+        # Show most recent first (reverse chronological)
+        shown = list(reversed(all_transitions))
+        if transitions_limit > 0:
+            shown = shown[:transitions_limit]
+        for ev in shown:
+            print(
+                f"  {ev['date']}  {ev['from_regime'].upper()} → {ev['to_regime'].upper()}",
+                file=sys.stderr,
+            )
+        if transitions_limit > 0 and len(all_transitions) > transitions_limit:
+            print(
+                f"  ... ({len(all_transitions) - transitions_limit} more)",
+                file=sys.stderr,
+            )
 
     header("DISCLAIMER")
     print(f"  {sr.disclaimer}", file=sys.stderr)
@@ -309,6 +328,12 @@ def main() -> None:
         choices=["weibull", "cox"],
         help="Survival model for duration forecasting: weibull (default) or cox (requires lifelines).",
     )
+    parser.add_argument(
+        "--transitions",
+        type=int,
+        default=None,
+        help="Show N most recent regime transitions in terminal output (default: disabled). 0 shows all.",
+    )
 
     args = parser.parse_args()
 
@@ -347,7 +372,7 @@ def main() -> None:
             json.dump(output._asdict(), sys.stdout, indent=2, allow_nan=False)
             sys.stdout.write("\n")
         else:
-            _print_terminal(output)
+            _print_terminal(output, transitions_limit=args.transitions)
 
         # Write saliency weights CSV if requested
         if args.saliency_output and args.engine == "fshmm":

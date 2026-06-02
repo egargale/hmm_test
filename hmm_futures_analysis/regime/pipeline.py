@@ -28,6 +28,7 @@ from .markov_chain import (
     compute_stationary_distribution,
     forecast_n_steps,
 )
+from .regime_transitions import extract_transitions
 from .walk_forward import walk_forward_backtest
 
 
@@ -76,6 +77,7 @@ class PipelineResult(NamedTuple):
     disclaimer: str
     verdict: dict
     duration_forecast: dict | None = None
+    regime_transitions: list | None = None
     timing: dict | None = None
 
 
@@ -376,6 +378,11 @@ def run(
             classify_out.regimes, model=duration_model, prices=prices
         )
 
+    # --- Regime transitions (always computed, issue #63) ---
+    transitions = [
+        ev._asdict() for ev in extract_transitions(classify_out.regimes, prices.index)
+    ]
+
     # --- Synthesized verdict ---
     sideways_threshold = _compute_dynamic_threshold(df_result)
     verdict_out = _compute_verdict(
@@ -439,5 +446,6 @@ def run(
         disclaimer=_DISCLAIMER,
         verdict=verdict_out,
         duration_forecast=df_result,
+        regime_transitions=transitions,
         timing=timing,
     )

@@ -245,6 +245,35 @@ class TestPipelineRunInputValidation:
         with pytest.raises(ValueError, match=r"OHLCV"):
             pipeline_run(prices, source="test", engine_config=HMMGenericConfig())
 
+    def test_regime_transitions_present_in_result(self, btc_csv):
+        """pipeline.run() → result.regime_transitions is a list."""
+        prices = load_from_csv(btc_csv)
+        result = pipeline_run(
+            prices,
+            source="test",
+            engine_config=ThresholdConfig(),
+        )
+        assert hasattr(result, "regime_transitions")
+        transitions = result.regime_transitions
+        assert isinstance(transitions, list)
+
+    def test_regime_transitions_contents_valid(self, btc_csv):
+        """pipeline.run() transitions have correct structure."""
+        prices = load_from_csv(btc_csv)
+        result = pipeline_run(
+            prices,
+            source="test",
+            engine_config=ThresholdConfig(),
+        )
+        transitions = result.regime_transitions
+        if len(transitions) > 0:
+            event = transitions[0]
+            assert isinstance(event["date"], str)
+            assert event["from_regime"] in ("bear", "sideways", "bull")
+            assert event["to_regime"] in ("bear", "sideways", "bull")
+            assert event["from_regime"] != event["to_regime"]
+            assert isinstance(event["bar_index"], int)
+
 
 @pytest.mark.slow
 class TestWalkForwardBacktest:
@@ -349,9 +378,12 @@ class TestHmmWalkForward:
         min_train = 300
 
         # ADR-0017: engine owns the classify loop
-        classify_out = engine.run_classify(prices, ohlcv_small, returns, min_train=min_train)
+        classify_out = engine.run_classify(
+            prices, ohlcv_small, returns, min_train=min_train
+        )
         wf_result = walk_forward_backtest(
-            prices, regimes=classify_out.regimes,
+            prices,
+            regimes=classify_out.regimes,
             posteriors=classify_out.posteriors,
             min_train=min_train,
         )
@@ -376,9 +408,12 @@ class TestHmmWalkForward:
         min_train = 300
 
         # ADR-0017: engine owns the classify loop
-        classify_out = engine.run_classify(prices, ohlcv_small, returns, min_train=min_train)
+        classify_out = engine.run_classify(
+            prices, ohlcv_small, returns, min_train=min_train
+        )
         wf_result = walk_forward_backtest(
-            prices, regimes=classify_out.regimes,
+            prices,
+            regimes=classify_out.regimes,
             posteriors=classify_out.posteriors,
             min_train=min_train,
         )
@@ -548,9 +583,7 @@ class TestPipelineEngineTopLevelStats:
         result_messina = pipeline_run(
             prices, engine_config=HMMMMessinaConfig(), ohlcv=ohlcv_pipeline, **common
         )
-        assert (
-            result_messina.transition_matrix != result_threshold.transition_matrix
-        )
+        assert result_messina.transition_matrix != result_threshold.transition_matrix
 
     def test_hmm_engine_info_contains_warmup_bars(self, ohlcv_pipeline):
         """HMM engine_info documents the warmup period."""
