@@ -39,3 +39,5 @@ Five flat dataclasses — one per engine — carrying all constructor parameters
 - **`_resolve_engine()` and `_VALID_ENGINES` are deleted from `walk_forward.py`.** Engine construction moves to a single factory function in `engine_protocol.py`.
 
 - **`_ENGINE_FEATURES` dict is deleted from `pipeline.py`.** The `features` label lives on each config dataclass.
+
+- **Cross-cutting diagnostics may pass through `run_classify()` via `**kwargs`.** Profiling hooks (`profile`, `_phases`, `_classify_times`) are pipeline-internal diagnostics, not engine-specific configuration. They pass through `run_classify(**kwargs)` without widening the protocol. See ADR-0017.

@@ -40,5 +40,5 @@ class ThresholdEngine:
             posteriors=None,
             last_regime=int(regimes[-1]),
             warmup_bars=None,
-            engine_instance=self,
+            n_states=3,
         )

@@ -173,7 +173,6 @@ def _hmm_classify_pipeline(
         posteriors=posteriors_all,
         last_regime=int(regimes[-1]),
         warmup_bars=min_train,
-        engine_instance=engine,
         n_states=engine.n_states,
     )
 

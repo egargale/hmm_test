@@ -5,7 +5,7 @@ Detect market regimes (Bull/Bear/Sideways) using threshold-based classification 
 ## Language
 
 **Engine**:
-A self-contained analysis pipeline that produces a full output block (regime classification, transition matrix, forecasts, walk-forward backtest) from a single methodology. Five engines exist: `threshold` (fast, close-only), `messina` (HMM with 19 Messina features), `hmm` (HMM with ~50 generic features), `robust_hmm` (HMM with outlier-resistant emissions via Huber IRLS or MinCovDet), and `fshmm` (HMM with per-feature saliency weights learned during EM). The user selects one per invocation.
+A self-contained regime classifier that produces regime labels and posterior probabilities via `run_classify()`. Each engine owns its execution model — one-shot vectorized (threshold) or walk-forward HMM refitting (messina, hmm, robust_hmm, fshmm). The pipeline consumes the engine’s `ClassifyOutput` and assembles the full output block (transition matrix, forecasts, walk-forward backtest) downstream. Five engines exist: `threshold` (fast, close-only), `messina` (HMM with 19 Messina features), `hmm` (HMM with ~50 generic features), `robust_hmm` (HMM with outlier-resistant emissions via Huber IRLS or MinCovDet), and `fshmm` (HMM with per-feature saliency weights learned during EM). The user selects one per invocation.
 _Avoid_: model, mode, method, strategy
 
 **Walk-forward backtest**:

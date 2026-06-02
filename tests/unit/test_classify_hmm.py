@@ -104,20 +104,6 @@ class TestClassifyHmm:
         result = _classify_hmm(eng, precomputed, returns, min_train=300)
         assert result.warmup_bars == 300
 
-    def test_engine_instance_returned(self, ohlcv_small):
-        from hmm_futures_analysis.regime.engine_protocol import resolve_engine
-        from hmm_futures_analysis.regime.engines.hmm_generic import HMMGenericEngine
-
-        prices = ohlcv_small["close"]
-        returns = prices.pct_change(fill_method=None).dropna()
-        config = HMMGenericConfig()
-        eng = resolve_engine(config)
-        eng_temp = HMMGenericEngine(n_states=3)
-        precomputed = eng_temp.precompute(ohlcv_small)
-
-        result = _classify_hmm(eng, precomputed, returns, min_train=300)
-        assert result.engine_instance is eng
-
     def test_profiling_populates_phases(self, ohlcv_small):
         from hmm_futures_analysis.regime.engine_protocol import resolve_engine
         from hmm_futures_analysis.regime.engines.hmm_generic import HMMGenericEngine

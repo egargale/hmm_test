@@ -61,7 +61,6 @@ class TestThresholdRunClassify:
         assert len(result.regimes) == len(returns)
         assert result.posteriors is None
         assert result.last_regime in (0, 1, 2)
-        assert result.engine_instance is eng
         assert result.warmup_bars is None
 
     def test_regime_values_in_valid_range(self):
@@ -114,7 +113,6 @@ class TestThresholdClassifyPipeline:
         assert len(result.regimes) == len(returns)
         assert result.posteriors is None  # threshold has no posteriors
         assert result.last_regime in (0, 1, 2)
-        assert result.engine_instance is eng
         assert result.warmup_bars is None
 
     def test_regime_values_in_valid_range(self):
@@ -156,7 +154,6 @@ class TestHMMGenericRunClassify:
         assert result.posteriors.shape == (len(returns), 3)
         assert result.last_regime in (0, 1, 2)
         assert result.warmup_bars == 50
-        assert result.engine_instance is eng
 
     def test_warmup_bars_stored(self):
         """warmup_bars in output matches min_train parameter."""
@@ -197,7 +194,6 @@ class TestHMMGenericClassifyPipeline:
         assert result.posteriors.shape == (len(returns), 3)
         assert result.last_regime in (0, 1, 2)
         assert result.warmup_bars == 50
-        assert result.engine_instance is eng
 
     def test_warmup_bars_stored(self):
         """warmup_bars in output matches min_train parameter."""

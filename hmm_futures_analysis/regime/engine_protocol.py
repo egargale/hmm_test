@@ -34,7 +34,6 @@ class ClassifyOutput:
     posteriors: np.ndarray | None = None
     last_regime: int = 1
     warmup_bars: int | None = None
-    engine_instance: RegimeEngine | None = None  # type: ignore[name-defined]
     n_states: int = 3
 
 

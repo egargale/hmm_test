@@ -14,23 +14,17 @@ class TestClassifyOutput:
         assert out.posteriors is None
         assert out.last_regime == 1
         assert out.warmup_bars is None
-        assert out.engine_instance is None
 
     def test_full_construction(self):
-        from hmm_futures_analysis.regime.engines.threshold import ThresholdEngine
-
-        engine = ThresholdEngine()
         posteriors = np.array([[0.1, 0.3, 0.6], [0.2, 0.5, 0.3]])
         out = ClassifyOutput(
             regimes=np.array([0, 1]),
             posteriors=posteriors,
             last_regime=1,
             warmup_bars=252,
-            engine_instance=engine,
         )
         assert out.last_regime == 1
         assert out.warmup_bars == 252
-        assert out.engine_instance is engine
         np.testing.assert_array_equal(out.posteriors, posteriors)
 
 
