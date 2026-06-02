@@ -14,7 +14,7 @@ source .venv/bin/activate
 python -m hmm_futures_analysis.cli --ticker SPY --json
 
 # Or use the shell wrapper
-./run.sh --ticker SPY --json
+./scripts/run.sh --ticker SPY --json
 ```
 
 > **Important:** Always activate the venv (`.venv/bin/activate`) or use

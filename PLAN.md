@@ -35,7 +35,8 @@ hmm_test/
 ├── USAGE.md                    # CLI reference and usage guide
 ├── pyproject.toml              # Package config (hmm-futures-analysis)
 ├── .python-version
-├── run.sh                      # Self-bootstrapping entry point for skill consumers
+├── scripts/
+│   └── run.sh              # Self-bootstrapping entry point for skill consumers
 ├── test_data/
 │   ├── test_futures.csv
 │   ├── BTC.csv

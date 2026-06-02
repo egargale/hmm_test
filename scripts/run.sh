@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-DIR="$(cd "$(dirname "$0")" && pwd)"
+DIR="$(cd "$(dirname "$0")/.." && pwd)"
 VENV="$DIR/.venv"
 if [ ! -f "$VENV/bin/python" ]; then
   uv venv "$VENV" --python 3.12 >&2

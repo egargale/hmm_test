@@ -37,28 +37,28 @@ Given a ticker or CSV with price data, it outputs a structured JSON with:
 
 ```bash
 # From CSV (threshold engine, default)
-./run.sh --csv data.csv --json
+./scripts/run.sh --csv data.csv --json
 
-# From ticker (needs yfinance, installed automatically by run.sh)
-./run.sh --ticker ES=F --json
+# From ticker (needs yfinance, installed automatically by run.sh in scripts/)
+./scripts/run.sh --ticker ES=F --json
 
 # Messina engine (HMM with 19 Wilder's-smoothed features, requires OHLCV)
-./run.sh --csv data.csv --json --engine messina
+./scripts/run.sh --csv data.csv --json --engine messina
 
 # Generic HMM engine (~50 SMA-based features, requires OHLCV)
-./run.sh --ticker SPY --json --engine hmm
+./scripts/run.sh --ticker SPY --json --engine hmm
 
 # Robust HMM engine (outlier-resistant with Huber IRLS or MCD)
-./run.sh --csv data.csv --json --engine robust_hmm --robust-method mcd
+./scripts/run.sh --csv data.csv --json --engine robust_hmm --robust-method mcd
 
 # Feature Saliency HMM engine (learns per-feature relevance weights)
-./run.sh --ticker SPY --json --engine fshmm --saliency-threshold 0.5
+./scripts/run.sh --ticker SPY --json --engine fshmm --saliency-threshold 0.5
 
 # Duration forecasting (survival analysis on regime spell lengths)
-./run.sh --ticker SPY --json --engine messina --duration-forecast
+./scripts/run.sh --ticker SPY --json --engine messina --duration-forecast
 
 # Custom parameters
-./run.sh --csv data.csv --json --window 10 --threshold 0.03
+./scripts/run.sh --csv data.csv --json --window 10 --threshold 0.03
 ```
 
 ## Output Contract

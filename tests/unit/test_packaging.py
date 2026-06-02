@@ -57,7 +57,7 @@ class TestRunSh:
     def test_run_sh_exists_and_executable(self):
         from pathlib import Path
 
-        run_sh = Path(__file__).resolve().parent.parent.parent / "run.sh"
+        run_sh = Path(__file__).resolve().parent.parent.parent / "scripts" / "run.sh"
         assert run_sh.exists(), "run.sh not found at repo root"
         assert run_sh.stat().st_mode & 0o111, "run.sh is not executable"
 
@@ -66,7 +66,7 @@ class TestRunSh:
 
         import json
 
-        run_sh = str(Path(__file__).resolve().parent.parent.parent / "run.sh")
+        run_sh = str(Path(__file__).resolve().parent.parent.parent / "scripts" / "run.sh")
         result = subprocess.run(
             [run_sh, "--csv", btc_csv, "--json"],
             capture_output=True,

@@ -11,7 +11,7 @@ Usage:
     hmm-regime --ticker ES=F --json --engine hmm
     hmm-regime --csv data.csv --engine threshold
     hmm-regime --csv data.csv --engine fshmm --saliency-threshold 0.3
-    ./run.sh --csv BTC.csv --json
+    ./scripts/run.sh --csv BTC.csv --json
 """
 
 from __future__ import annotations

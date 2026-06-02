@@ -10,6 +10,11 @@ description: >
   Use when the user wants regime detection, Markov transition analysis,
   walk-forward backtesting, or regime-based risk gating — on a ticker
   (via yfinance) or on CSV price data.
+license: MIT License
+compatibility: Python 3.9+, uv package manager, yfinance (optional, auto-installed)
+metadata:
+  version: "0.2.0"
+  repository: https://github.com/egargale/hmm_test
 ---
 
 # HMM Regime Detection Skill
@@ -22,18 +27,18 @@ Detect whether an asset is in a **Bull** (uptrend), **Bear** (downtrend), or **S
 SKILL_DIR="$SKILL_DIR"
 
 # ── NORMAL RUNS ──────────────────────────────────────────────────────────
-"$SKILL_DIR/run.sh" --ticker KO --json
-"$SKILL_DIR/run.sh" --csv data.csv --json
-"$SKILL_DIR/run.sh" --csv data.csv --json --engine messina
+"$SKILL_DIR/scripts/run.sh" --ticker KO --json
+"$SKILL_DIR/scripts/run.sh" --csv data.csv --json
+"$SKILL_DIR/scripts/run.sh" --csv data.csv --json --engine messina
 
 # ── BIC STATE SELECTION ──────────────────────────────────────────────────
-"$SKILL_DIR/run.sh" --ticker SPY --json --engine hmm --n-states auto
+"$SKILL_DIR/scripts/run.sh" --ticker SPY --json --engine hmm --n-states auto
 
 # ── WHIPSAW FILTERS ─────────────────────────────────────────────────────
-"$SKILL_DIR/run.sh" --ticker QQQ --json --engine hmm --dwell-bars 3 --hysteresis 0.1
+"$SKILL_DIR/scripts/run.sh" --ticker QQQ --json --engine hmm --dwell-bars 3 --hysteresis 0.1
 ```
 
-> The `run.sh` wrapper is self-bootstrapping — it creates a venv and installs
+> The `run.sh` wrapper (in `scripts/`) is self-bootstrapping — it creates a venv and installs
 > dependencies on first run. No manual setup required.
 
 ## Engines
@@ -200,7 +205,7 @@ signal = P(next_regime = Bull) - P(next_regime = Bear)
 import subprocess, json
 
 result = subprocess.run(
-    ["./run.sh", "--csv", "data.csv", "--json", "--engine", "threshold"],
+    ["./scripts/run.sh", "--csv", "data.csv", "--json", "--engine", "threshold"],
     capture_output=True, text=True
 )
 
@@ -219,7 +224,7 @@ else:
 
 ```bash
 for ticker in SPY QQQ IWM DIA; do
-  ./run.sh --ticker $ticker --json --engine threshold
+  ./scripts/run.sh --ticker $ticker --json --engine threshold
 done
 ```
 
@@ -249,7 +254,7 @@ spell lengths. Optional Cox PH model with volatility/spell-return covariates
 (`--duration-model cox`, requires `lifelines`).
 
 ```bash
-"$SKILL_DIR/run.sh" --ticker SPY --engine messina --duration-forecast --json
+"$SKILL_DIR/scripts/run.sh" --ticker SPY --engine messina --duration-forecast --json
 ```
 
 The `--duration-forecast` block in the output contains:
@@ -274,7 +279,7 @@ fields are `null` when insufficient data exists.
 3. **Sharpe for intraday data**: The default `sqrt(252)` assumes daily bars. For intraday data, the Sharpe may be inflated.
 4. **Insufficient data**: If `len(prices) < min_train + 1`, walk_forward returns `null` for all fields except `n_trades` (0).
 5. **CSV format**: Auto-detects date and close columns. If detection fails, specify columns explicitly or reformat the CSV.
-6. **yfinance dependency**: Optional. `run.sh` installs it automatically. For manual install: `uv sync --extra yfinance`.
+6. **yfinance dependency**: Optional. `run.sh` (in `scripts/`) installs it automatically. For manual install: `uv sync --extra yfinance`.
 7. **signal = 0**: Can happen when bull and bear probabilities are equal. Common in sideways markets.
 8. **Threshold sensitivity**: Small `--threshold` values produce frequent regime switches. Large values make the regime "sticky".
 9. **Hysteresis + threshold engine**: `--hysteresis` has no effect with `--engine threshold` because the threshold engine does not produce posterior probabilities.
