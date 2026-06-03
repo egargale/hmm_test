@@ -226,6 +226,14 @@ def _classify_hmm_slice(
     collapse to 3 regimes if n_states > 3) → posteriors reorder/aggregate
     → _remap_to_prev_states if prev_means given.
 
+    Sorting dimension ``means[:, 0]``
+    --------------------------------
+    HMM states are sorted by column 0 of the means matrix, which is always
+    the return-signal dimension: ``log_ret`` without PCA, or the first
+    principal component (dominant variance direction -- PC1) when PCA
+    whitening is active.  Both map monotonically to market direction,
+    making ascending order a reliable bear->sideways->bull mapping.
+
     Parameters
     ----------
     model : pre-fit GaussianHMM
@@ -240,32 +248,39 @@ def _classify_hmm_slice(
     posteriors = model.predict_proba(X_last.astype(np.float64))[-1]
 
     # Map HMM states to regime indices (0=bear, 1=sideways, 2=bull)
-    # based on ascending mean return order, collapsed to 3 buckets
+    # based on ascending mean return order, collapsed to 3 buckets.
+    # Always produce 3 regime buckets regardless of n_states so that
+    # downstream posteriors arrays have consistent shape.
     state_means = means[:, 0]
     order = np.argsort(state_means)
-    if n_states <= 3:
-        label_map = {int(order[i]): i for i in range(len(order))}
+    n_actual = len(order)  # may differ from n_states if model converged
+    #    with fewer states than requested
+
+    if n_actual == 1:
+        # Degenerate: single state → sideways (regime 1)
+        label_map = {int(order[0]): 1}
+    elif n_actual == 2:
+        # Two states: map to bear (lowest mean) and bull (highest mean).
+        # No sideways regime — the two states span the full range.
+        label_map = {
+            int(order[0]): 0,  # bear
+            int(order[1]): 2,  # bull
+        }
+    elif n_actual == 3:
+        label_map = {int(order[i]): i for i in range(3)}
     else:
-        n = len(order)
         label_map = {}
         for i, state_idx in enumerate(order):
-            regime = min(2, i * 3 // n)
-            label_map[int(state_idx)] = regime
+            label_map[int(state_idx)] = min(2, i * 3 // n_actual)
 
     regime = label_map.get(int(raw_state), 1)
 
-    # Reorder posteriors to match regime labels (0=bear, 1=sideways, 2=bull)
-    if n_states <= 3:
-        reordered = np.zeros(n_states)
-        for state_idx in range(n_states):
-            reordered[label_map[state_idx]] = posteriors[state_idx]
-        posteriors = reordered
-    else:
-        # Aggregate posteriors by regime bucket
-        agg = np.zeros(3)
-        for state_idx in range(n_states):
-            agg[label_map[state_idx]] += posteriors[state_idx]
-        posteriors = agg
+    # Always aggregate posteriors into 3-element regime-bucket array
+    agg = np.zeros(3)
+    for state_idx in range(n_actual):
+        bucket = label_map.get(int(state_idx), 1)
+        agg[bucket] += posteriors[state_idx]
+    posteriors = agg
 
     if prev_means is not None:
         regime = _remap_to_prev_states(means, raw_state, prev_means, default=regime)
@@ -278,9 +293,11 @@ def _remap_to_prev_states(
 ) -> int:
     """Remap a raw HMM state to the regime index from the previous cycle.
 
-    Sorts prev_means by column 0, builds a label map (identity for ≤3 states,
-    collapsed to 3 regimes for >3), then maps raw_state through _match_states
-    and the prev label map.
+    Sorts prev_means by column 0 -- the return-signal dimension (see
+    ``_classify_hmm_slice`` docstring for why column 0 is appropriate).
+    Builds a label map (identity for ≤3 states, collapsed to 3 regimes
+    for >3), then maps raw_state through _match_states and the prev label
+    map.
 
     Args:
         means: Current-cycle HMM means (n_states × n_features).
@@ -294,8 +311,15 @@ def _remap_to_prev_states(
     prev_order = np.argsort(prev_means[:, 0])
     prev_n = len(prev_order)
 
-    if prev_n <= 3:
-        prev_label_map = {int(prev_order[i]): i for i in range(prev_n)}
+    if prev_n == 1:
+        prev_label_map = {int(prev_order[0]): 1}
+    elif prev_n == 2:
+        prev_label_map = {
+            int(prev_order[0]): 0,
+            int(prev_order[1]): 2,
+        }
+    elif prev_n == 3:
+        prev_label_map = {int(prev_order[i]): i for i in range(3)}
     else:
         prev_label_map = {}
         for i, si in enumerate(prev_order):

@@ -25,6 +25,7 @@ ADRs use a flat, sequential 4-digit numbering scheme (`0001-`, `0002-`, …).
 | 0015 | `0015-regime-duration-forecasting.md` | Regime duration forecasting via survival analysis (Weibull + Cox PH) |
 | 0016 | `0016-robust-hmm-engine.md` | Robust HMM engine with outlier-resistant emission estimation (Huber IRLS / MinCovDet) |
 | 0017 | `0017-push-run-classify-into-engine-protocol.md` | Push per-engine execution model into `run_classify()` on engine protocol |
+| 0018 | `0018-degenerate-fit-detection-recovery.md` | Degenerate HMM fit detection and recovery strategy (state collapse, saliency instability, over-robustness) |
 
 ## Rules for contributors
 

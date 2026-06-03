@@ -1,0 +1,112 @@
+[
+  {
+    "ticker": "0700_HK",
+    "params": {
+      "n_states": 3,
+      "pca_variance": null,
+      "dwell_bars": 0,
+      "hysteresis_delta": 0.0
+    },
+    "regime": "bull",
+    "signal": 0.9813,
+    "sharpe": 0.0196,
+    "max_drawdown": -0.4617,
+    "n_trades": 5,
+    "win_rate": 0.6,
+    "profit_factor": 1.5249,
+    "total_return": 0.0999,
+    "wall_seconds": 56.729,
+    "engine_info": {
+      "features": "generic",
+      "resolved_n_states": 3
+    }
+  },
+  {
+    "ticker": "BTC",
+    "params": {
+      "n_states": 3,
+      "pca_variance": null,
+      "dwell_bars": 0,
+      "hysteresis_delta": 0.0
+    },
+    "regime": "bull",
+    "signal": 0.9943,
+    "sharpe": 0.3142,
+    "max_drawdown": -0.6262,
+    "n_trades": 3,
+    "win_rate": 0.3333,
+    "profit_factor": 3.6802,
+    "total_return": 0.501,
+    "wall_seconds": 44.342,
+    "engine_info": {
+      "features": "generic",
+      "resolved_n_states": 3
+    }
+  },
+  {
+    "ticker": "CRM",
+    "params": {
+      "n_states": 3,
+      "pca_variance": null,
+      "dwell_bars": 0,
+      "hysteresis_delta": 0.0
+    },
+    "regime": "sideways",
+    "signal": -0.0021,
+    "sharpe": -0.2922,
+    "max_drawdown": -0.6412,
+    "n_trades": 3,
+    "win_rate": 0.0,
+    "profit_factor": 0.0,
+    "total_return": -0.4756,
+    "wall_seconds": 56.629,
+    "engine_info": {
+      "features": "generic",
+      "resolved_n_states": 3
+    }
+  },
+  {
+    "ticker": "KO",
+    "params": {
+      "n_states": 3,
+      "pca_variance": null,
+      "dwell_bars": 0,
+      "hysteresis_delta": 0.0
+    },
+    "regime": "sideways",
+    "signal": 0.0026,
+    "sharpe": -0.1742,
+    "max_drawdown": -0.3047,
+    "n_trades": 11,
+    "win_rate": 0.4545,
+    "profit_factor": 1.0002,
+    "total_return": -0.0414,
+    "wall_seconds": 34.153,
+    "engine_info": {
+      "features": "generic",
+      "resolved_n_states": 3
+    }
+  },
+  {
+    "ticker": "SPY",
+    "params": {
+      "n_states": 3,
+      "pca_variance": null,
+      "dwell_bars": 0,
+      "hysteresis_delta": 0.0
+    },
+    "regime": "sideways",
+    "signal": -0.0018,
+    "sharpe": -0.8988,
+    "max_drawdown": -0.214,
+    "n_trades": 4,
+    "win_rate": 0.0,
+    "profit_factor": 0.0,
+    "total_return": -0.1884,
+    "wall_seconds": 32.532,
+    "engine_info": {
+      "features": "generic",
+      "resolved_n_states": 3
+    }
+  }
+]

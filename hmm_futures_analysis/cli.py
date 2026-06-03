@@ -304,14 +304,14 @@ def main() -> None:
     parser.add_argument(
         "--dwell-bars",
         type=_parse_dwell_bars,
-        default=0,
-        help="Dwell-time filter: require N consecutive same-regime bars before switching position. Accepts 'auto' for engine defaults (default: 0 = disabled).",
+        default="auto",
+        help="Dwell-time filter: require N consecutive same-regime bars before switching position. Accepts 'auto' for engine defaults (default: auto).",
     )
     parser.add_argument(
         "--hysteresis",
         type=_parse_hysteresis,
-        default=0.0,
-        help="Hysteresis filter: require posterior probability margin > D to switch regime. Accepts 'auto' for engine defaults (default: 0.0 = disabled).",
+        default="auto",
+        help="Hysteresis filter: require posterior probability margin > D to switch regime. Accepts 'auto' for engine defaults (default: auto).",
     )
     parser.add_argument(
         "--robust-method",
