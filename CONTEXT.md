@@ -93,12 +93,12 @@ _Avoid_: adaptive threshold, variable cutoff
 | Engine | Best for | Weakness |
 |---|---|---|
 | `threshold` | Crypto, high-vol assets, close-only data | Whipsaw-heavy without dwell-bars; negative Sharpe on low-vol equities |
-| `hmm` (generic) | Low-vol equities (e.g. KO, SPY), OHLCV-rich data | Degenerates on high-vol crypto — classifies 100% Sideways; `~50 features overwhelm HMM on short/noisy windows |
-| `messina` | Medium-vol assets, regime-aware feature set | 19 features are less discriminative than 50 — often returns 100% Sideways |
-| `robust_hmm` | Data with outlier bars | Same asset-vol sensitivity as `hmm`; Huber/MCD correction helps emission stability but not regime separation |
-| `fshmm` | Feature selection diagnostics | Saliency weights (ρ) identify dead features but don't fix the high-vol degeneration problem |
+| `hmm` (generic) | Low-vol equities (e.g. KO, SPY), OHLCV-rich data | No universal PCA setting; per-ticker tuning needed; CRM unsalvageable across all configs |
+| `messina` | Medium-vol assets, OHLCV-rich data | Requires PCA whitening (0.95) to overcome feature multicollinearity; without PCA the engine degenerates to 1-trade fits |
+| `robust_hmm` | Data with outlier bars, broad indices (SPY) | PCA=0.90 required for positive Sharpe on most tickers; 0700_HK and CRM uniformly negative |
+| `fshmm` | Feature selection diagnostics, individual equities | Saliency weights (ρ) identify dead features but don't fix high-vol degeneration; negative Sharpe on SPY, KO, BTC at defaults |
 
-**Rule of thumb**: If daily std > 2%, prefer `threshold` with dwell-bars ≥ 5. If daily std < 1.5% and OHLCV is available, `hmm` with n_states=3 often outperforms threshold. `n_states=auto` (BIC) tends to over-select states on financial data — cap at 4 for trading use.
+**Rule of thumb**: If daily std > 2%, prefer `threshold` with dwell-bars ≥ 5. If daily std < 1.5% and OHLCV is available, `hmm` with n_states=3 often outperforms threshold. `n_states=auto` (BIC) is worth trying — it recovered BTC from +0.31 to +0.78 Sharpe on the generic engine and from +0.31 to +0.74 on robust_hmm. The `n_states=2` edge case is now handled correctly (bear/bull with no sideways). Per ADR-0019.
 
 - **"state"**: Use **regime** for the labeled market condition (Bear/Sideways/Bull) and **HMM latent state** for the raw model output index. Never use "state" alone.
 - **"method"**: Use **engine** for the selected analysis pipeline. The old term "method" appears in the JSON `params.method` field; this is legacy from when threshold was the only engine and should migrate to `engine_info.method`.

@@ -1,0 +1,1924 @@
+{
+  "phase1_defaults": [
+    {
+      "ticker": "0700_HK",
+      "params": {
+        "n_states": 3,
+        "pca_variance": null,
+        "dwell_bars": 0,
+        "hysteresis_delta": 0.0
+      },
+      "regime": "bull",
+      "signal": 0.9813,
+      "sharpe": 0.0196,
+      "max_drawdown": -0.4617,
+      "n_trades": 5,
+      "win_rate": 0.6,
+      "profit_factor": 1.5249,
+      "total_return": 0.0999,
+      "wall_seconds": 56.729,
+      "engine_info": {
+        "features": "generic",
+        "resolved_n_states": 3
+      }
+    },
+    {
+      "ticker": "BTC",
+      "params": {
+        "n_states": 3,
+        "pca_variance": null,
+        "dwell_bars": 0,
+        "hysteresis_delta": 0.0
+      },
+      "regime": "bull",
+      "signal": 0.9943,
+      "sharpe": 0.3142,
+      "max_drawdown": -0.6262,
+      "n_trades": 3,
+      "win_rate": 0.3333,
+      "profit_factor": 3.6802,
+      "total_return": 0.501,
+      "wall_seconds": 44.342,
+      "engine_info": {
+        "features": "generic",
+        "resolved_n_states": 3
+      }
+    },
+    {
+      "ticker": "CRM",
+      "params": {
+        "n_states": 3,
+        "pca_variance": null,
+        "dwell_bars": 0,
+        "hysteresis_delta": 0.0
+      },
+      "regime": "sideways",
+      "signal": -0.0021,
+      "sharpe": -0.2922,
+      "max_drawdown": -0.6412,
+      "n_trades": 3,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "total_return": -0.4756,
+      "wall_seconds": 56.629,
+      "engine_info": {
+        "features": "generic",
+        "resolved_n_states": 3
+      }
+    },
+    {
+      "ticker": "KO",
+      "params": {
+        "n_states": 3,
+        "pca_variance": null,
+        "dwell_bars": 0,
+        "hysteresis_delta": 0.0
+      },
+      "regime": "sideways",
+      "signal": 0.0026,
+      "sharpe": -0.1742,
+      "max_drawdown": -0.3047,
+      "n_trades": 11,
+      "win_rate": 0.4545,
+      "profit_factor": 1.0002,
+      "total_return": -0.0414,
+      "wall_seconds": 34.153,
+      "engine_info": {
+        "features": "generic",
+        "resolved_n_states": 3
+      }
+    },
+    {
+      "ticker": "SPY",
+      "params": {
+        "n_states": 3,
+        "pca_variance": null,
+        "dwell_bars": 0,
+        "hysteresis_delta": 0.0
+      },
+      "regime": "sideways",
+      "signal": -0.0018,
+      "sharpe": -0.8988,
+      "max_drawdown": -0.214,
+      "n_trades": 4,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "total_return": -0.1884,
+      "wall_seconds": 32.532,
+      "engine_info": {
+        "features": "generic",
+        "resolved_n_states": 3
+      }
+    }
+  ],
+  "phase2_sensitivity": {
+    "n_states": {
+      "0700_HK": [
+        {
+          "ticker": "0700_HK",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "bull",
+          "signal": 0.9813,
+          "sharpe": 0.0196,
+          "max_drawdown": -0.4617,
+          "n_trades": 5,
+          "win_rate": 0.6,
+          "profit_factor": 1.5249,
+          "total_return": 0.0999,
+          "wall_seconds": 56.729,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "0700_HK",
+          "params": {
+            "n_states": 4,
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "bull",
+          "signal": 0.942,
+          "sharpe": -0.5192,
+          "max_drawdown": -0.6921,
+          "n_trades": 23,
+          "win_rate": 0.3913,
+          "profit_factor": 0.3887,
+          "total_return": -0.6515,
+          "wall_seconds": 46.22,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 4
+          }
+        },
+        {
+          "ticker": "0700_HK",
+          "params": {
+            "n_states": 5,
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "sideways",
+          "signal": -0.0044,
+          "sharpe": -0.119,
+          "max_drawdown": -0.4447,
+          "n_trades": 16,
+          "win_rate": 0.625,
+          "profit_factor": 0.8181,
+          "total_return": -0.1858,
+          "wall_seconds": 56.237,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 5
+          }
+        },
+        {
+          "ticker": "0700_HK",
+          "params": {
+            "n_states": "auto",
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "sideways",
+          "signal": -0.0044,
+          "sharpe": -0.119,
+          "max_drawdown": -0.4447,
+          "n_trades": 16,
+          "win_rate": 0.625,
+          "profit_factor": 0.8181,
+          "total_return": -0.1858,
+          "wall_seconds": 61.992,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 5
+          }
+        }
+      ],
+      "BTC": [
+        {
+          "ticker": "BTC",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "bull",
+          "signal": 0.9943,
+          "sharpe": 0.3142,
+          "max_drawdown": -0.6262,
+          "n_trades": 3,
+          "win_rate": 0.3333,
+          "profit_factor": 3.6802,
+          "total_return": 0.501,
+          "wall_seconds": 44.342,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "BTC",
+          "params": {
+            "n_states": 4,
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "bull",
+          "signal": 0.9687,
+          "sharpe": 0.3186,
+          "max_drawdown": -0.417,
+          "n_trades": 12,
+          "win_rate": 0.5833,
+          "profit_factor": 2.2011,
+          "total_return": 0.5461,
+          "wall_seconds": 35.33,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 4
+          }
+        },
+        {
+          "ticker": "BTC",
+          "params": {
+            "n_states": 5,
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "sideways",
+          "signal": 0.0047,
+          "sharpe": -0.0216,
+          "max_drawdown": -0.4762,
+          "n_trades": 9,
+          "win_rate": 0.3333,
+          "profit_factor": 1.271,
+          "total_return": -0.1136,
+          "wall_seconds": 36.599,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 5
+          }
+        },
+        {
+          "ticker": "BTC",
+          "params": {
+            "n_states": "auto",
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "bear",
+          "signal": -0.9136,
+          "sharpe": 0.7813,
+          "max_drawdown": -0.397,
+          "n_trades": 9,
+          "win_rate": 0.6667,
+          "profit_factor": 15.4615,
+          "total_return": 3.1846,
+          "wall_seconds": 52.772,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 6
+          }
+        }
+      ],
+      "CRM": [
+        {
+          "ticker": "CRM",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "sideways",
+          "signal": -0.0021,
+          "sharpe": -0.2922,
+          "max_drawdown": -0.6412,
+          "n_trades": 3,
+          "win_rate": 0.0,
+          "profit_factor": 0.0,
+          "total_return": -0.4756,
+          "wall_seconds": 56.629,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "CRM",
+          "params": {
+            "n_states": 4,
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "bear",
+          "signal": -1.0,
+          "sharpe": -0.4971,
+          "max_drawdown": -0.914,
+          "n_trades": 1,
+          "win_rate": 0.0,
+          "profit_factor": 0.0,
+          "total_return": -0.8705,
+          "wall_seconds": 39.993,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 4
+          }
+        },
+        {
+          "ticker": "CRM",
+          "params": {
+            "n_states": 5,
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "bear",
+          "signal": -0.9939,
+          "sharpe": -0.2201,
+          "max_drawdown": -0.735,
+          "n_trades": 11,
+          "win_rate": 0.2727,
+          "profit_factor": 0.4925,
+          "total_return": -0.601,
+          "wall_seconds": 49.917,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 5
+          }
+        },
+        {
+          "ticker": "CRM",
+          "params": {
+            "n_states": "auto",
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "bear",
+          "signal": -0.9939,
+          "sharpe": -0.2201,
+          "max_drawdown": -0.735,
+          "n_trades": 11,
+          "win_rate": 0.2727,
+          "profit_factor": 0.4925,
+          "total_return": -0.601,
+          "wall_seconds": 59.229,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 5
+          }
+        }
+      ],
+      "KO": [
+        {
+          "ticker": "KO",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "sideways",
+          "signal": 0.0026,
+          "sharpe": -0.1742,
+          "max_drawdown": -0.3047,
+          "n_trades": 11,
+          "win_rate": 0.4545,
+          "profit_factor": 1.0002,
+          "total_return": -0.0414,
+          "wall_seconds": 34.153,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "KO",
+          "params": {
+            "n_states": 4,
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "sideways",
+          "signal": -0.004,
+          "sharpe": 0.0294,
+          "max_drawdown": -0.4116,
+          "n_trades": 20,
+          "win_rate": 0.45,
+          "profit_factor": 1.458,
+          "total_return": 0.135,
+          "wall_seconds": 44.318,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 4
+          }
+        },
+        {
+          "ticker": "KO",
+          "params": {
+            "n_states": 5,
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "bear",
+          "signal": -0.9549,
+          "sharpe": 0.1333,
+          "max_drawdown": -0.1366,
+          "n_trades": 16,
+          "win_rate": 0.5625,
+          "profit_factor": 2.7229,
+          "total_return": 0.2876,
+          "wall_seconds": 52.172,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 5
+          }
+        },
+        {
+          "ticker": "KO",
+          "params": {
+            "n_states": "auto",
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "bull",
+          "signal": 0.9682,
+          "sharpe": 0.0295,
+          "max_drawdown": -0.3699,
+          "n_trades": 24,
+          "win_rate": 0.5833,
+          "profit_factor": 1.4574,
+          "total_return": 0.1409,
+          "wall_seconds": 74.821,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 6
+          }
+        }
+      ],
+      "SPY": [
+        {
+          "ticker": "SPY",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "sideways",
+          "signal": -0.0018,
+          "sharpe": -0.8988,
+          "max_drawdown": -0.214,
+          "n_trades": 4,
+          "win_rate": 0.0,
+          "profit_factor": 0.0,
+          "total_return": -0.1884,
+          "wall_seconds": 32.532,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "SPY",
+          "params": {
+            "n_states": 4,
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "bear",
+          "signal": -0.9942,
+          "sharpe": -0.5959,
+          "max_drawdown": -0.5339,
+          "n_trades": 10,
+          "win_rate": 0.2,
+          "profit_factor": 0.1795,
+          "total_return": -0.5312,
+          "wall_seconds": 42.294,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 4
+          }
+        },
+        {
+          "ticker": "SPY",
+          "params": {
+            "n_states": 5,
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "sideways",
+          "signal": -0.0079,
+          "sharpe": -0.6317,
+          "max_drawdown": -0.6386,
+          "n_trades": 7,
+          "win_rate": 0.1429,
+          "profit_factor": 0.0549,
+          "total_return": -0.5965,
+          "wall_seconds": 52.771,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 5
+          }
+        },
+        {
+          "ticker": "SPY",
+          "params": {
+            "n_states": "auto",
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "sideways",
+          "signal": -0.0079,
+          "sharpe": -0.6317,
+          "max_drawdown": -0.6386,
+          "n_trades": 7,
+          "win_rate": 0.1429,
+          "profit_factor": 0.0549,
+          "total_return": -0.5965,
+          "wall_seconds": 182.539,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 5
+          }
+        }
+      ]
+    },
+    "pca_variance": {
+      "0700_HK": [
+        {
+          "ticker": "0700_HK",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "bull",
+          "signal": 0.9813,
+          "sharpe": 0.0196,
+          "max_drawdown": -0.4617,
+          "n_trades": 5,
+          "win_rate": 0.6,
+          "profit_factor": 1.5249,
+          "total_return": 0.0999,
+          "wall_seconds": 56.729,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "0700_HK",
+          "params": {
+            "n_states": 3,
+            "pca_variance": 0.9,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "sideways",
+          "signal": 0.0,
+          "sharpe": -0.3854,
+          "max_drawdown": -0.2965,
+          "n_trades": 2,
+          "win_rate": 0.5,
+          "profit_factor": 0.0043,
+          "total_return": -0.1013,
+          "wall_seconds": 35.531,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "0700_HK",
+          "params": {
+            "n_states": 3,
+            "pca_variance": 0.95,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "bear",
+          "signal": -1.0,
+          "sharpe": -0.4256,
+          "max_drawdown": -0.8846,
+          "n_trades": 1,
+          "win_rate": 0.0,
+          "profit_factor": 0.0,
+          "total_return": -0.8321,
+          "wall_seconds": 36.519,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "0700_HK",
+          "params": {
+            "n_states": 3,
+            "pca_variance": 0.99,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "sideways",
+          "signal": -0.0008,
+          "sharpe": -1.3578,
+          "max_drawdown": -0.3464,
+          "n_trades": 2,
+          "win_rate": 0.0,
+          "profit_factor": 0.0,
+          "total_return": -0.3405,
+          "wall_seconds": 39.548,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        }
+      ],
+      "BTC": [
+        {
+          "ticker": "BTC",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "bull",
+          "signal": 0.9943,
+          "sharpe": 0.3142,
+          "max_drawdown": -0.6262,
+          "n_trades": 3,
+          "win_rate": 0.3333,
+          "profit_factor": 3.6802,
+          "total_return": 0.501,
+          "wall_seconds": 44.342,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "BTC",
+          "params": {
+            "n_states": 3,
+            "pca_variance": 0.9,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "bull",
+          "signal": 0.9987,
+          "sharpe": 0.3028,
+          "max_drawdown": -0.731,
+          "n_trades": 1,
+          "win_rate": 1.0,
+          "profit_factor": "N/A",
+          "total_return": 0.4379,
+          "wall_seconds": 29.667,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "BTC",
+          "params": {
+            "n_states": 3,
+            "pca_variance": 0.95,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "bull",
+          "signal": 0.9987,
+          "sharpe": 0.2779,
+          "max_drawdown": -0.7134,
+          "n_trades": 2,
+          "win_rate": 0.5,
+          "profit_factor": 3.1574,
+          "total_return": 0.3504,
+          "wall_seconds": 30.514,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "BTC",
+          "params": {
+            "n_states": 3,
+            "pca_variance": 0.99,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "sideways",
+          "signal": 0.0,
+          "sharpe": 0.5856,
+          "max_drawdown": -0.0826,
+          "n_trades": 2,
+          "win_rate": 1.0,
+          "profit_factor": "N/A",
+          "total_return": 0.5976,
+          "wall_seconds": 31.776,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        }
+      ],
+      "CRM": [
+        {
+          "ticker": "CRM",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "sideways",
+          "signal": -0.0021,
+          "sharpe": -0.2922,
+          "max_drawdown": -0.6412,
+          "n_trades": 3,
+          "win_rate": 0.0,
+          "profit_factor": 0.0,
+          "total_return": -0.4756,
+          "wall_seconds": 56.629,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "CRM",
+          "params": {
+            "n_states": 3,
+            "pca_variance": 0.9,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "bear",
+          "signal": -1.0,
+          "sharpe": -0.5121,
+          "max_drawdown": -0.9138,
+          "n_trades": 1,
+          "win_rate": 0.0,
+          "profit_factor": 0.0,
+          "total_return": -0.8762,
+          "wall_seconds": 34.901,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "CRM",
+          "params": {
+            "n_states": 3,
+            "pca_variance": 0.95,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "sideways",
+          "signal": 0.0,
+          "sharpe": 0.0,
+          "max_drawdown": 0.0,
+          "n_trades": 0,
+          "win_rate": "N/A",
+          "profit_factor": "N/A",
+          "total_return": 0.0,
+          "wall_seconds": 60.187,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "CRM",
+          "params": {
+            "n_states": 3,
+            "pca_variance": 0.99,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "bear",
+          "signal": -1.0,
+          "sharpe": -0.4971,
+          "max_drawdown": -0.914,
+          "n_trades": 1,
+          "win_rate": 0.0,
+          "profit_factor": 0.0,
+          "total_return": -0.8705,
+          "wall_seconds": 73.165,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        }
+      ],
+      "KO": [
+        {
+          "ticker": "KO",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "sideways",
+          "signal": 0.0026,
+          "sharpe": -0.1742,
+          "max_drawdown": -0.3047,
+          "n_trades": 11,
+          "win_rate": 0.4545,
+          "profit_factor": 1.0002,
+          "total_return": -0.0414,
+          "wall_seconds": 34.153,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "KO",
+          "params": {
+            "n_states": 3,
+            "pca_variance": 0.9,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "bull",
+          "signal": 1.0,
+          "sharpe": 0.4769,
+          "max_drawdown": -0.3699,
+          "n_trades": 1,
+          "win_rate": 1.0,
+          "profit_factor": "N/A",
+          "total_return": 1.2745,
+          "wall_seconds": 47.663,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "KO",
+          "params": {
+            "n_states": 3,
+            "pca_variance": 0.95,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "sideways",
+          "signal": 0.0004,
+          "sharpe": -1.6597,
+          "max_drawdown": -0.0281,
+          "n_trades": 1,
+          "win_rate": 0.0,
+          "profit_factor": 0.0,
+          "total_return": -0.0047,
+          "wall_seconds": 46.724,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "KO",
+          "params": {
+            "n_states": 3,
+            "pca_variance": 0.99,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "bull",
+          "signal": 0.9991,
+          "sharpe": 0.484,
+          "max_drawdown": -0.3699,
+          "n_trades": 2,
+          "win_rate": 1.0,
+          "profit_factor": "N/A",
+          "total_return": 1.3002,
+          "wall_seconds": 44.211,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        }
+      ],
+      "SPY": [
+        {
+          "ticker": "SPY",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "sideways",
+          "signal": -0.0018,
+          "sharpe": -0.8988,
+          "max_drawdown": -0.214,
+          "n_trades": 4,
+          "win_rate": 0.0,
+          "profit_factor": 0.0,
+          "total_return": -0.1884,
+          "wall_seconds": 32.532,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "SPY",
+          "params": {
+            "n_states": 3,
+            "pca_variance": 0.9,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "bull",
+          "signal": 0.9994,
+          "sharpe": 0.5339,
+          "max_drawdown": -0.3372,
+          "n_trades": 11,
+          "win_rate": 0.2727,
+          "profit_factor": 10.26,
+          "total_return": 1.4194,
+          "wall_seconds": 35.967,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "SPY",
+          "params": {
+            "n_states": 3,
+            "pca_variance": 0.95,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "bear",
+          "signal": -0.9952,
+          "sharpe": -0.7514,
+          "max_drawdown": -0.6527,
+          "n_trades": 9,
+          "win_rate": 0.5556,
+          "profit_factor": 0.2276,
+          "total_return": -0.598,
+          "wall_seconds": 40.54,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "SPY",
+          "params": {
+            "n_states": 3,
+            "pca_variance": 0.99,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "bear",
+          "signal": -0.9951,
+          "sharpe": -0.834,
+          "max_drawdown": -0.778,
+          "n_trades": 7,
+          "win_rate": 0.2857,
+          "profit_factor": 0.0841,
+          "total_return": -0.7289,
+          "wall_seconds": 38.046,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        }
+      ]
+    },
+    "dwell_bars": {
+      "0700_HK": [
+        {
+          "ticker": "0700_HK",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "bull",
+          "signal": 0.9813,
+          "sharpe": 0.0196,
+          "max_drawdown": -0.4617,
+          "n_trades": 5,
+          "win_rate": 0.6,
+          "profit_factor": 1.5249,
+          "total_return": 0.0999,
+          "wall_seconds": 56.729,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "0700_HK",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 2,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "bull",
+          "signal": 0.9813,
+          "sharpe": -0.1417,
+          "max_drawdown": -0.512,
+          "n_trades": 5,
+          "win_rate": 0.6,
+          "profit_factor": 0.9801,
+          "total_return": -0.1193,
+          "wall_seconds": 55.22,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "0700_HK",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 3,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "bull",
+          "signal": 0.9813,
+          "sharpe": -0.2061,
+          "max_drawdown": -0.4915,
+          "n_trades": 5,
+          "win_rate": 0.6,
+          "profit_factor": 0.7697,
+          "total_return": -0.1973,
+          "wall_seconds": 60.358,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "0700_HK",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 5,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "bull",
+          "signal": 0.9813,
+          "sharpe": -0.0421,
+          "max_drawdown": -0.4645,
+          "n_trades": 5,
+          "win_rate": 0.6,
+          "profit_factor": 1.3912,
+          "total_return": 0.0105,
+          "wall_seconds": 49.428,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        }
+      ],
+      "BTC": [
+        {
+          "ticker": "BTC",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "bull",
+          "signal": 0.9943,
+          "sharpe": 0.3142,
+          "max_drawdown": -0.6262,
+          "n_trades": 3,
+          "win_rate": 0.3333,
+          "profit_factor": 3.6802,
+          "total_return": 0.501,
+          "wall_seconds": 44.342,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "BTC",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 2,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "bull",
+          "signal": 0.9943,
+          "sharpe": 0.3231,
+          "max_drawdown": -0.6141,
+          "n_trades": 3,
+          "win_rate": 0.3333,
+          "profit_factor": 3.753,
+          "total_return": 0.5352,
+          "wall_seconds": 45.784,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "BTC",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 3,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "bull",
+          "signal": 0.9943,
+          "sharpe": 0.2814,
+          "max_drawdown": -0.6501,
+          "n_trades": 3,
+          "win_rate": 0.3333,
+          "profit_factor": 3.2584,
+          "total_return": 0.3812,
+          "wall_seconds": 38.117,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "BTC",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 5,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "bull",
+          "signal": 0.9943,
+          "sharpe": 0.2476,
+          "max_drawdown": -0.6606,
+          "n_trades": 3,
+          "win_rate": 0.3333,
+          "profit_factor": 2.7067,
+          "total_return": 0.2689,
+          "wall_seconds": 37.933,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        }
+      ],
+      "CRM": [
+        {
+          "ticker": "CRM",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "sideways",
+          "signal": -0.0021,
+          "sharpe": -0.2922,
+          "max_drawdown": -0.6412,
+          "n_trades": 3,
+          "win_rate": 0.0,
+          "profit_factor": 0.0,
+          "total_return": -0.4756,
+          "wall_seconds": 56.629,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "CRM",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 2,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "sideways",
+          "signal": -0.0021,
+          "sharpe": -0.3503,
+          "max_drawdown": -0.6392,
+          "n_trades": 3,
+          "win_rate": 0.0,
+          "profit_factor": 0.0,
+          "total_return": -0.5382,
+          "wall_seconds": 43.769,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "CRM",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 3,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "sideways",
+          "signal": -0.0021,
+          "sharpe": -0.3779,
+          "max_drawdown": -0.6553,
+          "n_trades": 3,
+          "win_rate": 0.0,
+          "profit_factor": 0.0,
+          "total_return": -0.5632,
+          "wall_seconds": 44.502,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "CRM",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 5,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "sideways",
+          "signal": -0.0021,
+          "sharpe": -0.3824,
+          "max_drawdown": -0.6638,
+          "n_trades": 3,
+          "win_rate": 0.0,
+          "profit_factor": 0.0,
+          "total_return": -0.569,
+          "wall_seconds": 64.595,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        }
+      ],
+      "KO": [
+        {
+          "ticker": "KO",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "sideways",
+          "signal": 0.0026,
+          "sharpe": -0.1742,
+          "max_drawdown": -0.3047,
+          "n_trades": 11,
+          "win_rate": 0.4545,
+          "profit_factor": 1.0002,
+          "total_return": -0.0414,
+          "wall_seconds": 34.153,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "KO",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 2,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "sideways",
+          "signal": 0.0026,
+          "sharpe": -0.2552,
+          "max_drawdown": -0.3353,
+          "n_trades": 11,
+          "win_rate": 0.4545,
+          "profit_factor": 0.8318,
+          "total_return": -0.1191,
+          "wall_seconds": 38.616,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "KO",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 3,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "sideways",
+          "signal": 0.0026,
+          "sharpe": -0.4437,
+          "max_drawdown": -0.4376,
+          "n_trades": 11,
+          "win_rate": 0.4545,
+          "profit_factor": 0.5392,
+          "total_return": -0.2814,
+          "wall_seconds": 32.776,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "KO",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 5,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "sideways",
+          "signal": 0.0026,
+          "sharpe": -0.5005,
+          "max_drawdown": -0.4398,
+          "n_trades": 11,
+          "win_rate": 0.3636,
+          "profit_factor": 0.4418,
+          "total_return": -0.3266,
+          "wall_seconds": 35.73,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        }
+      ],
+      "SPY": [
+        {
+          "ticker": "SPY",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "sideways",
+          "signal": -0.0018,
+          "sharpe": -0.8988,
+          "max_drawdown": -0.214,
+          "n_trades": 4,
+          "win_rate": 0.0,
+          "profit_factor": 0.0,
+          "total_return": -0.1884,
+          "wall_seconds": 32.532,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "SPY",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 2,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "sideways",
+          "signal": -0.0018,
+          "sharpe": -0.9362,
+          "max_drawdown": -0.2596,
+          "n_trades": 4,
+          "win_rate": 0.25,
+          "profit_factor": 0.0207,
+          "total_return": -0.2033,
+          "wall_seconds": 36.716,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "SPY",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 3,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "sideways",
+          "signal": -0.0018,
+          "sharpe": -1.0572,
+          "max_drawdown": -0.2634,
+          "n_trades": 4,
+          "win_rate": 0.0,
+          "profit_factor": 0.0,
+          "total_return": -0.255,
+          "wall_seconds": 31.402,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "SPY",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 5,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "sideways",
+          "signal": -0.0018,
+          "sharpe": -1.0664,
+          "max_drawdown": -0.2596,
+          "n_trades": 4,
+          "win_rate": 0.0,
+          "profit_factor": 0.0,
+          "total_return": -0.2549,
+          "wall_seconds": 30.829,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        }
+      ]
+    },
+    "hysteresis_delta": {
+      "0700_HK": [
+        {
+          "ticker": "0700_HK",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "bull",
+          "signal": 0.9813,
+          "sharpe": 0.0196,
+          "max_drawdown": -0.4617,
+          "n_trades": 5,
+          "win_rate": 0.6,
+          "profit_factor": 1.5249,
+          "total_return": 0.0999,
+          "wall_seconds": 56.729,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "0700_HK",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.05
+          },
+          "regime": "bull",
+          "signal": 0.9813,
+          "sharpe": 0.2644,
+          "max_drawdown": -0.728,
+          "n_trades": 1,
+          "win_rate": 1.0,
+          "profit_factor": "N/A",
+          "total_return": 0.5543,
+          "wall_seconds": 53.508,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "0700_HK",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.1
+          },
+          "regime": "bull",
+          "signal": 0.9813,
+          "sharpe": 0.2644,
+          "max_drawdown": -0.728,
+          "n_trades": 1,
+          "win_rate": 1.0,
+          "profit_factor": "N/A",
+          "total_return": 0.5543,
+          "wall_seconds": 78.338,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "0700_HK",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.2
+          },
+          "regime": "bull",
+          "signal": 0.9813,
+          "sharpe": 0.2644,
+          "max_drawdown": -0.728,
+          "n_trades": 1,
+          "win_rate": 1.0,
+          "profit_factor": "N/A",
+          "total_return": 0.5543,
+          "wall_seconds": 54.787,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        }
+      ],
+      "BTC": [
+        {
+          "ticker": "BTC",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "bull",
+          "signal": 0.9943,
+          "sharpe": 0.3142,
+          "max_drawdown": -0.6262,
+          "n_trades": 3,
+          "win_rate": 0.3333,
+          "profit_factor": 3.6802,
+          "total_return": 0.501,
+          "wall_seconds": 44.342,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "BTC",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.05
+          },
+          "regime": "bull",
+          "signal": 0.9943,
+          "sharpe": 0.4088,
+          "max_drawdown": -0.6031,
+          "n_trades": 1,
+          "win_rate": 1.0,
+          "profit_factor": "N/A",
+          "total_return": 0.9076,
+          "wall_seconds": 44.387,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "BTC",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.1
+          },
+          "regime": "bull",
+          "signal": 0.9943,
+          "sharpe": 0.4088,
+          "max_drawdown": -0.6031,
+          "n_trades": 1,
+          "win_rate": 1.0,
+          "profit_factor": "N/A",
+          "total_return": 0.9076,
+          "wall_seconds": 51.974,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "BTC",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.2
+          },
+          "regime": "bull",
+          "signal": 0.9943,
+          "sharpe": 0.4088,
+          "max_drawdown": -0.6031,
+          "n_trades": 1,
+          "win_rate": 1.0,
+          "profit_factor": "N/A",
+          "total_return": 0.9076,
+          "wall_seconds": 36.265,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        }
+      ],
+      "CRM": [
+        {
+          "ticker": "CRM",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "sideways",
+          "signal": -0.0021,
+          "sharpe": -0.2922,
+          "max_drawdown": -0.6412,
+          "n_trades": 3,
+          "win_rate": 0.0,
+          "profit_factor": 0.0,
+          "total_return": -0.4756,
+          "wall_seconds": 56.629,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "CRM",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.05
+          },
+          "regime": "sideways",
+          "signal": -0.0021,
+          "sharpe": -0.4971,
+          "max_drawdown": -0.914,
+          "n_trades": 1,
+          "win_rate": 0.0,
+          "profit_factor": 0.0,
+          "total_return": -0.8705,
+          "wall_seconds": 48.501,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "CRM",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.1
+          },
+          "regime": "sideways",
+          "signal": -0.0021,
+          "sharpe": -0.4971,
+          "max_drawdown": -0.914,
+          "n_trades": 1,
+          "win_rate": 0.0,
+          "profit_factor": 0.0,
+          "total_return": -0.8705,
+          "wall_seconds": 80.166,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "CRM",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.2
+          },
+          "regime": "sideways",
+          "signal": -0.0021,
+          "sharpe": -0.4971,
+          "max_drawdown": -0.914,
+          "n_trades": 1,
+          "win_rate": 0.0,
+          "profit_factor": 0.0,
+          "total_return": -0.8705,
+          "wall_seconds": 48.873,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        }
+      ],
+      "KO": [
+        {
+          "ticker": "KO",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "sideways",
+          "signal": 0.0026,
+          "sharpe": -0.1742,
+          "max_drawdown": -0.3047,
+          "n_trades": 11,
+          "win_rate": 0.4545,
+          "profit_factor": 1.0002,
+          "total_return": -0.0414,
+          "wall_seconds": 34.153,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "KO",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.05
+          },
+          "regime": "sideways",
+          "signal": 0.0026,
+          "sharpe": -0.6903,
+          "max_drawdown": -0.7065,
+          "n_trades": 1,
+          "win_rate": 0.0,
+          "profit_factor": 0.0,
+          "total_return": -0.6792,
+          "wall_seconds": 33.344,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "KO",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.1
+          },
+          "regime": "sideways",
+          "signal": 0.0026,
+          "sharpe": -0.6903,
+          "max_drawdown": -0.7065,
+          "n_trades": 1,
+          "win_rate": 0.0,
+          "profit_factor": 0.0,
+          "total_return": -0.6792,
+          "wall_seconds": 42.554,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "KO",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.2
+          },
+          "regime": "sideways",
+          "signal": 0.0026,
+          "sharpe": -0.6903,
+          "max_drawdown": -0.7065,
+          "n_trades": 1,
+          "win_rate": 0.0,
+          "profit_factor": 0.0,
+          "total_return": -0.6792,
+          "wall_seconds": 39.243,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        }
+      ],
+      "SPY": [
+        {
+          "ticker": "SPY",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.0
+          },
+          "regime": "sideways",
+          "signal": -0.0018,
+          "sharpe": -0.8988,
+          "max_drawdown": -0.214,
+          "n_trades": 4,
+          "win_rate": 0.0,
+          "profit_factor": 0.0,
+          "total_return": -0.1884,
+          "wall_seconds": 32.532,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "SPY",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.05
+          },
+          "regime": "sideways",
+          "signal": -0.0018,
+          "sharpe": -0.9673,
+          "max_drawdown": -0.7981,
+          "n_trades": 1,
+          "win_rate": 0.0,
+          "profit_factor": 0.0,
+          "total_return": -0.7969,
+          "wall_seconds": 31.71,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "SPY",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.1
+          },
+          "regime": "sideways",
+          "signal": -0.0018,
+          "sharpe": -0.9673,
+          "max_drawdown": -0.7981,
+          "n_trades": 1,
+          "win_rate": 0.0,
+          "profit_factor": 0.0,
+          "total_return": -0.7969,
+          "wall_seconds": 31.969,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        },
+        {
+          "ticker": "SPY",
+          "params": {
+            "n_states": 3,
+            "pca_variance": null,
+            "dwell_bars": 0,
+            "hysteresis_delta": 0.2
+          },
+          "regime": "sideways",
+          "signal": -0.0018,
+          "sharpe": -0.9673,
+          "max_drawdown": -0.7981,
+          "n_trades": 1,
+          "win_rate": 0.0,
+          "profit_factor": 0.0,
+          "total_return": -0.7969,
+          "wall_seconds": 30.911,
+          "engine_info": {
+            "features": "generic",
+            "resolved_n_states": 3
+          }
+        }
+      ]
+    }
+  }
+}

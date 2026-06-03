@@ -586,7 +586,7 @@ class TestConfigDataclasses:
         assert cfg.name == "messina"
         assert cfg.features == "messina"
         assert cfg.n_states == 3
-        assert cfg.pca_variance is None
+        assert cfg.pca_variance == 0.95
 
     def test_registry_messina_config_class(self):
         from hmm_futures_analysis.regime.engine_protocol import ENGINE_REGISTRY
@@ -611,7 +611,7 @@ class TestConfigDataclasses:
         assert cfg.name == "robust_hmm"
         assert cfg.features == "generic"
         assert cfg.n_states == 3
-        assert cfg.pca_variance is None
+        assert cfg.pca_variance == 0.90
         assert cfg.robust_method == "huber"
 
     def test_registry_robust_config_class(self):
