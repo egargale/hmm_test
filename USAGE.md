@@ -351,6 +351,7 @@ These parameters apply to all engines.
 | `--n-states` | 3 | Number of HMM states. Integer ≥ 2, or `auto` for BIC-based selection (2–6). HMM engines only. |
 | `--duration-forecast` | off | Enable regime duration forecasting via survival analysis. See [Duration Forecasting](#duration-forecasting). |
 | `--duration-model` | `weibull` | Survival model: `weibull` or `cox` (requires `lifelines`). |
+| `--transitions` | disabled | Show N most recent regime transitions in terminal output. 0 = show all. JSON output always includes `regime_transitions`. |
 | `--json` | off | Output structured JSON to stdout. Suppresses terminal pretty-print. |
 
 ### Output Format
@@ -519,6 +520,10 @@ spells to fit, and the output will contain `null` values.
     "verdict": "bullish",
     "confidence": 0.82
   },
+  "regime_transitions": [
+    {"date": "2026-03-15", "from_regime": "sideways", "to_regime": "bull", "bar_index": 2450},
+    {"date": "2026-01-10", "from_regime": "bear", "to_regime": "sideways", "bar_index": 2398}
+  ],
   "duration_forecast": {
     "current_regime": "bull",
     "days_in_regime": 45,
@@ -550,6 +555,7 @@ spells to fit, and the output will contain `null` values.
 | `verdict.verdict` | string | One of `"bullish"`, `"bearish"`, `"neutral"`, `"transition_bull"`, `"transition_bear"`. Always present. |
 | `verdict.confidence` | 0 to 1 | `abs(signal)`. Higher = stronger conviction. |
 | `timing.total_s` | float | Total wall-clock time in seconds. Always present. |
+| `regime_transitions` | list | Chronological list of regime change events. Each entry has `date`, `from_regime`, `to_regime`, `bar_index`. Always present in JSON. |
 | `timing.phases` | dict | Per-phase timing: `feature_engineering`, `regime_classification`, `walk_forward`, `forecast`. |
 
 ---
@@ -599,7 +605,7 @@ Run multiple engines across multiple tickers for batch comparison.
 ### `--eval-csv` — Evaluate from CSV directory
 
 ```bash
-python -m hmm_futures_analysis.cli --eval-csv test_data/eval-results/ --json
+python -m hmm_futures_analysis.cli --eval-csv test_data/ --json
 ```
 
 Reads all `.csv` files from the directory. The filename stem (without extension)

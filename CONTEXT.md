@@ -76,6 +76,10 @@ _Avoid_: saliency model, feature selection engine
 A flat dataclass that encapsulates all constructor parameters for one engine. Each engine has its own config class (e.g. `ThresholdConfig`, `RobustHMMConfig`) with fields matching the engine's `__init__`. Configs also carry `name` (the registry key) and `features` (the feature-engineering mode label). The CLI constructs the right config from CLI args; pipeline and walk-forward never see engine-specific kwargs. Per ADR-0011.
 _Avoid_: engine settings, engine params
 
+**Regime transitions**:
+Historical regime change events extracted from the classified regime sequence by `extract_transitions()` in `regime_transitions.py`. Each event is a `TransitionEvent` namedtuple with `date` (ISO), `from_regime`, `to_regime`, and `bar_index`. Walks adjacent regime pairs and emits one event per change. Always computed in `pipeline.run()` and included in `PipelineResult.regime_transitions`. In terminal output, displayed via `--transitions N` (N most recent, 0 = all); in JSON, always present.
+_Avoid_: regime changes, regime history
+
 **Duration forecast**:
 Post-processing, now on by default, that estimates how long the current regime will persist. Two survival models: `weibull` (Weibull distribution fit to historical regime durations — default, no extra dependencies) and `cox` (Cox proportional hazards with realized-volatility and spell-return covariates — requires `lifelines`). Outputs expected remaining days, hazard rate, 50%-survival point, and Weibull shape/scale. The Cox model adds covariate-adjusted predictions (`cox_expected_remaining_days`, `cox_coefficients`, `concordance_index`). Opt-out via `duration_forecast=False` on `pipeline.run()`.
 _Avoid_: regime length prediction, time-to-transition

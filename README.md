@@ -106,6 +106,10 @@ Given a ticker or CSV with price data, it outputs a structured JSON with:
     "weibull_shape": 1.25,
     "weibull_scale": 80.0
   },
+  "regime_transitions": [
+    {"date": "2026-03-15", "from_regime": "sideways", "to_regime": "bull", "bar_index": 2450},
+    {"date": "2026-01-10", "from_regime": "bear", "to_regime": "sideways", "bar_index": 2398}
+  ],
   "framework": "hmm_regime_detection v0.5.0",
   "disclaimer": "Regime detection is probabilistic. Past transitions do not guarantee future regimes. Not financial advice."
 }
