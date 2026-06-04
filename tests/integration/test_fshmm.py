@@ -22,12 +22,12 @@ def btc_ohlcv(btc_csv):
 
     df = pd.read_csv(btc_csv, parse_dates=["Date"], index_col="Date")
     df.columns = [c.strip() for c in df.columns]
-    return df[["Open", "High", "Low", "Last", "Volume"]].rename(
+    return df[["Open", "High", "Low", "Close", "Volume"]].rename(
         columns={
             "Open": "open",
             "High": "high",
             "Low": "low",
-            "Last": "close",
+            "Close": "close",
             "Volume": "volume",
         }
     )
