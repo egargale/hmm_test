@@ -35,6 +35,7 @@ class ClassifyOutput:
     last_regime: int = 1
     warmup_bars: int | None = None
     n_states: int = 3
+    engine_info: dict | None = None
 
 
 @runtime_checkable

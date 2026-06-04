@@ -30,9 +30,9 @@ if TYPE_CHECKING:
 class HMMEngineBase(ABC):
     """Abstract base for HMM-backed regime engines.
 
-    Provides default ``__init__``, ``precompute``, ``enrich_info``, and
+    Provides default ``__init__``, ``precompute``, ``_build_engine_info``, and
     ``run_classify``.  Concrete engines override ``classify()`` (and
-    optionally ``__init__``, ``precompute``, ``enrich_info``) to inject
+    optionally ``__init__``, ``precompute``, ``_build_engine_info``) to inject
     their differentiated logic.
 
     Parameters
@@ -67,13 +67,20 @@ class HMMEngineBase(ABC):
             )
         return engineer_features(data, use_messina=self.use_messina)
 
-    def enrich_info(self, info: dict) -> dict:
-        """Copy *info* and append the standard HMM caveat."""
-        result = {**info}
-        result["caveat"] = (
-            "HMM states sorted by mean return; labels may swap on re-fit"
-        )
-        return result
+    def _build_engine_info(self, warmup_bars: int | None = None) -> dict:
+        """Return engine-specific metadata for ClassifyOutput.engine_info.
+
+        Base implementation adds the standard HMM caveat and warmup_bars
+        when available. Subclasses override to add extra keys.
+        """
+        info: dict[str, object] = {
+            "caveat": (
+                "HMM states sorted by mean return; labels may swap on re-fit"
+            ),
+        }
+        if warmup_bars is not None:
+            info["warmup_bars"] = warmup_bars
+        return info
 
     def run_classify(
         self,
@@ -86,9 +93,11 @@ class HMMEngineBase(ABC):
         """Delegate to the shared HMM walk-forward pipeline."""
         from ._hmm_pipeline import _hmm_classify_pipeline
 
-        return _hmm_classify_pipeline(
+        result = _hmm_classify_pipeline(
             self, prices, ohlcv, returns, min_train, **kwargs
         )
+        result.engine_info = self._build_engine_info(warmup_bars=result.warmup_bars)
+        return result
 
     @abstractmethod
     def classify(

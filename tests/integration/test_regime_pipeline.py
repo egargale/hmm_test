@@ -649,11 +649,11 @@ class TestPipelineRunEngineConfig:
         assert wf.n_trades > 0
 
 
-class TestPipelineEnrichInfo:
-    """Pipeline uses engine.enrich_info() for engine_info extras."""
+class TestPipelineEngineInfo:
+    """Pipeline reads engine_info from ClassifyOutput.engine_info."""
 
     def test_hmm_engine_info_has_caveat(self, ohlcv_pipeline):
-        """HMM engine_info gets caveat from enrich_info, not config."""
+        """HMM engine_info gets caveat from ClassifyOutput.engine_info."""
         prices = ohlcv_pipeline["close"]
         result = pipeline_run(
             prices,
@@ -666,7 +666,7 @@ class TestPipelineEnrichInfo:
         assert "HMM states sorted by mean return" in result.engine_info["caveat"]
 
     def test_robust_hmm_engine_info_has_method(self, ohlcv_pipeline):
-        """RobustHMM engine_info gets robust_method from enrich_info."""
+        """RobustHMM engine_info gets robust_method from ClassifyOutput.engine_info."""
         prices = ohlcv_pipeline["close"]
         result = pipeline_run(
             prices,
@@ -679,7 +679,7 @@ class TestPipelineEnrichInfo:
         assert "caveat" in result.engine_info
 
     def test_threshold_engine_info_has_no_caveat(self, btc_csv):
-        """Threshold engine_info has no caveat (no enrich_info method)."""
+        """Threshold engine_info has no caveat (engine_info=None)."""
         prices = load_from_csv(btc_csv)
         result = pipeline_run(prices, source="test", engine_config=ThresholdConfig())
         assert "caveat" not in result.engine_info

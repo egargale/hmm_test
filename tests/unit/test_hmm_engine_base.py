@@ -1,7 +1,7 @@
 """Behavioral tests for HMMEngineBase abstract base class (issue #78).
 
 Tests verify observable behavior through public interfaces:
-inheritance, construction, precompute routing, enrich_info,
+inheritance, construction, precompute routing, _build_engine_info,
 run_classify output shape, and registry integration.
 
 ThresholdEngine is explicitly verified as NOT inheriting from HMMEngineBase.
@@ -117,26 +117,37 @@ def test_precompute_rejects_none(engine_cls):
         engine.precompute(None)
 
 
-# ---- T6: enrich_info adds caveat ----------------------------------------
+# ---- T6: _build_engine_info adds caveat ----------------------------------------
 
 
 @pytest.mark.parametrize("engine_cls", HMM_ENGINES, ids=lambda c: c.__name__)
-def test_enrich_info_adds_caveat(engine_cls):
-    """enrich_info copies dict and adds the standard HMM caveat."""
+def test_build_engine_info_adds_caveat(engine_cls):
+    """_build_engine_info returns dict with the standard HMM caveat."""
     engine = engine_cls()
-    info = {"engine": "test"}
-    enriched = engine.enrich_info(info)
-    assert "caveat" in enriched
-    assert "labels may swap" in enriched["caveat"]
-    # Original dict is not mutated
-    assert "caveat" not in info
+    info = engine._build_engine_info()
+    assert "caveat" in info
+    assert "labels may swap" in info["caveat"]
 
 
-def test_robust_enrich_info_adds_method():
-    """RobustHMMEngine.enrich_info adds robust_method to the output."""
+def test_robust_build_engine_info_adds_method():
+    """RobustHMMEngine._build_engine_info adds robust_method to the output."""
     engine = RobustHMMEngine(robust_method="mcd")
-    enriched = engine.enrich_info({"engine": "test"})
-    assert enriched["robust_method"] == "mcd"
+    info = engine._build_engine_info()
+    assert info["robust_method"] == "mcd"
+
+
+def test_build_engine_info_includes_warmup_bars():
+    """_build_engine_info includes warmup_bars when provided."""
+    engine = HMMGenericEngine()
+    info = engine._build_engine_info(warmup_bars=300)
+    assert info["warmup_bars"] == 300
+
+
+def test_build_engine_info_omits_warmup_bars_when_none():
+    """_build_engine_info omits warmup_bars when not provided."""
+    engine = HMMGenericEngine()
+    info = engine._build_engine_info(warmup_bars=None)
+    assert "warmup_bars" not in info
 
 
 # ---- T7: run_classify produces ClassifyOutput ---------------------------

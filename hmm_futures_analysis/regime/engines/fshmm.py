@@ -36,8 +36,8 @@ class FSHMMEngine(HMMEngineBase):
         self.tol = tol
         self.random_state = random_state
 
-    def enrich_info(self, info: dict) -> dict:
-        result = super().enrich_info(info)
+    def _build_engine_info(self, warmup_bars: int | None = None) -> dict:
+        result = super()._build_engine_info(warmup_bars=warmup_bars)
         if hasattr(self, "_last_saliency") and self._last_saliency is not None:
             result["feature_saliency"] = self._last_saliency
             result["selected_features"] = self._last_selected_features

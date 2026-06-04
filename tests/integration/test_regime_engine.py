@@ -773,61 +773,53 @@ class TestPrecomputeValidatesOHLCV:
         assert eng.precompute(None) is None
 
 
-class TestEnrichInfo:
-    """Engines that implement enrich_info() produce correct metadata."""
+class TestBuildEngineInfo:
+    """Engines populate engine_info via _build_engine_info()."""
 
-    def test_hmm_generic_enrich_info(self):
+    def test_hmm_generic_build_engine_info(self):
         from hmm_futures_analysis.regime.engines.hmm_generic import HMMGenericEngine
 
         eng = HMMGenericEngine(n_states=3)
-        info = eng.enrich_info({})
+        info = eng._build_engine_info()
         assert "caveat" in info
         assert "HMM states sorted by mean return" in info["caveat"]
-        assert "warmup_bars" not in info
 
-    def test_hmm_generic_enrich_info_with_warmup(self):
-        from hmm_futures_analysis.regime.engines.hmm_generic import HMMGenericEngine
-
-        eng = HMMGenericEngine(n_states=3)
-        info = eng.enrich_info({"warmup_bars": 252})
-        assert info["warmup_bars"] == 252
-
-    def test_hmm_messina_enrich_info(self):
+    def test_hmm_messina_build_engine_info(self):
         from hmm_futures_analysis.regime.engines.hmm_messina import HMMMMessinaEngine
 
         eng = HMMMMessinaEngine(n_states=3)
-        info = eng.enrich_info({})
+        info = eng._build_engine_info()
         assert "caveat" in info
         assert "HMM states sorted by mean return" in info["caveat"]
 
-    def test_robust_hmm_enrich_info_adds_method(self):
+    def test_robust_hmm_build_engine_info_adds_method(self):
         from hmm_futures_analysis.regime.engines.robust_hmm import RobustHMMEngine
 
         eng = RobustHMMEngine(n_states=3, robust_method="huber")
-        info = eng.enrich_info({})
+        info = eng._build_engine_info()
         assert info["robust_method"] == "huber"
         assert "caveat" in info
 
-    def test_fshmm_enrich_info_without_saliency(self):
+    def test_fshmm_build_engine_info_without_saliency(self):
         from hmm_futures_analysis.regime.engines.fshmm import FSHMMEngine
 
         eng = FSHMMEngine(n_states=3)
-        info = eng.enrich_info({})
+        info = eng._build_engine_info()
         assert "caveat" in info
         assert "feature_saliency" not in info
 
-    def test_fshmm_enrich_info_with_saliency(self):
+    def test_fshmm_build_engine_info_with_saliency(self):
         from hmm_futures_analysis.regime.engines.fshmm import FSHMMEngine
 
         eng = FSHMMEngine(n_states=3)
         eng._last_saliency = [0.1, 0.2, 0.3]
         eng._last_selected_features = ["feat_a", "feat_b"]
-        info = eng.enrich_info({})
+        info = eng._build_engine_info()
         assert info["feature_saliency"] == [0.1, 0.2, 0.3]
         assert info["selected_features"] == ["feat_a", "feat_b"]
 
-    def test_threshold_has_no_enrich_info(self):
+    def test_threshold_has_no_build_engine_info(self):
         from hmm_futures_analysis.regime.engines.threshold import ThresholdEngine
 
         eng = ThresholdEngine()
-        assert not hasattr(eng, "enrich_info")
+        assert not hasattr(eng, "_build_engine_info")

@@ -318,15 +318,13 @@ def _count_features(config: object) -> int:
 def _build_engine_info(
     engine_config: object,
     resolved_n_states: int,
-    eng: object | None,
-    *,
-    warmup_bars: int | None = None,
+    classify_out: object | None = None,
 ) -> dict[str, object]:
-    """Build engine_info dict from config and optional engine instance.
+    """Build engine_info dict from config and classify output.
 
     Constructs base info (method, features, n_states) from config,
-    then enriches via duck-typed ``enrich_info()`` if the engine
-    provides it.
+    then merges engine metadata from ``classify_out.engine_info``
+    if the engine populated it.
     """
     engine = getattr(engine_config, "name", None)
     features_label: str = getattr(engine_config, "features", engine)
@@ -336,9 +334,9 @@ def _build_engine_info(
         "features": features_label,
         "n_states": resolved_n_states,
     }
-    if hasattr(eng, "enrich_info"):
-        ctx = {"warmup_bars": warmup_bars} if warmup_bars is not None else {}
-        info.update(eng.enrich_info(ctx))
+    engine_meta = getattr(classify_out, "engine_info", None)
+    if engine_meta:
+        info.update(engine_meta)
     return info
 
 
@@ -480,8 +478,7 @@ def run(
     engine_info = _build_engine_info(
         config,
         resolved_n_states,
-        eng,
-        warmup_bars=classify_out.warmup_bars,
+        classify_out,
     )
 
     # --- Degenerate-fit detection (ADR-0018) ---

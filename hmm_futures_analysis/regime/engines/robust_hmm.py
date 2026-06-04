@@ -23,8 +23,8 @@ class RobustHMMEngine(HMMEngineBase):
         super().__init__(n_states=n_states, pca_variance=pca_variance)
         self.robust_method = robust_method
 
-    def enrich_info(self, info: dict) -> dict:
-        result = super().enrich_info(info)
+    def _build_engine_info(self, warmup_bars: int | None = None) -> dict:
+        result = super()._build_engine_info(warmup_bars=warmup_bars)
         result["robust_method"] = self.robust_method
         return result
 
