@@ -1,14 +1,16 @@
 """HMM engine building blocks: feature engineering, fitting, state matching.
 
-These utilities are imported by the four HMM engine classes (hmm_generic,
-hmm_messina, robust_hmm, fshmm) and by the pipeline-level orchestration
-helpers in _hmm_pipeline.py.
+Provides the abstract :class:`HMMEngineBase` shared by the four HMM engine
+classes (hmm_generic, hmm_messina, robust_hmm, fshmm), standalone helper
+functions used by those engines, and pipeline-level orchestration helpers
+in ``_hmm_pipeline.py``.
 """
 
 from __future__ import annotations
 
 import os
 import warnings
+from abc import ABC, abstractmethod
 from contextlib import redirect_stderr, redirect_stdout
 from typing import TYPE_CHECKING
 
@@ -19,10 +21,80 @@ from hmmlearn import hmm
 from ...data_processing.feature_engineering import add_features
 from ...data_processing.messina_features import MESSINA_FEATURE_COLUMNS
 from ...data_processing.messina_features import add_messina_features
-from ..engine_protocol import ClassifyResult
+from ..engine_protocol import ClassifyOutput, ClassifyResult
 
 if TYPE_CHECKING:
     from sklearn.decomposition import PCA
+
+
+class HMMEngineBase(ABC):
+    """Abstract base for HMM-backed regime engines.
+
+    Provides default ``__init__``, ``precompute``, ``enrich_info``, and
+    ``run_classify``.  Concrete engines override ``classify()`` (and
+    optionally ``__init__``, ``precompute``, ``enrich_info``) to inject
+    their differentiated logic.
+
+    Parameters
+    ----------
+    n_states : int or 'auto'
+        Number of hidden Markov states (or ``'auto'`` for BIC selection).
+    pca_variance : float or None
+        Fraction of variance to retain via PCA whitening, or ``None`` to
+        skip PCA.
+    """
+
+    # Subclasses set True if they use Messina features.
+    use_messina: bool = False
+
+    def __init__(
+        self,
+        n_states: int = 3,
+        pca_variance: float | None = None,
+    ) -> None:
+        self.n_states = n_states
+        self.pca_variance = pca_variance
+        self._pca_n_components: int | None = None
+
+    def precompute(self, data: pd.DataFrame) -> pd.DataFrame | None:
+        """Engineer features from OHLCV data.
+
+        Uses :func:`engineer_features` with the subclass' ``use_messina`` flag.
+        """
+        if data is None:
+            raise ValueError(
+                f"{type(self).__name__} requires OHLCV data for feature engineering"
+            )
+        return engineer_features(data, use_messina=self.use_messina)
+
+    def enrich_info(self, info: dict) -> dict:
+        """Copy *info* and append the standard HMM caveat."""
+        result = {**info}
+        result["caveat"] = (
+            "HMM states sorted by mean return; labels may swap on re-fit"
+        )
+        return result
+
+    def run_classify(
+        self,
+        prices: pd.Series,
+        ohlcv: pd.DataFrame | None,
+        returns: pd.Series,
+        min_train: int,
+        **kwargs,
+    ) -> ClassifyOutput:
+        """Delegate to the shared HMM walk-forward pipeline."""
+        from ._hmm_pipeline import _hmm_classify_pipeline
+
+        return _hmm_classify_pipeline(
+            self, prices, ohlcv, returns, min_train, **kwargs
+        )
+
+    @abstractmethod
+    def classify(
+        self, data: pd.DataFrame, prev_means: np.ndarray | None = None
+    ) -> ClassifyResult:
+        """Fit HMM on *data* and classify the last bar."""
 
 
 def engineer_features(data: pd.DataFrame, use_messina: bool) -> pd.DataFrame:

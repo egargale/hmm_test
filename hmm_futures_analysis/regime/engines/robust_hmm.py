@@ -5,48 +5,28 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from ..engine_protocol import ClassifyOutput, ClassifyResult
-from ._hmm_engine import _classify_hmm_slice, engineer_features, robust_fit_gaussian_hmm
+from ..engine_protocol import ClassifyResult
+from ._hmm_engine import HMMEngineBase, _classify_hmm_slice, engineer_features, robust_fit_gaussian_hmm
 
 
-class RobustHMMEngine:
+class RobustHMMEngine(HMMEngineBase):
+    """HMM engine with Huber or MCD robust emission correction."""
+
+    use_messina = False
+
     def __init__(
         self,
         n_states: int = 3,
         pca_variance: float | None = None,
         robust_method: str = "huber",
     ) -> None:
-        self.n_states = n_states
-        self.pca_variance = pca_variance
+        super().__init__(n_states=n_states, pca_variance=pca_variance)
         self.robust_method = robust_method
-        self._pca_n_components: int | None = None
-
-    def precompute(self, data: pd.DataFrame) -> pd.DataFrame | None:
-        if data is None:
-            raise ValueError(
-                "RobustHMMEngine requires OHLCV data for feature engineering"
-            )
-        return engineer_features(data, use_messina=False)
 
     def enrich_info(self, info: dict) -> dict:
-        result = {**info}
-        result["caveat"] = "HMM states sorted by mean return; labels may swap on re-fit"
+        result = super().enrich_info(info)
         result["robust_method"] = self.robust_method
         return result
-
-    def run_classify(
-        self,
-        prices: pd.Series,
-        ohlcv: pd.DataFrame | None,
-        returns: pd.Series,
-        min_train: int,
-        **kwargs,
-    ) -> ClassifyOutput:
-        from ._hmm_pipeline import _hmm_classify_pipeline
-
-        return _hmm_classify_pipeline(
-            self, prices, ohlcv, returns, min_train, **kwargs
-        )
 
     def classify(
         self, data: pd.DataFrame, prev_means: np.ndarray | None = None

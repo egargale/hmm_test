@@ -5,45 +5,14 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from ..engine_protocol import ClassifyOutput, ClassifyResult
-from ._hmm_engine import _classify_hmm_slice, _fit_hmm_on_slice, engineer_features
+from ..engine_protocol import ClassifyResult
+from ._hmm_engine import HMMEngineBase, _classify_hmm_slice, _fit_hmm_on_slice
 
 
-class HMMMMessinaEngine:
-    def __init__(
-        self,
-        n_states: int = 3,
-        pca_variance: float | None = None,
-    ) -> None:
-        self.n_states = n_states
-        self.pca_variance = pca_variance
-        self._pca_n_components: int | None = None
+class HMMMMessinaEngine(HMMEngineBase):
+    """HMM engine using the 19 Messina features."""
 
-    def precompute(self, data: pd.DataFrame) -> pd.DataFrame | None:
-        if data is None:
-            raise ValueError(
-                "HMMMMessinaEngine requires OHLCV data for feature engineering"
-            )
-        return engineer_features(data, use_messina=True)
-
-    def enrich_info(self, info: dict) -> dict:
-        result = {**info}
-        result["caveat"] = "HMM states sorted by mean return; labels may swap on re-fit"
-        return result
-
-    def run_classify(
-        self,
-        prices: pd.Series,
-        ohlcv: pd.DataFrame | None,
-        returns: pd.Series,
-        min_train: int,
-        **kwargs,
-    ) -> ClassifyOutput:
-        from ._hmm_pipeline import _hmm_classify_pipeline
-
-        return _hmm_classify_pipeline(
-            self, prices, ohlcv, returns, min_train, **kwargs
-        )
+    use_messina = True
 
     def classify(
         self, data: pd.DataFrame, prev_means: np.ndarray | None = None
