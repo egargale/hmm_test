@@ -209,14 +209,14 @@ def _fit_coxph(
         if len(sf) == 0:
             expected_remaining = 0.0
         else:
-            s_at_t = float(sf.iloc[0])
+            s_at_t = float(sf.iloc[0, 0])
             if s_at_t <= 0:
                 expected_remaining = 0.0
             else:
                 sf_normalized = sf / s_at_t
                 t_vals = sf_normalized.index.values.astype(float)
                 s_vals = sf_normalized.iloc[:, 0].values.astype(float)
-                expected_remaining = float(np.trapezoid(s_vals, t_vals))
+                expected_remaining = float(np.trapz(s_vals, t_vals))
 
         # NOTE: realized_vol coefficient can be large in magnitude on short
         # historical windows (e.g. -65 on 89 spells). This is a known limitation

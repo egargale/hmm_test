@@ -1066,6 +1066,8 @@ version = "0.2.0"
 source = { editable = "." }
 dependencies = [
     { name = "hmmlearn" },
+    { name = "lifelines", version = "0.30.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "lifelines", version = "0.30.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "numpy" },
     { name = "pandas" },
     { name = "pydantic" },
@@ -1113,6 +1115,7 @@ requires-dist = [
     { name = "daft", marker = "extra == 'daft'", specifier = ">=0.3.0" },
     { name = "dask", extras = ["complete"], marker = "extra == 'dask'", specifier = ">=2021.8.0" },
     { name = "hmmlearn", specifier = ">=0.2.7" },
+    { name = "lifelines", specifier = ">=0.30.0" },
     { name = "lifelines", marker = "extra == 'dev'", specifier = ">=0.27.0" },
     { name = "lifelines", marker = "extra == 'survival'", specifier = ">=0.27.0" },
     { name = "numpy", specifier = ">=1.20.0" },
