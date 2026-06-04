@@ -26,6 +26,8 @@ ADRs use a flat, sequential 4-digit numbering scheme (`0001-`, `0002-`, …).
 | 0016 | `0016-robust-hmm-engine.md` | Robust HMM engine with outlier-resistant emission estimation (Huber IRLS / MinCovDet) |
 | 0017 | `0017-push-run-classify-into-engine-protocol.md` | Push per-engine execution model into `run_classify()` on engine protocol |
 | 0018 | `0018-degenerate-fit-detection-recovery.md` | Degenerate HMM fit detection and recovery strategy (state collapse, saliency instability, over-robustness) |
+| 0019 | `0019-engine-defaults-parameter-strategy.md` | Engine defaults parameter strategy |
+| 0020 | `0020-hmm-engine-base-class-enrich-info-consolidation.md` | HMM engine base class + enrich_info consolidation |
 
 ## Rules for contributors
 
