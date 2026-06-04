@@ -8,10 +8,8 @@ in ``_hmm_pipeline.py``.
 
 from __future__ import annotations
 
-import os
 import warnings
 from abc import ABC, abstractmethod
-from contextlib import redirect_stderr, redirect_stdout
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -157,19 +155,17 @@ def _fit_hmm_on_slice(
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        with open(os.devnull, "w") as devnull:
-            with redirect_stdout(devnull), redirect_stderr(devnull):
-                model = hmm.GaussianHMM(
-                    n_components=n_states,
-                    covariance_type="diag",
-                    n_iter=30,
-                    tol=1e-4,
-                    random_state=random_state,
-                    params="stmc",
-                    init_params="stmc",
-                    verbose=False,
-                )
-                model.fit(X)
+        model = hmm.GaussianHMM(
+            n_components=n_states,
+            covariance_type="diag",
+            n_iter=30,
+            tol=1e-4,
+            random_state=random_state,
+            params="stmc",
+            init_params="stmc",
+            verbose=False,
+        )
+        model.fit(X)
 
     return model, center, scale, pca_n_components_used, pca_transform
 

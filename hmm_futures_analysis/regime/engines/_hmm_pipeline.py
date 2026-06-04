@@ -9,6 +9,7 @@ Imported by pipeline.run() and walk_forward.py.
 
 from __future__ import annotations
 
+import sys
 import time
 from collections.abc import Iterator
 from typing import Any
@@ -223,12 +224,16 @@ def _walk_forward_classify(
     prev_means: np.ndarray | None = None
     last_result = ClassifyResult(regime=1)
 
-    refit_every = max(1, (n - min_train) // 100)
+    refit_every = max(5, (n - min_train) // 100)
     refit_every = min(refit_every, 20)
+
+    n_refits = 0
+    t_start_wf = time.monotonic()
 
     for t in range(min_train, n):
         refit_now = (t == min_train) or ((t - min_train) % refit_every == 0)
         if refit_now:
+            n_refits += 1
             features_slice = precomputed.iloc[:t]
             try:
                 t_cls_start = time.monotonic() if profile else 0.0
@@ -239,4 +244,13 @@ def _walk_forward_classify(
                 last_result = result
             except (ValueError, RuntimeError):
                 pass
+            # Progress: log every 20 refits and on the final refit
+            total_refits = 1 + (n - 1 - min_train) // refit_every
+            if n_refits % 20 == 0 or n_refits == total_refits:
+                elapsed = time.monotonic() - t_start_wf
+                print(
+                    f"  [walk-forward] refit {n_refits}/{total_refits}"
+                    f"  bar {t}/{n}  elapsed {elapsed:.1f}s",
+                    file=sys.stderr,
+                )
         yield t, last_result
