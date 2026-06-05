@@ -98,6 +98,34 @@ def select_n_states(
     return best_k
 
 
+def _check_degenerate(
+    regimes: np.ndarray, n_states: int, threshold: float = 0.05
+) -> bool:
+    """Check if regime distribution has a collapsed state.
+
+    Returns True when any regime index in [0, n_states) has fewer
+    than *threshold* fraction of total bars AND there are at least
+    3 states to collapse.  Missing states (count=0) are degenerate.
+
+    Pure function — no side effects.
+    """
+    if n_states < 3:
+        return False
+    total = len(regimes)
+    if total == 0:
+        return False
+    unique, counts = np.unique(regimes, return_counts=True)
+    # Build a full count array indexed by regime label
+    for state_id in range(n_states):
+        idx = np.searchsorted(unique, state_id)
+        if idx >= len(unique) or unique[idx] != state_id:
+            # State is missing entirely — 0 bars → degenerate
+            return True
+        if counts[idx] / total < threshold:
+            return True
+    return False
+
+
 def _hmm_classify_pipeline(
     engine: Any,
     prices: pd.Series,
@@ -148,6 +176,33 @@ def _hmm_classify_pipeline(
     else:
         raise ValueError(f"n_states must be int or 'auto', got {engine.n_states!r}")
 
+    # 2b. Degenerate-fit pre-check: auto-downgrade to n_states=2
+    original_n_states = engine.n_states
+    degenerate_auto_recovered = False
+    if engine.n_states >= 3:
+        features_full = precomputed.dropna().to_numpy(dtype=np.float64)
+        try:
+            model, center, scale, pca_n, pca_transform = _fit_hmm_on_slice(
+                features_full,
+                n_states=engine.n_states,
+                random_state=42,
+                pca_variance=getattr(engine, "pca_variance", None),
+            )
+            X_norm = ((features_full - center) / scale).astype(np.float64)
+            if pca_transform is not None:
+                X_norm = pca_transform.transform(X_norm).astype(np.float64)
+            precheck_labels = model.predict(X_norm)
+            if _check_degenerate(precheck_labels, n_states=engine.n_states):
+                engine.n_states = 2
+                degenerate_auto_recovered = True
+                print(
+                    "  [degenerate] 3-state fit collapsed."
+                    " Auto-downgrading to n_states=2.",
+                    file=sys.stderr,
+                )
+        except (ValueError, RuntimeError):
+            pass  # if pre-check fit fails, proceed with original n_states
+
     # 3. Walk-forward classify
     n = len(returns)
     regimes = np.ones(n, dtype=int)
@@ -169,12 +224,18 @@ def _hmm_classify_pipeline(
     if profile:
         _phases["walk_forward_classify"] = float(round(_time.monotonic() - t_wf, 6))
 
+    engine_info = {}
+    if degenerate_auto_recovered:
+        engine_info["degenerate_auto_recovered"] = True
+        engine_info["original_n_states"] = original_n_states
+
     return ClassifyOutput(
         regimes=regimes,
         posteriors=posteriors_all,
         last_regime=int(regimes[-1]),
         warmup_bars=min_train,
         n_states=engine.n_states,
+        engine_info=engine_info if engine_info else None,
     )
 
 
