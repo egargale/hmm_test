@@ -8,7 +8,6 @@ engine_info. Detection only; no regime assignment changes.
 import pytest
 
 from hmm_futures_analysis.regime.pipeline import (
-    _apply_confidence_penalty,
     detect_degenerate_fit,
 )
 
@@ -193,39 +192,25 @@ class TestLowDataWarning:
 
 
 # ===========================================================================
-# Confidence penalty
+# _apply_confidence_penalty removed (Issue #95)
 # ===========================================================================
 
 
-class TestConfidencePenalty:
-    """When degenerate_fit is true, verdict confidence is scaled down."""
+class TestConfidencePenaltyRemoved:
+    """_apply_confidence_penalty was deleted — confidence is no longer penalized."""
 
-    def test_penalty_reduces_confidence(self):
-        """0.8% bull state → confidence × 0.16."""
-        verdict = {"verdict": "bearish", "confidence": 0.98}
-        engine_info = {
-            "degenerate_fit": True,
-            "degenerate_caveat": "bull state has 0.8% of bars",
-        }
-        regime_counts = {"bear": 1081, "sideways": 1413, "bull": 20}
-        result = _apply_confidence_penalty(verdict, engine_info, regime_counts)
-        # min_state_fraction = 20/2514 ≈ 0.008; penalty = 0.008/0.05 = 0.16
-        assert result["confidence"] == pytest.approx(0.98 * 0.16, abs=0.01)
+    def test_function_removed_from_module(self):
+        """_apply_confidence_penalty no longer exists in pipeline module."""
+        import hmm_futures_analysis.regime.pipeline as mod
 
-    def test_no_penalty_when_not_degenerate(self):
-        verdict = {"verdict": "bearish", "confidence": 0.98}
-        engine_info = {}  # no degenerate_fit key
-        regime_counts = {"bear": 500, "sideways": 1514, "bull": 500}
-        result = _apply_confidence_penalty(verdict, engine_info, regime_counts)
-        assert result["confidence"] == 0.98
+        assert not hasattr(mod, "_apply_confidence_penalty")
 
-    def test_penalty_minimum_zero(self):
-        """A state with 0 bars → min fraction 0 → confidence 0."""
-        verdict = {"verdict": "neutral", "confidence": 0.5}
-        engine_info = {"degenerate_fit": True}
-        regime_counts = {"bear": 0, "sideways": 2514, "bull": 0}
-        result = _apply_confidence_penalty(verdict, engine_info, regime_counts)
-        assert result["confidence"] == 0.0
+    def test_function_not_importable(self):
+        """Importing _apply_confidence_penalty raises ImportError."""
+        with pytest.raises(ImportError):
+            from hmm_futures_analysis.regime.pipeline import (
+                _apply_confidence_penalty,  # noqa: F401
+            )
 
 
 # ===========================================================================
@@ -273,6 +258,102 @@ class TestOverRobustness:
         )
         assert result.get("over_robustness") is None
 
+
+# ===========================================================================
+# Auto-recovery audit (Issue #95)
+# ===========================================================================
+
+
+class TestAutoRecoveryAudit:
+    """When auto-recovery occurred, detect_degenerate_fit emits audit fields
+    instead of degenerate_fit: true."""
+
+    def test_auto_recovered_emits_audit_fields(self):
+        """Auto-recovered model gets audit fields, not degenerate_fit."""
+        counts = {"bear": 1257, "bull": 1257}  # healthy 2-state split
+        result = detect_degenerate_fit(
+            regime_counts=counts,
+            n_bars=2514,
+            n_features=50,
+            engine_name="hmm",
+            n_states=2,
+            degenerate_auto_recovered=True,
+            original_n_states=3,
+        )
+        assert result["degenerate_auto_recovered"] is True
+        assert result["original_n_states"] == 3
+        assert "recovery_method" in result
+        assert "auto-downgrade" in result["recovery_method"]
+        # No degenerate_fit — model is healthy after recovery
+        assert result.get("degenerate_fit") is None
+        assert result.get("degenerate_caveat") is None
+
+    def test_auto_recovered_still_flags_if_still_degenerate(self):
+        """Defensive: if post-recovery regime counts are STILL degenerate,
+        emit both audit fields AND degenerate_fit."""
+        # 2-state model but bear has < 5% — still degenerate
+        counts = {"bear": 10, "bull": 2504}
+        result = detect_degenerate_fit(
+            regime_counts=counts,
+            n_bars=2514,
+            n_features=50,
+            engine_name="hmm",
+            n_states=2,
+            degenerate_auto_recovered=True,
+            original_n_states=3,
+        )
+        assert result["degenerate_auto_recovered"] is True
+        assert result["original_n_states"] == 3
+        assert result["degenerate_fit"] is True
+        assert "degenerate_caveat" in result
+
+    def test_no_auto_recovery_existing_behavior_unchanged(self):
+        """Without auto-recovery, behavior is unchanged."""
+        counts = {"bear": 1081, "sideways": 1413, "bull": 20}
+        result = detect_degenerate_fit(
+            regime_counts=counts,
+            n_bars=2514,
+            n_features=50,
+            engine_name="hmm",
+            n_states=3,
+        )
+        # Classic degenerate detection unchanged
+        assert result["degenerate_fit"] is True
+        assert "degenerate_caveat" in result
+        assert result.get("degenerate_auto_recovered") is None
+        assert result.get("original_n_states") is None
+
+    def test_auto_recovered_low_data_warning_unaffected(self):
+        """low_data_warning still fires independently of auto-recovery."""
+        counts = {"bear": 100, "bull": 100}
+        result = detect_degenerate_fit(
+            regime_counts=counts,
+            n_bars=200,  # 200 < 4*50*2=400 → low_data_warning
+            n_features=50,
+            engine_name="hmm",
+            n_states=2,
+            degenerate_auto_recovered=True,
+            original_n_states=3,
+        )
+        assert result["degenerate_auto_recovered"] is True
+        assert result["low_data_warning"] is True
+
+    def test_auto_recovered_over_robustness_unaffected(self):
+        """over_robustness check still fires independently of auto-recovery."""
+        result = detect_degenerate_fit(
+            regime_counts={"bear": 1060, "sideways": 1413, "bull": 41},
+            n_bars=2514,
+            n_features=50,
+            engine_name="robust_hmm",
+            n_states=2,
+            degenerate_auto_recovered=True,
+            original_n_states=3,
+            hmm_regime_counts={"bear": 1081, "sideways": 1413, "bull": 20},
+        )
+        assert result["degenerate_auto_recovered"] is True
+        assert result["over_robustness"] is True
+
+
 # ===========================================================================
 # Pipeline integration: detect_degenerate_fit wired into pipeline.run()
 # ===========================================================================
@@ -297,13 +378,17 @@ class TestPipelineIntegration:
         # Flat random walk with a crash in the middle
         returns = np.random.normal(0, 0.005, n)
         returns[1200:1230] = -0.03  # crash
-        prices = pd.Series(
-            100 * np.exp(np.cumsum(returns)), index=dates, name="TEST"
+        prices = pd.Series(100 * np.exp(np.cumsum(returns)), index=dates, name="TEST")
+        ohlcv = pd.DataFrame(
+            {
+                "open": prices * 0.999,
+                "high": prices * 1.001,
+                "low": prices * 0.998,
+                "close": prices,
+                "volume": 1e6,
+            },
+            index=dates,
         )
-        ohlcv = pd.DataFrame({
-            "open": prices * 0.999, "high": prices * 1.001,
-            "low": prices * 0.998, "close": prices, "volume": 1e6,
-        }, index=dates)
 
         config = HMMGenericConfig(n_states=3)
         result = run(
@@ -324,8 +409,8 @@ class TestPipelineIntegration:
         if "low_data_warning" in info:
             assert isinstance(info["low_data_warning"], bool)
 
-    def test_confidence_penalty_applied_in_verdict(self):
-        """When degenerate_fit is true, verdict confidence is penalized."""
+    def test_confidence_not_penalized_for_recovered_model(self):
+        """After #95, verdict confidence is NOT artificially penalized."""
         import numpy as np
         import pandas as pd
 
@@ -337,13 +422,17 @@ class TestPipelineIntegration:
         dates = pd.date_range("2016-01-01", periods=n, freq="B")
         returns = np.random.normal(0, 0.005, n)
         returns[1200:1230] = -0.03
-        prices = pd.Series(
-            100 * np.exp(np.cumsum(returns)), index=dates, name="TEST"
+        prices = pd.Series(100 * np.exp(np.cumsum(returns)), index=dates, name="TEST")
+        ohlcv = pd.DataFrame(
+            {
+                "open": prices * 0.999,
+                "high": prices * 1.001,
+                "low": prices * 0.998,
+                "close": prices,
+                "volume": 1e6,
+            },
+            index=dates,
         )
-        ohlcv = pd.DataFrame({
-            "open": prices * 0.999, "high": prices * 1.001,
-            "low": prices * 0.998, "close": prices, "volume": 1e6,
-        }, index=dates)
 
         config = HMMGenericConfig(n_states=3)
         result = run(
@@ -355,9 +444,10 @@ class TestPipelineIntegration:
             profile=False,
         )
 
-        # When degenerate_fit is true, confidence should be < abs(signal)
-        if result.engine_info.get("degenerate_fit"):
-            assert result.verdict["confidence"] <= abs(result.signal)
+        # Confidence should NOT be scaled down by _apply_confidence_penalty
+        # (which no longer exists). It should be the raw verdict confidence.
+        assert isinstance(result.verdict["confidence"], (int, float))
+        assert 0.0 <= result.verdict["confidence"] <= 1.0
 
     def test_crm_hmm_includes_warning_field(self):
         """Acceptance criterion: CRM walk-forward results include ≥ 1 warning.
@@ -372,7 +462,12 @@ class TestPipelineIntegration:
         from hmm_futures_analysis.regime.engine_configs import HMMGenericConfig
         from hmm_futures_analysis.regime.pipeline import run
 
-        crm_path = Path(__file__).resolve().parent.parent.parent / "test_data" / "hmm-eval-2026-06-02" / "CRM.csv"
+        crm_path = (
+            Path(__file__).resolve().parent.parent.parent
+            / "test_data"
+            / "hmm-eval-2026-06-02"
+            / "CRM.csv"
+        )
         if not crm_path.exists():
             pytest.skip("CRM.csv eval data not available")
 
@@ -385,8 +480,12 @@ class TestPipelineIntegration:
 
         config = HMMGenericConfig(n_states=3)
         result = run(
-            prices, source="CRM", engine_config=config,
-            ohlcv=ohlcv, min_train=252, profile=False,
+            prices,
+            source="CRM",
+            engine_config=config,
+            ohlcv=ohlcv,
+            min_train=252,
+            profile=False,
         )
 
         warning_fields = {"degenerate_fit", "low_data_warning", "over_robustness"}
@@ -394,4 +493,3 @@ class TestPipelineIntegration:
         assert len(present) >= 1, (
             f"CRM/hmm should produce ≥ 1 warning field, got: {result.engine_info}"
         )
-

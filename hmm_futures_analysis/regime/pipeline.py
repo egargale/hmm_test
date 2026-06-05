@@ -215,12 +215,20 @@ def detect_degenerate_fit(
     *,
     n_states_was_auto: bool = False,
     hmm_regime_counts: dict[str, int] | None = None,
+    degenerate_auto_recovered: bool = False,
+    original_n_states: int | None = None,
 ) -> dict[str, object]:
     """Detect degenerate HMM fits per ADR-0018.
 
     Pure function: inspects regime balance, data dimensions, and engine
     identity. Returns diagnostic fields to merge into engine_info.
     Detection only — no regime assignment changes.
+
+    When ``degenerate_auto_recovered`` is True, the model has already been
+    auto-downgraded to a healthy state. In that case audit fields are emitted
+    (``degenerate_auto_recovered``, ``original_n_states``, ``recovery_method``)
+    instead of ``degenerate_fit: true`` — unless the recovered model is *still*
+    degenerate (defensive edge case).
     """
     diagnostics: dict[str, object] = {}
     hmm_with_collapse = {"hmm", "messina", "robust_hmm"}
@@ -236,6 +244,12 @@ def detect_degenerate_fit(
                 f"recommend minimum {min_bars} bars"
             )
 
+    # --- Auto-recovery audit (Issue #95) ---
+    if degenerate_auto_recovered:
+        diagnostics["degenerate_auto_recovered"] = True
+        diagnostics["original_n_states"] = original_n_states
+        diagnostics["recovery_method"] = f"auto-downgrade to n_states={n_states}"
+
     # --- Mode 1: State collapse (hmm, messina, robust_hmm) ---
     if engine_name in hmm_with_collapse:
         total = sum(regime_counts.values())
@@ -247,17 +261,37 @@ def detect_degenerate_fit(
                 if count / total < min_fraction
             ]
             if collapsed:
-                diagnostics["degenerate_fit"] = True
-                parts = []
-                for name, count in collapsed:
-                    pct = count / total * 100
-                    parts.append(f"{name} state has {pct:.1f}% of bars ({count}/{total})")
-                caveat = "; ".join(parts) + "; model is effectively "
-                n_effective = n_states - len(collapsed)
-                caveat += f"{n_effective}-regime"
-                if not n_states_was_auto:
-                    caveat += ". Consider --n-states auto"
-                diagnostics["degenerate_caveat"] = caveat
+                # If auto-recovery already happened, only flag degenerate_fit
+                # if the recovered model is STILL degenerate (defensive).
+                if not degenerate_auto_recovered:
+                    diagnostics["degenerate_fit"] = True
+                    parts = []
+                    for name, count in collapsed:
+                        pct = count / total * 100
+                        parts.append(
+                            f"{name} state has {pct:.1f}% of bars ({count}/{total})"
+                        )
+                    caveat = "; ".join(parts) + "; model is effectively "
+                    n_effective = n_states - len(collapsed)
+                    caveat += f"{n_effective}-regime"
+                    if not n_states_was_auto:
+                        caveat += ". Consider --n-states auto"
+                    diagnostics["degenerate_caveat"] = caveat
+                else:
+                    # Auto-recovered but still degenerate — defensive warning
+                    diagnostics["degenerate_fit"] = True
+                    parts = []
+                    for name, count in collapsed:
+                        pct = count / total * 100
+                        parts.append(
+                            f"{name} state has {pct:.1f}% of bars ({count}/{total})"
+                        )
+                    caveat = (
+                        "; ".join(parts) + " (post-recovery); model is effectively "
+                    )
+                    n_effective = n_states - len(collapsed)
+                    caveat += f"{n_effective}-regime"
+                    diagnostics["degenerate_caveat"] = caveat
 
     # --- Mode 3: Over-robustness (robust_hmm vs hmm) ---
     if engine_name == "robust_hmm" and hmm_regime_counts is not None:
@@ -265,8 +299,11 @@ def detect_degenerate_fit(
         total_hmm = sum(hmm_regime_counts.values())
         if total_robust > 0 and total_hmm > 0:
             all_below_10pct = all(
-                abs(regime_counts.get(k, 0) / total_robust
-                    - hmm_regime_counts.get(k, 0) / total_hmm) < 0.10
+                abs(
+                    regime_counts.get(k, 0) / total_robust
+                    - hmm_regime_counts.get(k, 0) / total_hmm
+                )
+                < 0.10
                 for k in ("bear", "sideways", "bull")
             )
             if all_below_10pct:
@@ -277,28 +314,6 @@ def detect_degenerate_fit(
                 )
 
     return diagnostics
-
-
-def _apply_confidence_penalty(
-    verdict: dict[str, object],
-    engine_info: dict[str, object],
-    regime_counts: dict[str, int],
-) -> dict[str, object]:
-    """Scale verdict confidence when degenerate_fit is detected.
-
-    Per ADR-0018: adjusted_confidence = raw_confidence × min(state_fraction) / 0.05
-    """
-    if not engine_info.get("degenerate_fit"):
-        return verdict
-
-    total = sum(regime_counts.values())
-    if total == 0:
-        return {**verdict, "confidence": 0.0}
-
-    min_fraction = min(regime_counts.values()) / total
-    penalty = min_fraction / 0.05
-    adjusted = float(verdict.get("confidence", 0)) * penalty
-    return {**verdict, "confidence": round(max(adjusted, 0.0), 4)}
 
 
 def _count_features(config: object) -> int:
@@ -481,7 +496,7 @@ def run(
         classify_out,
     )
 
-    # --- Degenerate-fit detection (ADR-0018) ---
+    # --- Degenerate-fit detection (ADR-0018, Issue #95 audit) ---
     n_features = _count_features(config)
     n_states_was_auto = isinstance(getattr(config, "n_states", 3), str)
     deg_diagnostics = detect_degenerate_fit(
@@ -491,6 +506,10 @@ def run(
         engine_name=engine_name,
         n_states=resolved_n_states,
         n_states_was_auto=n_states_was_auto,
+        degenerate_auto_recovered=bool(
+            engine_info.get("degenerate_auto_recovered", False)
+        ),
+        original_n_states=engine_info.get("original_n_states"),  # type: ignore[arg-type]
     )
     engine_info.update(deg_diagnostics)
 
@@ -515,11 +534,6 @@ def run(
         markov.signal,
         forecast_20,
         sideways_threshold=sideways_threshold,
-    )
-
-    # --- Confidence penalty for degenerate fits (ADR-0018) ---
-    verdict_out = _apply_confidence_penalty(
-        verdict_out, engine_info, markov.regime_counts
     )
 
     # --- Profiling ---
