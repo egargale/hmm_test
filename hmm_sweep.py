@@ -19,6 +19,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from tqdm import tqdm
+
 from hmm_futures_analysis.data_processing.csv_auto_detect import load_prices
 from hmm_futures_analysis.regime.engine_configs import HMMGenericConfig
 from hmm_futures_analysis.regime.pipeline import run as pipeline_run
@@ -129,7 +131,7 @@ def main():
     print("=" * 70)
 
     phase1 = []
-    for ticker, csv_path in ticker_csvs:
+    for ticker, csv_path in tqdm(ticker_csvs, desc="Phase 1: defaults", position=0, leave=True):
         s = run_config(ticker, csv_path, 3, None, 0, 0.0, "default")
         phase1.append(s)
         sharpe_str = str(s['sharpe'])
@@ -151,8 +153,8 @@ def main():
     print("\n--- 2a. n_states ---")
     ns_vals = [3, 4, 5, "auto"]
     ns_results = {t: [] for t in TICKERS_SORTED}
-    for ticker, csv_path in ticker_csvs:
-        for ns in ns_vals:
+    for ticker, csv_path in tqdm(ticker_csvs, desc="Phase 2a: n_states", position=0, leave=True):
+        for ns in tqdm(ns_vals, desc=f"  {ticker}", position=1, leave=False):
             s = run_config(ticker, csv_path, ns, None, 0, 0.0, f"n_states={ns}")
             ns_results[ticker].append(s)
             sharpe_str = str(s['sharpe'])
@@ -164,8 +166,8 @@ def main():
     print("\n--- 2b. pca_variance ---")
     pca_vals = [None, 0.90, 0.95, 0.99]
     pca_results = {t: [] for t in TICKERS_SORTED}
-    for ticker, csv_path in ticker_csvs:
-        for pca in pca_vals:
+    for ticker, csv_path in tqdm(ticker_csvs, desc="Phase 2b: pca_variance", position=0, leave=True):
+        for pca in tqdm(pca_vals, desc=f"  {ticker}", position=1, leave=False):
             s = run_config(ticker, csv_path, 3, pca, 0, 0.0, f"pca={pca}")
             pca_results[ticker].append(s)
             sharpe_str = str(s['sharpe'])
@@ -177,8 +179,8 @@ def main():
     print("\n--- 2c. dwell_bars ---")
     dwell_vals = [0, 2, 3, 5]
     dwell_results = {t: [] for t in TICKERS_SORTED}
-    for ticker, csv_path in ticker_csvs:
-        for dw in dwell_vals:
+    for ticker, csv_path in tqdm(ticker_csvs, desc="Phase 2c: dwell_bars", position=0, leave=True):
+        for dw in tqdm(dwell_vals, desc=f"  {ticker}", position=1, leave=False):
             s = run_config(ticker, csv_path, 3, None, dw, 0.0, f"dwell={dw}")
             dwell_results[ticker].append(s)
             sharpe_str = str(s['sharpe'])
@@ -190,8 +192,8 @@ def main():
     print("\n--- 2d. hysteresis_delta ---")
     hyst_vals = [0.0, 0.05, 0.1, 0.2]
     hyst_results = {t: [] for t in TICKERS_SORTED}
-    for ticker, csv_path in ticker_csvs:
-        for hy in hyst_vals:
+    for ticker, csv_path in tqdm(ticker_csvs, desc="Phase 2d: hysteresis_delta", position=0, leave=True):
+        for hy in tqdm(hyst_vals, desc=f"  {ticker}", position=1, leave=False):
             s = run_config(ticker, csv_path, 3, None, 0, hy, f"hyst={hy}")
             hyst_results[ticker].append(s)
             sharpe_str = str(s['sharpe'])
