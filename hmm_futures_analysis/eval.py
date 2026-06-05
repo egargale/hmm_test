@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
+from tqdm import tqdm
 
 from .data_processing.csv_auto_detect import load_prices
 from .regime.engine_configs import (
@@ -94,10 +95,10 @@ def run_eval_csv(
         raise ValueError(f"No CSV files found in {csv_dir}")
 
     results: list[dict[str, Any]] = []
-    for csv_file in csv_files:
+    for csv_file in tqdm(csv_files, desc="CSVs", position=0, leave=True):
         ticker = csv_file.stem
         prices, ohlcv, source = load_prices(csv=str(csv_file))
-        for engine_name in engines:
+        for engine_name in tqdm(engines, desc=f"  {ticker}", position=1, leave=False):
             config = _make_config(engine_name)
             t0 = time.monotonic()
             output = pipeline_run(
@@ -129,14 +130,14 @@ def run_eval_tickers(
         cache_dir.mkdir(parents=True, exist_ok=True)
 
     results: list[dict[str, Any]] = []
-    for ticker in tickers:
+    for ticker in tqdm(tickers, desc="Tickers", position=0, leave=True):
         if cache_dir:
             csv_path = _save_ticker_csv(ticker, cache_dir)
             prices, ohlcv, _source = load_prices(csv=str(csv_path))
         else:
             prices, ohlcv, _source = load_prices(ticker=ticker)
 
-        for engine_name in engines:
+        for engine_name in tqdm(engines, desc=f"  {ticker}", position=1, leave=False):
             config = _make_config(engine_name)
             t0 = time.monotonic()
             output = pipeline_run(
