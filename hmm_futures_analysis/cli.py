@@ -92,7 +92,7 @@ def _write_saliency_csv(output, path: str) -> None:
             writer.writerow([i, f"{w:.6f}", is_sel])
 
 
-def _print_terminal(output) -> None:
+def _print_terminal(output, *, transitions_limit=None) -> None:
     """Pretty-print regime analysis results to stderr."""
     width = 54
     sep = "─" * width
@@ -196,6 +196,25 @@ def _print_terminal(output) -> None:
         else:
             print("  (insufficient historical spells for fitting)", file=sys.stderr)
 
+    # --- Regime transitions (issue #63) ---
+    if transitions_limit is not None and sr.regime_transitions:
+        header("REGIME TRANSITIONS")
+        all_transitions = sr.regime_transitions
+        # Show most recent first (reverse chronological)
+        shown = list(reversed(all_transitions))
+        if transitions_limit > 0:
+            shown = shown[:transitions_limit]
+        for ev in shown:
+            print(
+                f"  {ev['date']}  {ev['from_regime'].upper()} → {ev['to_regime'].upper()}",
+                file=sys.stderr,
+            )
+        if transitions_limit > 0 and len(all_transitions) > transitions_limit:
+            print(
+                f"  ... ({len(all_transitions) - transitions_limit} more)",
+                file=sys.stderr,
+            )
+
     header("DISCLAIMER")
     print(f"  {sr.disclaimer}", file=sys.stderr)
     print(sep, file=sys.stderr)
@@ -214,6 +233,38 @@ def _parse_n_states(value: str) -> str | int:
     if iv < 2:
         raise argparse.ArgumentTypeError(f"--n-states must be >= 2, got {iv}")
     return iv
+
+
+def _parse_dwell_bars(value: str) -> str | int:
+    """Parse --dwell-bars: accept 'auto' or a non-negative integer."""
+    if value == "auto":
+        return "auto"
+    try:
+        iv = int(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            f"--dwell-bars must be 'auto' or an integer, got {value!r}"
+        )
+    if iv < 0:
+        raise argparse.ArgumentTypeError(f"--dwell-bars must be >= 0, got {iv}")
+    return iv
+
+
+def _parse_hysteresis(value: str) -> str | float:
+    """Parse --hysteresis: accept 'auto' or a float in [0, 1)."""
+    if value == "auto":
+        return "auto"
+    try:
+        fv = float(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            f"--hysteresis must be 'auto' or a number, got {value!r}"
+        )
+    if fv < 0.0 or fv >= 1.0:
+        raise argparse.ArgumentTypeError(
+            f"--hysteresis must be in [0, 1), got {fv}"
+        )
+    return fv
 
 
 def main() -> None:
@@ -271,15 +322,15 @@ def main() -> None:
     )
     parser.add_argument(
         "--dwell-bars",
-        type=int,
-        default=0,
-        help="Dwell-time filter: require N consecutive same-regime bars before switching position (default: 0 = disabled).",
+        type=_parse_dwell_bars,
+        default="auto",
+        help="Dwell-time filter: require N consecutive same-regime bars before switching position. Accepts 'auto' for engine defaults (default: auto).",
     )
     parser.add_argument(
         "--hysteresis",
-        type=float,
-        default=0.0,
-        help="Hysteresis filter: require posterior probability margin > D to switch regime (default: 0.0 = disabled).",
+        type=_parse_hysteresis,
+        default="auto",
+        help="Hysteresis filter: require posterior probability margin > D to switch regime. Accepts 'auto' for engine defaults (default: auto).",
     )
     parser.add_argument(
         "--robust-method",
@@ -347,6 +398,12 @@ def main() -> None:
         default="weibull",
         choices=["weibull", "cox"],
         help="Survival model for duration forecasting: weibull (default) or cox (requires lifelines).",
+    )
+    parser.add_argument(
+        "--transitions",
+        type=int,
+        default=None,
+        help="Show N most recent regime transitions in terminal output (default: disabled). 0 shows all.",
     )
 
     args = parser.parse_args()
@@ -446,7 +503,7 @@ def main() -> None:
             json.dump(output._asdict(), sys.stdout, indent=2, allow_nan=False)
             sys.stdout.write("\n")
         else:
-            _print_terminal(output)
+            _print_terminal(output, transitions_limit=args.transitions)
 
         # Write saliency weights CSV if requested
         if args.saliency_output and args.engine == "fshmm":

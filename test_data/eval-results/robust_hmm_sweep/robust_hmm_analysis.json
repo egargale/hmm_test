@@ -1,0 +1,170 @@
+{
+  "per_ticker": {
+    "0700_HK": {
+      "default_sharpe": -0.05193828408924675,
+      "default_return": 0.015347909960385042,
+      "best_config": "DEFAULT",
+      "best_sharpe": -0.05193828408924675,
+      "best_params": {
+        "n_states": "3",
+        "pca_variance": null
+      },
+      "sharpe_delta": 0.0
+    },
+    "BTC": {
+      "default_sharpe": 0.31417949411683815,
+      "default_return": 0.5009742062770994,
+      "best_config": "ns=auto_pca=no",
+      "best_sharpe": 0.7392772045324031,
+      "best_params": {
+        "n_states": "auto",
+        "pca_variance": null
+      },
+      "sharpe_delta": 0.42509771041556493
+    },
+    "CRM": {
+      "default_sharpe": -0.2610400291198185,
+      "default_return": -0.4491900876957018,
+      "best_config": "ns=5_pca=0.99",
+      "best_sharpe": 0.0,
+      "best_params": {
+        "n_states": "5",
+        "pca_variance": 0.99
+      },
+      "sharpe_delta": 0.2610400291198185
+    },
+    "KO": {
+      "default_sharpe": -0.22292179140130675,
+      "default_return": -0.08553622364201763,
+      "best_config": "ns=3_pca=0.99",
+      "best_sharpe": 0.4847133442792658,
+      "best_params": {
+        "n_states": "3",
+        "pca_variance": 0.99
+      },
+      "sharpe_delta": 0.7076351356805726
+    },
+    "SPY": {
+      "default_sharpe": -0.7049718468077218,
+      "default_return": -0.1710255940828701,
+      "best_config": "ns=3_pca=0.9",
+      "best_sharpe": 0.5566217337982825,
+      "best_params": {
+        "n_states": "3",
+        "pca_variance": 0.9
+      },
+      "sharpe_delta": 1.2615935806060044
+    }
+  },
+  "ranking": [
+    {
+      "config": "ns=3_pca=0.9",
+      "avg_sharpe": 0.050481,
+      "avg_return": 0.509688,
+      "median_sharpe": 0.4064,
+      "positive": 3,
+      "total": 5
+    },
+    {
+      "config": "ns=auto_pca=0.9",
+      "avg_sharpe": 0.049928,
+      "avg_return": 0.312339,
+      "median_sharpe": 0.397745,
+      "positive": 3,
+      "total": 5
+    },
+    {
+      "config": "ns=3_pca=0.95",
+      "avg_sharpe": -0.09375,
+      "avg_return": 0.029495,
+      "median_sharpe": -0.383646,
+      "positive": 2,
+      "total": 5
+    },
+    {
+      "config": "ns=auto_pca=0.99",
+      "avg_sharpe": -0.169361,
+      "avg_return": -0.110741,
+      "median_sharpe": -0.345235,
+      "positive": 1,
+      "total": 5
+    },
+    {
+      "config": "ns=auto_pca=no",
+      "avg_sharpe": -0.176434,
+      "avg_return": 0.177476,
+      "median_sharpe": -0.254094,
+      "positive": 1,
+      "total": 5
+    },
+    {
+      "config": "DEFAULT",
+      "avg_sharpe": -0.185338,
+      "avg_return": -0.037886,
+      "median_sharpe": -0.222922,
+      "positive": 1,
+      "total": 5
+    },
+    {
+      "config": "ns=3_pca=0.99",
+      "avg_sharpe": -0.231054,
+      "avg_return": 0.004658,
+      "median_sharpe": -0.497144,
+      "positive": 2,
+      "total": 5
+    },
+    {
+      "config": "ns=auto_pca=0.95",
+      "avg_sharpe": -0.238726,
+      "avg_return": -0.282748,
+      "median_sharpe": -0.426644,
+      "positive": 1,
+      "total": 5
+    },
+    {
+      "config": "ns=5_pca=no",
+      "avg_sharpe": -0.274091,
+      "avg_return": -0.325046,
+      "median_sharpe": -0.090595,
+      "positive": 0,
+      "total": 5
+    },
+    {
+      "config": "ns=5_pca=0.99",
+      "avg_sharpe": -0.502008,
+      "avg_return": -0.361187,
+      "median_sharpe": -0.379416,
+      "positive": 0,
+      "total": 5
+    },
+    {
+      "config": "ns=5_pca=0.9",
+      "avg_sharpe": -0.621437,
+      "avg_return": -0.235468,
+      "median_sharpe": -0.586593,
+      "positive": 1,
+      "total": 5
+    },
+    {
+      "config": "ns=5_pca=0.95",
+      "avg_sharpe": -0.997048,
+      "avg_return": -0.346711,
+      "median_sharpe": -0.426644,
+      "positive": 0,
+      "total": 5
+    }
+  ],
+  "param_freq": {
+    "n_states=auto": 7,
+    "n_states=3": 5,
+    "pca=none": 5,
+    "pca=0.99": 5,
+    "pca=0.9": 4,
+    "n_states=5": 3,
+    "pca=0.95": 1
+  },
+  "improved": 4,
+  "worsened": 0,
+  "neutral": 1,
+  "total_tickers": 5
+}

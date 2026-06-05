@@ -36,7 +36,7 @@ class TestFSHMMGoldenMaster:
         assert baseline_result.regime == 0
 
     def test_means_shape_3x48(self, baseline_result):
-        assert baseline_result.means.shape == (3, 48)
+        assert baseline_result.means.shape == (3, 49)
 
     def test_posteriors_sum_to_one(self, baseline_result):
         assert abs(baseline_result.posteriors.sum() - 1.0) < 1e-6
@@ -74,9 +74,9 @@ class TestFSHMMWithPCA:
     def test_pca_means_reduced_dimensionality(self, spy_features):
         engine = FSHMMEngine(n_states=3, random_state=42, pca_variance=0.95)
         result = engine.classify(spy_features)
-        # PCA reduces from 48 features — means should have fewer columns
+        # PCA reduces from 49 features — means should have fewer columns
         assert result.means.shape[0] == 3
-        assert result.means.shape[1] < 48
+        assert result.means.shape[1] < 49
 
     def test_pca_posteriors_valid(self, spy_features):
         engine = FSHMMEngine(n_states=3, random_state=42, pca_variance=0.95)
@@ -89,7 +89,7 @@ class TestFSHMMSaliencyPreserved:
     """Feature saliency output must survive the refactor unchanged."""
 
     def test_saliency_shape(self, baseline_result):
-        assert np.array(baseline_result.feature_saliency).shape == (48,)
+        assert np.array(baseline_result.feature_saliency).shape == (49,)
 
     def test_saliency_values_between_0_and_1(self, baseline_result):
         saliency = np.array(baseline_result.feature_saliency)

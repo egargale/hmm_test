@@ -28,6 +28,7 @@ from .markov_chain import (
     compute_stationary_distribution,
     forecast_n_steps,
 )
+from .regime_transitions import extract_transitions
 from .walk_forward import walk_forward_backtest
 
 
@@ -76,6 +77,7 @@ class PipelineResult(NamedTuple):
     disclaimer: str
     verdict: dict
     duration_forecast: dict | None = None
+    regime_transitions: list | None = None
     timing: dict | None = None
 
 
@@ -204,18 +206,140 @@ def _validate_prices(prices: pd.Series) -> pd.Series:
     return returns
 
 
+def detect_degenerate_fit(
+    regime_counts: dict[str, int],
+    n_bars: int,
+    n_features: int,
+    engine_name: str,
+    n_states: int,
+    *,
+    n_states_was_auto: bool = False,
+    hmm_regime_counts: dict[str, int] | None = None,
+    degenerate_auto_recovered: bool = False,
+    original_n_states: int | None = None,
+) -> dict[str, object]:
+    """Detect degenerate HMM fits per ADR-0018.
+
+    Pure function: inspects regime balance, data dimensions, and engine
+    identity. Returns diagnostic fields to merge into engine_info.
+    Detection only — no regime assignment changes.
+
+    When ``degenerate_auto_recovered`` is True, the model has already been
+    auto-downgraded to a healthy state. In that case audit fields are emitted
+    (``degenerate_auto_recovered``, ``original_n_states``, ``recovery_method``)
+    instead of ``degenerate_fit: true`` — unless the recovered model is *still*
+    degenerate (defensive edge case).
+    """
+    diagnostics: dict[str, object] = {}
+    hmm_with_collapse = {"hmm", "messina", "robust_hmm"}
+    hmm_all = hmm_with_collapse | {"fshmm"}
+
+    # --- Mode 2: Low-data warning ---
+    if engine_name in hmm_all:
+        min_bars = 4 * n_features * n_states
+        if n_bars < min_bars:
+            diagnostics["low_data_warning"] = True
+            diagnostics["low_data_caveat"] = (
+                f"{n_bars} bars with {n_features} features × {n_states} states; "
+                f"recommend minimum {min_bars} bars"
+            )
+
+    # --- Auto-recovery audit (Issue #95) ---
+    if degenerate_auto_recovered:
+        diagnostics["degenerate_auto_recovered"] = True
+        diagnostics["original_n_states"] = original_n_states
+        diagnostics["recovery_method"] = f"auto-downgrade to n_states={n_states}"
+
+    # --- Mode 1: State collapse (hmm, messina, robust_hmm) ---
+    if engine_name in hmm_with_collapse:
+        total = sum(regime_counts.values())
+        if total > 0:
+            min_fraction = 0.05
+            collapsed = [
+                (name, count)
+                for name, count in regime_counts.items()
+                if count / total < min_fraction
+            ]
+            if collapsed:
+                # If auto-recovery already happened, only flag degenerate_fit
+                # if the recovered model is STILL degenerate (defensive).
+                if not degenerate_auto_recovered:
+                    diagnostics["degenerate_fit"] = True
+                    parts = []
+                    for name, count in collapsed:
+                        pct = count / total * 100
+                        parts.append(
+                            f"{name} state has {pct:.1f}% of bars ({count}/{total})"
+                        )
+                    caveat = "; ".join(parts) + "; model is effectively "
+                    n_effective = n_states - len(collapsed)
+                    caveat += f"{n_effective}-regime"
+                    if not n_states_was_auto:
+                        caveat += ". Consider --n-states auto"
+                    diagnostics["degenerate_caveat"] = caveat
+                else:
+                    # Auto-recovered but still degenerate — defensive warning
+                    diagnostics["degenerate_fit"] = True
+                    parts = []
+                    for name, count in collapsed:
+                        pct = count / total * 100
+                        parts.append(
+                            f"{name} state has {pct:.1f}% of bars ({count}/{total})"
+                        )
+                    caveat = (
+                        "; ".join(parts) + " (post-recovery); model is effectively "
+                    )
+                    n_effective = n_states - len(collapsed)
+                    caveat += f"{n_effective}-regime"
+                    diagnostics["degenerate_caveat"] = caveat
+
+    # --- Mode 3: Over-robustness (robust_hmm vs hmm) ---
+    if engine_name == "robust_hmm" and hmm_regime_counts is not None:
+        total_robust = sum(regime_counts.values())
+        total_hmm = sum(hmm_regime_counts.values())
+        if total_robust > 0 and total_hmm > 0:
+            all_below_10pct = all(
+                abs(
+                    regime_counts.get(k, 0) / total_robust
+                    - hmm_regime_counts.get(k, 0) / total_hmm
+                )
+                < 0.10
+                for k in ("bear", "sideways", "bull")
+            )
+            if all_below_10pct:
+                diagnostics["over_robustness"] = True
+                diagnostics["over_robustness_caveat"] = (
+                    "regime counts differ from hmm by <10% on all states; "
+                    "robust correction not adding value"
+                )
+
+    return diagnostics
+
+
+def _count_features(config: object) -> int:
+    """Return the number of features an engine config requires.
+
+    Uses the config's ``features`` attribute to determine feature count.
+    """
+    features_label = getattr(config, "features", None)
+    if features_label == "returns":
+        return 1
+    if features_label == "messina":
+        return 19
+    # Generic features (hmm, robust_hmm, fshmm)
+    return 50
+
+
 def _build_engine_info(
     engine_config: object,
     resolved_n_states: int,
-    eng: object | None,
-    *,
-    warmup_bars: int | None = None,
+    classify_out: object | None = None,
 ) -> dict[str, object]:
-    """Build engine_info dict from config and optional engine instance.
+    """Build engine_info dict from config and classify output.
 
     Constructs base info (method, features, n_states) from config,
-    then enriches via duck-typed ``enrich_info()`` if the engine
-    provides it.
+    then merges engine metadata from ``classify_out.engine_info``
+    if the engine populated it.
     """
     engine = getattr(engine_config, "name", None)
     features_label: str = getattr(engine_config, "features", engine)
@@ -225,9 +349,9 @@ def _build_engine_info(
         "features": features_label,
         "n_states": resolved_n_states,
     }
-    if hasattr(eng, "enrich_info"):
-        ctx = {"warmup_bars": warmup_bars} if warmup_bars is not None else {}
-        info.update(eng.enrich_info(ctx))
+    engine_meta = getattr(classify_out, "engine_info", None)
+    if engine_meta:
+        info.update(engine_meta)
     return info
 
 
@@ -282,8 +406,8 @@ def run(
     engine_config: object = None,
     min_train: int = 252,
     ohlcv: pd.DataFrame | None = None,
-    dwell_bars: int = 0,
-    hysteresis_delta: float = 0.0,
+    dwell_bars: int | str = 0,
+    hysteresis_delta: float | str = 0.0,
     duration_forecast: bool = False,
     duration_model: str = "weibull",
     profile: bool = True,
@@ -306,6 +430,12 @@ def run(
         )
 
     returns = _validate_prices(prices)
+
+    # Resolve 'auto' filter params to engine config defaults
+    if dwell_bars == "auto":
+        dwell_bars = getattr(engine_config, "default_dwell_bars", 0)
+    if hysteresis_delta == "auto":
+        hysteresis_delta = getattr(engine_config, "default_hysteresis_delta", 0.0)
 
     config = engine_config
     resolved_n_states: int = getattr(config, "n_states", 3)
@@ -363,9 +493,25 @@ def run(
     engine_info = _build_engine_info(
         config,
         resolved_n_states,
-        eng,
-        warmup_bars=classify_out.warmup_bars,
+        classify_out,
     )
+
+    # --- Degenerate-fit detection (ADR-0018, Issue #95 audit) ---
+    n_features = _count_features(config)
+    n_states_was_auto = isinstance(getattr(config, "n_states", 3), str)
+    deg_diagnostics = detect_degenerate_fit(
+        regime_counts=markov.regime_counts,
+        n_bars=len(classify_out.regimes),
+        n_features=n_features,
+        engine_name=engine_name,
+        n_states=resolved_n_states,
+        n_states_was_auto=n_states_was_auto,
+        degenerate_auto_recovered=bool(
+            engine_info.get("degenerate_auto_recovered", False)
+        ),
+        original_n_states=engine_info.get("original_n_states"),  # type: ignore[arg-type]
+    )
+    engine_info.update(deg_diagnostics)
 
     # --- Duration forecast (compute before result assembly) ---
     df_result: dict | None = None
@@ -375,6 +521,11 @@ def run(
         df_result = forecast_duration(
             classify_out.regimes, model=duration_model, prices=prices
         )
+
+    # --- Regime transitions (always computed, issue #63) ---
+    transitions = [
+        ev._asdict() for ev in extract_transitions(classify_out.regimes, prices.index)
+    ]
 
     # --- Synthesized verdict ---
     sideways_threshold = _compute_dynamic_threshold(df_result)
@@ -439,5 +590,6 @@ def run(
         disclaimer=_DISCLAIMER,
         verdict=verdict_out,
         duration_forecast=df_result,
+        regime_transitions=transitions,
         timing=timing,
     )

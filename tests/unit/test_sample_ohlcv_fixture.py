@@ -11,10 +11,10 @@ def test_sample_ohlcv_has_datetime_index(sample_ohlcv):
 
 
 def test_sample_ohlcv_columns_and_row_count(sample_ohlcv):
-    """Fixture must have columns open/high/low/close/volume and ~125 rows."""
-    expected_cols = ["open", "high", "low", "close", "volume"]
+    """Fixture must have columns open/high/low/close/volume and ~2513 rows."""
+    expected_cols = ["close", "high", "low", "open", "volume"]
     assert list(sample_ohlcv.columns) == expected_cols
-    assert 100 <= len(sample_ohlcv) <= 150
+    assert 2500 <= len(sample_ohlcv) <= 2600
 
 
 def test_no_synthetic_csv_remains():

@@ -40,6 +40,10 @@ _Avoid_: indicator calculation, TA computation
 A trade with an entry time, entry price, exit time, exit price, and P&L. Positions are {-1, 0, 1}. A trade is opened when the regime changes and closed when it changes again. Transaction costs (commission, slippage) are modeled but default to zero for engine comparability.
 _Avoid_: continuous position, fractional trade, signal-weighted trade
 
+**Degenerate auto-recovery**:
+When an HMM engine's pre-check detects that a 3-state fit will collapse (one state receiving < 5% of bars), the engine automatically downgrades to `n_states=2` before entering the walk-forward loop. The output uses the 2-state regime mapping (Bear/Bull, no Sideways). The original requested `n_states` and the auto-recovery event are recorded in `engine_info`. Per ADR-0018 (amended).
+_Avoid_: auto-retry, fallback, degenerate retry
+
 **Regime spooling**:
 The threshold engine's method for mapping classified regimes to trading positions. At each bar, the regime (0/1/2) from `classify_regimes()` is mapped directly to a position via `{0: -1, 1: 0, 2: 1}`. No signal threshold or intermediate computation.
 _Avoid_: signal-gating, conviction filtering
@@ -76,6 +80,10 @@ _Avoid_: saliency model, feature selection engine
 A flat dataclass that encapsulates all constructor parameters for one engine. Each engine has its own config class (e.g. `ThresholdConfig`, `RobustHMMConfig`) with fields matching the engine's `__init__`. Configs also carry `name` (the registry key) and `features` (the feature-engineering mode label). The CLI constructs the right config from CLI args; pipeline and walk-forward never see engine-specific kwargs. Per ADR-0011.
 _Avoid_: engine settings, engine params
 
+**Regime transitions**:
+Historical regime change events extracted from the classified regime sequence by `extract_transitions()` in `regime_transitions.py`. Each event is a `TransitionEvent` namedtuple with `date` (ISO), `from_regime`, `to_regime`, and `bar_index`. Walks adjacent regime pairs and emits one event per change. Always computed in `pipeline.run()` and included in `PipelineResult.regime_transitions`. In terminal output, displayed via `--transitions N` (N most recent, 0 = all); in JSON, always present.
+_Avoid_: regime changes, regime history
+
 **Duration forecast**:
 Post-processing, now on by default, that estimates how long the current regime will persist. Two survival models: `weibull` (Weibull distribution fit to historical regime durations — default, no extra dependencies) and `cox` (Cox proportional hazards with realized-volatility and spell-return covariates — requires `lifelines`). Outputs expected remaining days, hazard rate, 50%-survival point, and Weibull shape/scale. The Cox model adds covariate-adjusted predictions (`cox_expected_remaining_days`, `cox_coefficients`, `concordance_index`). Opt-out via `duration_forecast=False` on `pipeline.run()`.
 _Avoid_: regime length prediction, time-to-transition
@@ -93,12 +101,12 @@ _Avoid_: adaptive threshold, variable cutoff
 | Engine | Best for | Weakness |
 |---|---|---|
 | `threshold` | Crypto, high-vol assets, close-only data | Whipsaw-heavy without dwell-bars; negative Sharpe on low-vol equities |
-| `hmm` (generic) | Low-vol equities (e.g. KO, SPY), OHLCV-rich data | Degenerates on high-vol crypto — classifies 100% Sideways; `~50 features overwhelm HMM on short/noisy windows |
-| `messina` | Medium-vol assets, regime-aware feature set | 19 features are less discriminative than 50 — often returns 100% Sideways |
-| `robust_hmm` | Data with outlier bars | Same asset-vol sensitivity as `hmm`; Huber/MCD correction helps emission stability but not regime separation |
-| `fshmm` | Feature selection diagnostics | Saliency weights (ρ) identify dead features but don't fix the high-vol degeneration problem |
+| `hmm` (generic) | Low-vol equities (e.g. KO, SPY), OHLCV-rich data | No universal PCA setting; per-ticker tuning needed; CRM unsalvageable across all configs |
+| `messina` | Medium-vol assets, OHLCV-rich data | Requires PCA whitening (0.95) to overcome feature multicollinearity; without PCA the engine degenerates to 1-trade fits |
+| `robust_hmm` | Data with outlier bars, broad indices (SPY) | PCA=0.90 required for positive Sharpe on most tickers; 0700_HK and CRM uniformly negative |
+| `fshmm` | Feature selection diagnostics, individual equities | Saliency weights (ρ) identify dead features but don't fix high-vol degeneration; negative Sharpe on SPY, KO, BTC at defaults |
 
-**Rule of thumb**: If daily std > 2%, prefer `threshold` with dwell-bars ≥ 5. If daily std < 1.5% and OHLCV is available, `hmm` with n_states=3 often outperforms threshold. `n_states=auto` (BIC) tends to over-select states on financial data — cap at 4 for trading use.
+**Rule of thumb**: If daily std > 2%, prefer `threshold` with dwell-bars ≥ 5. If daily std < 1.5% and OHLCV is available, `hmm` with n_states=3 often outperforms threshold. `n_states=auto` (BIC) is worth trying — it recovered BTC from +0.31 to +0.78 Sharpe on the generic engine and from +0.31 to +0.74 on robust_hmm. The `n_states=2` edge case is now handled correctly (bear/bull with no sideways). Per ADR-0019.
 
 - **"state"**: Use **regime** for the labeled market condition (Bear/Sideways/Bull) and **HMM latent state** for the raw model output index. Never use "state" alone.
 - **"method"**: Use **engine** for the selected analysis pipeline. The old term "method" appears in the JSON `params.method` field; this is legacy from when threshold was the only engine and should migrate to `engine_info.method`.

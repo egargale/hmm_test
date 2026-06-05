@@ -8,16 +8,18 @@ import numpy as np
 import pandas as pd
 from hmmlearn import hmm
 
-from ..engine_protocol import ClassifyOutput, ClassifyResult
-from ._hmm_engine import _classify_hmm_slice, engineer_features
+from ..engine_protocol import ClassifyResult
+from ._hmm_engine import HMMEngineBase, _classify_hmm_slice, engineer_features
 
 
-class FSHMMEngine:
+class FSHMMEngine(HMMEngineBase):
     """Regime engine using Feature Saliency HMM (Adams et al. 2016).
 
     Learns per-feature saliency weights rho_k during EM training.
     Features with rho_k < saliency_threshold are masked as irrelevant.
     """
+
+    use_messina = False
 
     def __init__(
         self,
@@ -28,39 +30,18 @@ class FSHMMEngine:
         tol: float = 1e-4,
         random_state: int = 42,
     ) -> None:
-        self.n_states = n_states
-        self.pca_variance = pca_variance
+        super().__init__(n_states=n_states, pca_variance=pca_variance)
         self.saliency_threshold = saliency_threshold
         self.max_iter = max_iter
         self.tol = tol
         self.random_state = random_state
 
-    def precompute(self, data: pd.DataFrame) -> pd.DataFrame | None:
-        if data is None:
-            raise ValueError("FSHMMEngine requires OHLCV data for feature engineering")
-        return engineer_features(data, use_messina=False)
-
-    def enrich_info(self, info: dict) -> dict:
-        result = {**info}
-        result["caveat"] = "HMM states sorted by mean return; labels may swap on re-fit"
+    def _build_engine_info(self, warmup_bars: int | None = None) -> dict:
+        result = super()._build_engine_info(warmup_bars=warmup_bars)
         if hasattr(self, "_last_saliency") and self._last_saliency is not None:
             result["feature_saliency"] = self._last_saliency
             result["selected_features"] = self._last_selected_features
         return result
-
-    def run_classify(
-        self,
-        prices: pd.Series,
-        ohlcv: pd.DataFrame | None,
-        returns: pd.Series,
-        min_train: int,
-        **kwargs,
-    ) -> ClassifyOutput:
-        from ._hmm_pipeline import _hmm_classify_pipeline
-
-        return _hmm_classify_pipeline(
-            self, prices, ohlcv, returns, min_train, **kwargs
-        )
 
     def classify(
         self, data: pd.DataFrame, prev_means: np.ndarray | None = None

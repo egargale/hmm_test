@@ -1,0 +1,48 @@
+[
+  {
+    "ticker": "TEST",
+    "config_label": "",
+    "params": {
+      "n_states": 3,
+      "pca_variance": null,
+      "dwell_bars": 0,
+      "hysteresis_delta": 0.0
+    },
+    "regime": "bull",
+    "signal": 0.5,
+    "sharpe": 1.0,
+    "max_drawdown": -0.1,
+    "n_trades": 10,
+    "win_rate": 0.6,
+    "profit_factor": 1.2,
+    "total_return": 0.3,
+    "wall_seconds": 0.01,
+    "engine_info": {
+      "features": "?",
+      "resolved_n_states": 3
+    }
+  },
+  {
+    "ticker": "TEST",
+    "config_label": "",
+    "params": {
+      "n_states": 3,
+      "pca_variance": null,
+      "dwell_bars": 0,
+      "hysteresis_delta": 0.0
+    },
+    "regime": "bull",
+    "signal": 0.5,
+    "sharpe": 1.0,
+    "max_drawdown": -0.1,
+    "n_trades": 10,
+    "win_rate": 0.6,
+    "profit_factor": 1.2,
+    "total_return": 0.3,
+    "wall_seconds": 0.01,
+    "engine_info": {
+      "features": "?",
+      "resolved_n_states": 3
+    }
+  }
+]

@@ -117,6 +117,92 @@ class TestWalkForwardClassify:
         # Every bar must yield a valid regime (no crashes, no gaps)
         assert all(0 <= r.regime <= 2 for _, r in results)
 
+    def test_final_bar_always_refits(self):
+        """Final bar triggers a refit even when off the regular refit_every cadence."""
+        # n=62, min_train=50 → refit_every=5
+        # Regular refit bars: 50, 55, 60. Final bar 61 is off-cadence.
+        n = 62
+        min_train = 50
+        returns = pd.Series(
+            np.random.randn(n), index=pd.date_range("2020-01-01", periods=n, freq="B")
+        )
+        features = pd.DataFrame({"f1": np.random.randn(n)}, index=returns.index)
+
+        refit_bars: list[int] = []
+
+        class _TrackingEngine(_StubEngine):
+            def classify(self, data, prev_means=None):
+                refit_bars.append(len(data))  # len(data) == t at refit time
+                return super().classify(data, prev_means)
+
+        engine = _TrackingEngine(regime=2)
+        list(
+            _walk_forward_classify(
+                returns,
+                eng=engine,
+                precomputed=features,
+                min_train=min_train,
+                profile=False,
+            )
+        )
+
+        # The final bar (t = n - 1 = 61) must trigger a refit
+        assert (n - 1) in refit_bars
+
+    def test_intermediate_bars_carry_forward_unchanged(self):
+        """Non-refit intermediate bars still carry forward the previous result."""
+        # n=62, min_train=50 → refit_every=5
+        # Regular refit bars: 50, 55, 60. Forced refit at 61.
+        # Bars 51-54 carry forward from refit at 50.
+        # Bars 56-59 carry forward from refit at 55.
+        # Bar 60 is a regular refit. Bar 61 is the forced final refit.
+        n = 62
+        min_train = 50
+        returns = pd.Series(
+            np.random.randn(n), index=pd.date_range("2020-01-01", periods=n, freq="B")
+        )
+        features = pd.DataFrame({"f1": np.random.randn(n)}, index=returns.index)
+
+        call_count = 0
+
+        class _RegimeCountingEngine(_StubEngine):
+            def classify(self, data, prev_means=None):
+                nonlocal call_count
+                call_count += 1
+                # Return a unique regime per call so carry-forward is detectable
+                return ClassifyResult(
+                    regime=call_count + 10,  # 11, 12, 13, 14...
+                    means=np.array([[0.0]]),
+                    posteriors=np.array([0.1, 0.8, 0.1]),
+                )
+
+        from hmm_futures_analysis.regime.engine_protocol import ClassifyResult
+
+        engine = _RegimeCountingEngine(regime=0)
+        results = list(
+            _walk_forward_classify(
+                returns,
+                eng=engine,
+                precomputed=features,
+                min_train=min_train,
+                profile=False,
+            )
+        )
+
+        # Refit at t=50 → regime=11, carried at t=51,52,53,54
+        assert results[0][1].regime == 11  # t=50 (refit)
+        assert results[1][1].regime == 11  # t=51 (carry)
+        assert results[2][1].regime == 11  # t=52 (carry)
+        assert results[3][1].regime == 11  # t=53 (carry)
+        assert results[4][1].regime == 11  # t=54 (carry)
+        # Refit at t=55 → regime=12, carried at t=56,57,58,59
+        assert results[5][1].regime == 12  # t=55 (refit)
+        assert results[6][1].regime == 12  # t=56 (carry)
+        # Refit at t=60 → regime=13
+        assert results[10][1].regime == 13  # t=60 (refit)
+        # Forced refit at t=61 → regime=14
+        assert results[11][1].regime == 14  # t=61 (forced final refit)
+
     def test_profile_collects_timing(self):
         """With profile=True, classify times are recorded in _classify_times."""
         n = 100
