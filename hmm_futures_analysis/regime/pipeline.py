@@ -2,8 +2,10 @@
 
 This module owns the full analysis pipeline: threshold-based regime
 classification, transition matrix, statistics, forecasts, and walk-forward
-backtest.  Supports three engines: threshold (fast, close-only), messina
-(HMM + 19 Messina features), and hmm (HMM + ~50 generic features).
+backtest.  Supports five engines: threshold (fast, close-only), hmm
+(HMM + ~50 generic features), messina (HMM + 19 Messina features),
+robust_hmm (HMM + outlier-resistant emissions), and fshmm (HMM +
+feature saliency).
 """
 
 from __future__ import annotations

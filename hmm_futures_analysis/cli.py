@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """Regime detection entry point for the hmm-regime-detection skill.
 
-CLI for detecting market regimes (Bull/Bear/Sideways) using one of four
-independent engines: threshold (fast, close-only), messina (HMM + 18
-Messina features), hmm (HMM + ~44 generic features), or fshmm (HMM +
-feature saliency).
+CLI for detecting market regimes (Bull/Bear/Sideways) using one of five
+independent engines: threshold (fast, close-only), messina (HMM + 19
+Messina features), hmm (HMM + ~50 generic features), robust_hmm (HMM +
+robust outlier-resistant emissions), or fshmm (HMM + feature saliency).
 
 Usage:
     hmm-regime --csv BTC.csv --json
     hmm-regime --ticker ES=F --json --engine hmm
     hmm-regime --csv data.csv --engine threshold
+    hmm-regime --csv data.csv --engine robust_hmm --robust-method mcd
     hmm-regime --csv data.csv --engine fshmm --saliency-threshold 0.3
     ./scripts/run.sh --csv BTC.csv --json
 """
