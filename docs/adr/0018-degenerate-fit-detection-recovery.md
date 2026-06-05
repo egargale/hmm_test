@@ -4,7 +4,9 @@ Date: 2026-06-02
 
 ## Status
 
-Proposed
+Accepted
+
+Amended 2026-06-05: auto-recovery added (see Decision §Auto-recovery). Original decision was warn-and-proceed with no auto-retry. Reversed after SOXL/HDB evidence showed warn-and-proceed produces wrong regime labels on real data.
 
 ## Context
 
@@ -100,25 +102,70 @@ These are serial timings. Concurrent execution inflates wall time due to CPU con
 
 ## Decision
 
-### Detection: warn-and-proceed (do not auto-retry)
+### Detection: audit-only diagnostic fields
 
-When a degenerate fit is detected, the engine will:
+When a degenerate fit is detected, the engine adds diagnostic fields to `engine_info`:
 
-1. **Add diagnostic fields** to `engine_info`:
-   - `degenerate_fit: bool` — any state < 5% of bars
-   - `degenerate_caveat: str` — human-readable description
-   - `low_data_warning: bool` — insufficient data for the engine's feature space
-   - `over_robustness: bool` — robust_hmm not differentiating from hmm
+- `degenerate_fit: bool` — any state < 5% of bars
+- `degenerate_caveat: str` — human-readable description
+- `low_data_warning: bool` — insufficient data for the engine's feature space
+- `over_robustness: bool` — robust_hmm not differentiating from hmm
 
-2. **Penalize confidence** in the verdict proportionally to the severity of the degenerate fit.
+Detection is audit-only — it records what happened but does not modify confidence or retry the fit.
 
-3. **Not auto-retry** with different parameters. Auto-retry introduces hidden complexity:
-   - Which fallback parameters? (fewer states, PCA, different engine?)
-   - How many retries before giving up?
-   - Results become non-reproducible (same input → different output depending on retry path)
-   - Users can't learn from failures if they're silently hidden
+### Auto-recovery (amendment 2026-06-05)
 
-Instead, the detection output gives users (and downstream consumers like walk-forward) the information to make their own decision.
+> **Original decision**: warn-and-proceed, no auto-retry. Degenerate fits kept their 3-state regime labels.
+>
+> **Reversed**: auto-downgrade to n_states=2 is now the default behavior.
+
+When a degenerate 3-state fit is detected during `_hmm_classify_pipeline()`, the pipeline automatically:
+
+1. **Refits with n_states=2** using the same features and random seed.
+2. **Sets** `degenerate_auto_recovered = True` in `engine_info`.
+3. **Emits a stderr warning** so the event is visible in logs.
+4. **Continues** with walk-forward classification using the recovered 2-state model.
+
+The confidence penalty (`_apply_confidence_penalty`) is **removed**. Rationale: a successfully recovered 2-state model produces correct regime labels; penalizing its confidence sends a false uncertainty signal.
+
+`detect_degenerate_fit()` is retained as audit-only — it records whether a fit was degenerate (including whether auto-recovery already occurred) for downstream diagnostics and logging.
+
+#### Evidence for reversal
+
+**SOXL** (Direxion Daily Semiconductor Bull 3x Shares): +494% YTD, trading at all-time highs.
+
+| State | hmm (3-state, degenerate) | hmm (auto-recovered 2-state) |
+|-------|--------------------------|-------------------------------|
+| Bear | 0 bars (0%) | — |
+| Sideways | all bars (100%) | — |
+| Bull | 0 bars (0%) | — |
+| **Bull (2-state)** | — | **correct** |
+
+The 3-state model assigned everything to SIDEWAYS — a clearly wrong label for a ticker up 494%. The auto-recovered 2-state model correctly produces BULL.
+
+**HDB** (HDFC Bank ADR): −35% YTD, trading at all-time lows.
+
+| State | hmm (3-state, degenerate) | hmm (auto-recovered 2-state) |
+|-------|--------------------------|-------------------------------|
+| Bear | 0 bars (0%) | — |
+| Sideways | all bars (100%) | — |
+| Bull | 0 bars (0%) | — |
+| **Bear (2-state)** | — | **correct** |
+
+Same pattern: 3-state degenerate fit → SIDEWAYS for a ticker down 35%. Auto-recovered 2-state → BEAR.
+
+**Why the original concerns are now addressed**:
+
+1. **Reproducibility**: auto-downgrade is deterministic (same input → same n_states=2 result). No retry chain, no parameter search.
+2. **Masking**: stderr warnings and `engine_info` audit fields make the recovery fully visible.
+3. **BIC equivalence**: `--n-states auto` with BIC selection would likely pick 2 states anyway — auto-recovery automates what BIC would do.
+4. **Wrong label > correct 2-state label**: producing a wrong SIDEWAYS regime label is strictly worse than producing a correct 2-state BULL/BEAR label.
+
+#### Implementation
+
+- Auto-downgrade: `_hmm_classify_pipeline()` in `hmm_futures_analysis/regime/engines/_hmm_pipeline.py` (Issue #91, commit `eb9af47`)
+- Confidence penalty removal: (Issue #95, commit `e5379c5`)
+- Audit-only detection: `detect_degenerate_fit()` in `hmm_futures_analysis/regime/pipeline.py`
 
 ### Recovery: user-driven fallbacks
 
@@ -161,11 +208,13 @@ These are per-engine serial limits. Parallel execution will exceed these proport
 
 ## Considered options
 
-### A) Auto-retry with fallback (rejected)
+### A) Auto-retry with fallback (accepted, amended 2026-06-05)
 
-On detecting a degenerate fit, automatically retry with PCA, fewer states, or a different engine.
+On detecting a degenerate fit, automatically retry with n_states=2.
 
-**Rejected because**: (1) Makes output non-reproducible — same input can produce different results depending on retry path. (2) Masks the underlying data problem from users. (3) Complex retry logic needs its own testing and may introduce new bugs. (4) The "right" fallback is context-dependent (are you trading or researching?).
+**Originally rejected** (2026-06-02) because: (1) Makes output non-reproducible — same input can produce different results depending on retry path. (2) Masks the underlying data problem from users. (3) Complex retry logic needs its own testing and may introduce new bugs. (4) The "right" fallback is context-dependent (are you trading or researching?).
+
+**Amended to accepted** (2026-06-05) with a narrower scope — deterministic auto-downgrade to n_states=2 only, not a general retry chain. See Decision §Auto-recovery for the reversal rationale and SOXL/HDB evidence.
 
 ### B) Hard error on degenerate fit (rejected)
 
@@ -173,11 +222,13 @@ Raise an exception and refuse to produce output when a degenerate fit is detecte
 
 **Rejected because**: (1) A degenerate fit still contains useful information — the fact that the model can't find three regimes IS a signal about the data. (2) Breaks existing workflows and scripts. (3) The threshold for "degenerate" is a heuristic, not a binary truth — hard errors on heuristics are fragile.
 
-### C) Warn-and-proceed with diagnostic fields (chosen)
+### C) Warn-and-proceed with diagnostic fields (chosen, superseded by amendment)
 
 Add diagnostic fields to the output, penalize confidence in the verdict, but always produce a result.
 
-**Chosen because**: (1) Preserves backward compatibility. (2) Downstream consumers (walk-forward, UI, API) can check the diagnostic fields and decide. (3) Results are reproducible. (4) Users learn about data characteristics from the warnings. (5) Aligns with the project's philosophy of "give the user the tools to decide, don't decide for them".
+**Originally chosen because**: (1) Preserves backward compatibility. (2) Downstream consumers (walk-forward, UI, API) can check the diagnostic fields and decide. (3) Results are reproducible. (4) Users learn about data characteristics from the warnings. (5) Aligns with the project's philosophy of "give the user the tools to decide, don't decide for them".
+
+**Superseded 2026-06-05**: Diagnostic fields are retained (audit-only), but the confidence penalty is removed and auto-downgrade to n_states=2 is now the default. Producing a wrong 3-state SIDEWAYS label is worse than producing a correct 2-state BULL/BEAR label. See Decision §Auto-recovery.
 
 ## Consequences
 
@@ -223,15 +274,9 @@ When robust_hmm is not differentiating:
 }
 ```
 
-### Verdict confidence penalty
+### ~~Verdict confidence penalty~~ (removed)
 
-When `degenerate_fit` is true, the verdict confidence is scaled down:
-
-```
-adjusted_confidence = raw_confidence × min(state_fraction) / 0.05
-```
-
-This means if the smallest state has 0.8% of bars, confidence is multiplied by 0.8/5 = 0.16. A raw confidence of 0.98 becomes 0.16 — clearly telling the user "this model is uncertain".
+> **Superseded 2026-06-05**: The confidence penalty (`_apply_confidence_penalty`) has been removed. A successfully auto-recovered 2-state model produces correct regime labels; penalizing its confidence sends a false uncertainty signal. See Decision §Auto-recovery.
 
 ### Cross-references
 
@@ -241,9 +286,11 @@ This means if the smallest state has 0.8% of bars, confidence is multiplied by 0
 - [[ADR-0013]] FS-HMM engine — saliency instability is fshmm-specific
 - [[ADR-0016]] Robust HMM engine — over-robustness is robust_hmm-specific
 
-### No changes to regime assignments
+### Regime assignments
 
-This ADR covers **detection only**. The actual regime assignments (which bars are bear/sideways/bull) are not modified by degenerate-fit detection. Recovery strategies (PCA, fewer states, engine switch) are user-driven via CLI flags.
+Auto-recovery changes the regime assignments: a degenerate 3-state fit is replaced by a correct 2-state fit. Detection remains audit-only — `detect_degenerate_fit()` records what happened but does not modify the recovered model's output.
+
+User-driven recovery strategies (PCA, engine switch, whipsaw filters) remain available as fallbacks for cases where even the 2-state model is unsatisfactory.
 
 ### Walk-forward interaction
 
@@ -256,4 +303,6 @@ These downstream behaviors are defined in their respective issues, not in this A
 
 ### Implementation
 
-Implementation is tracked in [[Issue #83]] — this ADR provides the thresholds and strategy; #83 provides the code.
+- Original detection implementation: [[Issue #83]]
+- Auto-downgrade to n_states=2: [[Issue #91]], commit `eb9af47`
+- Confidence penalty removal: [[Issue #95]], commit `e5379c5`
