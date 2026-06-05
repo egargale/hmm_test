@@ -40,6 +40,10 @@ _Avoid_: indicator calculation, TA computation
 A trade with an entry time, entry price, exit time, exit price, and P&L. Positions are {-1, 0, 1}. A trade is opened when the regime changes and closed when it changes again. Transaction costs (commission, slippage) are modeled but default to zero for engine comparability.
 _Avoid_: continuous position, fractional trade, signal-weighted trade
 
+**Degenerate auto-recovery**:
+When an HMM engine's pre-check detects that a 3-state fit will collapse (one state receiving < 5% of bars), the engine automatically downgrades to `n_states=2` before entering the walk-forward loop. The output uses the 2-state regime mapping (Bear/Bull, no Sideways). The original requested `n_states` and the auto-recovery event are recorded in `engine_info`. Per ADR-0018 (amended).
+_Avoid_: auto-retry, fallback, degenerate retry
+
 **Regime spooling**:
 The threshold engine's method for mapping classified regimes to trading positions. At each bar, the regime (0/1/2) from `classify_regimes()` is mapped directly to a position via `{0: -1, 1: 0, 2: 1}`. No signal threshold or intermediate computation.
 _Avoid_: signal-gating, conviction filtering
