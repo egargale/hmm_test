@@ -72,9 +72,7 @@ class HMMEngineBase(ABC):
         when available. Subclasses override to add extra keys.
         """
         info: dict[str, object] = {
-            "caveat": (
-                "HMM states sorted by mean return; labels may swap on re-fit"
-            ),
+            "caveat": ("HMM states sorted by mean return; labels may swap on re-fit"),
         }
         if warmup_bars is not None:
             info["warmup_bars"] = warmup_bars
@@ -94,7 +92,10 @@ class HMMEngineBase(ABC):
         result = _hmm_classify_pipeline(
             self, prices, ohlcv, returns, min_train, **kwargs
         )
-        result.engine_info = self._build_engine_info(warmup_bars=result.warmup_bars)
+        result.engine_info = {
+            **(result.engine_info or {}),
+            **self._build_engine_info(warmup_bars=result.warmup_bars),
+        }
         return result
 
     @abstractmethod
