@@ -292,7 +292,9 @@ def _walk_forward_classify(
     t_start_wf = time.monotonic()
 
     for t in range(min_train, n):
-        refit_now = (t == min_train) or ((t - min_train) % refit_every == 0)
+        refit_now = (
+            (t == min_train) or ((t - min_train) % refit_every == 0) or (t == n - 1)
+        )
         if refit_now:
             n_refits += 1
             features_slice = precomputed.iloc[:t]
