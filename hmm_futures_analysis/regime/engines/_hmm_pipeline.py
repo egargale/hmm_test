@@ -136,6 +136,7 @@ def _hmm_classify_pipeline(
     profile: bool = True,
     _phases: dict[str, float] | None = None,
     _classify_times: list[float] | None = None,
+    reverse: bool = False,
 ) -> ClassifyOutput:
     """Shared classify_pipeline implementation for all HMM engines.
 
@@ -221,6 +222,7 @@ def _hmm_classify_pipeline(
         _phases=_phases,
         _classify_times=_classify_times,
         _wf_recovery=wf_recovery,
+        reverse=reverse,
     ):
         regimes[t] = result.regime
         if result.posteriors is not None:
@@ -243,6 +245,7 @@ def _hmm_classify_pipeline(
         warmup_bars=min_train,
         n_states=engine.n_states,
         engine_info=engine_info if engine_info else None,
+        reverse_classify=reverse,
     )
 
 
@@ -257,6 +260,7 @@ def _walk_forward_classify(
     _phases: dict[str, float] | None = None,
     _classify_times: list[float] | None = None,
     _wf_recovery: dict[str, object] | None = None,
+    reverse: bool = False,
 ) -> Iterator[tuple[int, ClassifyResult]]:
     """Walk-forward classify generator, yielding (t, ClassifyResult) per bar.
 
@@ -268,6 +272,11 @@ def _walk_forward_classify(
     - **precomputed** is not None: adaptive skip-N refit calling
       ``eng.classify(precomputed.iloc[:t], prev_means=…)``.  Carries the
       last result forward on non-refit bars.
+
+    When *reverse* is True, the iteration direction flips: ``t`` runs from
+    ``n-1`` down to ``min_train`` and the feature slice becomes
+    ``precomputed.iloc[t:]`` (backward-expanding window).  The regime
+    array is filled by bar index so no caller flip is needed.
 
     Yields
     ------
@@ -283,6 +292,10 @@ def _walk_forward_classify(
         for t in range(min_train, n):
             yield t, ClassifyResult(regime=int(regimes[t]))
         return
+
+    # Reverse mode: no-op for precomputed-regime replay (threshold engine).
+    # When precomputed features are provided, reverse changes iteration
+    # direction and feature slicing.
 
     # Mode 2: precomputed features, adaptive skip-N refit (requires engine).
     if eng is None:
@@ -304,13 +317,20 @@ def _walk_forward_classify(
     # Track yielded regimes for cumulative degeneration check
     yielded_regimes: list[int] = []
 
-    for t in range(min_train, n):
-        refit_now = (
-            (t == min_train) or ((t - min_train) % refit_every == 0) or (t == n - 1)
-        )
+    if reverse:
+        bar_range = range(n - 1, min_train - 1, -1)
+        first_t = n - 1
+        last_t = min_train
+    else:
+        bar_range = range(min_train, n)
+        first_t = min_train
+        last_t = n - 1
+
+    for t in bar_range:
+        refit_now = (t == first_t) or (abs(t - first_t) % refit_every == 0) or (t == last_t)
         if refit_now:
             n_refits += 1
-            features_slice = precomputed.iloc[:t]
+            features_slice = precomputed.iloc[t:] if reverse else precomputed.iloc[:t]
             try:
                 t_cls_start = time.monotonic() if profile else 0.0
                 result = eng.classify(features_slice, prev_means=prev_means)

@@ -36,6 +36,7 @@ class ClassifyOutput:
     warmup_bars: int | None = None
     n_states: int = 3
     engine_info: dict | None = None
+    reverse_classify: bool = False
 
 
 @runtime_checkable
