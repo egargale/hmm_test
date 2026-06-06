@@ -81,7 +81,7 @@ Abstract base class in `_hmm_engine.py` shared by all four HMM-family engines (h
 _Avoid_: HMM base, shared engine
 
 **HMM pipeline module** (`_hmm_pipeline.py`):
-Pipeline-level HMM orchestration helpers split from `_hmm_engine.py` per ADR-0020. Houses `select_n_states()`, `_hmm_classify_pipeline()`, `_walk_forward_classify()`, and `_check_degenerate()`. Imported by `_hmm_engine.py` and `pipeline.py`.
+Pipeline-level HMM orchestration helpers split from `_hmm_engine.py` per ADR-0020. Houses `select_n_states()`, `_hmm_classify_pipeline()`, `_walk_forward_classify()`, and `_check_degenerate()`. Imported by `_hmm_engine.py` and `pipeline.py`. Per ADR-0022, `walk_forward.py` no longer imports this module — regime replay now lives in `walk_forward._replay_regimes()`.
 _Avoid_: hmm helpers, orchestration module
 
 **Engine config**:

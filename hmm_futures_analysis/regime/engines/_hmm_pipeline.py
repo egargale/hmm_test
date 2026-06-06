@@ -4,7 +4,9 @@ These build on the engine-level building blocks in _hmm_engine.py to compose
 the full HMM classify pipeline: BIC state selection, walk-forward classify
 loop, state remapping across ticks, and dwell/hysteresis filtering.
 
-Imported by pipeline.run() and walk_forward.py.
+Imported by _hmm_engine.py and pipeline.run().
+ADR-0022: walk_forward.py no longer imports this module — regime replay
+now lives in walk_forward._replay_regimes().
 """
 
 from __future__ import annotations
@@ -269,6 +271,9 @@ def _walk_forward_classify(
     - **regimes** is not None: replay pre-computed regime labels without
       calling ``eng.classify``.  Yields a ``ClassifyResult(regime=…)`` with
       ``means=None, posteriors=None``.
+      .. deprecated:: ADR-0022
+         Production code now uses ``walk_forward._replay_regimes()`` for
+         mode-1 replay.  This path is retained for test compatibility.
     - **precomputed** is not None: adaptive skip-N refit calling
       ``eng.classify(precomputed.iloc[:t], prev_means=…)``.  Carries the
       last result forward on non-refit bars.

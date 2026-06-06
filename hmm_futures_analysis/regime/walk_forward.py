@@ -1,7 +1,7 @@
 """No-lookahead walk-forward backtest with discrete trade model.
 
 At each bar *t* from ``min_train`` to end:
-1. Replay pre-computed regime labels.
+1. Replay pre-computed regime labels via ``_replay_regimes``.
 2. Map regime to discrete position via ``{0: -1, 1: 0, 2: 1}``.
 3. Apply position at bar *t*, trade in/out on regime changes.
 
@@ -9,9 +9,12 @@ Produces trade-level analytics: Sharpe, max drawdown, trade count,
 win rate, profit factor, total return.
 
 ADR-0017: engine param removed; regimes always pre-computed by pipeline.
+ADR-0022: regime replay extracted from _hmm_pipeline into this module.
 """
 
 from __future__ import annotations
+
+from collections.abc import Iterator
 
 import numpy as np
 import pandas as pd
@@ -67,6 +70,40 @@ def _compute_trade_stats(
     return n_trades, float(win_rate), float(profit_factor)
 
 
+def _replay_regimes(
+    regimes: np.ndarray,
+    min_train: int = 252,
+    n_bars: int | None = None,
+) -> Iterator[tuple[int, int]]:
+    """Yield (bar_index, regime) for each bar from min_train onward.
+
+    This is the regime-replay generator — the walk-forward backtest's
+    mode-1 iterator that replays pre-computed regime labels without
+    calling any engine.  Formerly part of
+    ``_hmm_pipeline._walk_forward_classify(mode=1)``.
+
+    Parameters
+    ----------
+    regimes : np.ndarray
+        Pre-computed regime labels, one per bar.
+    min_train : int
+        First bar to yield.
+    n_bars : int | None
+        Number of bars to iterate.  Defaults to ``len(regimes)``.
+        When the caller's data has a different length (e.g. returns
+        is one shorter than prices/regimes), pass ``len(returns)``
+        to stay aligned.
+
+    Yields
+    ------
+    (int, int)
+        ``(t, regime)`` for every bar t in [min_train, n_bars).
+    """
+    limit = n_bars if n_bars is not None else len(regimes)
+    for t in range(min_train, limit):
+        yield t, int(regimes[t])
+
+
 def _walk_forward_positions(
     returns: pd.Series,
     *,
@@ -78,28 +115,21 @@ def _walk_forward_positions(
 ) -> np.ndarray:
     """Build position array from pre-computed regime labels.
 
-    Replays regimes through _walk_forward_classify mode 1,
+    Replays regimes via the local _replay_regimes generator,
     applies dwell/hysteresis filters, and maps regimes to discrete
     positions via _STATE_MAP.
     """
-    from .engines._hmm_pipeline import _walk_forward_classify
-
     n = len(returns)
     positions = np.zeros(n, dtype=int)
     current_regime: int = 1
     consecutive_count = 0
     current_posteriors: np.ndarray | None = None
 
-    for t, result in _walk_forward_classify(
-        returns,
-        regimes=regimes,
-        min_train=min_train,
-    ):
-        new_regime = result.regime
+    for t, regime in _replay_regimes(regimes, min_train=min_train, n_bars=n):
         new_posteriors_arr: np.ndarray | None = posteriors[t] if posteriors is not None else None
 
         should_switch, consecutive_count = _apply_filters(
-            new_regime,
+            regime,
             current_regime,
             new_posteriors_arr,
             current_posteriors,
@@ -108,7 +138,7 @@ def _walk_forward_positions(
             hysteresis_delta,
         )
         if should_switch:
-            current_regime = new_regime
+            current_regime = regime
             current_posteriors = new_posteriors_arr
 
         positions[t] = _STATE_MAP.get(current_regime, 0)
