@@ -216,6 +216,21 @@ def _print_terminal(output, *, transitions_limit=None) -> None:
     print(f"  Win rate       : {wr_str}", file=sys.stderr)
     print(f"  Profit factor  : {pf_str}", file=sys.stderr)
 
+    # Lookahead bias warning for --reverse-classify (Issue #102)
+    if sr.engine_info.get("lookahead_bias_warning"):
+        print(
+            "  ⚠  LOOKAHEAD BIAS: walk-forward backtest contains lookahead bias.",
+            file=sys.stderr,
+        )
+        print(
+            "     Regime at bar t is partially informed by data from t+1…n.",
+            file=sys.stderr,
+        )
+        print(
+            "     Use reverse-classify for display only, not backtest decisions.",
+            file=sys.stderr,
+        )
+
     if sr.duration_forecast is not None and sr.duration_forecast is not None:
         df = sr.duration_forecast
         header("DURATION FORECAST")
@@ -446,6 +461,15 @@ def main() -> None:
         default=None,
         help="Show N most recent regime transitions in terminal output (default: disabled). 0 shows all.",
     )
+    parser.add_argument(
+        "--reverse-classify",
+        action="store_true",
+        default=False,
+        help=(
+            "Reverse walk-forward classify direction so degeneration hits old bars "
+            "instead of recent ones. Lookahead warning issued (Issue #102)."
+        ),
+    )
 
     args = parser.parse_args()
 
@@ -536,6 +560,7 @@ def main() -> None:
             hysteresis_delta=args.hysteresis,
             duration_forecast=args.duration_forecast,
             duration_model=args.duration_model,
+            reverse_classify=args.reverse_classify,
         )
 
         if args.json:

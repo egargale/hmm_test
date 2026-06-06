@@ -356,6 +356,80 @@ class TestMidStreamDegenerationUnit:
         assert result.engine_info.get("walk_forward_degenerate_recovery") is True
 
 
+class TestReverseDegeneration:
+    """When reverse=True, degeneration degrades old bars, not recent ones."""
+
+    @staticmethod
+    def _make_data(n: int = 300, seed: int = 42):
+        rng = np.random.RandomState(seed)
+        dates = pd.bdate_range("2020-01-01", periods=n)
+        returns = pd.Series(rng.normal(0.0002, 0.01, n), index=dates)
+        features = pd.DataFrame(
+            rng.randn(n, 5),
+            index=dates,
+            columns=["f0", "f1", "f2", "f3", "f4"],
+        )
+        prices = pd.Series(
+            np.exp(np.cumsum(returns.values)), index=returns.index, name="close"
+        )
+        return prices, returns, features
+
+    def test_reverse_degeneration_degrades_old_bars(self):
+        """Degeneration in reverse mode hits bars near index 0, not near end."""
+        prices, returns, features = self._make_data()
+        min_train = 50
+
+        # Engine that degenerates after enough bars: first few refits return
+        # bear (0), sideways (1), bull (2) rotation; later refits collapse to
+        # all-sideways. In reverse mode, "later" = old bars.
+        class _ReverseDegenerating:
+            n_states = 3
+            pca_variance = None
+            call_count = 0
+
+            def precompute(self, data):
+                return features
+
+            def classify(self, data, prev_means=None):
+                self.call_count += 1
+                # First 3 refits (most recent bars): balanced rotation
+                # After that: all-sideways → bear collapses → degeneration
+                if self.call_count <= 3:
+                    regime = self.call_count % 3
+                else:
+                    regime = 1
+                return ClassifyResult(
+                    regime=regime,
+                    means=np.array([[-1.0], [0.0], [1.0]]),
+                    posteriors=np.array([0.2, 0.6, 0.2]),
+                )
+
+        engine = _ReverseDegenerating()
+        result = _hmm_classify_pipeline(
+            engine, prices, None, returns,
+            min_train=min_train, profile=False, reverse=True,
+        )
+
+        assert result.reverse_classify is True
+        assert result.engine_info is not None
+        assert result.engine_info.get("walk_forward_degenerate_recovery") is True
+        # In reverse mode, first refits process recent bars (high t) with
+        # diverse regimes, then degeneration fires and old bars (low t)
+        # collapse to sideways.
+        # Bars 280-299 include the first 3 diverse refits at t=299,294,289.
+        recent_regimes = set(result.regimes[280:300])
+        old_regimes = result.regimes[50:80]
+        # Recent bars should have diverse regimes (bear, sideways, bull)
+        assert len(recent_regimes) >= 2, (
+            f"Recent bars should have diverse regimes, got {recent_regimes}"
+        )
+        # Old bars should be predominantly sideways (regime 1)
+        sideways_frac = np.mean(old_regimes == 1)
+        assert sideways_frac > 0.7, (
+            f"Old bars should be mostly sideways, got {sideways_frac:.0%}"
+        )
+
+
 # ===================================================================
 # CSV integration tests (slow — real HMM fitting on real data)
 # ===================================================================

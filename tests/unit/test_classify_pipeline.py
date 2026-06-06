@@ -38,6 +38,126 @@ def _make_ohlcv(prices: pd.Series) -> pd.DataFrame:
 
 
 # ---------------------------------------------------------------------------
+# Reverse-classify tests (Issue #102)
+# ---------------------------------------------------------------------------
+
+
+class TestHMMClassifyPipelineReverse:
+    """_hmm_classify_pipeline(reverse=True) produces chronologically-ordered regimes."""
+
+    def test_reverse_regimes_are_chronological(self):
+        """With reverse=True, regimes[0] is the earliest bar."""
+        from hmm_futures_analysis.regime.engines.hmm_generic import HMMGenericEngine
+        from hmm_futures_analysis.regime.engines._hmm_pipeline import _hmm_classify_pipeline
+
+        prices = _make_prices(300, seed=99)
+        ohlcv = _make_ohlcv(prices)
+        returns = prices.pct_change(fill_method=None).dropna()
+        eng = HMMGenericEngine(n_states=3)
+
+        result = _hmm_classify_pipeline(
+            eng, prices, ohlcv, returns, min_train=50,
+        )
+        result_reverse = _hmm_classify_pipeline(
+            eng, prices, ohlcv, returns, min_train=50,
+            reverse=True,
+        )
+
+        # Same length as forward
+        assert len(result_reverse.regimes) == len(result.regimes)
+        # All regimes in valid range
+        assert set(np.unique(result_reverse.regimes)).issubset({0, 1, 2})
+        # reverse_classify flag is set
+        assert result_reverse.reverse_classify is True
+
+
+class TestPipelineReverseClassify:
+    """pipeline.run(reverse_classify=True) flows through correctly."""
+
+    def test_reverse_classify_flows_to_engine_info(self):
+        """engine_info contains lookahead warning when reverse_classify=True."""
+        from hmm_futures_analysis.regime.engine_configs import HMMGenericConfig
+        from hmm_futures_analysis.regime.pipeline import run
+
+        prices = _make_prices(300)
+        ohlcv = _make_ohlcv(prices)
+
+        result = run(
+            prices,
+            source="test",
+            engine_config=HMMGenericConfig(n_states=3),
+            ohlcv=ohlcv,
+            min_train=50,
+            profile=False,
+            reverse_classify=True,
+        )
+
+        assert result.engine_info.get("reverse_classify") is True
+        assert result.engine_info.get("lookahead_bias_warning") is True
+        assert "lookahead" in result.engine_info.get("lookahead_bias_caveat", "").lower()
+
+    def test_forward_mode_no_lookahead_warning(self):
+        """Forward mode (default) has no lookahead warning."""
+        from hmm_futures_analysis.regime.engine_configs import HMMGenericConfig
+        from hmm_futures_analysis.regime.pipeline import run
+
+        prices = _make_prices(300)
+        ohlcv = _make_ohlcv(prices)
+
+        result = run(
+            prices,
+            source="test",
+            engine_config=HMMGenericConfig(n_states=3),
+            ohlcv=ohlcv,
+            min_train=50,
+            profile=False,
+        )
+
+        assert result.engine_info.get("lookahead_bias_warning") is None
+        assert result.engine_info.get("reverse_classify") is None
+
+
+class TestThresholdReverseClassifyNoop:
+    """--reverse-classify is a no-op for the threshold engine."""
+
+    def test_threshold_reverse_identical_to_forward(self):
+        """Threshold output is identical whether reverse_classify is True or False."""
+        from hmm_futures_analysis.regime.engine_configs import ThresholdConfig
+        from hmm_futures_analysis.regime.pipeline import run
+
+        prices = _make_prices(300)
+        ohlcv = _make_ohlcv(prices)
+
+        forward = run(
+            prices,
+            source="test",
+            engine_config=ThresholdConfig(),
+            ohlcv=ohlcv,
+            min_train=50,
+            profile=False,
+        )
+        reverse = run(
+            prices,
+            source="test",
+            engine_config=ThresholdConfig(),
+            ohlcv=ohlcv,
+            min_train=50,
+            profile=False,
+            reverse_classify=True,
+        )
+
+        # Threshold engine should produce identical results
+        assert forward.current_regime == reverse.current_regime
+        assert forward.signal == reverse.signal
+        np.testing.assert_array_equal(
+            forward.transition_matrix, reverse.transition_matrix
+        )
+        # No lookahead warning for threshold
+        assert reverse.engine_info.get("lookahead_bias_warning") is None
+        assert reverse.engine_info.get("reverse_classify") is None
+
+
+# ---------------------------------------------------------------------------
 # Tracer bullet 2a: ThresholdEngine.run_classify (ADR-0017)
 # ---------------------------------------------------------------------------
 

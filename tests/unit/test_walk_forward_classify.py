@@ -2,6 +2,12 @@
 
 import numpy as np
 import pandas as pd
+import pytest
+
+from hmm_futures_analysis.regime.engines._hmm_pipeline import _walk_forward_classify
+
+import numpy as np
+import pandas as pd
 
 from hmm_futures_analysis.regime.engines._hmm_pipeline import _walk_forward_classify
 
@@ -231,3 +237,70 @@ class TestWalkForwardClassify:
         assert len(times) > 0
         # All times should be positive floats
         assert all(isinstance(t, float) and t >= 0 for t in times)
+
+
+class TestWalkForwardClassifyReverse:
+    """_walk_forward_classify with reverse=True iterates backward."""
+
+    def test_reverse_yields_correct_count_and_range(self):
+        """Reverse mode yields (t, result) for t from n-1 down to min_train."""
+        n = 100
+        min_train = 50
+        returns = pd.Series(
+            np.random.randn(n),
+            index=pd.date_range("2020-01-01", periods=n, freq="B"),
+        )
+        features = pd.DataFrame({"f1": np.random.randn(n)}, index=returns.index)
+        engine = _StubEngine(regime=2)
+
+        results = list(
+            _walk_forward_classify(
+                returns,
+                eng=engine,
+                precomputed=features,
+                min_train=min_train,
+                reverse=True,
+                profile=False,
+            )
+        )
+
+        assert len(results) == n - min_train
+        ts = [t for t, _ in results]
+        # Should iterate from n-1 down to min_train
+        assert ts == list(range(n - 1, min_train - 1, -1))
+
+    def test_reverse_uses_backward_slices(self):
+        """In reverse mode, classify receives data.iloc[t:] (not iloc[:t])."""
+        n = 80
+        min_train = 40
+        returns = pd.Series(
+            np.random.randn(n),
+            index=pd.date_range("2020-01-01", periods=n, freq="B"),
+        )
+        features = pd.DataFrame({"f1": np.arange(n, dtype=float)}, index=returns.index)
+
+        observed_lengths: list[int] = []
+
+        class _SliceTrackingEngine(_StubEngine):
+            def classify(self, data, prev_means=None):
+                observed_lengths.append(len(data))
+                return super().classify(data, prev_means)
+
+        engine = _SliceTrackingEngine(regime=1)
+        list(
+            _walk_forward_classify(
+                returns,
+                eng=engine,
+                precomputed=features,
+                min_train=min_train,
+                reverse=True,
+                profile=False,
+            )
+        )
+
+        # First refit at t=n-1 → slice is features.iloc[n-1:] → len=1
+        # Second refit at t=n-1-refit_every → slice is features.iloc[t:] → len=n-t
+        # The first refit (t=n-1) should see a very short slice (1 row)
+        assert observed_lengths[0] == 1
+        # Later refits should see progressively longer slices
+        assert observed_lengths[-1] > observed_lengths[0]
