@@ -74,7 +74,7 @@ def get_ticker_data(
     import yfinance
 
     if no_cache:
-        data = yfinance.download(ticker, period="10y", progress=False)
+        data = yfinance.download(ticker, period="max", progress=False)
         if data.empty:
             raise ValueError(f"No data returned for ticker: {ticker}")
         return data

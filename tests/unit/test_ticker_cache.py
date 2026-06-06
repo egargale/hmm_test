@@ -105,7 +105,7 @@ class TestNoCache:
     """When no_cache=True, bypass cache entirely."""
 
     def test_bypasses_cache_does_not_write(self, tmp_path, monkeypatch):
-        """no_cache=True → downloads with period='10y', no file written."""
+        """no_cache=True → downloads with period='max', no file written."""
         fake_df = _make_fake_ohlcv()
         calls = []
 
@@ -119,7 +119,7 @@ class TestNoCache:
         result = get_ticker_data("SPY", cache_dir=str(cache_dir), no_cache=True)
 
         assert len(calls) == 1
-        assert calls[0] == ("SPY", "10y")
+        assert calls[0] == ("SPY", "max")
         pd.testing.assert_frame_equal(result, fake_df, check_freq=False)
 
         expected_path = cache_dir / "SPY.csv"
@@ -198,3 +198,30 @@ class TestDefaultCacheDir:
 
         expected = fake_home / ".cache" / "hmm-regime" / "tickers" / "SPY.csv"
         assert expected.exists()
+
+
+class TestPeriodConsistency:
+    """Both cached and no_cache paths use the same period (Issue #4)."""
+
+    def test_both_paths_use_period_max(self, tmp_path, monkeypatch):
+        """cached and no_cache paths both request period='max'."""
+        fake_df = _make_fake_ohlcv()
+        periods = {}
+
+        def fake_download(ticker, period, progress=False):
+            periods[period] = periods.get(period, 0) + 1
+            return fake_df.copy()
+
+        monkeypatch.setattr("yfinance.download", fake_download)
+
+        cache_dir = tmp_path / "cache"
+
+        # Cached path (cache miss → download)
+        get_ticker_data("SPY", cache_dir=str(cache_dir))
+        # No-cache path
+        get_ticker_data("SPY", cache_dir=str(cache_dir), no_cache=True)
+
+        # Both should use "max" — no "10y" or other period
+        assert list(periods.keys()) == ["max"], (
+            f"Expected only period='max', got periods: {periods}"
+        )
