@@ -103,6 +103,35 @@ def _write_saliency_csv(output, path: str) -> None:
             writer.writerow([i, f"{w:.6f}", is_sel])
 
 
+def _apply_transitions_limit(transitions, limit):
+    """Filter and reorder transitions for display/serialization.
+
+    Parameters
+    ----------
+    transitions : list[dict]
+        Chronological transition list (oldest first).
+    limit : int | None
+        None  → passthrough (terminal disabled mode).
+        0     → all transitions, reversed (newest first).
+        N > 0 → N most recent transitions, newest first.
+
+    Returns
+    -------
+    list[dict]
+        Filtered and/or reordered list.  Returns the original list
+        object unchanged when *limit* is None; returns a new list
+        otherwise.
+    """
+    if limit is None:
+        return transitions
+    if not transitions:
+        return transitions
+    reversed_list = list(reversed(transitions))
+    if limit == 0:
+        return reversed_list
+    return reversed_list[:limit]
+
+
 def _print_terminal(output, *, transitions_limit=None) -> None:
     """Pretty-print regime analysis results to stderr."""
     width = 54
@@ -211,10 +240,7 @@ def _print_terminal(output, *, transitions_limit=None) -> None:
     if transitions_limit is not None and sr.regime_transitions:
         header("REGIME TRANSITIONS")
         all_transitions = sr.regime_transitions
-        # Show most recent first (reverse chronological)
-        shown = list(reversed(all_transitions))
-        if transitions_limit > 0:
-            shown = shown[:transitions_limit]
+        shown = _apply_transitions_limit(all_transitions, transitions_limit)
         for ev in shown:
             print(
                 f"  {ev['date']}  {ev['from_regime'].upper()} → {ev['to_regime'].upper()}",
@@ -513,7 +539,13 @@ def main() -> None:
         )
 
         if args.json:
-            json.dump(output._asdict(), sys.stdout, indent=2, allow_nan=False)
+            d = output._asdict()
+            if d.get("regime_transitions"):
+                limit = args.transitions if args.transitions is not None else 0
+                d["regime_transitions"] = _apply_transitions_limit(
+                    d["regime_transitions"], limit
+                )
+            json.dump(d, sys.stdout, indent=2, allow_nan=False)
             sys.stdout.write("\n")
         else:
             _print_terminal(output, transitions_limit=args.transitions)
