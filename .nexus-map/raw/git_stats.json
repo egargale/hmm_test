@@ -1,0 +1,231 @@
+{
+  "analysis_period_days": 90,
+  "stats": {
+    "total_commits": 127,
+    "total_authors": 2
+  },
+  "hotspots": [
+    {
+      "path": "hmm_futures_analysis/regime/pipeline.py",
+      "changes": 35,
+      "risk": "high"
+    },
+    {
+      "path": "hmm_futures_analysis/cli.py",
+      "changes": 24,
+      "risk": "high"
+    },
+    {
+      "path": "hmm_futures_analysis/regime/engine_protocol.py",
+      "changes": 18,
+      "risk": "high"
+    },
+    {
+      "path": "CONTEXT.md",
+      "changes": 14,
+      "risk": "medium"
+    },
+    {
+      "path": "hmm_futures_analysis/regime/walk_forward.py",
+      "changes": 14,
+      "risk": "medium"
+    },
+    {
+      "path": "hmm_futures_analysis/regime/engines/hmm_generic.py",
+      "changes": 13,
+      "risk": "medium"
+    },
+    {
+      "path": "hmm_futures_analysis/regime/engines/hmm_messina.py",
+      "changes": 13,
+      "risk": "medium"
+    },
+    {
+      "path": "SKILL.md",
+      "changes": 13,
+      "risk": "medium"
+    },
+    {
+      "path": "hmm_futures_analysis/regime/engines/_hmm_shared.py",
+      "changes": 12,
+      "risk": "medium"
+    },
+    {
+      "path": "pyproject.toml",
+      "changes": 11,
+      "risk": "medium"
+    },
+    {
+      "path": "hmm_futures_analysis/regime/engines/fshmm.py",
+      "changes": 11,
+      "risk": "medium"
+    },
+    {
+      "path": "hmm_futures_analysis/regime/engines/robust_hmm.py",
+      "changes": 11,
+      "risk": "medium"
+    },
+    {
+      "path": "tests/integration/test_regime_engine.py",
+      "changes": 10,
+      "risk": "medium"
+    },
+    {
+      "path": "hmm_futures_analysis/regime/engines/_hmm_pipeline.py",
+      "changes": 9,
+      "risk": "medium"
+    },
+    {
+      "path": "tests/integration/test_regime_pipeline.py",
+      "changes": 9,
+      "risk": "medium"
+    },
+    {
+      "path": "docs/adr/README.md",
+      "changes": 9,
+      "risk": "medium"
+    },
+    {
+      "path": "uv.lock",
+      "changes": 8,
+      "risk": "medium"
+    },
+    {
+      "path": "tests/unit/test_classify_pipeline.py",
+      "changes": 7,
+      "risk": "medium"
+    },
+    {
+      "path": "hmm_futures_analysis/regime/engines/_hmm_engine.py",
+      "changes": 7,
+      "risk": "medium"
+    },
+    {
+      "path": "tests/unit/test_excise_dead_weight.py",
+      "changes": 7,
+      "risk": "medium"
+    }
+  ],
+  "coupling_pairs": [
+    {
+      "file_a": "hmm_futures_analysis/regime/engine_protocol.py",
+      "file_b": "hmm_futures_analysis/regime/pipeline.py",
+      "co_changes": 17,
+      "coupling_score": 0.944
+    },
+    {
+      "file_a": "hmm_futures_analysis/cli.py",
+      "file_b": "hmm_futures_analysis/regime/pipeline.py",
+      "co_changes": 15,
+      "coupling_score": 0.625
+    },
+    {
+      "file_a": "hmm_futures_analysis/regime/pipeline.py",
+      "file_b": "hmm_futures_analysis/regime/walk_forward.py",
+      "co_changes": 14,
+      "coupling_score": 1.0
+    },
+    {
+      "file_a": "hmm_futures_analysis/regime/engines/hmm_generic.py",
+      "file_b": "hmm_futures_analysis/regime/engines/hmm_messina.py",
+      "co_changes": 13,
+      "coupling_score": 1.0
+    },
+    {
+      "file_a": "hmm_futures_analysis/regime/engine_protocol.py",
+      "file_b": "hmm_futures_analysis/regime/walk_forward.py",
+      "co_changes": 11,
+      "coupling_score": 0.786
+    },
+    {
+      "file_a": "hmm_futures_analysis/regime/engines/hmm_generic.py",
+      "file_b": "hmm_futures_analysis/regime/pipeline.py",
+      "co_changes": 10,
+      "coupling_score": 0.769
+    },
+    {
+      "file_a": "hmm_futures_analysis/regime/engines/hmm_messina.py",
+      "file_b": "hmm_futures_analysis/regime/pipeline.py",
+      "co_changes": 10,
+      "coupling_score": 0.769
+    },
+    {
+      "file_a": "hmm_futures_analysis/regime/engine_protocol.py",
+      "file_b": "tests/integration/test_regime_engine.py",
+      "co_changes": 9,
+      "coupling_score": 0.9
+    },
+    {
+      "file_a": "hmm_futures_analysis/regime/engines/fshmm.py",
+      "file_b": "hmm_futures_analysis/regime/engines/robust_hmm.py",
+      "co_changes": 9,
+      "coupling_score": 0.818
+    },
+    {
+      "file_a": "hmm_futures_analysis/regime/engines/fshmm.py",
+      "file_b": "hmm_futures_analysis/regime/pipeline.py",
+      "co_changes": 9,
+      "coupling_score": 0.818
+    },
+    {
+      "file_a": "hmm_futures_analysis/regime/engines/hmm_generic.py",
+      "file_b": "hmm_futures_analysis/regime/engines/robust_hmm.py",
+      "co_changes": 9,
+      "coupling_score": 0.818
+    },
+    {
+      "file_a": "hmm_futures_analysis/regime/engines/hmm_messina.py",
+      "file_b": "hmm_futures_analysis/regime/engines/robust_hmm.py",
+      "co_changes": 9,
+      "coupling_score": 0.818
+    },
+    {
+      "file_a": "hmm_futures_analysis/regime/engines/_hmm_shared.py",
+      "file_b": "hmm_futures_analysis/regime/pipeline.py",
+      "co_changes": 9,
+      "coupling_score": 0.75
+    },
+    {
+      "file_a": "hmm_futures_analysis/cli.py",
+      "file_b": "hmm_futures_analysis/regime/engine_protocol.py",
+      "co_changes": 8,
+      "coupling_score": 0.444
+    },
+    {
+      "file_a": "hmm_futures_analysis/regime/engines/robust_hmm.py",
+      "file_b": "hmm_futures_analysis/regime/pipeline.py",
+      "co_changes": 8,
+      "coupling_score": 0.727
+    },
+    {
+      "file_a": "hmm_futures_analysis/regime/pipeline.py",
+      "file_b": "tests/integration/test_regime_engine.py",
+      "co_changes": 8,
+      "coupling_score": 0.8
+    },
+    {
+      "file_a": "hmm_futures_analysis/regime/pipeline.py",
+      "file_b": "tests/integration/test_regime_pipeline.py",
+      "co_changes": 8,
+      "coupling_score": 0.889
+    },
+    {
+      "file_a": "hmm_futures_analysis/regime/engines/fshmm.py",
+      "file_b": "hmm_futures_analysis/regime/engines/hmm_generic.py",
+      "co_changes": 8,
+      "coupling_score": 0.727
+    },
+    {
+      "file_a": "hmm_futures_analysis/regime/engines/fshmm.py",
+      "file_b": "hmm_futures_analysis/regime/engines/hmm_messina.py",
+      "co_changes": 8,
+      "coupling_score": 0.727
+    },
+    {
+      "file_a": "hmm_futures_analysis/regime/engine_protocol.py",
+      "file_b": "hmm_futures_analysis/regime/engines/hmm_generic.py",
+      "co_changes": 8,
+      "coupling_score": 0.615
+    }
+  ]
+}

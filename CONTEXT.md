@@ -132,3 +132,24 @@ _Avoid_: adaptive threshold, variable cutoff
 > **Dev**: What happens if someone runs `--engine messina` on a CSV that only has close prices?
 >
 > **Domain expert**: It errors. Messina and HMM engines require OHLCV. The threshold engine is the only one that works with close-only data.
+
+---
+
+## Code structure queries (nexus-query)
+
+The `.nexus-map/` knowledge base at repo root provides instant code structure queries via `nexus-query`:
+
+- `--file <path>` — file skeleton: classes, methods, line numbers, imports
+- `--who-imports <module>` — reverse dependency list before refactoring
+- `--impact <path>` [--git-stats] — impact radius with git risk data
+- `--hub-analysis` — top fan-in/fan-out, find the real high-coupling core
+- `--summary` — 5s global module distribution
+
+```bash
+SKILL_DIR="/home/enrico/.pi/agent/skills/nexus-query"
+AST_JSON=".nexus-map/raw/ast_nodes.json"
+GIT_JSON=".nexus-map/raw/git_stats.json"
+.venv/bin/python "$SKILL_DIR/scripts/query_graph.py" "$AST_JSON" --who-imports $MODULE
+```
+
+Before any interface change, run `--impact` first to know how many modules depend on the file.

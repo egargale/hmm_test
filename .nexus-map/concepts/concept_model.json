@@ -1,0 +1,233 @@
+{
+  "$schema": "nexus-mapper/concept-model/v1",
+  "generated_at": "2026-06-06T00:00:00Z",
+  "repo_path": "/home/enrico/orca/hmm_test",
+  "generator": "nexus-mapper v2",
+  "nodes": [
+    {
+      "id": "cli-entrypoint",
+      "type": "System",
+      "label": "CLI Entrypoint",
+      "responsibility": "Parse command-line arguments, build engine config from CLI flags, dispatch to pipeline, format and emit JSON output. Provides the hmm-regime console script entry point.",
+      "implementation_status": "implemented",
+      "code_path": "hmm_futures_analysis/cli.py",
+      "evidence_path": null,
+      "evidence_gap": null,
+      "tech_stack": ["python", "argparse"],
+      "hotspot": true
+    },
+    {
+      "id": "regime-pipeline-orchestration",
+      "type": "System",
+      "label": "Regime Pipeline & Orchestration",
+      "responsibility": "Central orchestration: engine resolution via registry, regime classification, Markov chain statistics (transition matrix, stationary distribution, persistence, signal), regime transitions extraction, walk-forward backtest, duration forecasting, and output assembly into PipelineResult. Owns pipeline.py, engine_protocol.py, walk_forward.py, markov_chain.py, regime_transitions.py, duration_forecast.py, engine_configs.py.",
+      "implementation_status": "implemented",
+      "code_path": "hmm_futures_analysis/regime/",
+      "evidence_path": null,
+      "evidence_gap": null,
+      "tech_stack": ["python", "numpy", "scipy", "hmmlearn", "lifelines"],
+      "hotspot": true
+    },
+    {
+      "id": "engine-implementations",
+      "type": "System",
+      "label": "Engine Implementations",
+      "responsibility": "Five independent regime classification engines, all implementing the RegimeEngine protocol: threshold (close-only vectorized), hmm_generic (HMM + ~50 SMA features), hmm_messina (HMM + 19 Wilder's features), robust_hmm (HMM + Huber/MCD outlier resistance), fshmm (HMM + feature saliency learning). Shared base class HMMEngineBase in _hmm_engine.py plus pipeline helpers in _hmm_pipeline.py.",
+      "implementation_status": "implemented",
+      "code_path": "hmm_futures_analysis/regime/engines/",
+      "evidence_path": null,
+      "evidence_gap": null,
+      "tech_stack": ["python", "hmmlearn", "numpy", "pandas", "scikit-learn"],
+      "hotspot": true
+    },
+    {
+      "id": "data-processing",
+      "type": "System",
+      "label": "Data Processing & Feature Engineering",
+      "responsibility": "CSV loading with column auto-detection, two feature engineering pipelines (generic ~50 SMA-based indicators, messina 19 Wilder's-smoothed indicators), low-level technical indicator computation (ATR, RSI, MACD, Bollinger, VSTOP, ADX/DI, KDJ, etc.).",
+      "implementation_status": "implemented",
+      "code_path": "hmm_futures_analysis/data_processing/",
+      "evidence_path": null,
+      "evidence_gap": null,
+      "tech_stack": ["python", "pandas", "numpy", "ta"],
+      "hotspot": false
+    },
+    {
+      "id": "backtesting-evaluation",
+      "type": "System",
+      "label": "Backtesting & Evaluation",
+      "responsibility": "Multi-ticker evaluation harness that runs all engines against CSVs or tickers with comparison table output. Performance metrics (Sharpe, drawdown) used by walk-forward backtest. Hyperparameter sweep scripts at repo root and scripts/ directory.",
+      "implementation_status": "implemented",
+      "code_path": "hmm_futures_analysis/backtesting/",
+      "evidence_path": null,
+      "evidence_gap": "eval.py is separate from backtesting/ directory but both are related to evaluation",
+      "tech_stack": ["python", "tqdm", "pandas", "yfinance"],
+      "hotspot": false
+    },
+    {
+      "id": "utilities",
+      "type": "System",
+      "label": "Utilities",
+      "responsibility": "Shared data type definitions and logging configuration. Small utility layer consumed by pipeline and engines.",
+      "implementation_status": "implemented",
+      "code_path": "hmm_futures_analysis/utils/",
+      "evidence_path": null,
+      "evidence_gap": null,
+      "tech_stack": ["python", "pydantic"],
+      "hotspot": false
+    },
+    {
+      "id": "evaluation-harness",
+      "type": "System",
+      "label": "Evaluation Harness",
+      "responsibility": "Multi-ticker evaluation CLI mode that runs one or more engines against multiple CSV files or yfinance tickers, producing comparison tables and JSON evaluation results.",
+      "implementation_status": "implemented",
+      "code_path": "hmm_futures_analysis/eval.py",
+      "evidence_path": null,
+      "evidence_gap": null,
+      "tech_stack": ["python", "tqdm", "pandas", "yfinance"],
+      "hotspot": false
+    },
+    {
+      "id": "sweep-scripts",
+      "type": "System",
+      "label": "Hyperparameter Sweep Scripts",
+      "responsibility": "Standalone scripts for hyperparameter optimization sweeps across engines (messina_sweep, fshmm_sweep, robust_hmm_sweep, hmm_sweep) and analysis/messina_analysis scripts. Not part of the importable package.",
+      "implementation_status": "implemented",
+      "code_path": "scripts/",
+      "evidence_path": null,
+      "evidence_gap": null,
+      "tech_stack": ["python"],
+      "hotspot": false
+    },
+    {
+      "id": "test-suite",
+      "type": "System",
+      "label": "Test Suite",
+      "responsibility": "52 test modules (38 unit, 14 integration) covering pipeline, engines, data processing, walk-forward, degenerate fits, feature engineering, CLI, and contracts. No test runner config violations; slow integration tests gated behind --runslow marker.",
+      "implementation_status": "implemented",
+      "code_path": "tests/",
+      "evidence_path": null,
+      "evidence_gap": null,
+      "tech_stack": ["python", "pytest", "unittest.mock"],
+      "hotspot": false
+    }
+  ],
+  "edges": [
+    {
+      "source": "cli-entrypoint",
+      "target": "regime-pipeline-orchestration",
+      "type": "depends_on",
+      "description": "CLI imports pipeline.run() and engine_protocol classes"
+    },
+    {
+      "source": "cli-entrypoint",
+      "target": "data-processing",
+      "type": "depends_on",
+      "description": "CLI imports csv_auto_detect.load_prices() via pipeline"
+    },
+    {
+      "source": "cli-entrypoint",
+      "target": "evaluation-harness",
+      "type": "depends_on",
+      "description": "CLI imports eval.run_eval_csv/run_eval_tickers"
+    },
+    {
+      "source": "regime-pipeline-orchestration",
+      "target": "engine-implementations",
+      "type": "depends_on",
+      "description": "Pipeline resolves engines via ENGINE_REGISTRY (lazy import)"
+    },
+    {
+      "source": "regime-pipeline-orchestration",
+      "target": "data-processing",
+      "type": "depends_on",
+      "description": "Pipeline uses load_prices for price validation"
+    },
+    {
+      "source": "regime-pipeline-orchestration",
+      "target": "backtesting-evaluation",
+      "type": "depends_on",
+      "description": "walk_forward imports performance_metrics"
+    },
+    {
+      "source": "regime-pipeline-orchestration",
+      "target": "utilities",
+      "type": "depends_on",
+      "description": "Pipeline uses data_types and logging_config"
+    },
+    {
+      "source": "engine-implementations",
+      "target": "data-processing",
+      "type": "depends_on",
+      "description": "Engines import feature_engineering and messina_features"
+    },
+    {
+      "source": "engine-implementations",
+      "target": "regime-pipeline-orchestration",
+      "type": "depends_on",
+      "description": "Engines import engine_protocol.ClassifyResult/ClassifyOutput"
+    },
+    {
+      "source": "evaluation-harness",
+      "target": "regime-pipeline-orchestration",
+      "type": "depends_on",
+      "description": "eval.py imports pipeline.run() and engine_configs"
+    },
+    {
+      "source": "evaluation-harness",
+      "target": "data-processing",
+      "type": "depends_on",
+      "description": "eval.py imports csv_auto_detect.load_prices"
+    },
+    {
+      "source": "sweep-scripts",
+      "target": "regime-pipeline-orchestration",
+      "type": "depends_on",
+      "description": "Sweep scripts import pipeline.run() for evaluation"
+    },
+    {
+      "source": "sweep-scripts",
+      "target": "data-processing",
+      "type": "depends_on",
+      "description": "Sweep scripts import csv_auto_detect"
+    },
+    {
+      "source": "test-suite",
+      "target": "regime-pipeline-orchestration",
+      "type": "depends_on",
+      "description": "Tests import pipeline, engine_protocol, walk_forward"
+    },
+    {
+      "source": "test-suite",
+      "target": "engine-implementations",
+      "type": "depends_on",
+      "description": "Tests import engine classes and _hmm_engine base"
+    },
+    {
+      "source": "test-suite",
+      "target": "data-processing",
+      "type": "depends_on",
+      "description": "Tests import csv_auto_detect and feature_engineering"
+    },
+    {
+      "source": "test-suite",
+      "target": "cli-entrypoint",
+      "type": "depends_on",
+      "description": "CLI integration tests call hmm-regime script"
+    },
+    {
+      "source": "test-suite",
+      "target": "utilities",
+      "type": "depends_on",
+      "description": "Tests import data_types and logging_config"
+    }
+  ],
+  "metadata": {
+    "total_files": 98,
+    "total_lines": 21025,
+    "languages": ["python", "bash"],
+    "git_commits_analyzed": 127,
+    "analysis_days": 90
+  }
+}
