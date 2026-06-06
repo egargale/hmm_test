@@ -22,68 +22,22 @@ import json
 import sys
 
 from .data_processing.csv_auto_detect import load_prices
-from .regime.engine_configs import (
-    FSHMMConfig,
-    HMMGenericConfig,
-    HMMMMessinaConfig,
-    RobustHMMConfig,
-    ThresholdConfig,
-)
-from .regime.pipeline import run as pipeline_run
 from .eval import (
     ALL_ENGINES as EVAL_ALL_ENGINES,
-    format_table,
     run_eval_csv,
     run_eval_tickers,
 )
+from .presenter import (
+    format_eval,
+    format_pipeline,
+    limit_transitions,
+    serialize_pipeline,
+)
+from .regime.engine_config_builder import build_engine_config
+from .regime.pipeline import run as pipeline_run
 from .utils.logging_config import suppress_stdout_logging
 
-_STATE_NAMES = ("bear", "sideways", "bull")
 _FRAMEWORK_VERSION = "hmm_test v0.2.0"
-
-
-def _build_engine_config(args: argparse.Namespace) -> object:
-    """Construct the correct config dataclass from CLI args.
-
-    Only passes ``pca_variance`` when the user explicitly provides it
-    via ``--pca-variance``.  Otherwise the engine's dataclass default
-    wins (messina=0.95, robust_hmm=0.90, hmm/fshmm=None).
-    """
-    engine = args.engine
-    # Only pass pca_variance if user explicitly set it (not None)
-    pca_kw = {}
-    if args.pca_variance is not None:
-        pca_kw["pca_variance"] = args.pca_variance
-
-    if engine == "threshold":
-        return ThresholdConfig(
-            window=args.window,
-            threshold=args.threshold,
-        )
-    elif engine == "hmm":
-        return HMMGenericConfig(
-            n_states=args.n_states,
-            **pca_kw,
-        )
-    elif engine == "messina":
-        return HMMMMessinaConfig(
-            n_states=args.n_states,
-            **pca_kw,
-        )
-    elif engine == "robust_hmm":
-        return RobustHMMConfig(
-            n_states=args.n_states,
-            **pca_kw,
-            robust_method=args.robust_method,
-        )
-    elif engine == "fshmm":
-        return FSHMMConfig(
-            n_states=args.n_states,
-            **pca_kw,
-            saliency_threshold=args.saliency_threshold,
-        )
-    else:
-        raise ValueError(f"Unknown engine: {engine!r}")
 
 
 def _write_saliency_csv(output, path: str) -> None:
@@ -101,175 +55,6 @@ def _write_saliency_csv(output, path: str) -> None:
         for i, w in enumerate(saliency):
             is_sel = "yes" if selected and f"f{i}" in selected else "no"
             writer.writerow([i, f"{w:.6f}", is_sel])
-
-
-def _apply_transitions_limit(transitions, limit):
-    """Filter and reorder transitions for display/serialization.
-
-    Parameters
-    ----------
-    transitions : list[dict]
-        Chronological transition list (oldest first).
-    limit : int | None
-        None  → passthrough (terminal disabled mode).
-        0     → all transitions, reversed (newest first).
-        N > 0 → N most recent transitions, newest first.
-
-    Returns
-    -------
-    list[dict]
-        Filtered and/or reordered list.  Returns the original list
-        object unchanged when *limit* is None; returns a new list
-        otherwise.
-    """
-    if limit is None:
-        return transitions
-    if not transitions:
-        return transitions
-    reversed_list = list(reversed(transitions))
-    if limit == 0:
-        return reversed_list
-    return reversed_list[:limit]
-
-
-def _print_terminal(output, *, transitions_limit=None) -> None:
-    """Pretty-print regime analysis results to stderr."""
-    width = 54
-    sep = "─" * width
-
-    def header(title: str) -> None:
-        print(f"\n{sep}", file=sys.stderr)
-        print(f"  {title}", file=sys.stderr)
-        print(sep, file=sys.stderr)
-
-    sr = output
-    header("REGIME DETECTION")
-    print(f"  Source      : {sr.source}", file=sys.stderr)
-    print(f"  Engine      : {sr.engine}", file=sys.stderr)
-    print(
-        f"  Date range  : {sr.dates['start']} → {sr.dates['end']}",
-        file=sys.stderr,
-    )
-
-    ei = sr.engine_info
-    print(f"  Method      : {ei['method']}", file=sys.stderr)
-    print(f"  Features    : {ei['features']}", file=sys.stderr)
-    if "caveat" in ei:
-        print(f"  Caveat      : {ei['caveat']}", file=sys.stderr)
-
-    header("CURRENT REGIME")
-    cr = sr.current_regime
-    print(
-        f"  Regime      : {cr['name'].upper()} (index {cr['index']})", file=sys.stderr
-    )
-    print(f"  Signal      : {sr.signal:+.4f}", file=sys.stderr)
-
-    header("REGIME DISTRIBUTION")
-    rc = sr.regime_counts
-    for name in _STATE_NAMES:
-        print(f"  {name.capitalize():<12s}: {rc.get(name, 0):>6d}", file=sys.stderr)
-
-    header("NEXT-STATE PROBABILITIES")
-    for name in _STATE_NAMES:
-        prob = sr.next_state_probabilities[name]
-        bar = "█" * int(prob * 30)
-        print(f"  {name.capitalize():<12s}: {prob:.3f}  {bar}", file=sys.stderr)
-
-    header("PERSISTENCE")
-    for name in _STATE_NAMES:
-        p = sr.persistence_diagonal[name]
-        print(f"  {name.capitalize():<12s}: {p:.3f}", file=sys.stderr)
-
-    header("TRANSITION MATRIX")
-    names = [s.capitalize() for s in _STATE_NAMES]
-    print(
-        f"  {'':>10s}  {names[0]:>8s}  {names[1]:>8s}  {names[2]:>8s}", file=sys.stderr
-    )
-    for i, row in enumerate(sr.transition_matrix):
-        cells = "  ".join(f"{v:8.3f}" for v in row)
-        print(f"  {names[i]:>10s}  {cells}", file=sys.stderr)
-
-    header("STATIONARY DISTRIBUTION")
-    for name in _STATE_NAMES:
-        prob = sr.stationary_distribution[name]
-        print(f"  {name.capitalize():<12s}: {prob:.3f}", file=sys.stderr)
-
-    header("FORECAST (n-step)")
-    for step_key in ("1_step", "5_step", "20_step"):
-        f = sr.forecast[step_key]
-        print(f"  {step_key.replace('_', ' ').capitalize()}:", file=sys.stderr)
-        for name in _STATE_NAMES:
-            print(f"    {name.capitalize():<10s}: {f[name]:.3f}", file=sys.stderr)
-
-    header("WALK-FORWARD BACKTEST")
-    wf = sr.walk_forward
-    sharpe_str = f"{wf['sharpe']:.2f}" if wf["sharpe"] is not None else "N/A"
-    dd_str = f"{wf['max_drawdown']:.2%}" if wf["max_drawdown"] is not None else "N/A"
-    wr_str = f"{wf['win_rate']:.1%}" if wf["win_rate"] is not None else "N/A"
-    pf_str = f"{wf['profit_factor']:.2f}" if wf["profit_factor"] is not None else "N/A"
-    tr_str = f"{wf['total_return']:.2%}" if wf["total_return"] is not None else "N/A"
-
-    print(f"  Sharpe ratio   : {sharpe_str}", file=sys.stderr)
-    print(f"  Max drawdown   : {dd_str}", file=sys.stderr)
-    print(f"  Total return   : {tr_str}", file=sys.stderr)
-    print(f"  Trades         : {wf['n_trades']}", file=sys.stderr)
-    print(f"  Win rate       : {wr_str}", file=sys.stderr)
-    print(f"  Profit factor  : {pf_str}", file=sys.stderr)
-
-    # Lookahead bias warning for --reverse-classify (Issue #102)
-    if sr.engine_info.get("lookahead_bias_warning"):
-        print(
-            "  ⚠  LOOKAHEAD BIAS: walk-forward backtest contains lookahead bias.",
-            file=sys.stderr,
-        )
-        print(
-            "     Regime at bar t is partially informed by data from t+1…n.",
-            file=sys.stderr,
-        )
-        print(
-            "     Use reverse-classify for display only, not backtest decisions.",
-            file=sys.stderr,
-        )
-
-    if sr.duration_forecast is not None and sr.duration_forecast is not None:
-        df = sr.duration_forecast
-        header("DURATION FORECAST")
-        print(f"  Current regime     : {df['current_regime'].upper()}", file=sys.stderr)
-        print(f"  Days in regime     : {df['days_in_regime']}", file=sys.stderr)
-        if df["expected_remaining_days"] is not None:
-            print(
-                f"  Expected remaining  : {df['expected_remaining_days']:.1f} days",
-                file=sys.stderr,
-            )
-            print(f"  Hazard rate         : {df['hazard_rate']:.4f}", file=sys.stderr)
-            print(
-                f"  Median survival     : {df['survival_50pct']:.1f} days",
-                file=sys.stderr,
-            )
-            print(f"  Weibull shape       : {df['weibull_shape']:.4f}", file=sys.stderr)
-            print(f"  Weibull scale       : {df['weibull_scale']:.2f}", file=sys.stderr)
-        else:
-            print("  (insufficient historical spells for fitting)", file=sys.stderr)
-
-    # --- Regime transitions (issue #63) ---
-    if transitions_limit is not None and sr.regime_transitions:
-        header("REGIME TRANSITIONS")
-        all_transitions = sr.regime_transitions
-        shown = _apply_transitions_limit(all_transitions, transitions_limit)
-        for ev in shown:
-            print(
-                f"  {ev['date']}  {ev['from_regime'].upper()} → {ev['to_regime'].upper()}",
-                file=sys.stderr,
-            )
-        if transitions_limit > 0 and len(all_transitions) > transitions_limit:
-            print(
-                f"  ... ({len(all_transitions) - transitions_limit} more)",
-                file=sys.stderr,
-            )
-
-    header("DISCLAIMER")
-    print(f"  {sr.disclaimer}", file=sys.stderr)
-    print(sep, file=sys.stderr)
 
 
 def _parse_n_states(value: str) -> str | int:
@@ -546,10 +331,9 @@ def main() -> None:
                 )
 
             if args.json:
-                json.dump(results, sys.stdout, indent=2, allow_nan=False)
-                sys.stdout.write("\n")
+                print(format_eval(results, fmt="json"))
             else:
-                print(format_table(results), file=sys.stderr)
+                print(format_eval(results, fmt="table"), file=sys.stderr)
 
         except Exception as exc:
             if args.json:
@@ -576,7 +360,7 @@ def main() -> None:
         )
 
         # Build engine config from CLI args
-        engine_config = _build_engine_config(args)
+        engine_config = build_engine_config(args)
 
         # Build output
         output = pipeline_run(
@@ -593,16 +377,10 @@ def main() -> None:
         )
 
         if args.json:
-            d = output._asdict()
-            if d.get("regime_transitions"):
-                limit = args.transitions if args.transitions is not None else 0
-                d["regime_transitions"] = _apply_transitions_limit(
-                    d["regime_transitions"], limit
-                )
-            json.dump(d, sys.stdout, indent=2, allow_nan=False)
+            json.dump(serialize_pipeline(output, transitions_limit=args.transitions), sys.stdout, indent=2, allow_nan=False)
             sys.stdout.write("\n")
         else:
-            _print_terminal(output, transitions_limit=args.transitions)
+            print(format_pipeline(output, transitions_limit=args.transitions), file=sys.stderr, end="")
 
         # Write saliency weights CSV if requested
         if args.saliency_output and args.engine == "fshmm":

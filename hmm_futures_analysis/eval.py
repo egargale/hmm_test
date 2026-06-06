@@ -13,6 +13,7 @@ from typing import Any
 from tqdm import tqdm
 
 from .data_processing.csv_auto_detect import load_prices
+from .presenter import format_eval as _format_eval
 from .regime.engine_configs import (
     FSHMMConfig,
     HMMGenericConfig,
@@ -31,6 +32,16 @@ _ENGINE_CONFIG_DEFAULTS: dict[str, type] = {
     "robust_hmm": RobustHMMConfig,
     "fshmm": FSHMMConfig,
 }
+
+
+# Re-export for backwards compatibility — format_table has moved to presenter.format_eval.
+def format_table(results: list[dict[str, Any]]) -> str:
+    """Format results as a markdown table.
+
+    .. deprecated::
+       Use :func:`presenter.format_eval(results, fmt="table")` instead.
+    """
+    return _format_eval(results, fmt="table")
 
 
 def _make_config(engine_name: str) -> object:
@@ -132,58 +143,4 @@ def run_eval_tickers(
     return results
 
 
-def format_table(results: list[dict[str, Any]]) -> str:
-    """Format results as a markdown table."""
-    if not results:
-        return "No results."
 
-    headers = [
-        "ticker", "engine", "regime", "signal", "sharpe", "max_dd",
-        "trades", "win_rate", "pf", "total_ret", "wall_s",
-    ]
-
-    def fmt(val: Any) -> str:
-        if val is None:
-            return "N/A"
-        if isinstance(val, float):
-            if abs(val) < 100:
-                return f"{val:.3f}"
-            return f"{val:.1f}"
-        return str(val)
-
-    rows: list[list[str]] = []
-    for r in results:
-        rows.append([
-            r["ticker"],
-            r["engine"],
-            r["regime"],
-            fmt(r["signal"]),
-            fmt(r["sharpe"]),
-            fmt(r["max_drawdown"]),
-            str(r["n_trades"]),
-            fmt(r["win_rate"]),
-            fmt(r["profit_factor"]),
-            fmt(r["total_return"]),
-            fmt(r["wall_seconds"]),
-        ])
-
-    # Column widths
-    widths = [len(h) for h in headers]
-    for row in rows:
-        for i, cell in enumerate(row):
-            widths[i] = max(widths[i], len(cell))
-
-    def fmt_row(cells: list[str]) -> str:
-        return "  ".join(c.ljust(widths[i]) for i, c in enumerate(cells))
-
-    def separator() -> str:
-        return "  ".join("-" * w for w in widths)
-
-    lines = [
-        fmt_row(headers),
-        separator(),
-    ]
-    for row in rows:
-        lines.append(fmt_row(row))
-
-    return "\n".join(lines)

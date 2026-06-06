@@ -104,6 +104,10 @@ _Avoid_: prediction, outlook, recommendation
 A regime-aging-adjusted threshold for the Sideways → transition verdict boundary. Computed by ``_compute_dynamic_threshold()`` from the duration forecast's Weibull fit. When ``days_in_regime > expected_total`` (Weibull unconditional mean), the threshold shrinks linearly from 1.0× at aging_ratio=1 down to 0.3× at aging_ratio=1.7. Makes the verdict more sensitive to transition signals as the regime ages past its historical norm. Falls back to 0.1 when duration data is unavailable.
 _Avoid_: adaptive threshold, variable cutoff
 
+**Presenter**:
+The output formatting seam between pipeline computation and user-facing output. Lives in ``presenter.py`` and exposes four pure functions: ``format_pipeline()`` (terminal string), ``serialize_pipeline()`` (JSON-compatible dict), ``format_eval()`` (eval table or JSON string), and ``limit_transitions()`` (transition filter/reverse). The presenter never touches streams (stdout/stderr) — it returns strings or dicts, and the caller owns IO. Callable from the CLI, library code, or test harness without importing argparse, sys, or engine internals. Extracted from cli.py per ADR-0021.
+_Avoid_: renderer, output module, formatter
+
 ## Engine suitability
 
 | Engine | Best for | Weakness |
