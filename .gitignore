@@ -8,6 +8,8 @@ wheels/
 
 # Virtual environments
 .venv
+uv.lock
+
 # Oh-My_ClaudeCode
 .omc/
 

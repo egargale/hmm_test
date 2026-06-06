@@ -43,8 +43,18 @@ _FRAMEWORK_VERSION = "hmm_test v0.2.0"
 
 
 def _build_engine_config(args: argparse.Namespace) -> object:
-    """Construct the correct config dataclass from CLI args."""
+    """Construct the correct config dataclass from CLI args.
+
+    Only passes ``pca_variance`` when the user explicitly provides it
+    via ``--pca-variance``.  Otherwise the engine's dataclass default
+    wins (messina=0.95, robust_hmm=0.90, hmm/fshmm=None).
+    """
     engine = args.engine
+    # Only pass pca_variance if user explicitly set it (not None)
+    pca_kw = {}
+    if args.pca_variance is not None:
+        pca_kw["pca_variance"] = args.pca_variance
+
     if engine == "threshold":
         return ThresholdConfig(
             window=args.window,
@@ -53,23 +63,23 @@ def _build_engine_config(args: argparse.Namespace) -> object:
     elif engine == "hmm":
         return HMMGenericConfig(
             n_states=args.n_states,
-            pca_variance=getattr(args, "pca_variance", None),
+            **pca_kw,
         )
     elif engine == "messina":
         return HMMMMessinaConfig(
             n_states=args.n_states,
-            pca_variance=getattr(args, "pca_variance", None),
+            **pca_kw,
         )
     elif engine == "robust_hmm":
         return RobustHMMConfig(
             n_states=args.n_states,
-            pca_variance=getattr(args, "pca_variance", None),
+            **pca_kw,
             robust_method=args.robust_method,
         )
     elif engine == "fshmm":
         return FSHMMConfig(
             n_states=args.n_states,
-            pca_variance=getattr(args, "pca_variance", None),
+            **pca_kw,
             saliency_threshold=args.saliency_threshold,
         )
     else:
@@ -262,9 +272,7 @@ def _parse_hysteresis(value: str) -> str | float:
             f"--hysteresis must be 'auto' or a number, got {value!r}"
         )
     if fv < 0.0 or fv >= 1.0:
-        raise argparse.ArgumentTypeError(
-            f"--hysteresis must be in [0, 1), got {fv}"
-        )
+        raise argparse.ArgumentTypeError(f"--hysteresis must be in [0, 1), got {fv}")
     return fv
 
 
@@ -341,6 +349,12 @@ def main() -> None:
         help="Robust estimation method for robust_hmm engine: huber (Huber IRLS) or mcd (MinCovDet). Default: huber.",
     )
 
+    parser.add_argument(
+        "--pca-variance",
+        type=float,
+        default=None,
+        help="PCA whitening: retain this fraction of variance (e.g. 0.95). When omitted, uses the engine's dataclass default (messina=0.95, robust_hmm=0.90, hmm=None, fshmm=None).",
+    )
     parser.add_argument(
         "--saliency-threshold",
         type=float,
@@ -420,9 +434,7 @@ def main() -> None:
         )
 
     if not eval_mode and not single_mode:
-        parser.error(
-            "provide one of: --ticker, --csv, --eval-tickers, or --eval-csv"
-        )
+        parser.error("provide one of: --ticker, --csv, --eval-tickers, or --eval-csv")
 
     # --- Eval mode ---
     if eval_mode:
