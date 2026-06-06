@@ -30,6 +30,7 @@ class HMMGenericConfig:
     features: str = "generic"
     n_states: int | str = 3
     pca_variance: float | None = None
+    reverse_classify: bool = False
     default_dwell_bars: int = 0
     default_hysteresis_delta: float = 0.0
 
@@ -44,6 +45,7 @@ class HMMMMessinaConfig:
     features: str = "messina"
     n_states: int | str = 3
     pca_variance: float | None = 0.95
+    reverse_classify: bool = False
     default_dwell_bars: int = 0
     default_hysteresis_delta: float = 0.0
 
@@ -58,6 +60,7 @@ class RobustHMMConfig:
     features: str = "generic"
     n_states: int | str = 3
     pca_variance: float | None = 0.90
+    reverse_classify: bool = False
     robust_method: str = "huber"
     default_dwell_bars: int = 0
     default_hysteresis_delta: float = 0.0
@@ -73,6 +76,7 @@ class FSHMMConfig:
     features: str = "generic"
     n_states: int | str = 3
     pca_variance: float | None = None
+    reverse_classify: bool = False
     saliency_threshold: float = 0.5
     default_dwell_bars: int = 2
     default_hysteresis_delta: float = 0.05

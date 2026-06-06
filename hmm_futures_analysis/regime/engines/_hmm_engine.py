@@ -49,9 +49,11 @@ class HMMEngineBase(ABC):
         self,
         n_states: int = 3,
         pca_variance: float | None = None,
+        reverse_classify: bool = False,
     ) -> None:
         self.n_states = n_states
         self.pca_variance = pca_variance
+        self.reverse_classify = reverse_classify
         self._pca_n_components: int | None = None
 
     def precompute(self, data: pd.DataFrame) -> pd.DataFrame | None:

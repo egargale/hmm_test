@@ -43,24 +43,24 @@ def _make_ohlcv(prices: pd.Series) -> pd.DataFrame:
 
 
 class TestHMMClassifyPipelineReverse:
-    """_hmm_classify_pipeline(reverse=True) produces chronologically-ordered regimes."""
+    """_hmm_classify_pipeline reads reverse_classify from engine (ADR-0023)."""
 
     def test_reverse_regimes_are_chronological(self):
-        """With reverse=True, regimes[0] is the earliest bar."""
+        """With reverse_classify=True on engine, regimes[0] is the earliest bar."""
         from hmm_futures_analysis.regime.engines.hmm_generic import HMMGenericEngine
         from hmm_futures_analysis.regime.engines._hmm_pipeline import _hmm_classify_pipeline
 
         prices = _make_prices(300, seed=99)
         ohlcv = _make_ohlcv(prices)
         returns = prices.pct_change(fill_method=None).dropna()
-        eng = HMMGenericEngine(n_states=3)
 
         result = _hmm_classify_pipeline(
-            eng, prices, ohlcv, returns, min_train=50,
+            HMMGenericEngine(n_states=3),
+            prices, ohlcv, returns, min_train=50,
         )
         result_reverse = _hmm_classify_pipeline(
-            eng, prices, ohlcv, returns, min_train=50,
-            reverse=True,
+            HMMGenericEngine(n_states=3, reverse_classify=True),
+            prices, ohlcv, returns, min_train=50,
         )
 
         # Same length as forward
@@ -72,10 +72,10 @@ class TestHMMClassifyPipelineReverse:
 
 
 class TestPipelineReverseClassify:
-    """pipeline.run(reverse_classify=True) flows through correctly."""
+    """reverse_classify set on engine config flows to engine_info (ADR-0023)."""
 
     def test_reverse_classify_flows_to_engine_info(self):
-        """engine_info contains lookahead warning when reverse_classify=True."""
+        """engine_info contains lookahead warning when config.reverse_classify=True."""
         from hmm_futures_analysis.regime.engine_configs import HMMGenericConfig
         from hmm_futures_analysis.regime.pipeline import run
 
@@ -85,11 +85,10 @@ class TestPipelineReverseClassify:
         result = run(
             prices,
             source="test",
-            engine_config=HMMGenericConfig(n_states=3),
+            engine_config=HMMGenericConfig(n_states=3, reverse_classify=True),
             ohlcv=ohlcv,
             min_train=50,
             profile=False,
-            reverse_classify=True,
         )
 
         assert result.engine_info.get("reverse_classify") is True
@@ -120,41 +119,58 @@ class TestPipelineReverseClassify:
 class TestThresholdReverseClassifyNoop:
     """--reverse-classify is a no-op for the threshold engine."""
 
-    def test_threshold_reverse_identical_to_forward(self):
-        """Threshold output is identical whether reverse_classify is True or False."""
+    def test_threshold_no_reverse_in_output(self):
+        """Threshold output has no reverse_classify/lookahead keys in engine_info."""
         from hmm_futures_analysis.regime.engine_configs import ThresholdConfig
         from hmm_futures_analysis.regime.pipeline import run
 
         prices = _make_prices(300)
         ohlcv = _make_ohlcv(prices)
 
-        forward = run(
+        result = run(
             prices,
             source="test",
             engine_config=ThresholdConfig(),
             ohlcv=ohlcv,
             min_train=50,
             profile=False,
-        )
-        reverse = run(
-            prices,
-            source="test",
-            engine_config=ThresholdConfig(),
-            ohlcv=ohlcv,
-            min_train=50,
-            profile=False,
-            reverse_classify=True,
         )
 
-        # Threshold engine should produce identical results
-        assert forward.current_regime == reverse.current_regime
-        assert forward.signal == reverse.signal
-        np.testing.assert_array_equal(
-            forward.transition_matrix, reverse.transition_matrix
+        # Threshold engine never sets reverse_classify on config
+        # and has no concept of reverse iteration
+        assert result.engine_info.get("lookahead_bias_warning") is None
+        assert result.engine_info.get("reverse_classify") is None
+
+    def test_threshold_forward_and_with_config_identical(self):
+        """Two threshold runs with same config produce identical results."""
+        from hmm_futures_analysis.regime.engine_configs import ThresholdConfig
+        from hmm_futures_analysis.regime.pipeline import run
+
+        prices = _make_prices(300)
+        ohlcv = _make_ohlcv(prices)
+
+        first = run(
+            prices,
+            source="test",
+            engine_config=ThresholdConfig(),
+            ohlcv=ohlcv,
+            min_train=50,
+            profile=False,
         )
-        # No lookahead warning for threshold
-        assert reverse.engine_info.get("lookahead_bias_warning") is None
-        assert reverse.engine_info.get("reverse_classify") is None
+        second = run(
+            prices,
+            source="test",
+            engine_config=ThresholdConfig(),
+            ohlcv=ohlcv,
+            min_train=50,
+            profile=False,
+        )
+
+        assert first.current_regime == second.current_regime
+        assert first.signal == second.signal
+        np.testing.assert_array_equal(
+            first.transition_matrix, second.transition_matrix
+        )
 
 
 # ---------------------------------------------------------------------------

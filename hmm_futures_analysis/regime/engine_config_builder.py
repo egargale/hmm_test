@@ -37,22 +37,26 @@ def build_engine_config(args: argparse.Namespace) -> object:
     elif engine == "hmm":
         return HMMGenericConfig(
             n_states=args.n_states,
+            reverse_classify=getattr(args, 'reverse_classify', False),
             **pca_kw,
         )
     elif engine == "messina":
         return HMMMMessinaConfig(
             n_states=args.n_states,
+            reverse_classify=getattr(args, 'reverse_classify', False),
             **pca_kw,
         )
     elif engine == "robust_hmm":
         return RobustHMMConfig(
             n_states=args.n_states,
+            reverse_classify=getattr(args, 'reverse_classify', False),
             **pca_kw,
             robust_method=args.robust_method,
         )
     elif engine == "fshmm":
         return FSHMMConfig(
             n_states=args.n_states,
+            reverse_classify=getattr(args, 'reverse_classify', False),
             **pca_kw,
             saliency_threshold=args.saliency_threshold,
         )

@@ -385,6 +385,7 @@ class TestReverseDegeneration:
         class _ReverseDegenerating:
             n_states = 3
             pca_variance = None
+            reverse_classify = True
             call_count = 0
 
             def precompute(self, data):
@@ -407,7 +408,7 @@ class TestReverseDegeneration:
         engine = _ReverseDegenerating()
         result = _hmm_classify_pipeline(
             engine, prices, None, returns,
-            min_train=min_train, profile=False, reverse=True,
+            min_train=min_train, profile=False,
         )
 
         assert result.reverse_classify is True

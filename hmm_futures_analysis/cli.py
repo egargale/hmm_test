@@ -373,7 +373,6 @@ def main() -> None:
             hysteresis_delta=args.hysteresis,
             duration_forecast=args.duration_forecast,
             duration_model=args.duration_model,
-            reverse_classify=args.reverse_classify,
         )
 
         if args.json:

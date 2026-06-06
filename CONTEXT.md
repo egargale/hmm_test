@@ -85,7 +85,7 @@ Pipeline-level HMM orchestration helpers split from `_hmm_engine.py` per ADR-002
 _Avoid_: hmm helpers, orchestration module
 
 **Engine config**:
-A flat dataclass that encapsulates all constructor parameters for one engine. Each engine has its own config class (e.g. `ThresholdConfig`, `RobustHMMConfig`) with fields matching the engine's `__init__`. Configs also carry `name` (the registry key) and `features` (the feature-engineering mode label). The CLI constructs the right config from CLI args; pipeline and walk-forward never see engine-specific kwargs. Per ADR-0011.
+A flat dataclass that encapsulates all constructor parameters for one engine. Each engine has its own config class (e.g. `ThresholdConfig`, `RobustHMMConfig`) with fields matching the engine's `__init__`. Configs also carry `name` (the registry key) and `features` (the feature-engineering mode label). HMM configs include `reverse_classify: bool` for backward-expanding walk-forward iteration (ADR-0023). The CLI constructs the right config from CLI args; pipeline and walk-forward never see engine-specific kwargs. Per ADR-0011.
 _Avoid_: engine settings, engine params
 
 **Regime transitions**:

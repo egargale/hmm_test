@@ -138,16 +138,19 @@ def _hmm_classify_pipeline(
     profile: bool = True,
     _phases: dict[str, float] | None = None,
     _classify_times: list[float] | None = None,
-    reverse: bool = False,
 ) -> ClassifyOutput:
     """Shared classify_pipeline implementation for all HMM engines.
 
     Handles: precompute → BIC auto-resolve → walk-forward classify.
+    Reads ``reverse_classify`` from the engine object (set via config)
+    instead of accepting a separate parameter — ADR-0023.
     """
     import time as _time
 
     _phases = _phases if _phases is not None else {}
     _classify_times = _classify_times if _classify_times is not None else []
+
+    reverse = getattr(engine, 'reverse_classify', False)
 
     # 1. Precompute features
     precomputed = None

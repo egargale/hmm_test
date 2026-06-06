@@ -18,9 +18,10 @@ class RobustHMMEngine(HMMEngineBase):
         self,
         n_states: int = 3,
         pca_variance: float | None = None,
+        reverse_classify: bool = False,
         robust_method: str = "huber",
     ) -> None:
-        super().__init__(n_states=n_states, pca_variance=pca_variance)
+        super().__init__(n_states=n_states, pca_variance=pca_variance, reverse_classify=reverse_classify)
         self.robust_method = robust_method
 
     def _build_engine_info(self, warmup_bars: int | None = None) -> dict:

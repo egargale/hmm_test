@@ -25,12 +25,13 @@ class FSHMMEngine(HMMEngineBase):
         self,
         n_states: int = 3,
         pca_variance: float | None = None,
+        reverse_classify: bool = False,
         saliency_threshold: float = 0.5,
         max_iter: int = 50,
         tol: float = 1e-4,
         random_state: int = 42,
     ) -> None:
-        super().__init__(n_states=n_states, pca_variance=pca_variance)
+        super().__init__(n_states=n_states, pca_variance=pca_variance, reverse_classify=reverse_classify)
         self.saliency_threshold = saliency_threshold
         self.max_iter = max_iter
         self.tol = tol

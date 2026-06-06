@@ -413,7 +413,6 @@ def run(
     duration_forecast: bool = False,
     duration_model: str = "weibull",
     profile: bool = True,
-    reverse_classify: bool = False,
 ) -> dict:
     """Run the full regime-detection pipeline and return a JSON-compatible dict.
 
@@ -455,7 +454,6 @@ def run(
         profile=profile,
         _phases=_phases,
         _classify_times=_classify_times,
-        reverse=reverse_classify,
     )
 
     # If engine resolved n_states internally (HMM engines set it), use that
@@ -501,6 +499,7 @@ def run(
     )
 
     # --- Lookahead bias warning for reverse-classify (Issue #102) ---
+    reverse_classify = getattr(engine_config, 'reverse_classify', False)
     if reverse_classify and classify_out.reverse_classify:
         engine_info["reverse_classify"] = True
         engine_info["lookahead_bias_warning"] = True
