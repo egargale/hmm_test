@@ -60,6 +60,7 @@ hmm_futures_analysis/data_processing/csv_auto_detect.py
 hmm_futures_analysis/data_processing/feature_engineering.py
 hmm_futures_analysis/data_processing/messina_features.py
 hmm_futures_analysis/data_processing/technical_indicators.py
+hmm_futures_analysis/data_processing/ticker_cache.py
 hmm_futures_analysis/eval.py
 hmm_futures_analysis/regime/
 hmm_futures_analysis/regime/__init__.py
@@ -264,6 +265,7 @@ tests/unit/test_build_markov_stats.py
 tests/unit/test_classify_hmm_slice.py
 tests/unit/test_classify_output_engine_info.py
 tests/unit/test_classify_pipeline.py
+tests/unit/test_cli_cache_flags.py
 tests/unit/test_degenerate_auto_recovery.py
 tests/unit/test_degenerate_fit.py
 tests/unit/test_docs_currency.py
@@ -288,6 +290,7 @@ tests/unit/test_remap_prev_states.py
 tests/unit/test_reverse_classify_cli.py
 tests/unit/test_sample_ohlcv_fixture.py
 tests/unit/test_sweep_tqdm.py
+tests/unit/test_ticker_cache.py
 tests/unit/test_tqdm_dependency.py
 tests/unit/test_validate_prices.py
 tests/unit/test_verdict.py

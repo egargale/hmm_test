@@ -8,7 +8,7 @@
       "id": "cli-entrypoint",
       "type": "System",
       "label": "CLI Entrypoint",
-      "responsibility": "Parse command-line arguments, build engine config from CLI flags, dispatch to pipeline, format and emit JSON output. Provides the hmm-regime console script entry point.",
+      "responsibility": "Parse command-line arguments including disk cache flags (--cache-dir, --refresh, --no-cache), build engine config from CLI flags, dispatch to pipeline, format and emit JSON or terminal output.",
       "implementation_status": "implemented",
       "code_path": "hmm_futures_analysis/cli.py",
       "evidence_path": null,
@@ -44,23 +44,35 @@
       "id": "data-processing",
       "type": "System",
       "label": "Data Processing & Feature Engineering",
-      "responsibility": "CSV loading with column auto-detection, two feature engineering pipelines (generic ~50 SMA-based indicators, messina 19 Wilder's-smoothed indicators), low-level technical indicator computation (ATR, RSI, MACD, Bollinger, VSTOP, ADX/DI, KDJ, etc.).",
+      "responsibility": "CSV loading with column auto-detection, yfinance ticker download with disk cache (ticker_cache module), two feature engineering pipelines (generic ~50 SMA-based indicators, messina 19 Wilder's-smoothed indicators), low-level technical indicator computation (ATR, RSI, MACD, Bollinger, VSTOP, ADX/DI, KDJ, etc.).",
       "implementation_status": "implemented",
       "code_path": "hmm_futures_analysis/data_processing/",
       "evidence_path": null,
       "evidence_gap": null,
-      "tech_stack": ["python", "pandas", "numpy", "ta"],
+      "tech_stack": ["python", "pandas", "numpy", "ta", "yfinance"],
+      "hotspot": false
+    },
+    {
+      "id": "ticker-cache",
+      "type": "Module",
+      "label": "Ticker Disk Cache",
+      "responsibility": "Download OHLCV data via yfinance with on-disk caching under ~/.cache/hmm-regime/tickers/. Provides get_ticker_data() with refresh and no-cache modes, filename sanitization, and corrupted-file recovery.",
+      "implementation_status": "implemented",
+      "code_path": "hmm_futures_analysis/data_processing/ticker_cache.py",
+      "evidence_path": null,
+      "evidence_gap": null,
+      "tech_stack": ["python", "yfinance", "pathlib"],
       "hotspot": false
     },
     {
       "id": "backtesting-evaluation",
       "type": "System",
       "label": "Backtesting & Evaluation",
-      "responsibility": "Multi-ticker evaluation harness that runs all engines against CSVs or tickers with comparison table output. Performance metrics (Sharpe, drawdown) used by walk-forward backtest. Hyperparameter sweep scripts at repo root and scripts/ directory.",
+      "responsibility": "Multi-ticker evaluation harness that runs all engines against CSVs or tickers with comparison table output. Performance metrics (Sharpe, drawdown) used by walk-forward backtest.",
       "implementation_status": "implemented",
       "code_path": "hmm_futures_analysis/backtesting/",
       "evidence_path": null,
-      "evidence_gap": "eval.py is separate from backtesting/ directory but both are related to evaluation",
+      "evidence_gap": "eval.py is separate from backtesting/ directory but both relate to evaluation",
       "tech_stack": ["python", "tqdm", "pandas", "yfinance"],
       "hotspot": false
     },
@@ -80,7 +92,7 @@
       "id": "evaluation-harness",
       "type": "System",
       "label": "Evaluation Harness",
-      "responsibility": "Multi-ticker evaluation CLI mode that runs one or more engines against multiple CSV files or yfinance tickers, producing comparison tables and JSON evaluation results.",
+      "responsibility": "Multi-ticker evaluation CLI mode that runs one or more engines against multiple CSV files or yfinance tickers, producing comparison tables and JSON evaluation results. Delegates ticker fetching to ticker_cache module.",
       "implementation_status": "implemented",
       "code_path": "hmm_futures_analysis/eval.py",
       "evidence_path": null,
@@ -104,7 +116,7 @@
       "id": "test-suite",
       "type": "System",
       "label": "Test Suite",
-      "responsibility": "52 test modules (38 unit, 14 integration) covering pipeline, engines, data processing, walk-forward, degenerate fits, feature engineering, CLI, and contracts. No test runner config violations; slow integration tests gated behind --runslow marker.",
+      "responsibility": "55+ test modules (38 unit, 14 integration, 3 new for ticker_cache + CLI flags) covering pipeline, engines, data processing, walk-forward, degenerate fits, feature engineering, CLI, ticker cache, and contracts.",
       "implementation_status": "implemented",
       "code_path": "tests/",
       "evidence_path": null,
@@ -124,7 +136,7 @@
       "source": "cli-entrypoint",
       "target": "data-processing",
       "type": "depends_on",
-      "description": "CLI imports csv_auto_detect.load_prices() via pipeline"
+      "description": "CLI imports csv_auto_detect.load_prices() which delegates to ticker_cache"
     },
     {
       "source": "cli-entrypoint",
@@ -178,7 +190,19 @@
       "source": "evaluation-harness",
       "target": "data-processing",
       "type": "depends_on",
-      "description": "eval.py imports csv_auto_detect.load_prices"
+      "description": "eval.py imports csv_auto_detect.load_prices, which delegates to ticker_cache"
+    },
+    {
+      "source": "data-processing",
+      "target": "ticker-cache",
+      "type": "contains",
+      "description": "ticker_cache.py is a module within the data_processing package"
+    },
+    {
+      "source": "data-processing",
+      "target": "ticker-cache",
+      "type": "depends_on",
+      "description": "csv_auto_detect.load_prices delegates ticker fetching to ticker_cache.get_ticker_data"
     },
     {
       "source": "sweep-scripts",
@@ -208,7 +232,7 @@
       "source": "test-suite",
       "target": "data-processing",
       "type": "depends_on",
-      "description": "Tests import csv_auto_detect and feature_engineering"
+      "description": "Tests import csv_auto_detect and feature_engineering and ticker_cache"
     },
     {
       "source": "test-suite",
@@ -221,13 +245,19 @@
       "target": "utilities",
       "type": "depends_on",
       "description": "Tests import data_types and logging_config"
+    },
+    {
+      "source": "test-suite",
+      "target": "ticker-cache",
+      "type": "depends_on",
+      "description": "test_ticker_cache.py directly imports ticker_cache module"
     }
   ],
   "metadata": {
-    "total_files": 98,
-    "total_lines": 21025,
+    "total_files": 101,
+    "total_lines": 21541,
     "languages": ["python", "bash"],
-    "git_commits_analyzed": 127,
+    "git_commits_analyzed": 129,
     "analysis_days": 90
   }
 }

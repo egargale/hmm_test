@@ -4,13 +4,13 @@
     "python"
   ],
   "stats": {
-    "total_files": 98,
-    "total_lines": 21025,
+    "total_files": 101,
+    "total_lines": 21541,
     "parse_errors": 0,
     "truncated": true,
-    "truncated_nodes": 830,
+    "truncated_nodes": 865,
     "supported_file_counts": {
-      "python": 96,
+      "python": 99,
       "bash": 2
     },
     "languages_with_structural_queries": [
@@ -71,7 +71,7 @@
       "type": "Module",
       "label": "cli",
       "path": "hmm_futures_analysis/cli.py",
-      "lines": 593,
+      "lines": 622,
       "lang": "python"
     },
     {
@@ -87,7 +87,7 @@
       "type": "Module",
       "label": "csv_auto_detect",
       "path": "hmm_futures_analysis/data_processing/csv_auto_detect.py",
-      "lines": 233,
+      "lines": 254,
       "lang": "python"
     },
     {
@@ -115,11 +115,19 @@
       "lang": "python"
     },
     {
+      "id": "hmm_futures_analysis.data_processing.ticker_cache",
+      "type": "Module",
+      "label": "ticker_cache",
+      "path": "hmm_futures_analysis/data_processing/ticker_cache.py",
+      "lines": 96,
+      "lang": "python"
+    },
+    {
       "id": "hmm_futures_analysis.eval",
       "type": "Module",
       "label": "eval",
       "path": "hmm_futures_analysis/eval.py",
-      "lines": 211,
+      "lines": 190,
       "lang": "python"
     },
     {
@@ -1667,6 +1675,23 @@
       "end_line": 328
     },
     {
+      "id": "tests.unit.test_cli_cache_flags",
+      "type": "Module",
+      "label": "test_cli_cache_flags",
+      "path": "tests/unit/test_cli_cache_flags.py",
+      "lines": 137,
+      "lang": "python"
+    },
+    {
+      "id": "tests.unit.test_cli_cache_flags.TestCliCacheFlags",
+      "type": "Class",
+      "label": "TestCliCacheFlags",
+      "path": "tests/unit/test_cli_cache_flags.py",
+      "parent": "tests.unit.test_cli_cache_flags",
+      "start_line": 9,
+      "end_line": 136
+    },
+    {
       "id": "tests.unit.test_degenerate_auto_recovery",
       "type": "Module",
       "label": "test_degenerate_auto_recovery",
@@ -2187,7 +2212,7 @@
       "type": "Module",
       "label": "test_eval_tqdm",
       "path": "tests/unit/test_eval_tqdm.py",
-      "lines": 109,
+      "lines": 127,
       "lang": "python"
     },
     {
@@ -2196,8 +2221,8 @@
       "label": "TestEvalCsvTqdm",
       "path": "tests/unit/test_eval_tqdm.py",
       "parent": "tests.unit.test_eval_tqdm",
-      "start_line": 22,
-      "end_line": 72
+      "start_line": 20,
+      "end_line": 70
     },
     {
       "id": "tests.unit.test_eval_tqdm.TestEvalTickersTqdm",
@@ -2205,8 +2230,8 @@
       "label": "TestEvalTickersTqdm",
       "path": "tests/unit/test_eval_tqdm.py",
       "parent": "tests.unit.test_eval_tqdm",
-      "start_line": 75,
-      "end_line": 108
+      "start_line": 73,
+      "end_line": 126
     },
     {
       "id": "tests.unit.test_excise_dead_weight",
@@ -2396,7 +2421,7 @@
       "type": "Module",
       "label": "test_load_prices",
       "path": "tests/unit/test_load_prices.py",
-      "lines": 143,
+      "lines": 178,
       "lang": "python"
     },
     {
@@ -2433,7 +2458,7 @@
       "path": "tests/unit/test_load_prices.py",
       "parent": "tests.unit.test_load_prices",
       "start_line": 67,
-      "end_line": 97
+      "end_line": 99
     },
     {
       "id": "tests.unit.test_load_prices.TestLoadPricesMinRowsGuard",
@@ -2441,8 +2466,8 @@
       "label": "TestLoadPricesMinRowsGuard",
       "path": "tests/unit/test_load_prices.py",
       "parent": "tests.unit.test_load_prices",
-      "start_line": 100,
-      "end_line": 130
+      "start_line": 102,
+      "end_line": 132
     },
     {
       "id": "tests.unit.test_load_prices.TestLoadPricesCsvPath",
@@ -2450,8 +2475,17 @@
       "label": "TestLoadPricesCsvPath",
       "path": "tests/unit/test_load_prices.py",
       "parent": "tests.unit.test_load_prices",
-      "start_line": 133,
-      "end_line": 142
+      "start_line": 135,
+      "end_line": 144
+    },
+    {
+      "id": "tests.unit.test_load_prices.TestLoadPricesCacheIntegration",
+      "type": "Class",
+      "label": "TestLoadPricesCacheIntegration",
+      "path": "tests/unit/test_load_prices.py",
+      "parent": "tests.unit.test_load_prices",
+      "start_line": 147,
+      "end_line": 177
     },
     {
       "id": "tests.unit.test_logging_config",
@@ -2685,6 +2719,77 @@
       "parent": "tests.unit.test_sweep_tqdm",
       "start_line": 50,
       "end_line": 178
+    },
+    {
+      "id": "tests.unit.test_ticker_cache",
+      "type": "Module",
+      "label": "test_ticker_cache",
+      "path": "tests/unit/test_ticker_cache.py",
+      "lines": 201,
+      "lang": "python"
+    },
+    {
+      "id": "tests.unit.test_ticker_cache.TestCacheMiss",
+      "type": "Class",
+      "label": "TestCacheMiss",
+      "path": "tests/unit/test_ticker_cache.py",
+      "parent": "tests.unit.test_ticker_cache",
+      "start_line": 25,
+      "end_line": 47
+    },
+    {
+      "id": "tests.unit.test_ticker_cache.TestCacheHit",
+      "type": "Class",
+      "label": "TestCacheHit",
+      "path": "tests/unit/test_ticker_cache.py",
+      "parent": "tests.unit.test_ticker_cache",
+      "start_line": 50,
+      "end_line": 72
+    },
+    {
+      "id": "tests.unit.test_ticker_cache.TestRefresh",
+      "type": "Class",
+      "label": "TestRefresh",
+      "path": "tests/unit/test_ticker_cache.py",
+      "parent": "tests.unit.test_ticker_cache",
+      "start_line": 75,
+      "end_line": 101
+    },
+    {
+      "id": "tests.unit.test_ticker_cache.TestNoCache",
+      "type": "Class",
+      "label": "TestNoCache",
+      "path": "tests/unit/test_ticker_cache.py",
+      "parent": "tests.unit.test_ticker_cache",
+      "start_line": 104,
+      "end_line": 126
+    },
+    {
+      "id": "tests.unit.test_ticker_cache.TestFilenameSanitization",
+      "type": "Class",
+      "label": "TestFilenameSanitization",
+      "path": "tests/unit/test_ticker_cache.py",
+      "parent": "tests.unit.test_ticker_cache",
+      "start_line": 129,
+      "end_line": 150
+    },
+    {
+      "id": "tests.unit.test_ticker_cache.TestCorruptedFile",
+      "type": "Class",
+      "label": "TestCorruptedFile",
+      "path": "tests/unit/test_ticker_cache.py",
+      "parent": "tests.unit.test_ticker_cache",
+      "start_line": 153,
+      "end_line": 182
+    },
+    {
+      "id": "tests.unit.test_ticker_cache.TestDefaultCacheDir",
+      "type": "Class",
+      "label": "TestDefaultCacheDir",
+      "path": "tests/unit/test_ticker_cache.py",
+      "parent": "tests.unit.test_ticker_cache",
+      "start_line": 185,
+      "end_line": 200
     },
     {
       "id": "tests.unit.test_tqdm_dependency",
@@ -3128,7 +3233,7 @@
       "path": "hmm_futures_analysis/cli.py",
       "parent": "hmm_futures_analysis.cli",
       "start_line": 320,
-      "end_line": 588
+      "end_line": 617
     },
     {
       "id": "hmm_futures_analysis.data_processing.csv_auto_detect._find_date_column",
@@ -3191,7 +3296,7 @@
       "path": "hmm_futures_analysis/data_processing/csv_auto_detect.py",
       "parent": "hmm_futures_analysis.data_processing.csv_auto_detect",
       "start_line": 169,
-      "end_line": 208
+      "end_line": 229
     },
     {
       "id": "hmm_futures_analysis.data_processing.csv_auto_detect.load_price_series",
@@ -3199,8 +3304,8 @@
       "label": "load_price_series",
       "path": "hmm_futures_analysis/data_processing/csv_auto_detect.py",
       "parent": "hmm_futures_analysis.data_processing.csv_auto_detect",
-      "start_line": 211,
-      "end_line": 232
+      "start_line": 232,
+      "end_line": 253
     },
     {
       "id": "hmm_futures_analysis.data_processing.feature_engineering.add_features",
@@ -3419,22 +3524,67 @@
       "end_line": 136
     },
     {
+      "id": "hmm_futures_analysis.data_processing.ticker_cache._default_cache_dir",
+      "type": "Function",
+      "label": "_default_cache_dir",
+      "path": "hmm_futures_analysis/data_processing/ticker_cache.py",
+      "parent": "hmm_futures_analysis.data_processing.ticker_cache",
+      "start_line": 10,
+      "end_line": 11
+    },
+    {
+      "id": "hmm_futures_analysis.data_processing.ticker_cache._sanitize_ticker",
+      "type": "Function",
+      "label": "_sanitize_ticker",
+      "path": "hmm_futures_analysis/data_processing/ticker_cache.py",
+      "parent": "hmm_futures_analysis.data_processing.ticker_cache",
+      "start_line": 14,
+      "end_line": 15
+    },
+    {
+      "id": "hmm_futures_analysis.data_processing.ticker_cache._cache_path",
+      "type": "Function",
+      "label": "_cache_path",
+      "path": "hmm_futures_analysis/data_processing/ticker_cache.py",
+      "parent": "hmm_futures_analysis.data_processing.ticker_cache",
+      "start_line": 18,
+      "end_line": 19
+    },
+    {
+      "id": "hmm_futures_analysis.data_processing.ticker_cache._save_to_cache",
+      "type": "Function",
+      "label": "_save_to_cache",
+      "path": "hmm_futures_analysis/data_processing/ticker_cache.py",
+      "parent": "hmm_futures_analysis.data_processing.ticker_cache",
+      "start_line": 22,
+      "end_line": 28
+    },
+    {
+      "id": "hmm_futures_analysis.data_processing.ticker_cache._load_from_cache",
+      "type": "Function",
+      "label": "_load_from_cache",
+      "path": "hmm_futures_analysis/data_processing/ticker_cache.py",
+      "parent": "hmm_futures_analysis.data_processing.ticker_cache",
+      "start_line": 31,
+      "end_line": 46
+    },
+    {
+      "id": "hmm_futures_analysis.data_processing.ticker_cache.get_ticker_data",
+      "type": "Function",
+      "label": "get_ticker_data",
+      "path": "hmm_futures_analysis/data_processing/ticker_cache.py",
+      "parent": "hmm_futures_analysis.data_processing.ticker_cache",
+      "start_line": 49,
+      "end_line": 95
+    },
+    {
       "id": "hmm_futures_analysis.eval._make_config",
       "type": "Function",
       "label": "_make_config",
       "path": "hmm_futures_analysis/eval.py",
       "parent": "hmm_futures_analysis.eval",
-      "start_line": 38,
-      "end_line": 40
-    },
-    {
-      "id": "hmm_futures_analysis.eval._save_ticker_csv",
-      "type": "Function",
-      "label": "_save_ticker_csv",
-      "path": "hmm_futures_analysis/eval.py",
-      "parent": "hmm_futures_analysis.eval",
-      "start_line": 43,
-      "end_line": 58
+      "start_line": 36,
+      "end_line": 38
     },
     {
       "id": "hmm_futures_analysis.eval._extract_summary",
@@ -3442,8 +3592,8 @@
       "label": "_extract_summary",
       "path": "hmm_futures_analysis/eval.py",
       "parent": "hmm_futures_analysis.eval",
-      "start_line": 61,
-      "end_line": 76
+      "start_line": 41,
+      "end_line": 56
     },
     {
       "id": "hmm_futures_analysis.eval.run_eval_csv",
@@ -3451,8 +3601,8 @@
       "label": "run_eval_csv",
       "path": "hmm_futures_analysis/eval.py",
       "parent": "hmm_futures_analysis.eval",
-      "start_line": 79,
-      "end_line": 114
+      "start_line": 59,
+      "end_line": 94
     },
     {
       "id": "hmm_futures_analysis.eval.run_eval_tickers",
@@ -3460,8 +3610,8 @@
       "label": "run_eval_tickers",
       "path": "hmm_futures_analysis/eval.py",
       "parent": "hmm_futures_analysis.eval",
-      "start_line": 117,
-      "end_line": 153
+      "start_line": 97,
+      "end_line": 132
     },
     {
       "id": "hmm_futures_analysis.eval.format_table",
@@ -3469,8 +3619,8 @@
       "label": "format_table",
       "path": "hmm_futures_analysis/eval.py",
       "parent": "hmm_futures_analysis.eval",
-      "start_line": 156,
-      "end_line": 210
+      "start_line": 135,
+      "end_line": 189
     },
     {
       "id": "hmm_futures_analysis.eval.fmt",
@@ -3478,8 +3628,8 @@
       "label": "fmt",
       "path": "hmm_futures_analysis/eval.py",
       "parent": "hmm_futures_analysis.eval",
-      "start_line": 166,
-      "end_line": 173
+      "start_line": 145,
+      "end_line": 152
     },
     {
       "id": "hmm_futures_analysis.eval.fmt_row",
@@ -3487,8 +3637,8 @@
       "label": "fmt_row",
       "path": "hmm_futures_analysis/eval.py",
       "parent": "hmm_futures_analysis.eval",
-      "start_line": 197,
-      "end_line": 198
+      "start_line": 176,
+      "end_line": 177
     },
     {
       "id": "hmm_futures_analysis.eval.separator",
@@ -3496,8 +3646,8 @@
       "label": "separator",
       "path": "hmm_futures_analysis/eval.py",
       "parent": "hmm_futures_analysis.eval",
-      "start_line": 200,
-      "end_line": 201
+      "start_line": 179,
+      "end_line": 180
     },
     {
       "id": "hmm_futures_analysis.regime.duration_forecast._extract_spells",
@@ -4290,159 +4440,6 @@
       "parent": "hmm_sweep",
       "start_line": 111,
       "end_line": 234
-    },
-    {
-      "id": "hmm_sweep.build_report",
-      "type": "Function",
-      "label": "build_report",
-      "path": "hmm_sweep.py",
-      "parent": "hmm_sweep",
-      "start_line": 237,
-      "end_line": 480
-    },
-    {
-      "id": "hmm_sweep_missing.cache_key",
-      "type": "Function",
-      "label": "cache_key",
-      "path": "hmm_sweep_missing.py",
-      "parent": "hmm_sweep_missing",
-      "start_line": 15,
-      "end_line": 20
-    },
-    {
-      "id": "hmm_sweep_missing.already_cached",
-      "type": "Function",
-      "label": "already_cached",
-      "path": "hmm_sweep_missing.py",
-      "parent": "hmm_sweep_missing",
-      "start_line": 22,
-      "end_line": 23
-    },
-    {
-      "id": "hmm_sweep_missing.run_one",
-      "type": "Function",
-      "label": "run_one",
-      "path": "hmm_sweep_missing.py",
-      "parent": "hmm_sweep_missing",
-      "start_line": 25,
-      "end_line": 37
-    },
-    {
-      "id": "scripts.fshmm_sweep.build_config",
-      "type": "Function",
-      "label": "build_config",
-      "path": "scripts/fshmm_sweep.py",
-      "parent": "scripts.fshmm_sweep",
-      "start_line": 44,
-      "end_line": 52
-    },
-    {
-      "id": "scripts.fshmm_sweep.run_one",
-      "type": "Function",
-      "label": "run_one",
-      "path": "scripts/fshmm_sweep.py",
-      "parent": "scripts.fshmm_sweep",
-      "start_line": 55,
-      "end_line": 95
-    },
-    {
-      "id": "scripts.fshmm_sweep.fmt_val",
-      "type": "Function",
-      "label": "fmt_val",
-      "path": "scripts/fshmm_sweep.py",
-      "parent": "scripts.fshmm_sweep",
-      "start_line": 98,
-      "end_line": 105
-    },
-    {
-      "id": "scripts.fshmm_sweep.format_results",
-      "type": "Function",
-      "label": "format_results",
-      "path": "scripts/fshmm_sweep.py",
-      "parent": "scripts.fshmm_sweep",
-      "start_line": 108,
-      "end_line": 162
-    },
-    {
-      "id": "scripts.fshmm_sweep.get_val",
-      "type": "Function",
-      "label": "get_val",
-      "path": "scripts/fshmm_sweep.py",
-      "parent": "scripts.fshmm_sweep",
-      "start_line": 119,
-      "end_line": 123
-    },
-    {
-      "id": "scripts.fshmm_sweep.save_csv",
-      "type": "Function",
-      "label": "save_csv",
-      "path": "scripts/fshmm_sweep.py",
-      "parent": "scripts.fshmm_sweep",
-      "start_line": 165,
-      "end_line": 171
-    },
-    {
-      "id": "scripts.fshmm_sweep.phase1",
-      "type": "Function",
-      "label": "phase1",
-      "path": "scripts/fshmm_sweep.py",
-      "parent": "scripts.fshmm_sweep",
-      "start_line": 177,
-      "end_line": 220
-    },
-    {
-      "id": "scripts.fshmm_sweep.phase2",
-      "type": "Function",
-      "label": "phase2",
-      "path": "scripts/fshmm_sweep.py",
-      "parent": "scripts.fshmm_sweep",
-      "start_line": 226,
-      "end_line": 322
-    },
-    {
-      "id": "scripts.fshmm_sweep.phase3",
-      "type": "Function",
-      "label": "phase3",
-      "path": "scripts/fshmm_sweep.py",
-      "parent": "scripts.fshmm_sweep",
-      "start_line": 328,
-      "end_line": 494
-    },
-    {
-      "id": "scripts.fshmm_sweep_fast.fmt_val",
-      "type": "Function",
-      "label": "fmt_val",
-      "path": "scripts/fshmm_sweep_fast.py",
-      "parent": "scripts.fshmm_sweep_fast",
-      "start_line": 46,
-      "end_line": 51
-    },
-    {
-      "id": "scripts.fshmm_sweep_fast.build_config",
-      "type": "Function",
-      "label": "build_config",
-      "path": "scripts/fshmm_sweep_fast.py",
-      "parent": "scripts.fshmm_sweep_fast",
-      "start_line": 54,
-      "end_line": 57
-    },
-    {
-      "id": "scripts.fshmm_sweep_fast.run_fast_classify",
-      "type": "Function",
-      "label": "run_fast_classify",
-      "path": "scripts/fshmm_sweep_fast.py",
-      "parent": "scripts.fshmm_sweep_fast",
-      "start_line": 60,
-      "end_line": 97
-    },
-    {
-      "id": "scripts.fshmm_sweep_fast.run_full_pipeline",
-      "type": "Function",
-      "label": "run_full_pipeline",
-      "path": "scripts/fshmm_sweep_fast.py",
-      "parent": "scripts.fshmm_sweep_fast",
-      "start_line": 100,
-      "end_line": 133
     }
   ],
   "edges": [
@@ -4569,11 +4566,6 @@
     {
       "source": "hmm_futures_analysis.data_processing.csv_auto_detect",
       "target": "pathlib",
-      "type": "imports"
-    },
-    {
-      "source": "hmm_futures_analysis.data_processing.csv_auto_detect",
-      "target": "yfinance",
       "type": "imports"
     },
     {
@@ -4742,13 +4734,48 @@
       "type": "imports"
     },
     {
-      "source": "hmm_futures_analysis.eval",
-      "target": "hmm_futures_analysis.eval._make_config",
+      "source": "hmm_futures_analysis.data_processing.ticker_cache",
+      "target": "hmm_futures_analysis.data_processing.ticker_cache._default_cache_dir",
       "type": "contains"
     },
     {
+      "source": "hmm_futures_analysis.data_processing.ticker_cache",
+      "target": "hmm_futures_analysis.data_processing.ticker_cache._sanitize_ticker",
+      "type": "contains"
+    },
+    {
+      "source": "hmm_futures_analysis.data_processing.ticker_cache",
+      "target": "hmm_futures_analysis.data_processing.ticker_cache._cache_path",
+      "type": "contains"
+    },
+    {
+      "source": "hmm_futures_analysis.data_processing.ticker_cache",
+      "target": "hmm_futures_analysis.data_processing.ticker_cache._save_to_cache",
+      "type": "contains"
+    },
+    {
+      "source": "hmm_futures_analysis.data_processing.ticker_cache",
+      "target": "hmm_futures_analysis.data_processing.ticker_cache._load_from_cache",
+      "type": "contains"
+    },
+    {
+      "source": "hmm_futures_analysis.data_processing.ticker_cache",
+      "target": "hmm_futures_analysis.data_processing.ticker_cache.get_ticker_data",
+      "type": "contains"
+    },
+    {
+      "source": "hmm_futures_analysis.data_processing.ticker_cache",
+      "target": "pathlib",
+      "type": "imports"
+    },
+    {
+      "source": "hmm_futures_analysis.data_processing.ticker_cache",
+      "target": "yfinance",
+      "type": "imports"
+    },
+    {
       "source": "hmm_futures_analysis.eval",
-      "target": "hmm_futures_analysis.eval._save_ticker_csv",
+      "target": "hmm_futures_analysis.eval._make_config",
       "type": "contains"
     },
     {
@@ -4785,11 +4812,6 @@
       "source": "hmm_futures_analysis.eval",
       "target": "hmm_futures_analysis.eval.separator",
       "type": "contains"
-    },
-    {
-      "source": "hmm_futures_analysis.eval",
-      "target": "json",
-      "type": "imports"
     },
     {
       "source": "hmm_futures_analysis.eval",
@@ -9992,6 +10014,51 @@
       "type": "imports"
     },
     {
+      "source": "tests.unit.test_cli_cache_flags",
+      "target": "tests.unit.test_cli_cache_flags.TestCliCacheFlags",
+      "type": "contains"
+    },
+    {
+      "source": "tests.unit.test_cli_cache_flags.TestCliCacheFlags",
+      "target": "tests.unit.test_cli_cache_flags.TestCliCacheFlags.test_cache_dir_threads_to_load_prices",
+      "type": "contains"
+    },
+    {
+      "source": "tests.unit.test_cli_cache_flags.TestCliCacheFlags",
+      "target": "tests.unit.test_cli_cache_flags.TestCliCacheFlags.test_refresh_and_no_cache_threaded",
+      "type": "contains"
+    },
+    {
+      "source": "tests.unit.test_cli_cache_flags.TestCliCacheFlags",
+      "target": "tests.unit.test_cli_cache_flags.TestCliCacheFlags.test_eval_cache_dir_alias",
+      "type": "contains"
+    },
+    {
+      "source": "tests.unit.test_cli_cache_flags",
+      "target": "hmm_futures_analysis.cli",
+      "type": "imports"
+    },
+    {
+      "source": "tests.unit.test_cli_cache_flags",
+      "target": "unittest.mock",
+      "type": "imports"
+    },
+    {
+      "source": "tests.unit.test_cli_cache_flags",
+      "target": "sys",
+      "type": "imports"
+    },
+    {
+      "source": "tests.unit.test_cli_cache_flags",
+      "target": "sys",
+      "type": "imports"
+    },
+    {
+      "source": "tests.unit.test_cli_cache_flags",
+      "target": "sys",
+      "type": "imports"
+    },
+    {
       "source": "tests.unit.test_degenerate_auto_recovery",
       "target": "tests.unit.test_degenerate_auto_recovery._make_prices",
       "type": "contains"
@@ -11668,11 +11735,6 @@
     },
     {
       "source": "tests.unit.test_eval_tqdm",
-      "target": "pytest",
-      "type": "imports"
-    },
-    {
-      "source": "tests.unit.test_eval_tqdm",
       "target": "hmm_futures_analysis.eval",
       "type": "imports"
     },
@@ -12513,6 +12575,16 @@
     },
     {
       "source": "tests.unit.test_load_prices",
+      "target": "tests.unit.test_load_prices.TestLoadPricesCacheIntegration",
+      "type": "contains"
+    },
+    {
+      "source": "tests.unit.test_load_prices.TestLoadPricesCacheIntegration",
+      "target": "tests.unit.test_load_prices.TestLoadPricesCacheIntegration.test_uses_cache_and_returns_prices_ohlcv",
+      "type": "contains"
+    },
+    {
+      "source": "tests.unit.test_load_prices",
       "target": "pytest",
       "type": "imports"
     },
@@ -13154,6 +13226,116 @@
     {
       "source": "tests.unit.test_sweep_tqdm",
       "target": "hmm_sweep",
+      "type": "imports"
+    },
+    {
+      "source": "tests.unit.test_ticker_cache",
+      "target": "tests.unit.test_ticker_cache._make_fake_ohlcv",
+      "type": "contains"
+    },
+    {
+      "source": "tests.unit.test_ticker_cache",
+      "target": "tests.unit.test_ticker_cache.TestCacheMiss",
+      "type": "contains"
+    },
+    {
+      "source": "tests.unit.test_ticker_cache.TestCacheMiss",
+      "target": "tests.unit.test_ticker_cache.TestCacheMiss.test_downloads_and_saves_on_miss",
+      "type": "contains"
+    },
+    {
+      "source": "tests.unit.test_ticker_cache.TestCacheMiss",
+      "target": "tests.unit.test_ticker_cache.TestCacheMiss.fake_download",
+      "type": "contains"
+    },
+    {
+      "source": "tests.unit.test_ticker_cache",
+      "target": "tests.unit.test_ticker_cache.TestCacheHit",
+      "type": "contains"
+    },
+    {
+      "source": "tests.unit.test_ticker_cache.TestCacheHit",
+      "target": "tests.unit.test_ticker_cache.TestCacheHit.test_reads_from_cache_on_hit",
+      "type": "contains"
+    },
+    {
+      "source": "tests.unit.test_ticker_cache.TestCacheHit",
+      "target": "tests.unit.test_ticker_cache.TestCacheHit.fake_download",
+      "type": "contains"
+    },
+    {
+      "source": "tests.unit.test_ticker_cache",
+      "target": "tests.unit.test_ticker_cache.TestRefresh",
+      "type": "contains"
+    },
+    {
+      "source": "tests.unit.test_ticker_cache.TestRefresh",
+      "target": "tests.unit.test_ticker_cache.TestRefresh.test_re_downloads_and_overwrites",
+      "type": "contains"
+    },
+    {
+      "source": "tests.unit.test_ticker_cache.TestRefresh",
+      "target": "tests.unit.test_ticker_cache.TestRefresh.fake_download",
+      "type": "contains"
+    },
+    {
+      "source": "tests.unit.test_ticker_cache",
+      "target": "tests.unit.test_ticker_cache.TestNoCache",
+      "type": "contains"
+    },
+    {
+      "source": "tests.unit.test_ticker_cache.TestNoCache",
+      "target": "tests.unit.test_ticker_cache.TestNoCache.test_bypasses_cache_does_not_write",
+      "type": "contains"
+    },
+    {
+      "source": "tests.unit.test_ticker_cache.TestNoCache",
+      "target": "tests.unit.test_ticker_cache.TestNoCache.fake_download",
+      "type": "contains"
+    },
+    {
+      "source": "tests.unit.test_ticker_cache",
+      "target": "tests.unit.test_ticker_cache.TestFilenameSanitization",
+      "type": "contains"
+    },
+    {
+      "source": "tests.unit.test_ticker_cache.TestFilenameSanitization",
+      "target": "tests.unit.test_ticker_cache.TestFilenameSanitization.test_es_f_becomes_es_f_csv",
+      "type": "contains"
+    },
+    {
+      "source": "tests.unit.test_ticker_cache.TestFilenameSanitization",
+      "target": "tests.unit.test_ticker_cache.TestFilenameSanitization.test_btc_usd_becomes_btc_usd_csv",
+      "type": "contains"
+    },
+    {
+      "source": "tests.unit.test_ticker_cache",
+      "target": "tests.unit.test_ticker_cache.TestCorruptedFile",
+      "type": "contains"
+    },
+    {
+      "source": "tests.unit.test_ticker_cache.TestCorruptedFile",
+      "target": "tests.unit.test_ticker_cache.TestCorruptedFile.test_empty_file_triggers_re_download",
+      "type": "contains"
+    },
+    {
+      "source": "tests.unit.test_ticker_cache.TestCorruptedFile",
+      "target": "tests.unit.test_ticker_cache.TestCorruptedFile.test_missing_required_columns_triggers_re_download",
+      "type": "contains"
+    },
+    {
+      "source": "tests.unit.test_ticker_cache",
+      "target": "tests.unit.test_ticker_cache.TestDefaultCacheDir",
+      "type": "contains"
+    },
+    {
+      "source": "tests.unit.test_ticker_cache.TestDefaultCacheDir",
+      "target": "tests.unit.test_ticker_cache.TestDefaultCacheDir.test_uses_xdg_cache_home",
+      "type": "contains"
+    },
+    {
+      "source": "tests.unit.test_ticker_cache",
+      "target": "hmm_futures_analysis.data_processing.ticker_cache",
       "type": "imports"
     },
     {

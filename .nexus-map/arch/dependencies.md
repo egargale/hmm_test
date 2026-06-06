@@ -12,6 +12,7 @@ graph TD
     PIP["Pipeline & Orchestration<br/>regime/"]
     ENG["Engine Implementations<br/>regime/engines/"]
     DP["Data Processing<br/>data_processing/"]
+    TC["Ticker Disk Cache<br/>ticker_cache.py"]
     EVAL["Evaluation Harness<br/>eval.py"]
     BT["Backtesting Metrics<br/>backtesting/"]
     UTIL["Utilities<br/>utils/"]
@@ -23,6 +24,7 @@ graph TD
     CLI --> DP
     EVAL --> PIP
     EVAL --> DP
+    DP --> TC
     PIP --> ENG
     PIP --> DP
     PIP --> BT
@@ -37,18 +39,21 @@ graph TD
     TEST --> DP
     TEST --> UTIL
     TEST --> EVAL
+    TEST --> TC
 ```
 
-## Key Dependency Rules
+## Key Changes Since Last Run
 
-1. **Engines are isolated from pipeline**: No engine imports `pipeline.py`. Engines only depend on `engine_protocol.py` (Protocol + dataclasses) and `data_processing/` (features).
-2. **Pipeline is the hub**: 32 modules depend on `pipeline.py` — all scripts, all tests, the CLI, and eval harness.
-3. **Layering is clean**: Direction is always CLI/Pipeline/Engines → data_processing. No upward imports from data_processing.
-4. **No circular imports**: The ENGINE_REGISTRY uses lazy imports to avoid cycles between engines and protocol.
+- **ticker_cache.py** added under `data_processing/`. csv_auto_detect.load_prices() delegates ticker downloads to `ticker_cache.get_ticker_data()`.
+- **eval.py**: `_save_ticker_csv()` removed — ticker fetching now goes through ticker_cache.
 
-## Coupling Analysis (Git Co-change)
+## Dependency Rules
 
-### Hot pairs (score > 0.80)
+1. **Engines isolated from pipeline**: No engine imports `pipeline.py`.
+2. **No circular imports**: ENGINE_REGISTRY uses lazy imports.
+3. **Downward flow**: CLI/Pipeline/Engines → data_processing → ticker_cache.
+
+## Coupling Analysis
 
 | Score | Pair | Co-changes |
 |-------|------|-----------|
@@ -62,9 +67,3 @@ graph TD
 | **0.82** | hmm_generic.py ↔ robust_hmm.py | 9 |
 | **0.82** | hmm_messina.py ↔ robust_hmm.py | 9 |
 | **0.80** | pipeline.py ↔ test_regime_engine.py | 8 |
-
-### Interpretation
-
-- **pipeline.py + walk_forward.py at 1.00**: These files always change together — walk_forward is effectively an internal implementation detail of pipeline.
-- **hmm_generic + hmm_messina at 1.00**: Mirror engines that evolve in lockstep (same shared base class).
-- **All HMM engines co-evolve with pipeline**: Changes to the pipeline interface propagate through all engine implementations.

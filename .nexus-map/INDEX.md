@@ -8,25 +8,27 @@
 
 A Hidden Markov Model futures trading analysis project. Detects market regimes (Bull/Bear/Sideways) using five independent engines with walk-forward backtesting, duration forecasting via survival analysis, and per-phase timing instrumentation. Ships as an **Agent Skill** for LLM coding agents.
 
-## Architecture — 8 Systems
+## Architecture — 8 Systems + 1 Module
 
 | System | Code Path | Hotness | Lines |
 |--------|-----------|---------|-------|
-| **CLI Entrypoint** | `hmm_futures_analysis/cli.py` | 🔴 high (24 changes) | 593 |
+| **CLI Entrypoint** | `hmm_futures_analysis/cli.py` | 🔴 high (25 changes) | ~628 |
 | **Pipeline & Orchestration** | `hmm_futures_analysis/regime/` (excl. engines/) | 🔴 high (35 changes) | ~1200 |
 | **Engine Implementations (5)** | `hmm_futures_analysis/regime/engines/` | 🟡 medium (7-13 ea) | 7 files, ~1700 |
-| **Data Processing** | `hmm_futures_analysis/data_processing/` | normal (not in hotspots) | 5 files, ~1500 |
+| **Data Processing** | `hmm_futures_analysis/data_processing/` | normal | 6 files, ~1600 |
+| ↳ **Ticker Disk Cache** | `data_processing/ticker_cache.py` | normal (1 commit) | 96 |
 | **Backtesting & Evaluation** | `hmm_futures_analysis/backtesting/`, `eval.py` | normal | 3 files, ~200 |
 | **Utilities** | `hmm_futures_analysis/utils/` | normal | 3 files, 61 |
 | **Sweep Scripts** | `scripts/` | normal | 13 files, ~3500 |
-| **Test Suite** | `tests/` | normal | 52 files, ~11000 |
+| **Test Suite** | `tests/` | normal | 55+ files, ~11500 |
 
 ## Key Findings
 
 - **Central hub**: `pipeline.py` has 32 downstream consumers (highest fan-in). It orchestrates everything.
 - **Tightest coupling**: `pipeline.py` ↔ `walk_forward.py` at 1.00 (perfect co-change). These are deeply interwoven.
 - **Engine isolation works**: None of the 5 engines import pipeline.py — they only know the protocol.
-- **Bash (2 files)**: parsed with module-only coverage (no structural query templates).
+- **New**: `ticker_cache.py` (96 lines) provides on-disk yfinance caching with `--cache-dir`, `--refresh`, `--no-cache` CLI flags. Tested by 201-line test suite.
+- **Bash (2 files)**: parsed with module-only coverage.
 
 ## Domain Language
 

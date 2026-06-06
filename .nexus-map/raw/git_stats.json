@@ -1,7 +1,7 @@
 {
   "analysis_period_days": 90,
   "stats": {
-    "total_commits": 127,
+    "total_commits": 129,
     "total_authors": 2
   },
   "hotspots": [
@@ -12,7 +12,7 @@
     },
     {
       "path": "hmm_futures_analysis/cli.py",
-      "changes": 24,
+      "changes": 25,
       "risk": "high"
     },
     {
@@ -22,8 +22,8 @@
     },
     {
       "path": "CONTEXT.md",
-      "changes": 14,
-      "risk": "medium"
+      "changes": 15,
+      "risk": "high"
     },
     {
       "path": "hmm_futures_analysis/regime/walk_forward.py",
@@ -117,7 +117,7 @@
       "file_a": "hmm_futures_analysis/cli.py",
       "file_b": "hmm_futures_analysis/regime/pipeline.py",
       "co_changes": 15,
-      "coupling_score": 0.625
+      "coupling_score": 0.6
     },
     {
       "file_a": "hmm_futures_analysis/regime/pipeline.py",
