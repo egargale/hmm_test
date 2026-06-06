@@ -436,10 +436,28 @@ def main() -> None:
         ),
     )
     eval_group.add_argument(
+        "--cache-dir",
+        type=str,
+        default=None,
+        help="Directory for cached yfinance ticker CSVs (default: ~/.cache/hmm-regime/tickers/).",
+    )
+    eval_group.add_argument(
+        "--refresh",
+        action="store_true",
+        default=False,
+        help="Force re-download and overwrite cached ticker data.",
+    )
+    eval_group.add_argument(
+        "--no-cache",
+        action="store_true",
+        default=False,
+        help="Bypass the ticker cache entirely — do not read or write.",
+    )
+    eval_group.add_argument(
         "--eval-cache-dir",
         type=str,
         default=None,
-        help="Directory to save yfinance CSVs (used with --eval-tickers for reproducibility).",
+        help=argparse.SUPPRESS,
     )
 
     parser.add_argument(
@@ -503,6 +521,9 @@ def main() -> None:
                 )
             engines = tuple(requested)
 
+        # Backwards compatibility: --eval-cache-dir maps to --cache-dir
+        cache_dir = args.cache_dir if args.cache_dir else args.eval_cache_dir
+
         try:
             if args.json:
                 suppress_stdout_logging()
@@ -517,7 +538,9 @@ def main() -> None:
                 tickers = tuple(t.strip() for t in args.eval_tickers.split(","))
                 results = run_eval_tickers(
                     tickers=tickers,
-                    csv_cache_dir=args.eval_cache_dir,
+                    cache_dir=cache_dir,
+                    refresh=args.refresh,
+                    no_cache=args.no_cache,
                     engines=engines,
                     min_train=args.min_train,
                 )
@@ -544,7 +567,13 @@ def main() -> None:
             suppress_stdout_logging()
 
         # Load data
-        prices, ohlcv, source = load_prices(csv=args.csv, ticker=args.ticker)
+        prices, ohlcv, source = load_prices(
+            csv=args.csv,
+            ticker=args.ticker,
+            cache_dir=args.cache_dir,
+            refresh=args.refresh,
+            no_cache=args.no_cache,
+        )
 
         # Build engine config from CLI args
         engine_config = _build_engine_config(args)

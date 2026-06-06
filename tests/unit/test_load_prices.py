@@ -67,7 +67,7 @@ class TestCliLoadPricesIntegration:
 class TestLoadPricesYfinancePath:
     """yfinance path downloads, flattens, returns (prices, ohlcv, ticker)."""
 
-    def test_returns_prices_ohlcv_and_ticker_label(self, monkeypatch):
+    def test_returns_prices_ohlcv_and_ticker_label(self, tmp_path, monkeypatch):
         """yfinance path returns (prices, ohlcv_df, ticker_string)."""
         # Build fake yfinance output with MultiIndex columns
         dates = pd.date_range("2024-01-01", periods=5, freq="B")
@@ -88,7 +88,9 @@ class TestLoadPricesYfinancePath:
 
         monkeypatch.setattr(yf_mod, "download", lambda *a, **kw: fake_df)
 
-        prices, ohlcv, label = load_prices(ticker="ES=F")
+        prices, ohlcv, label = load_prices(
+            ticker="ES=F", cache_dir=str(tmp_path / "cache")
+        )
 
         assert label == "ES=F"
         assert isinstance(prices, pd.Series)
@@ -107,7 +109,7 @@ class TestLoadPricesMinRowsGuard:
         with pytest.raises(ValueError, match="at least 2 rows"):
             load_prices(csv=str(p))
 
-    def test_raises_when_yfinance_returns_fewer_than_2_rows(self, monkeypatch):
+    def test_raises_when_yfinance_returns_fewer_than_2_rows(self, tmp_path, monkeypatch):
         """Single-row yfinance result raises ValueError about needing 2 rows."""
         dates = pd.date_range("2024-01-01", periods=1, freq="B")
         fake_df = pd.DataFrame(
@@ -127,7 +129,7 @@ class TestLoadPricesMinRowsGuard:
         monkeypatch.setattr(yf_mod, "download", lambda *a, **kw: fake_df)
 
         with pytest.raises(ValueError, match="at least 2 rows"):
-            load_prices(ticker="X")
+            load_prices(ticker="X", cache_dir=str(tmp_path / "cache"))
 
 
 class TestLoadPricesCsvPath:
@@ -140,3 +142,36 @@ class TestLoadPricesCsvPath:
         assert len(prices) == 3
         assert ohlcv is None
         assert label == tiny_csv
+
+
+class TestLoadPricesCacheIntegration:
+    """Ticker path delegates to ticker_cache when cache params provided."""
+
+    def test_uses_cache_and_returns_prices_ohlcv(self, tmp_path, monkeypatch):
+        """load_prices with ticker and cache_dir delegates to ticker_cache."""
+        dates = pd.date_range("2024-01-01", periods=5, freq="B")
+        fake_df = pd.DataFrame(
+            {
+                "Open": [100, 101, 102, 103, 104],
+                "High": [105, 106, 107, 108, 109],
+                "Low": [99, 100, 101, 102, 103],
+                "Close": [104, 105, 106, 107, 108],
+                "Volume": [1000, 1100, 1200, 1300, 1400],
+            },
+            index=dates,
+        )
+
+        monkeypatch.setattr("yfinance.download", lambda *a, **kw: fake_df.copy())
+
+        cache_dir = tmp_path / "cache"
+        prices, ohlcv, label = load_prices(
+            ticker="SPY",
+            cache_dir=str(cache_dir),
+        )
+
+        assert label == "SPY"
+        assert isinstance(prices, pd.Series)
+        assert len(prices) == 5
+        assert isinstance(ohlcv, pd.DataFrame)
+        assert list(ohlcv.columns) == ["open", "high", "low", "close", "volume"]
+        assert (cache_dir / "SPY.csv").exists()

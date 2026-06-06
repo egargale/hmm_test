@@ -170,10 +170,26 @@ def load_prices(
     *,
     csv: str | None = None,
     ticker: str | None = None,
+    cache_dir: str | None = None,
+    refresh: bool = False,
+    no_cache: bool = False,
 ) -> tuple[pd.Series, pd.DataFrame | None, str]:
     """Unified data-loading entry point.
 
     Exactly one of *csv* or *ticker* must be provided.
+
+    Parameters
+    ----------
+    csv : str or None
+        Path to a CSV file.
+    ticker : str or None
+        yfinance ticker symbol.
+    cache_dir : str or None
+        Directory for cached ticker CSVs (ticker path only).
+    refresh : bool
+        Force re-download even if cache exists (ticker path only).
+    no_cache : bool
+        Bypass the cache entirely (ticker path only).
 
     Returns
     -------
@@ -190,10 +206,15 @@ def load_prices(
         ohlcv = _try_load_ohlcv(csv)
         return prices, ohlcv, csv
 
-    # ticker path
-    import yfinance
+    # ticker path — delegate to ticker_cache
+    from . import ticker_cache
 
-    ohlcv_raw = yfinance.download(ticker, period="10y", progress=False)
+    ohlcv_raw = ticker_cache.get_ticker_data(
+        ticker,
+        cache_dir=cache_dir,
+        refresh=refresh,
+        no_cache=no_cache,
+    )
     if ohlcv_raw.empty:
         raise ValueError(f"No data returned for ticker: {ticker}")
 

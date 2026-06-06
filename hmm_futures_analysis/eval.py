@@ -6,12 +6,10 @@ produces a comparison table (markdown to stderr) or JSON (to stdout).
 
 from __future__ import annotations
 
-import json
 import time
 from pathlib import Path
 from typing import Any
 
-import pandas as pd
 from tqdm import tqdm
 
 from .data_processing.csv_auto_detect import load_prices
@@ -38,24 +36,6 @@ _ENGINE_CONFIG_DEFAULTS: dict[str, type] = {
 def _make_config(engine_name: str) -> object:
     """Create a default engine config for the given engine name."""
     return _ENGINE_CONFIG_DEFAULTS[engine_name]()
-
-
-def _save_ticker_csv(ticker: str, output_dir: Path) -> Path:
-    """Fetch a ticker via yfinance and save to CSV. Returns the CSV path."""
-    import yfinance as yf
-
-    data = yf.download(ticker, period="10y", progress=False)
-    if data.empty:
-        raise ValueError(f"No data returned for ticker: {ticker}")
-
-    # Flatten MultiIndex columns if present
-    if isinstance(data.columns, pd.MultiIndex):
-        data.columns = [c[0] for c in data.columns]
-
-    safe_name = ticker.replace(".", "_").replace("=", "_").replace("-", "_")
-    csv_path = output_dir / f"{safe_name}.csv"
-    data.to_csv(csv_path)
-    return csv_path
 
 
 def _extract_summary(result: Any, wall_seconds: float) -> dict[str, Any]:
@@ -116,26 +96,25 @@ def run_eval_csv(
 
 def run_eval_tickers(
     tickers: tuple[str, ...],
-    csv_cache_dir: str | None = None,
+    cache_dir: str | None = None,
+    refresh: bool = False,
+    no_cache: bool = False,
     engines: tuple[str, ...] = ALL_ENGINES,
     min_train: int = 252,
 ) -> list[dict[str, Any]]:
     """Run evaluation from yfinance tickers.
 
-    Fetches data, optionally saves to CSV for reproducibility, then
-    runs all requested engines.
+    Fetches data, using the disk cache when available, then runs all
+    requested engines.
     """
-    cache_dir = Path(csv_cache_dir) if csv_cache_dir else None
-    if cache_dir:
-        cache_dir.mkdir(parents=True, exist_ok=True)
-
     results: list[dict[str, Any]] = []
     for ticker in tqdm(tickers, desc="Tickers", position=0, leave=True):
-        if cache_dir:
-            csv_path = _save_ticker_csv(ticker, cache_dir)
-            prices, ohlcv, _source = load_prices(csv=str(csv_path))
-        else:
-            prices, ohlcv, _source = load_prices(ticker=ticker)
+        prices, ohlcv, _source = load_prices(
+            ticker=ticker,
+            cache_dir=cache_dir,
+            refresh=refresh,
+            no_cache=no_cache,
+        )
 
         for engine_name in tqdm(engines, desc=f"  {ticker}", position=1, leave=False):
             config = _make_config(engine_name)
