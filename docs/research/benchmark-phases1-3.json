@@ -1,0 +1,1043 @@
+{
+  "hmm": [
+    {
+      "ticker": "SPY",
+      "engine": "hmm",
+      "ok": true,
+      "elapsed_s": 8.668,
+      "wf_classify_s": 6.688,
+      "current_regime": 1,
+      "regime_pct": {},
+      "n_states": 3,
+      "walk_forward_bars": 0,
+      "regime_counts": {
+        "bear": 450,
+        "sideways": 2062,
+        "bull": 0
+      },
+      "walk_forward_metrics": {
+        "sharpe": -0.552360381363783,
+        "max_drawdown": -0.2401794457161117,
+        "n_trades": 1,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "total_return": -0.13259286274772386
+      },
+      "saliency": null,
+      "refit_every": 50
+    },
+    {
+      "ticker": "AAPL",
+      "engine": "hmm",
+      "ok": true,
+      "elapsed_s": 7.508,
+      "wf_classify_s": 7.147,
+      "current_regime": 1,
+      "regime_pct": {},
+      "n_states": 3,
+      "walk_forward_bars": 0,
+      "regime_counts": {
+        "bear": 1300,
+        "sideways": 1113,
+        "bull": 100
+      },
+      "walk_forward_metrics": {
+        "sharpe": -0.5094313416513103,
+        "max_drawdown": -0.7306052609720629,
+        "n_trades": 5,
+        "win_rate": 0.4,
+        "profit_factor": 0.5303039525509031,
+        "total_return": -0.6539654368274455
+      },
+      "saliency": null,
+      "refit_every": 50
+    },
+    {
+      "ticker": "NVDA",
+      "engine": "hmm",
+      "ok": true,
+      "elapsed_s": 6.842,
+      "wf_classify_s": 6.467,
+      "current_regime": 2,
+      "regime_pct": {},
+      "n_states": 3,
+      "walk_forward_bars": 0,
+      "regime_counts": {
+        "bear": 0,
+        "sideways": 1250,
+        "bull": 1263
+      },
+      "walk_forward_metrics": {
+        "sharpe": 0.2492484542198549,
+        "max_drawdown": -0.6806478350691861,
+        "n_trades": 3,
+        "win_rate": 0.6666666666666666,
+        "profit_factor": 3.7569812612571734,
+        "total_return": 0.490517566255513
+      },
+      "saliency": null,
+      "refit_every": 50
+    },
+    {
+      "ticker": "XLE",
+      "engine": "hmm",
+      "ok": true,
+      "elapsed_s": 7.176,
+      "wf_classify_s": 6.771,
+      "current_regime": 1,
+      "regime_pct": {},
+      "n_states": 3,
+      "walk_forward_bars": 0,
+      "regime_counts": {
+        "bear": 400,
+        "sideways": 1301,
+        "bull": 812
+      },
+      "walk_forward_metrics": {
+        "sharpe": -0.5994851841872493,
+        "max_drawdown": -0.7920308793153636,
+        "n_trades": 7,
+        "win_rate": 0.2857142857142857,
+        "profit_factor": 0.15001227385310803,
+        "total_return": -0.742057327431406
+      },
+      "saliency": null,
+      "refit_every": 50
+    },
+    {
+      "ticker": "XLU",
+      "engine": "hmm",
+      "ok": true,
+      "elapsed_s": 6.455,
+      "wf_classify_s": 6.064,
+      "current_regime": 1,
+      "regime_pct": {},
+      "n_states": 3,
+      "walk_forward_bars": 0,
+      "regime_counts": {
+        "bear": 50,
+        "sideways": 1613,
+        "bull": 850
+      },
+      "walk_forward_metrics": {
+        "sharpe": 0.09512910850630306,
+        "max_drawdown": -0.36066771678135334,
+        "n_trades": 3,
+        "win_rate": 0.6666666666666666,
+        "profit_factor": 28.699313116059024,
+        "total_return": 0.23964227502531532
+      },
+      "saliency": null,
+      "refit_every": 50
+    },
+    {
+      "ticker": "GLD",
+      "engine": "hmm",
+      "ok": true,
+      "elapsed_s": 6.852,
+      "wf_classify_s": 6.505,
+      "current_regime": 0,
+      "regime_pct": {},
+      "n_states": 3,
+      "walk_forward_bars": 0,
+      "regime_counts": {
+        "bear": 551,
+        "sideways": 1262,
+        "bull": 700
+      },
+      "walk_forward_metrics": {
+        "sharpe": -0.11504150256365643,
+        "max_drawdown": -0.3712149895276786,
+        "n_trades": 5,
+        "win_rate": 0.4,
+        "profit_factor": 1.1844150763880905,
+        "total_return": -0.026182937528818173
+      },
+      "saliency": null,
+      "refit_every": 50
+    },
+    {
+      "ticker": "HYG",
+      "engine": "hmm",
+      "ok": true,
+      "elapsed_s": 6.336,
+      "wf_classify_s": 5.96,
+      "current_regime": 2,
+      "regime_pct": {},
+      "n_states": 3,
+      "walk_forward_bars": 0,
+      "regime_counts": {
+        "bear": 150,
+        "sideways": 1700,
+        "bull": 663
+      },
+      "walk_forward_metrics": {
+        "sharpe": -0.2509419159342589,
+        "max_drawdown": -0.22028720658766365,
+        "n_trades": 6,
+        "win_rate": 0.5,
+        "profit_factor": 1.3455225124109855,
+        "total_return": 0.02706195601743766
+      },
+      "saliency": null,
+      "refit_every": 50
+    },
+    {
+      "ticker": "IWM",
+      "engine": "hmm",
+      "ok": true,
+      "elapsed_s": 7.814,
+      "wf_classify_s": 7.445,
+      "current_regime": 1,
+      "regime_pct": {},
+      "n_states": 3,
+      "walk_forward_bars": 0,
+      "regime_counts": {
+        "bear": 550,
+        "sideways": 1163,
+        "bull": 800
+      },
+      "walk_forward_metrics": {
+        "sharpe": 0.15457462951796816,
+        "max_drawdown": -0.3857098645561677,
+        "n_trades": 7,
+        "win_rate": 0.5714285714285714,
+        "profit_factor": 2.344625203395927,
+        "total_return": 0.3405083488734504
+      },
+      "saliency": null,
+      "refit_every": 50
+    },
+    {
+      "ticker": "KO",
+      "engine": "hmm",
+      "ok": true,
+      "elapsed_s": 8.721,
+      "wf_classify_s": 8.316,
+      "current_regime": 1,
+      "regime_pct": {},
+      "n_states": 3,
+      "walk_forward_bars": 0,
+      "regime_counts": {
+        "bear": 100,
+        "sideways": 1860,
+        "bull": 550
+      },
+      "walk_forward_metrics": {
+        "sharpe": -0.06361033983949381,
+        "max_drawdown": -0.36987527058543684,
+        "n_trades": 7,
+        "win_rate": 0.42857142857142855,
+        "profit_factor": 1.2584430535150675,
+        "total_return": 0.036724191332694334
+      },
+      "saliency": null,
+      "refit_every": 50
+    },
+    {
+      "ticker": "BAC",
+      "engine": "hmm",
+      "ok": true,
+      "elapsed_s": 8.104,
+      "wf_classify_s": 7.635,
+      "current_regime": 2,
+      "regime_pct": {},
+      "n_states": 3,
+      "walk_forward_bars": 0,
+      "regime_counts": {
+        "bear": 0,
+        "sideways": 1850,
+        "bull": 663
+      },
+      "walk_forward_metrics": {
+        "sharpe": 0.1393920109283538,
+        "max_drawdown": -0.4471952253161747,
+        "n_trades": 5,
+        "win_rate": 0.4,
+        "profit_factor": 2.2481511696895202,
+        "total_return": 0.3015048797212625
+      },
+      "saliency": null,
+      "refit_every": 50
+    }
+  ],
+  "messina": [
+    {
+      "ticker": "SPY",
+      "engine": "messina",
+      "ok": true,
+      "elapsed_s": 6.488,
+      "wf_classify_s": 5.768,
+      "current_regime": 0,
+      "regime_pct": {},
+      "n_states": 3,
+      "walk_forward_bars": 0,
+      "regime_counts": {
+        "bear": 2312,
+        "sideways": 200,
+        "bull": 0
+      },
+      "walk_forward_metrics": {
+        "sharpe": -0.9796472296053098,
+        "max_drawdown": -0.8060464346773829,
+        "n_trades": 1,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "total_return": -0.8046005650865762
+      },
+      "saliency": null,
+      "refit_every": 50
+    },
+    {
+      "ticker": "AAPL",
+      "engine": "messina",
+      "ok": true,
+      "elapsed_s": 5.981,
+      "wf_classify_s": 5.223,
+      "current_regime": 0,
+      "regime_pct": {},
+      "n_states": 3,
+      "walk_forward_bars": 0,
+      "regime_counts": {
+        "bear": 2313,
+        "sideways": 200,
+        "bull": 0
+      },
+      "walk_forward_metrics": {
+        "sharpe": -1.0458906595123527,
+        "max_drawdown": -0.9541160270778314,
+        "n_trades": 1,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "total_return": -0.9534503014506408
+      },
+      "saliency": null,
+      "refit_every": 50
+    },
+    {
+      "ticker": "NVDA",
+      "engine": "messina",
+      "ok": false,
+      "error": "index 8 is out of bounds for axis 1 with size 8",
+      "elapsed_s": 0.67
+    },
+    {
+      "ticker": "XLE",
+      "engine": "messina",
+      "ok": true,
+      "elapsed_s": 6.108,
+      "wf_classify_s": 5.448,
+      "current_regime": 1,
+      "regime_pct": {},
+      "n_states": 3,
+      "walk_forward_bars": 0,
+      "regime_counts": {
+        "bear": 0,
+        "sideways": 2513,
+        "bull": 0
+      },
+      "walk_forward_metrics": {
+        "sharpe": 0.0,
+        "max_drawdown": 0.0,
+        "n_trades": 0,
+        "win_rate": null,
+        "profit_factor": null,
+        "total_return": 0.0
+      },
+      "saliency": null,
+      "refit_every": 50
+    },
+    {
+      "ticker": "XLU",
+      "engine": "messina",
+      "ok": true,
+      "elapsed_s": 6.422,
+      "wf_classify_s": 5.661,
+      "current_regime": 1,
+      "regime_pct": {},
+      "n_states": 3,
+      "walk_forward_bars": 0,
+      "regime_counts": {
+        "bear": 0,
+        "sideways": 2513,
+        "bull": 0
+      },
+      "walk_forward_metrics": {
+        "sharpe": 0.0,
+        "max_drawdown": 0.0,
+        "n_trades": 0,
+        "win_rate": null,
+        "profit_factor": null,
+        "total_return": 0.0
+      },
+      "saliency": null,
+      "refit_every": 50
+    },
+    {
+      "ticker": "GLD",
+      "engine": "messina",
+      "ok": false,
+      "error": "index 8 is out of bounds for axis 1 with size 8",
+      "elapsed_s": 0.676
+    },
+    {
+      "ticker": "HYG",
+      "engine": "messina",
+      "ok": true,
+      "elapsed_s": 6.208,
+      "wf_classify_s": 5.499,
+      "current_regime": 1,
+      "regime_pct": {},
+      "n_states": 3,
+      "walk_forward_bars": 0,
+      "regime_counts": {
+        "bear": 0,
+        "sideways": 2513,
+        "bull": 0
+      },
+      "walk_forward_metrics": {
+        "sharpe": 0.0,
+        "max_drawdown": 0.0,
+        "n_trades": 0,
+        "win_rate": null,
+        "profit_factor": null,
+        "total_return": 0.0
+      },
+      "saliency": null,
+      "refit_every": 50
+    },
+    {
+      "ticker": "IWM",
+      "engine": "messina",
+      "ok": false,
+      "error": "index 9 is out of bounds for axis 1 with size 9",
+      "elapsed_s": 0.717
+    },
+    {
+      "ticker": "KO",
+      "engine": "messina",
+      "ok": true,
+      "elapsed_s": 6.558,
+      "wf_classify_s": 5.921,
+      "current_regime": 1,
+      "regime_pct": {},
+      "n_states": 3,
+      "walk_forward_bars": 0,
+      "regime_counts": {
+        "bear": 550,
+        "sideways": 1910,
+        "bull": 50
+      },
+      "walk_forward_metrics": {
+        "sharpe": -0.3793167869367294,
+        "max_drawdown": -0.30319677662007266,
+        "n_trades": 4,
+        "win_rate": 0.25,
+        "profit_factor": 0.2880121894764891,
+        "total_return": -0.1958850666596168
+      },
+      "saliency": null,
+      "refit_every": 50
+    },
+    {
+      "ticker": "BAC",
+      "engine": "messina",
+      "ok": true,
+      "elapsed_s": 6.538,
+      "wf_classify_s": 5.845,
+      "current_regime": 2,
+      "regime_pct": {},
+      "n_states": 3,
+      "walk_forward_bars": 0,
+      "regime_counts": {
+        "bear": 0,
+        "sideways": 200,
+        "bull": 2313
+      },
+      "walk_forward_metrics": {
+        "sharpe": 0.4629847139429202,
+        "max_drawdown": -0.4894678377480436,
+        "n_trades": 1,
+        "win_rate": 1.0,
+        "profit_factor": null,
+        "total_return": 1.885841779383696
+      },
+      "saliency": null,
+      "refit_every": 50
+    }
+  ],
+  "robust_hmm": [
+    {
+      "ticker": "SPY",
+      "engine": "robust_hmm",
+      "ok": true,
+      "elapsed_s": 5.341,
+      "wf_classify_s": 4.951,
+      "current_regime": 2,
+      "regime_pct": {},
+      "n_states": 3,
+      "walk_forward_bars": 0,
+      "regime_counts": {
+        "bear": 0,
+        "sideways": 200,
+        "bull": 2312
+      },
+      "walk_forward_metrics": {
+        "sharpe": 0.7629961311779709,
+        "max_drawdown": -0.3371726482138074,
+        "n_trades": 1,
+        "win_rate": 1.0,
+        "profit_factor": null,
+        "total_return": 2.7389103953636167
+      },
+      "saliency": null,
+      "refit_every": 100
+    },
+    {
+      "ticker": "AAPL",
+      "engine": "robust_hmm",
+      "ok": true,
+      "elapsed_s": 5.323,
+      "wf_classify_s": 4.993,
+      "current_regime": 1,
+      "regime_pct": {},
+      "n_states": 3,
+      "walk_forward_bars": 0,
+      "regime_counts": {
+        "bear": 0,
+        "sideways": 2513,
+        "bull": 0
+      },
+      "walk_forward_metrics": {
+        "sharpe": 0.0,
+        "max_drawdown": 0.0,
+        "n_trades": 0,
+        "win_rate": null,
+        "profit_factor": null,
+        "total_return": 0.0
+      },
+      "saliency": null,
+      "refit_every": 100
+    },
+    {
+      "ticker": "NVDA",
+      "engine": "robust_hmm",
+      "ok": true,
+      "elapsed_s": 5.184,
+      "wf_classify_s": 4.825,
+      "current_regime": 0,
+      "regime_pct": {},
+      "n_states": 3,
+      "walk_forward_bars": 0,
+      "regime_counts": {
+        "bear": 2313,
+        "sideways": 200,
+        "bull": 0
+      },
+      "walk_forward_metrics": {
+        "sharpe": -1.2539984420332735,
+        "max_drawdown": -0.9989917578350059,
+        "n_trades": 1,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "total_return": -0.9988013893756292
+      },
+      "saliency": null,
+      "refit_every": 100
+    },
+    {
+      "ticker": "XLE",
+      "engine": "robust_hmm",
+      "ok": true,
+      "elapsed_s": 5.412,
+      "wf_classify_s": 5.05,
+      "current_regime": 0,
+      "regime_pct": {},
+      "n_states": 3,
+      "walk_forward_bars": 0,
+      "regime_counts": {
+        "bear": 2313,
+        "sideways": 200,
+        "bull": 0
+      },
+      "walk_forward_metrics": {
+        "sharpe": -0.5483047229327,
+        "max_drawdown": -0.9192612916675922,
+        "n_trades": 1,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "total_return": -0.8284598310106538
+      },
+      "saliency": null,
+      "refit_every": 100
+    },
+    {
+      "ticker": "XLU",
+      "engine": "robust_hmm",
+      "ok": true,
+      "elapsed_s": 5.722,
+      "wf_classify_s": 5.343,
+      "current_regime": 0,
+      "regime_pct": {},
+      "n_states": 3,
+      "walk_forward_bars": 0,
+      "regime_counts": {
+        "bear": 2313,
+        "sideways": 200,
+        "bull": 0
+      },
+      "walk_forward_metrics": {
+        "sharpe": -0.6542662989209922,
+        "max_drawdown": -0.7231468844473656,
+        "n_trades": 1,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "total_return": -0.6885278936074625
+      },
+      "saliency": null,
+      "refit_every": 100
+    },
+    {
+      "ticker": "GLD",
+      "engine": "robust_hmm",
+      "ok": true,
+      "elapsed_s": 5.642,
+      "wf_classify_s": 5.254,
+      "current_regime": 2,
+      "regime_pct": {},
+      "n_states": 3,
+      "walk_forward_bars": 0,
+      "regime_counts": {
+        "bear": 0,
+        "sideways": 200,
+        "bull": 2313
+      },
+      "walk_forward_metrics": {
+        "sharpe": 0.7963508517235176,
+        "max_drawdown": -0.22002168134715525,
+        "n_trades": 1,
+        "win_rate": 1.0,
+        "profit_factor": null,
+        "total_return": 2.4656610378317003
+      },
+      "saliency": null,
+      "refit_every": 100
+    },
+    {
+      "ticker": "HYG",
+      "engine": "robust_hmm",
+      "ok": true,
+      "elapsed_s": 5.316,
+      "wf_classify_s": 4.965,
+      "current_regime": 0,
+      "regime_pct": {},
+      "n_states": 3,
+      "walk_forward_bars": 0,
+      "regime_counts": {
+        "bear": 2313,
+        "sideways": 200,
+        "bull": 0
+      },
+      "walk_forward_metrics": {
+        "sharpe": -0.8117794761483696,
+        "max_drawdown": -0.41391689938408277,
+        "n_trades": 1,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "total_return": -0.3775546936859352
+      },
+      "saliency": null,
+      "refit_every": 100
+    },
+    {
+      "ticker": "IWM",
+      "engine": "robust_hmm",
+      "ok": true,
+      "elapsed_s": 5.366,
+      "wf_classify_s": 5.036,
+      "current_regime": 0,
+      "regime_pct": {},
+      "n_states": 3,
+      "walk_forward_bars": 0,
+      "regime_counts": {
+        "bear": 2213,
+        "sideways": 200,
+        "bull": 100
+      },
+      "walk_forward_metrics": {
+        "sharpe": -0.587476616343885,
+        "max_drawdown": -0.7824131393193529,
+        "n_trades": 1,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "total_return": -0.7383525067470048
+      },
+      "saliency": null,
+      "refit_every": 100
+    },
+    {
+      "ticker": "KO",
+      "engine": "robust_hmm",
+      "ok": true,
+      "elapsed_s": 5.39,
+      "wf_classify_s": 5.037,
+      "current_regime": 0,
+      "regime_pct": {},
+      "n_states": 3,
+      "walk_forward_bars": 0,
+      "regime_counts": {
+        "bear": 2310,
+        "sideways": 200,
+        "bull": 0
+      },
+      "walk_forward_metrics": {
+        "sharpe": -0.7320603212282099,
+        "max_drawdown": -0.7166277856772791,
+        "n_trades": 1,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "total_return": -0.7046639974802582
+      },
+      "saliency": null,
+      "refit_every": 100
+    },
+    {
+      "ticker": "BAC",
+      "engine": "robust_hmm",
+      "ok": true,
+      "elapsed_s": 5.309,
+      "wf_classify_s": 4.928,
+      "current_regime": 0,
+      "regime_pct": {},
+      "n_states": 3,
+      "walk_forward_bars": 0,
+      "regime_counts": {
+        "bear": 2313,
+        "sideways": 200,
+        "bull": 0
+      },
+      "walk_forward_metrics": {
+        "sharpe": -0.5922102106535477,
+        "max_drawdown": -0.8643813598777141,
+        "n_trades": 1,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "total_return": -0.8566197452333661
+      },
+      "saliency": null,
+      "refit_every": 100
+    }
+  ],
+  "fshmm": [
+    {
+      "ticker": "SPY",
+      "engine": "fshmm",
+      "ok": true,
+      "elapsed_s": 12.835,
+      "wf_classify_s": 12.456,
+      "current_regime": 0,
+      "regime_pct": {},
+      "n_states": 3,
+      "walk_forward_bars": 0,
+      "regime_counts": {
+        "bear": 1612,
+        "sideways": 900,
+        "bull": 0
+      },
+      "walk_forward_metrics": {
+        "sharpe": -0.6679011041459677,
+        "max_drawdown": -0.6986019253108267,
+        "n_trades": 4,
+        "win_rate": 0.25,
+        "profit_factor": 0.003603991239334158,
+        "total_return": -0.6365478830182657
+      },
+      "saliency": {
+        "mean_rho": 0.5542,
+        "median_rho": 0.5297,
+        "max_rho": 0.9767,
+        "n_selected": 31
+      },
+      "refit_every": 100
+    },
+    {
+      "ticker": "AAPL",
+      "engine": "fshmm",
+      "ok": true,
+      "elapsed_s": 13.471,
+      "wf_classify_s": 13.089,
+      "current_regime": 0,
+      "regime_pct": {},
+      "n_states": 3,
+      "walk_forward_bars": 0,
+      "regime_counts": {
+        "bear": 1113,
+        "sideways": 1100,
+        "bull": 300
+      },
+      "walk_forward_metrics": {
+        "sharpe": -0.2150093846681335,
+        "max_drawdown": -0.5264515441324353,
+        "n_trades": 5,
+        "win_rate": 0.2,
+        "profit_factor": 0.2828992593683735,
+        "total_return": -0.4454383265994749
+      },
+      "saliency": {
+        "mean_rho": 0.4269,
+        "median_rho": 0.4656,
+        "max_rho": 0.9767,
+        "n_selected": 17
+      },
+      "refit_every": 100
+    },
+    {
+      "ticker": "NVDA",
+      "engine": "fshmm",
+      "ok": true,
+      "elapsed_s": 13.648,
+      "wf_classify_s": 13.328,
+      "current_regime": 0,
+      "regime_pct": {},
+      "n_states": 3,
+      "walk_forward_bars": 0,
+      "regime_counts": {
+        "bear": 401,
+        "sideways": 1600,
+        "bull": 512
+      },
+      "walk_forward_metrics": {
+        "sharpe": -0.39932403099335806,
+        "max_drawdown": -0.8298479896561234,
+        "n_trades": 6,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "total_return": -0.7946942462661077
+      },
+      "saliency": {
+        "mean_rho": 0.3922,
+        "median_rho": 0.4929,
+        "max_rho": 0.9767,
+        "n_selected": 16
+      },
+      "refit_every": 100
+    },
+    {
+      "ticker": "XLE",
+      "engine": "fshmm",
+      "ok": true,
+      "elapsed_s": 12.99,
+      "wf_classify_s": 12.616,
+      "current_regime": 1,
+      "regime_pct": {},
+      "n_states": 3,
+      "walk_forward_bars": 0,
+      "regime_counts": {
+        "bear": 1000,
+        "sideways": 1213,
+        "bull": 300
+      },
+      "walk_forward_metrics": {
+        "sharpe": 0.13067655864644834,
+        "max_drawdown": -0.6195520551631424,
+        "n_trades": 7,
+        "win_rate": 0.7142857142857143,
+        "profit_factor": 2.2773371919537424,
+        "total_return": 0.22901786447712524
+      },
+      "saliency": {
+        "mean_rho": 0.4549,
+        "median_rho": 0.4962,
+        "max_rho": 0.9767,
+        "n_selected": 14
+      },
+      "refit_every": 100
+    },
+    {
+      "ticker": "XLU",
+      "engine": "fshmm",
+      "ok": true,
+      "elapsed_s": 14.338,
+      "wf_classify_s": 13.98,
+      "current_regime": 1,
+      "regime_pct": {},
+      "n_states": 3,
+      "walk_forward_bars": 0,
+      "regime_counts": {
+        "bear": 300,
+        "sideways": 2113,
+        "bull": 100
+      },
+      "walk_forward_metrics": {
+        "sharpe": -0.13430874176436744,
+        "max_drawdown": -0.3244817332719172,
+        "n_trades": 3,
+        "win_rate": 0.6666666666666666,
+        "profit_factor": 0.5171879668906811,
+        "total_return": -0.0529595038461107
+      },
+      "saliency": {
+        "mean_rho": 0.4412,
+        "median_rho": 0.496,
+        "max_rho": 0.9767,
+        "n_selected": 20
+      },
+      "refit_every": 100
+    },
+    {
+      "ticker": "GLD",
+      "engine": "fshmm",
+      "ok": true,
+      "elapsed_s": 13.3,
+      "wf_classify_s": 12.97,
+      "current_regime": 2,
+      "regime_pct": {},
+      "n_states": 3,
+      "walk_forward_bars": 0,
+      "regime_counts": {
+        "bear": 600,
+        "sideways": 1812,
+        "bull": 101
+      },
+      "walk_forward_metrics": {
+        "sharpe": -0.22520126229986756,
+        "max_drawdown": -0.34552830532665924,
+        "n_trades": 4,
+        "win_rate": 0.25,
+        "profit_factor": 0.8640610752571307,
+        "total_return": -0.09471992634289217
+      },
+      "saliency": {
+        "mean_rho": 0.5043,
+        "median_rho": 0.5322,
+        "max_rho": 0.9767,
+        "n_selected": 26
+      },
+      "refit_every": 100
+    },
+    {
+      "ticker": "HYG",
+      "engine": "fshmm",
+      "ok": true,
+      "elapsed_s": 13.705,
+      "wf_classify_s": 13.288,
+      "current_regime": 2,
+      "regime_pct": {},
+      "n_states": 3,
+      "walk_forward_bars": 0,
+      "regime_counts": {
+        "bear": 1412,
+        "sideways": 1000,
+        "bull": 101
+      },
+      "walk_forward_metrics": {
+        "sharpe": -0.617616831270815,
+        "max_drawdown": -0.3392122910404896,
+        "n_trades": 3,
+        "win_rate": 0.3333333333333333,
+        "profit_factor": 0.41626358770620064,
+        "total_return": -0.22147102159887377
+      },
+      "saliency": {
+        "mean_rho": 0.3698,
+        "median_rho": 0.4235,
+        "max_rho": 0.9662,
+        "n_selected": 11
+      },
+      "refit_every": 100
+    },
+    {
+      "ticker": "IWM",
+      "engine": "fshmm",
+      "ok": true,
+      "elapsed_s": 14.322,
+      "wf_classify_s": 13.954,
+      "current_regime": 1,
+      "regime_pct": {},
+      "n_states": 3,
+      "walk_forward_bars": 0,
+      "regime_counts": {
+        "bear": 1000,
+        "sideways": 1313,
+        "bull": 200
+      },
+      "walk_forward_metrics": {
+        "sharpe": -0.3730783188340471,
+        "max_drawdown": -0.6018555177136425,
+        "n_trades": 4,
+        "win_rate": 0.5,
+        "profit_factor": 0.08859811284870284,
+        "total_return": -0.45358082063776684
+      },
+      "saliency": {
+        "mean_rho": 0.526,
+        "median_rho": 0.5233,
+        "max_rho": 0.9767,
+        "n_selected": 30
+      },
+      "refit_every": 100
+    },
+    {
+      "ticker": "KO",
+      "engine": "fshmm",
+      "ok": true,
+      "elapsed_s": 14.928,
+      "wf_classify_s": 14.513,
+      "current_regime": 2,
+      "regime_pct": {},
+      "n_states": 3,
+      "walk_forward_bars": 0,
+      "regime_counts": {
+        "bear": 1400,
+        "sideways": 1100,
+        "bull": 10
+      },
+      "walk_forward_metrics": {
+        "sharpe": -0.5372872094804948,
+        "max_drawdown": -0.6482359878349124,
+        "n_trades": 6,
+        "win_rate": 0.3333333333333333,
+        "profit_factor": 0.16827790306785628,
+        "total_return": -0.50220889930349
+      },
+      "saliency": {
+        "mean_rho": 0.4074,
+        "median_rho": 0.3996,
+        "max_rho": 0.9766,
+        "n_selected": 11
+      },
+      "refit_every": 100
+    },
+    {
+      "ticker": "BAC",
+      "engine": "fshmm",
+      "ok": true,
+      "elapsed_s": 14.615,
+      "wf_classify_s": 14.21,
+      "current_regime": 2,
+      "regime_pct": {},
+      "n_states": 3,
+      "walk_forward_bars": 0,
+      "regime_counts": {
+        "bear": 800,
+        "sideways": 1100,
+        "bull": 613
+      },
+      "walk_forward_metrics": {
+        "sharpe": -0.20011079745715368,
+        "max_drawdown": -0.6948963751763028,
+        "n_trades": 5,
+        "win_rate": 0.4,
+        "profit_factor": 0.49578641379024135,
+        "total_return": -0.4453028979689704
+      },
+      "saliency": {
+        "mean_rho": 0.4561,
+        "median_rho": 0.4983,
+        "max_rho": 0.9767,
+        "n_selected": 22
+      },
+      "refit_every": 100
+    }
+  ]
+}

@@ -30,8 +30,14 @@ class FSHMMEngine(HMMEngineBase):
         max_iter: int = 50,
         tol: float = 1e-4,
         random_state: int = 42,
+        default_refit_every: int = 100,
     ) -> None:
-        super().__init__(n_states=n_states, pca_variance=pca_variance, reverse_classify=reverse_classify)
+        super().__init__(
+            n_states=n_states,
+            pca_variance=pca_variance,
+            reverse_classify=reverse_classify,
+            default_refit_every=default_refit_every,
+        )
         self.saliency_threshold = saliency_threshold
         self.max_iter = max_iter
         self.tol = tol
@@ -47,11 +53,12 @@ class FSHMMEngine(HMMEngineBase):
     def classify(
         self, data: pd.DataFrame, prev_means: np.ndarray | None = None
     ) -> ClassifyResult:
+        n_states = getattr(self, '_n_states_resolved', self.n_states)
         features_clean = data.bfill().dropna()
-        if len(features_clean) < self.n_states + 1:
+        if len(features_clean) < n_states + 1:
             raise ValueError(
                 f"Not enough clean rows ({len(features_clean)}) "
-                f"for {self.n_states} HMM states"
+                f"for {n_states} HMM states"
             )
         feature_names = list(features_clean.columns)
         X = features_clean.to_numpy(dtype=np.float64)
@@ -62,16 +69,16 @@ class FSHMMEngine(HMMEngineBase):
         X_norm = ((X - center) / scale).astype(np.float64)
 
         # Optional PCA whitening (ADR-0005)
-        pca_transform = None
+        pca_transform_obj = None
         if self.pca_variance is not None:
             from sklearn.decomposition import PCA
 
-            pca_transform = PCA(
+            pca_transform_obj = PCA(
                 n_components=self.pca_variance,
                 svd_solver="full",
                 random_state=self.random_state,
             )
-            X_norm = pca_transform.fit_transform(X_norm).astype(np.float64)
+            X_norm = pca_transform_obj.fit_transform(X_norm).astype(np.float64)
 
         # Run Feature Saliency EM
         model, rho = self._fit_fshmm(X_norm)
@@ -79,12 +86,20 @@ class FSHMMEngine(HMMEngineBase):
         # Last bar (already normalized)
         X_last = X_norm[-1:]
 
+        # PCA-aware return component
+        return_component: int | None = None
+        if pca_transform_obj is not None:
+            return_component = int(np.argmax(np.abs(pca_transform_obj.components_[:, 0])))
+            if self._pca_return_component is None:
+                self._pca_return_component = return_component
+
         # Delegate regime-mapping to shared pipeline
         result = _classify_hmm_slice(
             model,
             X_last,
-            self.n_states,
+            n_states,
             prev_means,
+            return_component=return_component,
         )
 
         # Attach saliency metadata
@@ -111,7 +126,7 @@ class FSHMMEngine(HMMEngineBase):
         Returns (trained_hmm_model, rho_array).
         """
         T, D = X.shape
-        K = self.n_states
+        K = getattr(self, '_n_states_resolved', self.n_states)
 
         # --- Initialise base HMM for starting mu, sigma2, pi, A ---
         with warnings.catch_warnings():
@@ -138,6 +153,12 @@ class FSHMMEngine(HMMEngineBase):
         epsilon = np.mean(X, axis=0)  # background mean
         tau2 = np.var(X, axis=0) + 1e-8  # background variance
 
+        # Pre-allocate arrays reused across EM iterations
+        log_alpha = np.empty((T, K))
+        log_beta = np.empty((T, K))
+        log_gamma = np.empty((T, K))
+        gamma = np.empty((T, K))
+
         plateau_count = 0
         prev_ll = 0.0
 
@@ -148,16 +169,15 @@ class FSHMMEngine(HMMEngineBase):
             log_pi = np.log(np.clip(pi, 1e-300, None))
             log_A = np.log(np.clip(A, 1e-300, None))
 
-            # Forward pass
-            log_alpha = np.empty((T, K))
+            # Forward pass — reuse pre-allocated log_alpha
             log_alpha[0] = log_pi + log_signal[0]
             for t in range(1, T):
                 log_alpha[t] = (
                     _logsumexp_row(log_alpha[t - 1] + log_A.T) + log_signal[t]
                 )
 
-            # Backward pass
-            log_beta = np.zeros((T, K))
+            # Backward pass — reuse pre-allocated log_beta
+            log_beta[T - 1] = 0.0
             for t in range(T - 2, -1, -1):
                 log_beta[t] = _logsumexp_row(
                     log_A + log_signal[t + 1] + log_beta[t + 1]
@@ -166,10 +186,10 @@ class FSHMMEngine(HMMEngineBase):
             # Log-likelihood for plateau early-exit (before gamma exp)
             log_lik = float(_logsumexp_row(log_alpha[-1]))
 
-            # Gamma (posteriors)
-            log_gamma = log_alpha + log_beta
+            # Gamma (posteriors) — in-place to avoid allocation
+            np.add(log_alpha, log_beta, out=log_gamma)
             log_gamma -= _logsumexp_row(log_gamma)[:, np.newaxis]
-            gamma = np.exp(log_gamma)  # (T, K)
+            np.exp(log_gamma, out=gamma)
 
             # --- Saliency E-step (vectorized) ---
             p_signal = _gaussian_pdf(
@@ -303,3 +323,4 @@ def _logsumexp_row(a: np.ndarray) -> np.ndarray:
     """Numerically stable logsumexp along last axis."""
     a_max = np.max(a, axis=-1, keepdims=True)
     return np.log(np.sum(np.exp(a - a_max), axis=-1)) + a_max.squeeze(-1)
+

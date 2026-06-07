@@ -169,28 +169,30 @@ def _hmm_classify_pipeline(
     # 2. Resolve n_states='auto' via BIC
     if isinstance(engine.n_states, str) and engine.n_states == "auto":
         t_bic = _time.monotonic()
-        resolved = select_n_states(
+        resolved_n_states = select_n_states(
             precomputed.dropna().to_numpy(dtype=np.float64),
             max_states=6,
             profile=_phases if profile else False,
         )
         if profile:
             _phases["bic_select_n_states"] = float(round(_time.monotonic() - t_bic, 6))
-        engine.n_states = resolved
     elif isinstance(engine.n_states, int):
-        pass  # already resolved
+        resolved_n_states = engine.n_states
     else:
         raise ValueError(f"n_states must be int or 'auto', got {engine.n_states!r}")
 
+    # Store resolved n_states for classify() to use without mutating n_states
+    engine._n_states_resolved = resolved_n_states  # type: ignore[attr-defined]
+
     # 2b. Degenerate-fit pre-check: auto-downgrade to n_states=2
-    original_n_states = engine.n_states
+    original_n_states = resolved_n_states
     degenerate_auto_recovered = False
-    if engine.n_states >= 3:
+    if resolved_n_states >= 3:
         features_full = precomputed.dropna().to_numpy(dtype=np.float64)
         try:
             model, center, scale, pca_n, pca_transform = _fit_hmm_on_slice(
                 features_full,
-                n_states=engine.n_states,
+                n_states=resolved_n_states,
                 random_state=42,
                 pca_variance=getattr(engine, "pca_variance", None),
             )
@@ -198,8 +200,8 @@ def _hmm_classify_pipeline(
             if pca_transform is not None:
                 X_norm = pca_transform.transform(X_norm).astype(np.float64)
             precheck_labels = model.predict(X_norm)
-            if _check_degenerate(precheck_labels, n_states=engine.n_states):
-                engine.n_states = 2
+            if _check_degenerate(precheck_labels, n_states=resolved_n_states):
+                resolved_n_states = 2
                 degenerate_auto_recovered = True
                 print(
                     "  [degenerate] 3-state fit collapsed."
@@ -228,6 +230,7 @@ def _hmm_classify_pipeline(
         _classify_times=_classify_times,
         _wf_recovery=wf_recovery,
         reverse=reverse,
+        n_states_active=resolved_n_states,
     ):
         regimes[t] = result.regime
         if result.posteriors is not None:
@@ -248,7 +251,7 @@ def _hmm_classify_pipeline(
         posteriors=posteriors_all,
         last_regime=int(regimes[-1]),
         warmup_bars=min_train,
-        n_states=engine.n_states,
+        n_states=resolved_n_states,
         engine_info=engine_info if engine_info else None,
         reverse_classify=reverse,
     )
@@ -266,6 +269,7 @@ def _walk_forward_classify(
     _classify_times: list[float] | None = None,
     _wf_recovery: dict[str, object] | None = None,
     reverse: bool = False,
+    n_states_active: int = 3,
 ) -> Iterator[tuple[int, ClassifyResult]]:
     """Walk-forward classify generator, yielding (t, ClassifyResult) per bar.
 
@@ -316,8 +320,7 @@ def _walk_forward_classify(
     prev_means: np.ndarray | None = None
     last_result = ClassifyResult(regime=1)
 
-    refit_every = max(5, (n - min_train) // 100)
-    refit_every = min(refit_every, 20)
+    refit_every = eng.default_refit_every
 
     n_refits = 0
     t_start_wf = time.monotonic()
@@ -351,17 +354,17 @@ def _walk_forward_classify(
 
             # Mid-stream degeneration check (Issue #98, ADR-0018)
             # After each refit, check if cumulative regime distribution
-            # has collapsed. Only check when n_states >= 3 and we have
+            # has collapsed. Only check when n_states_active >= 3 and we have
             # enough classified bars to make a meaningful assessment.
             if (
                 not mid_stream_degenerate
-                and getattr(eng, "n_states", 2) >= 3
+                and n_states_active >= 3
                 and len(yielded_regimes) >= 20
             ):
                 cumulative = np.array(yielded_regimes)
-                if _check_degenerate(cumulative, n_states=eng.n_states):
+                if _check_degenerate(cumulative, n_states=n_states_active):
                     mid_stream_degenerate = True
-                    eng.n_states = 2
+                    n_states_active = 2
                     print(
                         f"[walk-forward] mid-stream degeneration detected"
                         f" at bar {t}. Downgrading remaining refits"

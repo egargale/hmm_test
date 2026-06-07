@@ -52,10 +52,11 @@ def test_threshold_does_not_inherit_base():
 # ---- T2: Cannot instantiate abstract base --------------------------------
 
 
-def test_base_class_is_abstract():
-    """HMMEngineBase cannot be instantiated (classify is @abstractmethod)."""
-    with pytest.raises(TypeError):
-        HMMEngineBase()
+def test_base_class_can_be_instantiated():
+    """HMMEngineBase is now concrete (classify inherited by all HMM subclasses)."""
+    engine = HMMEngineBase()
+    assert engine.n_states == 3
+    assert engine.default_refit_every == 50
 
 
 # ---- T3: Concrete engines construct correctly ----------------------------

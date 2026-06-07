@@ -15,6 +15,8 @@ from hmm_futures_analysis.regime.engines._hmm_pipeline import _walk_forward_clas
 class _StubEngine:
     """Minimal engine stub that returns configurable classify results."""
 
+    default_refit_every = 5
+
     def __init__(self, regime: int = 1):
         self._regime = regime
         self.call_count = 0

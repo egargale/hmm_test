@@ -109,6 +109,7 @@ class TestMidStreamDegenerationUnit:
         class _DegeneratingEngine:
             n_states = 3
             pca_variance = None
+            default_refit_every = 5
             call_count = 0
             n_states_at_call: list[int] = []
 
@@ -135,9 +136,11 @@ class TestMidStreamDegenerationUnit:
             engine, prices, None, returns, min_train=min_train, profile=False
         )
 
-        assert 2 in engine.n_states_at_call, (
-            "Engine should have been downgraded to n_states=2"
+        # Engine n_states is never mutated after __init__ (Issue F fix)
+        assert engine.n_states == 3, (
+            "Engine n_states should never be mutated by the pipeline"
         )
+        # Recovery is recorded in engine_info
         assert result.engine_info is not None
         assert result.engine_info.get("walk_forward_degenerate_recovery") is True
 
@@ -149,6 +152,7 @@ class TestMidStreamDegenerationUnit:
         class _HealthyEngine:
             n_states = 3
             pca_variance = None
+            default_refit_every = 5
             call_count = 0
 
             def precompute(self, data):
@@ -181,6 +185,7 @@ class TestMidStreamDegenerationUnit:
         class _DegeneratingEngine:
             n_states = 3
             pca_variance = None
+            default_refit_every = 5
             call_count = 0
 
             def precompute(self, data):
@@ -219,6 +224,7 @@ class TestMidStreamDegenerationUnit:
         class _HealthyEngine:
             n_states = 3
             pca_variance = None
+            default_refit_every = 5
             call_count = 0
 
             def precompute(self, data):
@@ -255,6 +261,7 @@ class TestMidStreamDegenerationUnit:
         class _DegeneratingEngine:
             n_states = 3
             pca_variance = None
+            default_refit_every = 5
             call_count = 0
 
             def precompute(self, data):
@@ -292,6 +299,7 @@ class TestMidStreamDegenerationUnit:
         class _HealthyEngine:
             n_states = 3
             pca_variance = None
+            default_refit_every = 5
             call_count = 0
 
             def precompute(self, data):
@@ -328,6 +336,7 @@ class TestMidStreamDegenerationUnit:
         class _DegeneratingEngine:
             n_states = 3
             pca_variance = None
+            default_refit_every = 5
             call_count = 0
 
             def precompute(self, data):
@@ -386,6 +395,7 @@ class TestReverseDegeneration:
             n_states = 3
             pca_variance = None
             reverse_classify = True
+            default_refit_every = 5
             call_count = 0
 
             def precompute(self, data):

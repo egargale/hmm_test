@@ -9,7 +9,7 @@ in ``_hmm_pipeline.py``.
 from __future__ import annotations
 
 import warnings
-from abc import ABC, abstractmethod
+from abc import ABC
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -50,11 +50,33 @@ class HMMEngineBase(ABC):
         n_states: int = 3,
         pca_variance: float | None = None,
         reverse_classify: bool = False,
+        default_refit_every: int = 50,
     ) -> None:
         self.n_states = n_states
         self.pca_variance = pca_variance
         self.reverse_classify = reverse_classify
+        self.default_refit_every = default_refit_every
         self._pca_n_components: int | None = None
+        self._pca_return_component: int | None = None
+
+    # ------------------------------------------------------------------
+    # Protected hook: subclasses override to inject custom fitting.
+    # ------------------------------------------------------------------
+
+    def _fit_on_slice(
+        self, features_arr: np.ndarray, n_states: int
+    ) -> tuple[hmm.GaussianHMM, np.ndarray, np.ndarray, int | None, PCA | None]:
+        """Fit HMM on a feature slice. Subclasses override for custom fitting.
+
+        The default implementation delegates to :func:`_fit_hmm_on_slice`
+        with this engine's ``pca_variance``.  RobustHMMEngine overrides this
+        to call :func:`robust_fit_gaussian_hmm` instead.
+        """
+        return _fit_hmm_on_slice(
+            features_arr,
+            n_states=n_states,
+            pca_variance=self.pca_variance,
+        )
 
     def precompute(self, data: pd.DataFrame) -> pd.DataFrame | None:
         """Engineer features from OHLCV data.
@@ -100,11 +122,54 @@ class HMMEngineBase(ABC):
         }
         return result
 
-    @abstractmethod
     def classify(
         self, data: pd.DataFrame, prev_means: np.ndarray | None = None
     ) -> ClassifyResult:
-        """Fit HMM on *data* and classify the last bar."""
+        """Fit HMM on *data* and classify the last bar.
+
+        Shared implementation for engines that follow the standard
+        z-score → (PCA) → fit → classify pipeline.  Engines that need
+        fundamentally different logic (e.g. FSHMM with its custom EM
+        and saliency metadata) override this method entirely.
+        """
+        n_states = getattr(self, '_n_states_resolved', self.n_states)
+        features_clean = data.bfill().dropna()
+        if len(features_clean) < n_states + 1:
+            raise ValueError(
+                f"Not enough clean rows ({len(features_clean)}) "
+                f"for {n_states} HMM states"
+            )
+        features_arr = features_clean.to_numpy(dtype=np.float64)
+
+        model, center, scale, pca_n, pca_transform = self._fit_on_slice(
+            features_arr,
+            n_states=n_states,
+        )
+
+        # Sticky component count: first refit determines, subsequent reuse
+        if pca_n is not None and self._pca_n_components is None:
+            self._pca_n_components = pca_n
+
+        # PCA-aware return component: when PCA is active, determine which
+        # component is most correlated with log_ret (original column 0).
+        return_component: int | None = None
+        if pca_transform is not None:
+            return_component = int(np.argmax(np.abs(pca_transform.components_[:, 0])))
+            if self._pca_return_component is None:
+                self._pca_return_component = return_component
+
+        # Normalize last bar for prediction
+        X_last = (features_arr[-1:] - center) / scale
+        if pca_transform is not None:
+            X_last = pca_transform.transform(X_last)
+
+        return _classify_hmm_slice(
+            model,
+            X_last,
+            n_states,
+            prev_means,
+            return_component=return_component,
+        )
 
 
 def engineer_features(data: pd.DataFrame, use_messina: bool) -> pd.DataFrame:
@@ -299,6 +364,7 @@ def _classify_hmm_slice(
     X_last: np.ndarray,
     n_states: int,
     prev_means: np.ndarray | None = None,
+    return_component: int | None = None,
 ) -> ClassifyResult:
     """Shared post-fit classify pipeline for HMM engines.
 
@@ -306,13 +372,18 @@ def _classify_hmm_slice(
     collapse to 3 regimes if n_states > 3) → posteriors reorder/aggregate
     → _remap_to_prev_states if prev_means given.
 
-    Sorting dimension ``means[:, 0]``
-    --------------------------------
-    HMM states are sorted by column 0 of the means matrix, which is always
-    the return-signal dimension: ``log_ret`` without PCA, or the first
-    principal component (dominant variance direction -- PC1) when PCA
-    whitening is active.  Both map monotonically to market direction,
-    making ascending order a reliable bear->sideways->bull mapping.
+    Sorting dimension
+    -----------------
+    When *return_component* is None (the default), HMM states are sorted
+    by column 0 of the means matrix.  Without PCA, column 0 is ``log_ret``
+    -- the return-signal dimension -- and ascending order yields a
+    reliable bear→sideways→bull mapping.
+
+    When *return_component* is an int, states are sorted by
+    ``means[:, return_component]`` instead.  This is the PCA-aware path:
+    the caller determines the component whose loadings are most correlated
+    with the original ``log_ret`` feature (by inspecting
+    ``pca_transform.components_[:, 0]``) and passes the index here.
 
     Parameters
     ----------
@@ -321,6 +392,9 @@ def _classify_hmm_slice(
         Caller is responsible for z-scoring and optional PCA transform.
     n_states : number of HMM states
     prev_means : previous-cycle means for state remapping, or None
+    return_component : optional int index of the PCA component most
+        correlated with the return signal.  When None, column 0 is used
+        (backward-compatible, correct without PCA).
     """
     means = model.means_
 
@@ -331,7 +405,8 @@ def _classify_hmm_slice(
     # based on ascending mean return order, collapsed to 3 buckets.
     # Always produce 3 regime buckets regardless of n_states so that
     # downstream posteriors arrays have consistent shape.
-    state_means = means[:, 0]
+    sort_col = 0 if return_component is None else return_component
+    state_means = means[:, sort_col]
     order = np.argsort(state_means)
     n_actual = len(order)  # may differ from n_states if model converged
     #    with fewer states than requested
@@ -363,18 +438,26 @@ def _classify_hmm_slice(
     posteriors = agg
 
     if prev_means is not None:
-        regime = _remap_to_prev_states(means, raw_state, prev_means, default=regime)
+        regime = _remap_to_prev_states(
+            means, raw_state, prev_means, default=regime,
+            return_component=return_component,
+        )
 
     return ClassifyResult(regime=int(regime), means=means, posteriors=posteriors)
 
 
 def _remap_to_prev_states(
-    means: np.ndarray, raw_state: int, prev_means: np.ndarray, *, default: int = 0
+    means: np.ndarray,
+    raw_state: int,
+    prev_means: np.ndarray,
+    *,
+    default: int = 0,
+    return_component: int | None = None,
 ) -> int:
     """Remap a raw HMM state to the regime index from the previous cycle.
 
-    Sorts prev_means by column 0 -- the return-signal dimension (see
-    ``_classify_hmm_slice`` docstring for why column 0 is appropriate).
+    Sorts prev_means by the return-signal dimension (column 0 when
+    *return_component* is None, or the specified PCA component otherwise).
     Builds a label map (identity for ≤3 states, collapsed to 3 regimes
     for >3), then maps raw_state through _match_states and the prev label
     map.
@@ -384,11 +467,14 @@ def _remap_to_prev_states(
         raw_state: Predicted raw latent state index.
         prev_means: Previous-cycle HMM means (prev_n × n_features).
         default: Fallback regime when raw_state has no match.
+        return_component: Optional int index of the PCA component most
+            correlated with returns. When None, column 0 is used.
 
     Returns:
         Remapped regime index (0=bear, 1=sideways, 2=bull).
     """
-    prev_order = np.argsort(prev_means[:, 0])
+    sort_col = 0 if return_component is None else return_component
+    prev_order = np.argsort(prev_means[:, sort_col])
     prev_n = len(prev_order)
 
     if prev_n == 1:
