@@ -237,3 +237,41 @@ class TestClassifyPCATransform:
         assert result.posteriors is not None
         assert result.posteriors.shape == (3,)
         assert abs(result.posteriors.sum() - 1.0) < 1e-6
+
+
+class TestClassifyPCABoundsGuard:
+    """Issue #107 — return_component exceeds PCA-reduced dimensionality."""
+
+    def test_return_component_exceeds_means_cols_does_not_crash(self):
+        """return_component=9 but model means only have 3 columns after PCA."""
+        model = _make_model(n_states=3, n_features=3)
+        X_last = _make_last_bar(3)
+
+        # Must not raise IndexError
+        result = _classify_hmm_slice(
+            model=model,
+            X_last=X_last,
+            n_states=3,
+            return_component=9,
+        )
+
+        assert isinstance(result, ClassifyResult)
+        assert result.regime in {0, 1, 2}
+        assert result.posteriors.shape == (3,)
+
+    def test_return_component_exceeds_with_prev_means(self):
+        """Bounds guard works in both _classify_hmm_slice and _remap_to_prev_states."""
+        model = _make_model(n_states=3, n_features=3)
+        X_last = _make_last_bar(3)
+        prev_means = np.array([[-1.0, 0.1, 0.2], [0.0, 0.0, 0.0], [1.0, -0.1, -0.2]])
+
+        result = _classify_hmm_slice(
+            model=model,
+            X_last=X_last,
+            n_states=3,
+            prev_means=prev_means,
+            return_component=9,
+        )
+
+        assert result.regime in {0, 1, 2}
+        assert result.posteriors.shape == (3,)
