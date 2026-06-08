@@ -10,15 +10,23 @@ feature saliency).
 
 from __future__ import annotations
 
-import math
 import time
 
 import dataclasses
-from typing import NamedTuple
 
 import numpy as np
 import pandas as pd
 
+from ._result_assembly import (  # re-exported for backward compat
+    PipelineResult,
+    _FRAMEWORK_VERSION,
+    _STATE_NAMES,
+    _assemble_result,
+    _compute_dynamic_threshold,
+    _compute_verdict,
+    _nan_to_none,
+    _probs_to_dict,
+)
 from .engine_protocol import (
     ENGINE_REGISTRY,
     resolve_engine,
@@ -28,18 +36,20 @@ from .markov_chain import (
     compute_persistence_diagonal,
     compute_signal,
     compute_stationary_distribution,
-    forecast_n_steps,
 )
 from .regime_transitions import extract_transitions
 from .walk_forward import walk_forward_backtest
 
-
-_STATE_NAMES = ("bear", "sideways", "bull")
-_FRAMEWORK_VERSION = "hmm_test v0.2.0"
-_DISCLAIMER = (
-    "Regime detection is probabilistic. Past transitions do not guarantee "
-    "future regimes. Not financial advice."
-)
+__all__ = [
+    "PipelineResult",
+    "_nan_to_none",
+    "_probs_to_dict",
+    "_compute_verdict",
+    "_compute_dynamic_threshold",
+    "_assemble_result",
+    "_STATE_NAMES",
+    "_FRAMEWORK_VERSION",
+]
 
 
 @dataclasses.dataclass
@@ -54,135 +64,6 @@ class MarkovStats:
     current_probs: np.ndarray
     regime_counts: dict[str, int]
     dates: dict[str, str]
-
-
-class PipelineResult(NamedTuple):
-    """Immutable result from :func:`run`.
-
-    Call ``._asdict()`` to get a JSON-compatible dict for serialization.
-    """
-
-    source: str
-    engine: str
-    dates: dict[str, str]
-    current_regime: dict[str, str | int]
-    signal: float
-    next_state_probabilities: dict[str, float]
-    transition_matrix: list
-    stationary_distribution: dict[str, float]
-    persistence_diagonal: dict[str, float]
-    regime_counts: dict[str, int]
-    walk_forward: dict
-    forecast: dict
-    engine_info: dict
-    framework: str
-    disclaimer: str
-    verdict: dict
-    duration_forecast: dict | None = None
-    regime_transitions: list | None = None
-    timing: dict | None = None
-
-
-def _probs_to_dict(probs: np.ndarray) -> dict[str, float]:
-    return {
-        "bear": float(probs[0]),
-        "sideways": float(probs[1]),
-        "bull": float(probs[2]),
-    }
-
-
-def _nan_to_none(value: float) -> float | None:
-    if isinstance(value, float) and (math.isnan(value) or math.isinf(value)):
-        return None
-    return value
-
-
-def _compute_dynamic_threshold(
-    duration_forecast: dict | None,
-    base_threshold: float = 0.1,
-) -> float:
-    """Compute a regime-aging-adjusted threshold for Sideways verdict.
-
-    Uses the Weibull expected duration to detect when the current regime
-    has outlasted its historical norm. When ``days_in_regime >
-    expected_total``, the threshold shrinks linearly from 1.0x at exactly
-    expected up to 0.3x at 1.7x expected.
-
-    Returns ``base_threshold`` when duration data is unavailable or the
-    regime is within its expected life.
-    """
-    if duration_forecast is None:
-        return base_threshold
-
-    days_in = duration_forecast.get("days_in_regime")
-    scale = duration_forecast.get("weibull_scale")
-    shape = duration_forecast.get("weibull_shape")
-
-    if days_in is None or scale is None or shape is None or shape <= 0:
-        return base_threshold
-
-    from scipy.special import gamma as _gamma  # type: ignore[unused-ignore]
-
-    _days = float(days_in)
-    _scale = float(scale)
-    _shape = float(shape)
-    expected_total = _scale * _gamma(1.0 + 1.0 / _shape)
-    if expected_total <= 0:
-        return base_threshold
-
-    aging_ratio = _days / expected_total
-
-    if aging_ratio <= 1.0:
-        return base_threshold
-
-    # Linear ramp: 1.0x at aging_ratio=1, 0.3x at aging_ratio >= 1.7
-    threshold_mult = max(0.3, 2.0 - aging_ratio)
-    return base_threshold * threshold_mult
-
-
-def _compute_verdict(
-    current_regime: int,
-    signal: float,
-    forecast_20: dict[str, float],
-    sideways_threshold: float = 0.1,
-) -> dict[str, object]:
-    """Synthesize regime + forecasts into a single actionable verdict.
-
-    Parameters
-    ----------
-    sideways_threshold :
-        Signal magnitude below which the verdict stays ``"neutral"``
-        when in a Sideways regime.  Use :func:`_compute_dynamic_threshold`
-        to generate a regime-aging-adjusted value.
-
-    Returns a dict with ``verdict`` (one of ``"bullish"``, ``"bearish"``,
-    ``"neutral"``, ``"transition_bull"``, ``"transition_bear"``) and
-    ``confidence`` (abs(signal), range 0-1).
-    """
-    if current_regime == 2:  # Bull
-        # Bull forecast > bear forecast: bull dominance continues
-        if forecast_20["bull"] > forecast_20.get("bear", 0):
-            verdict = "bullish"
-        else:
-            verdict = "transition_bear"
-    elif current_regime == 0:  # Bear
-        # Bear forecast > bull forecast: bear dominance continues
-        if forecast_20["bear"] > forecast_20.get("bull", 0):
-            verdict = "bearish"
-        else:
-            verdict = "transition_bull"
-    else:  # Sideways
-        if abs(signal) < sideways_threshold:
-            verdict = "neutral"
-        elif signal > 0:
-            verdict = "transition_bull"
-        else:
-            verdict = "transition_bear"
-
-    return {
-        "verdict": verdict,
-        "confidence": round(float(abs(signal)), 4),
-    }
 
 
 def _validate_prices(prices: pd.Series) -> pd.Series:
@@ -461,15 +342,6 @@ def run(
         resolved_n_states = classify_out.n_states
 
     markov = _build_markov_stats(classify_out.regimes, prices.index)
-    forecast_1 = _probs_to_dict(
-        forecast_n_steps(markov.transmat, markov.current_probs, 1)
-    )
-    forecast_5 = _probs_to_dict(
-        forecast_n_steps(markov.transmat, markov.current_probs, 5)
-    )
-    forecast_20 = _probs_to_dict(
-        forecast_n_steps(markov.transmat, markov.current_probs, 20)
-    )
 
     # Walk-forward backtest (reuse pre-computed regime labels, ADR-0017)
     t_wfb = time.monotonic()
@@ -499,7 +371,7 @@ def run(
     )
 
     # --- Lookahead bias warning for reverse-classify (Issue #102) ---
-    reverse_classify = getattr(engine_config, 'reverse_classify', False)
+    reverse_classify = getattr(engine_config, "reverse_classify", False)
     if reverse_classify and classify_out.reverse_classify:
         engine_info["reverse_classify"] = True
         engine_info["lookahead_bias_warning"] = True
@@ -540,15 +412,6 @@ def run(
         ev._asdict() for ev in extract_transitions(classify_out.regimes, prices.index)
     ]
 
-    # --- Synthesized verdict ---
-    sideways_threshold = _compute_dynamic_threshold(df_result)
-    verdict_out = _compute_verdict(
-        markov.current_regime,
-        markov.signal,
-        forecast_20,
-        sideways_threshold=sideways_threshold,
-    )
-
     # --- Profiling ---
     timing: dict | None = None
     if profile:
@@ -575,34 +438,13 @@ def run(
                 "n_calls": n_cls,
             }
 
-    return PipelineResult(
+    return _assemble_result(
         source=source,
-        engine=engine_name,
-        dates={
-            "start": markov.dates["start"],
-            "end": markov.dates["end"],
-        },
-        current_regime={
-            "name": _STATE_NAMES[markov.current_regime],
-            "index": markov.current_regime,
-        },
-        signal=markov.signal,
-        next_state_probabilities=_probs_to_dict(markov.current_probs),
-        transition_matrix=markov.transmat.tolist(),
-        stationary_distribution=_probs_to_dict(markov.stationary),
-        persistence_diagonal=markov.persistence,
-        regime_counts=markov.regime_counts,
+        engine_name=engine_name,
+        markov=markov,
         walk_forward=walk_forward,
-        forecast={
-            "1_step": forecast_1,
-            "5_step": forecast_5,
-            "20_step": forecast_20,
-        },
         engine_info=engine_info,
-        framework=_FRAMEWORK_VERSION,
-        disclaimer=_DISCLAIMER,
-        verdict=verdict_out,
-        duration_forecast=df_result,
-        regime_transitions=transitions,
         timing=timing,
+        duration_forecast_result=df_result,
+        regime_transitions=transitions,
     )
