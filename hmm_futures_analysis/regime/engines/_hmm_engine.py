@@ -132,7 +132,7 @@ class HMMEngineBase(ABC):
         fundamentally different logic (e.g. FSHMM with its custom EM
         and saliency metadata) override this method entirely.
         """
-        n_states = getattr(self, '_n_states_resolved', self.n_states)
+        n_states = getattr(self, "_n_states_resolved", self.n_states)
         features_clean = data.bfill().dropna()
         if len(features_clean) < n_states + 1:
             raise ValueError(
@@ -406,6 +406,9 @@ def _classify_hmm_slice(
     # Always produce 3 regime buckets regardless of n_states so that
     # downstream posteriors arrays have consistent shape.
     sort_col = 0 if return_component is None else return_component
+    # PCA may reduce n_components below the original feature index
+    if sort_col >= means.shape[1]:
+        sort_col = 0
     state_means = means[:, sort_col]
     order = np.argsort(state_means)
     n_actual = len(order)  # may differ from n_states if model converged
@@ -439,7 +442,10 @@ def _classify_hmm_slice(
 
     if prev_means is not None:
         regime = _remap_to_prev_states(
-            means, raw_state, prev_means, default=regime,
+            means,
+            raw_state,
+            prev_means,
+            default=regime,
             return_component=return_component,
         )
 
@@ -474,6 +480,9 @@ def _remap_to_prev_states(
         Remapped regime index (0=bear, 1=sideways, 2=bull).
     """
     sort_col = 0 if return_component is None else return_component
+    # PCA may reduce n_components below the original feature index
+    if sort_col >= prev_means.shape[1]:
+        sort_col = 0
     prev_order = np.argsort(prev_means[:, sort_col])
     prev_n = len(prev_order)
 

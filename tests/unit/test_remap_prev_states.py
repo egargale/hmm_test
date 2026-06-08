@@ -83,3 +83,30 @@ class TestRemapFallback:
         prev_means = np.array([[10.0], [20.0], [30.0]])
 
         assert _remap_to_prev_states(means, 99, prev_means, default=2) == 2
+
+
+class TestRemapPCABoundsGuard:
+    """Issue #107 — return_component exceeds PCA-reduced dimensionality."""
+
+    def test_return_component_exceeds_prev_cols_does_not_crash(self):
+        """return_component=9 but prev_means only has 5 columns (PCA reduced dims)."""
+        # After PCA: 19 features → 5 components, but return_component was
+        # computed in the original space as index 9.
+        means = np.array([[1.0, 0.1], [2.0, 0.2], [3.0, 0.3]])
+        prev_means = np.array([[1.0, 0.1], [2.0, 0.2], [3.0, 0.3]])
+
+        # Must not raise IndexError
+        result = _remap_to_prev_states(means, 0, prev_means, return_component=9)
+        assert isinstance(result, int)
+
+    def test_return_component_exceeds_cols_falls_back_to_col0(self):
+        """When return_component is out of bounds, sorting falls back to col 0."""
+        # prev_means: state 0 has LOWEST col0 but HIGHEST col9 (if it existed)
+        means = np.array([[1.0, 0.3], [2.0, 0.1], [3.0, 0.2]])
+        prev_means = np.array([[1.0, 0.3], [2.0, 0.1], [3.0, 0.2]])
+
+        # With return_component=9 (out of bounds), falls back to col 0.
+        # Col 0 ascending: state 0=1.0 < state 1=2.0 < state 2=3.0
+        # So raw_state=0 → prev rank 0 → regime 0 (bear)
+        result = _remap_to_prev_states(means, 0, prev_means, return_component=9)
+        assert result == 0
