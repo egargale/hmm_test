@@ -1,4 +1,4 @@
-"""Tests for _apply_transitions_limit helper (issue #101)."""
+"""Tests for limit_transitions helper (issue #101)."""
 
 import json
 import subprocess
@@ -20,7 +20,7 @@ def _make_transitions(n):
     ]
 
 
-from hmm_futures_analysis.cli import _apply_transitions_limit
+from hmm_futures_analysis.presenter import limit_transitions as _apply_transitions_limit
 
 
 class TestApplyTransitionsLimitPassthrough:

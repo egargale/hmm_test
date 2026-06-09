@@ -2,7 +2,8 @@
 
 import numpy as np
 
-from hmm_futures_analysis.regime.pipeline import ClassifyOutput, MarkovStats
+from hmm_futures_analysis.regime.engine_protocol import ClassifyOutput
+from hmm_futures_analysis.regime.pipeline import MarkovStats
 
 
 class TestClassifyOutput:
