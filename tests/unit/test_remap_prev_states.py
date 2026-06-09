@@ -5,7 +5,7 @@ Issue #43 — https://github.com/egargale/hmm_test/issues/43
 
 import numpy as np
 
-from hmm_futures_analysis.regime.engines._hmm_engine import _remap_to_prev_states
+from hmm_futures_analysis.regime.engines._state_mapping import _remap_to_prev_states
 
 
 class TestRemapIdentity:

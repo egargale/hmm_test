@@ -1,6 +1,6 @@
 # HMMGenericEngine Sweep — Final Analysis & Judgment
 
-**Date**: 2026-06-08
+**Date**: 2026-06-09
 **Tickers tested**: 0700_HK, CRM
 **Data**: ~10 years of daily OHLCV per ticker (test_data/eval-results/)
 **Engine**: HMMGenericEngine (HMM + ~50 generic features — rolling stats, technical indicators)

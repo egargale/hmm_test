@@ -20,6 +20,7 @@ from ...data_processing.feature_engineering import add_features
 from ...data_processing.messina_features import MESSINA_FEATURE_COLUMNS
 from ...data_processing.messina_features import add_messina_features
 from ..engine_protocol import ClassifyOutput, ClassifyResult
+from ._state_mapping import _remap_to_prev_states, build_label_map
 
 if TYPE_CHECKING:
     from sklearn.decomposition import PCA
@@ -335,30 +336,6 @@ def robust_fit_gaussian_hmm(
     return model, center, scale, pca_n, pca_transform
 
 
-def _match_states(
-    new_means: np.ndarray,
-    prev_means: np.ndarray,
-) -> dict[int, int]:
-    assignment: dict[int, int] = {}
-    used: set[int] = set()
-
-    for old_idx in range(len(prev_means)):
-        best_new = -1
-        best_dist = float("inf")
-        for new_idx in range(len(new_means)):
-            if new_idx in used:
-                continue
-            dist = np.linalg.norm(new_means[new_idx] - prev_means[old_idx])
-            if dist < best_dist:
-                best_dist = dist
-                best_new = new_idx
-        if best_new >= 0:
-            assignment[best_new] = old_idx
-            used.add(best_new)
-
-    return assignment
-
-
 def _classify_hmm_slice(
     model: hmm.GaussianHMM,
     X_last: np.ndarray,
@@ -401,35 +378,13 @@ def _classify_hmm_slice(
     raw_state = model.predict(X_last.astype(np.float64))[0]
     posteriors = model.predict_proba(X_last.astype(np.float64))[-1]
 
-    # Map HMM states to regime indices (0=bear, 1=sideways, 2=bull)
-    # based on ascending mean return order, collapsed to 3 buckets.
-    # Always produce 3 regime buckets regardless of n_states so that
-    # downstream posteriors arrays have consistent shape.
     sort_col = 0 if return_component is None else return_component
     # PCA may reduce n_components below the original feature index
     if sort_col >= means.shape[1]:
         sort_col = 0
-    state_means = means[:, sort_col]
-    order = np.argsort(state_means)
-    n_actual = len(order)  # may differ from n_states if model converged
-    #    with fewer states than requested
 
-    if n_actual == 1:
-        # Degenerate: single state → sideways (regime 1)
-        label_map = {int(order[0]): 1}
-    elif n_actual == 2:
-        # Two states: map to bear (lowest mean) and bull (highest mean).
-        # No sideways regime — the two states span the full range.
-        label_map = {
-            int(order[0]): 0,  # bear
-            int(order[1]): 2,  # bull
-        }
-    elif n_actual == 3:
-        label_map = {int(order[i]): i for i in range(3)}
-    else:
-        label_map = {}
-        for i, state_idx in enumerate(order):
-            label_map[int(state_idx)] = min(2, i * 3 // n_actual)
+    label_map = build_label_map(means, sort_col)
+    n_actual = len(label_map)
 
     regime = label_map.get(int(raw_state), 1)
 
@@ -450,59 +405,3 @@ def _classify_hmm_slice(
         )
 
     return ClassifyResult(regime=int(regime), means=means, posteriors=posteriors)
-
-
-def _remap_to_prev_states(
-    means: np.ndarray,
-    raw_state: int,
-    prev_means: np.ndarray,
-    *,
-    default: int = 0,
-    return_component: int | None = None,
-) -> int:
-    """Remap a raw HMM state to the regime index from the previous cycle.
-
-    Sorts prev_means by the return-signal dimension (column 0 when
-    *return_component* is None, or the specified PCA component otherwise).
-    Builds a label map (identity for ≤3 states, collapsed to 3 regimes
-    for >3), then maps raw_state through _match_states and the prev label
-    map.
-
-    Args:
-        means: Current-cycle HMM means (n_states × n_features).
-        raw_state: Predicted raw latent state index.
-        prev_means: Previous-cycle HMM means (prev_n × n_features).
-        default: Fallback regime when raw_state has no match.
-        return_component: Optional int index of the PCA component most
-            correlated with returns. When None, column 0 is used.
-
-    Returns:
-        Remapped regime index (0=bear, 1=sideways, 2=bull).
-    """
-    sort_col = 0 if return_component is None else return_component
-    # PCA may reduce n_components below the original feature index
-    if sort_col >= prev_means.shape[1]:
-        sort_col = 0
-    prev_order = np.argsort(prev_means[:, sort_col])
-    prev_n = len(prev_order)
-
-    if prev_n == 1:
-        prev_label_map = {int(prev_order[0]): 1}
-    elif prev_n == 2:
-        prev_label_map = {
-            int(prev_order[0]): 0,
-            int(prev_order[1]): 2,
-        }
-    elif prev_n == 3:
-        prev_label_map = {int(prev_order[i]): i for i in range(3)}
-    else:
-        prev_label_map = {}
-        for i, si in enumerate(prev_order):
-            prev_label_map[int(si)] = min(2, i * 3 // prev_n)
-
-    assignment = _match_states(means, prev_means)
-    old_state = assignment.get(int(raw_state))
-    if old_state is not None:
-        return prev_label_map.get(old_state, default)
-
-    return default
