@@ -41,4 +41,8 @@ class ThresholdEngine:
             last_regime=int(regimes[-1]),
             warmup_bars=None,
             n_states=3,
+            # Threshold is close-only: one feature (log return). The low-data
+            # warning special-cases this via engine name; n_features=1 is
+            # informational. See FeatureSet opt-out in CONTEXT.md.
+            n_features=1,
         )

@@ -9,7 +9,8 @@ import pandas as pd
 from hmmlearn import hmm
 
 from ..engine_protocol import ClassifyResult
-from ._hmm_engine import HMMEngineBase, _classify_hmm_slice, engineer_features
+from ._hmm_engine import HMMEngineBase, _classify_hmm_slice
+from ._feature_set import GenericFeatureSet
 
 
 class FSHMMEngine(HMMEngineBase):
@@ -19,6 +20,10 @@ class FSHMMEngine(HMMEngineBase):
     Features with rho_k < saliency_threshold are masked as irrelevant.
     """
 
+    # FSHMM uses the generic ~50 features; its divergence from robust_hmm is
+    # in feature *preparation* (custom EM + z-score/PCA), not in the column
+    # set. See candidate 4 (feature-prep vs HMM-fit weld) for that axis.
+    featureset = GenericFeatureSet()
     use_messina = False
 
     def __init__(

@@ -36,7 +36,9 @@ _Avoid_: price data, market data
 The process of computing technical indicators (log returns, SMAs, ATR, RSI, MACD, Bollinger, VSTOP, etc.) from OHLCV data. Two modes exist: `generic` (~50 indicators, SMA-based) and `messina` (19 indicators, Wilder's smoothing, VSTOP, ADX/DI, interaction terms, level gaps, KDJ oscillator). Features are precomputed once on the full dataset and sliced per bar in the walk-forward loop - all indicators are backward-looking (no lookahead bias).
 _Avoid_: indicator calculation, TA computation
 
-**Discrete trade**:
+**FeatureSet**:
+The single source of truth for an engine's **feature engineering** mode — it owns the label (the `config.features` value), the builder (generic `add_features` or messina `add_messina_features`), and the resulting column count. Each HMM-family engine holds one as a value (`self.featureset`) rather than carrying a `use_messina` boolean. Two concrete adapters: `GenericFeatureSet` (label `"generic"`, ~50 features) and `MessinaFeatureSet` (label `"messina"`, 19 features, count derived from `MESSINA_FEATURE_COLUMNS`). The threshold engine opts out (close-only, `precompute` returns `None`, low-data warning special-cases it to count=1). Replaces the prior three-way encoding of one fact — engine `use_messina` bool, config `features` string, and the pipeline's `_count_features` lookup table — with one. The count is read off the built frame, never a magic number.
+_Avoid_: feature config, feature mode object, indicator set
 A trade with an entry time, entry price, exit time, exit price, and P&L. Positions are {-1, 0, 1}. A trade is opened when the regime changes and closed when it changes again. Transaction costs (commission, slippage) are modeled but default to zero for engine comparability.
 _Avoid_: continuous position, fractional trade, signal-weighted trade
 

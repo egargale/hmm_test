@@ -25,7 +25,6 @@ from hmm_futures_analysis.regime.engine_configs import FSHMMConfig
 from hmm_futures_analysis.regime.engine_protocol import resolve_engine
 from hmm_futures_analysis.regime.pipeline import run as pipeline_run
 from hmm_futures_analysis.regime.engines.fshmm import FSHMMEngine
-from hmm_futures_analysis.regime.engines._hmm_engine import engineer_features
 
 
 TEST_DATA_DIR = Path("test_data/eval-results")
