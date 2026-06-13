@@ -5,11 +5,13 @@ from __future__ import annotations
 import numpy as np
 
 from ._hmm_engine import HMMEngineBase, robust_fit_gaussian_hmm
+from ._feature_set import GenericFeatureSet
 
 
 class RobustHMMEngine(HMMEngineBase):
     """HMM engine with Huber or MCD robust emission correction."""
 
+    featureset = GenericFeatureSet()
     use_messina = False
 
     def __init__(

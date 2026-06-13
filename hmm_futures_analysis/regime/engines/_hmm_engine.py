@@ -16,10 +16,8 @@ import numpy as np
 import pandas as pd
 from hmmlearn import hmm
 
-from ...data_processing.feature_engineering import add_features
-from ...data_processing.messina_features import MESSINA_FEATURE_COLUMNS
-from ...data_processing.messina_features import add_messina_features
 from ..engine_protocol import ClassifyOutput, ClassifyResult
+from ._feature_set import FeatureSet, GenericFeatureSet
 from ._state_mapping import _remap_to_prev_states, build_label_map
 
 if TYPE_CHECKING:
@@ -43,8 +41,10 @@ class HMMEngineBase(ABC):
         skip PCA.
     """
 
-    # Subclasses set True if they use Messina features.
-    use_messina: bool = False
+    # Subclasses set their FeatureSet (the source of truth for feature mode)
+    # and may mirror it as `use_messina` for backward compatibility.
+    featureset: FeatureSet = GenericFeatureSet()
+    use_messina: bool = False  # legacy mirror of featureset.label == "messina"
 
     def __init__(
         self,
@@ -80,15 +80,17 @@ class HMMEngineBase(ABC):
         )
 
     def precompute(self, data: pd.DataFrame) -> pd.DataFrame | None:
-        """Engineer features from OHLCV data.
+        """Engineer features from OHLCV data via this engine's FeatureSet.
 
-        Uses :func:`engineer_features` with the subclass' ``use_messina`` flag.
+        The :class:`FeatureSet` owns the feature-engineering mode (generic
+        vs messina), the builder, and the column count. Subclasses select a
+        set at construction; the base ``__init__`` default is generic.
         """
         if data is None:
             raise ValueError(
                 f"{type(self).__name__} requires OHLCV data for feature engineering"
             )
-        return engineer_features(data, use_messina=self.use_messina)
+        return self.featureset.build(data)
 
     def _build_engine_info(self, warmup_bars: int | None = None) -> dict:
         """Return engine-specific metadata for ClassifyOutput.engine_info.
@@ -171,23 +173,6 @@ class HMMEngineBase(ABC):
             prev_means,
             return_component=return_component,
         )
-
-
-def engineer_features(data: pd.DataFrame, use_messina: bool) -> pd.DataFrame:
-    if use_messina:
-        df = add_messina_features(data)
-        cols = [c for c in MESSINA_FEATURE_COLUMNS if c in df.columns]
-    else:
-        df = add_features(data, min_periods=10)
-        df = df.dropna(axis=1, how="all")
-        numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
-        ohlcv_set = {"open", "high", "low", "close", "volume"}
-        cols = [c for c in numeric_cols if c not in ohlcv_set]
-
-    if not cols:
-        raise ValueError("No numeric features after engineering")
-
-    return df[cols]
 
 
 def _fit_hmm_on_slice(

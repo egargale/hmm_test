@@ -4,6 +4,7 @@ import pandas as pd
 import pytest
 
 from hmm_futures_analysis.data_processing.messina_features import (
+    MESSINA_FEATURE_COLUMNS,
     _calc_vstop,
     _true_range,
     _wilder_smooth,
@@ -166,3 +167,31 @@ class TestAddMessinaFeatures:
         add_messina_features(ohlcv_250)
         assert set(ohlcv_250.columns) == original_cols
         assert len(ohlcv_250.columns) == original_len
+
+
+# ── FeatureSet: count derived from the canonical column list ────────────────
+
+
+def test_messina_featureset_count_matches_column_list():
+    """MessinaFeatureSet.count is len(MESSINA_FEATURE_COLUMNS), not a magic number.
+
+    Before the FeatureSet refactor, the pipeline's _count_features table
+    hard-coded 19, which had to track this list by hand. Now the count is
+    derived from the single source of truth. This test pins that the two
+    stay in lockstep.
+    """
+    from hmm_futures_analysis.regime.engines._feature_set import MessinaFeatureSet
+
+    assert MessinaFeatureSet().count == len(MESSINA_FEATURE_COLUMNS)
+    assert MessinaFeatureSet().label == "messina"
+
+
+def test_messina_featureset_build_selects_canonical_columns(ohlcv_250):
+    """build() returns exactly the columns present from MESSINA_FEATURE_COLUMNS."""
+    from hmm_futures_analysis.regime.engines._feature_set import MessinaFeatureSet
+
+    result = MessinaFeatureSet().build(ohlcv_250)
+    assert list(result.columns) == [
+        c for c in MESSINA_FEATURE_COLUMNS if c in result.columns
+    ]
+

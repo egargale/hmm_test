@@ -35,6 +35,7 @@ class ClassifyOutput:
     last_regime: int = 1
     warmup_bars: int | None = None
     n_states: int = 3
+    n_features: int | None = None  # feature count the engine used (low-data warning)
     engine_info: dict | None = None
     reverse_classify: bool = False
 

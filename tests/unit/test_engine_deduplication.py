@@ -80,11 +80,37 @@ def test_messina_engine_uses_base_fit_on_slice():
 
 
 def test_use_messina_flags():
-    """Only messina engine has use_messina = True."""
+    """Only messina engine has use_messina = True (legacy mirror)."""
     assert HMMGenericEngine.use_messina is False
     assert HMMMMessinaEngine.use_messina is True
     assert RobustHMMEngine.use_messina is False
     assert FSHMMEngine.use_messina is False
+
+
+def test_featureset_is_the_source_of_truth():
+    """Each engine's featureset.label is the source of truth for its feature mode.
+
+    The legacy use_messina boolean mirrors featureset.label == "messina".
+    Generic engines (hmm, robust_hmm, fshmm) share GenericFeatureSet;
+    only messina carries MessinaFeatureSet.
+    """
+    from hmm_futures_analysis.regime.engines._feature_set import (
+        GenericFeatureSet,
+        MessinaFeatureSet,
+    )
+
+    assert type(HMMGenericEngine.featureset) is GenericFeatureSet
+    assert type(HMMMMessinaEngine.featureset) is MessinaFeatureSet
+    assert type(RobustHMMEngine.featureset) is GenericFeatureSet
+    assert type(FSHMMEngine.featureset) is GenericFeatureSet
+
+    assert HMMGenericEngine.featureset.label == "generic"
+    assert HMMMMessinaEngine.featureset.label == "messina"
+
+    # The legacy flag must agree with the FeatureSet label.
+    for cls in (HMMGenericEngine, RobustHMMEngine, FSHMMEngine):
+        assert cls.use_messina is (cls.featureset.label == "messina")
+    assert HMMMMessinaEngine.use_messina is True
 
 
 # ---- classify works end-to-end ----

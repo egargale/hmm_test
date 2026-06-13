@@ -252,6 +252,7 @@ def _hmm_classify_pipeline(
         last_regime=int(regimes[-1]),
         warmup_bars=min_train,
         n_states=resolved_n_states,
+        n_features=precomputed.shape[1],
         engine_info=engine_info if engine_info else None,
         reverse_classify=reverse,
     )

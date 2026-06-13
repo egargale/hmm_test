@@ -199,20 +199,6 @@ def detect_degenerate_fit(
     return diagnostics
 
 
-def _count_features(config: object) -> int:
-    """Return the number of features an engine config requires.
-
-    Uses the config's ``features`` attribute to determine feature count.
-    """
-    features_label = getattr(config, "features", None)
-    if features_label == "returns":
-        return 1
-    if features_label == "messina":
-        return 19
-    # Generic features (hmm, robust_hmm, fshmm)
-    return 50
-
-
 def _build_engine_info(
     engine_config: object,
     resolved_n_states: int,
@@ -382,7 +368,9 @@ def run(
         )
 
     # --- Degenerate-fit detection (ADR-0018, Issue #95 audit) ---
-    n_features = _count_features(config)
+    # Feature count is read off the engine's precomputed output (FeatureSet
+    # source of truth) rather than a magic-number lookup table.
+    n_features = classify_out.n_features if classify_out.n_features is not None else 1
     n_states_was_auto = isinstance(getattr(config, "n_states", 3), str)
     deg_diagnostics = detect_degenerate_fit(
         regime_counts=markov.regime_counts,
