@@ -1,0 +1,233 @@
+{
+  "source": "test_data/SPY.csv",
+  "engine": "fshmm",
+  "dates": {
+    "start": "2016-06-03",
+    "end": "2026-06-02"
+  },
+  "current_regime": {
+    "name": "bear",
+    "index": 0
+  },
+  "signal": -0.9983862288559441,
+  "next_state_probabilities": {
+    "bear": 0.9989241525706294,
+    "sideways": 0.0005379237146853147,
+    "bull": 0.0005379237146853147
+  },
+  "transition_matrix": [
+    [
+      0.9989241525706294,
+      0.0005379237146853147,
+      0.0005379237146853147
+    ],
+    [
+      0.004424778859734513,
+      0.9933628316603983,
+      0.0022123894798672565
+    ],
+    [
+      0.0050000000985,
+      0.0050000000985,
+      0.989999999803
+    ]
+  ],
+  "stationary_distribution": {
+    "bear": 0.8117194754255515,
+    "sideways": 0.11841762059654372,
+    "bull": 0.06986290397790484
+  },
+  "persistence_diagonal": {
+    "bear": 0.9989241525706294,
+    "sideways": 0.9933628316603983,
+    "bull": 0.989999999803
+  },
+  "regime_counts": {
+    "bear": 1860,
+    "sideways": 452,
+    "bull": 200
+  },
+  "walk_forward": {
+    "sharpe": -0.96623722580348,
+    "max_drawdown": -0.798082027218201,
+    "n_trades": 1,
+    "win_rate": 0.0,
+    "profit_factor": 0.0,
+    "total_return": -0.7965589719491211
+  },
+  "forecast": {
+    "1_step": {
+      "bear": 0.9978545324010573,
+      "sideways": 0.0010743880339031692,
+      "bull": 0.0010710795650395043
+    },
+    "5_step": {
+      "bear": 0.9936375878482085,
+      "sideways": 0.003205439626114518,
+      "bull": 0.0031569725256768754
+    },
+    "20_step": {
+      "bear": 0.9786670745285171,
+      "sideways": 0.01097721028801272,
+      "bull": 0.010355715183469168
+    }
+  },
+  "engine_info": {
+    "method": "fshmm",
+    "features": "generic",
+    "n_states": 3,
+    "walk_forward_degenerate_recovery": true,
+    "degeneration_bar": 352,
+    "caveat": "HMM states sorted by mean return; labels may swap on re-fit",
+    "warmup_bars": 252,
+    "feature_saliency": [
+      0.6684539599518757,
+      0.6659318306019486,
+      0.8703890406382015,
+      0.8710614717303997,
+      0.5982570933365423,
+      0.8011272708490651,
+      0.8713948793986219,
+      0.8703890406382015,
+      0.869769366535138,
+      0.7429006265927001,
+      0.6541357821463407,
+      0.5185824273928574,
+      0.6371426233929469,
+      0.4873333328912395,
+      0.49918075603591205,
+      0.7033523378086102,
+      0.6404098338571202,
+      0.5403556020814904,
+      0.877601222148769,
+      0.5249928911673578,
+      0.5193982900407264,
+      0.5319000048027647,
+      0.46860125824105126,
+      0.4816199827325818,
+      0.5022278573023868,
+      0.6907242522083834,
+      0.6987031210508121,
+      0.705425012453361,
+      0.4873333321734208,
+      0.5281244017101017,
+      0.8494879823465453,
+      0.9516992949720589,
+      0.49734960055252486,
+      0.5296904592246392,
+      0.49902809904415335,
+      0.4992994694828212,
+      0.9766513337679044,
+      0.03097389497020231,
+      0.6278358643201045,
+      0.4972442100263379,
+      0.49734925903885596,
+      0.5017875196144814,
+      0.499303376380567,
+      0.028667039019182994,
+      0.028667039019182994,
+      0.028667039019182994,
+      0.028667039019182994,
+      0.028667039019182994,
+      0.028667039019182994
+    ],
+    "selected_features": [
+      "log_ret",
+      "simple_ret",
+      "sma_20",
+      "ema_20",
+      "sma_ratio_50_200",
+      "atr_14",
+      "bb_upper_20",
+      "bb_middle_20",
+      "bb_lower_20",
+      "bb_width_20",
+      "bb_position_20",
+      "rsi_14",
+      "roc_10",
+      "volume_sma_20",
+      "volume_ratio_20",
+      "obv",
+      "vwap",
+      "adx_14",
+      "adx_plus_14",
+      "adx_minus_14",
+      "price_position_20",
+      "hl_ratio_5",
+      "hl_ratio_10",
+      "hl_ratio_20",
+      "cci_20",
+      "adl",
+      "vpt",
+      "day_of_month",
+      "is_month_end",
+      "is_quarter_end",
+      "month_sin"
+    ]
+  },
+  "framework": "hmm_test v0.2.0",
+  "disclaimer": "Regime detection is probabilistic. Past transitions do not guarantee future regimes. Not financial advice.",
+  "verdict": {
+    "verdict": "bearish",
+    "confidence": 0.9984
+  },
+  "duration_forecast": null,
+  "regime_transitions": [
+    {
+      "date": "2024-07-31",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 2052
+    },
+    {
+      "date": "2024-03-07",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1952
+    },
+    {
+      "date": "2023-10-12",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1852
+    },
+    {
+      "date": "2023-05-19",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 1752
+    },
+    {
+      "date": "2018-08-13",
+      "from_regime": "bull",
+      "to_regime": "bear",
+      "bar_index": 552
+    },
+    {
+      "date": "2018-03-21",
+      "from_regime": "bear",
+      "to_regime": "bull",
+      "bar_index": 452
+    },
+    {
+      "date": "2017-06-05",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 252
+    }
+  ],
+  "timing": {
+    "total_wall_seconds": 108.678072,
+    "phases": {
+      "precompute": 0.172101,
+      "walk_forward_classify": 100.316182,
+      "walk_forward_backtest": 0.159456
+    },
+    "walk_forward_classify_stats": {
+      "min": 1.035378,
+      "median": 4.951963,
+      "p99": 6.743127,
+      "n_calls": 24
+    }
+  }
+}

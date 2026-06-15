@@ -1,0 +1,2543 @@
+{
+  "source": "test_data/NVDA.csv",
+  "engine": "threshold",
+  "dates": {
+    "start": "2016-06-06",
+    "end": "2026-06-04"
+  },
+  "current_regime": {
+    "name": "bull",
+    "index": 2
+  },
+  "signal": 0.9017295594779088,
+  "next_state_probabilities": {
+    "bear": 0.0015723271435534592,
+    "sideways": 0.09512578623498427,
+    "bull": 0.9033018866214623
+  },
+  "transition_matrix": [
+    [
+      0.8255319147459574,
+      0.17234042558021276,
+      0.002127659673829787
+    ],
+    [
+      0.10389610396493507,
+      0.7363636362427273,
+      0.15974025979233766
+    ],
+    [
+      0.0015723271435534592,
+      0.09512578623498427,
+      0.9033018866214623
+    ]
+  ],
+  "stationary_distribution": {
+    "bear": 0.18636472101622134,
+    "sideways": 0.30526038200320027,
+    "bull": 0.5083748969805784
+  },
+  "persistence_diagonal": {
+    "bear": 0.8255319147459574,
+    "sideways": 0.7363636362427273,
+    "bull": 0.9033018866214623
+  },
+  "regime_counts": {
+    "bear": 470,
+    "sideways": 770,
+    "bull": 1273
+  },
+  "walk_forward": {
+    "sharpe": 0.31376839856243816,
+    "max_drawdown": -0.6243640309496328,
+    "n_trades": 64,
+    "win_rate": 0.390625,
+    "profit_factor": 1.4878815958354277,
+    "total_return": 0.725070003559221
+  },
+  "forecast": {
+    "1_step": {
+      "bear": 0.012601490888998819,
+      "sideways": 0.15624544755392394,
+      "bull": 0.8311530615570772
+    },
+    "5_step": {
+      "bear": 0.07674499202241948,
+      "sideways": 0.2548203352791188,
+      "bull": 0.6684346726984618
+    },
+    "20_step": {
+      "bear": 0.17445020223023777,
+      "sideways": 0.301049984258525,
+      "bull": 0.5244998135112372
+    }
+  },
+  "engine_info": {
+    "method": "threshold",
+    "features": "returns",
+    "n_states": 3
+  },
+  "framework": "hmm_test v0.2.0",
+  "disclaimer": "Regime detection is probabilistic. Past transitions do not guarantee future regimes. Not financial advice.",
+  "verdict": {
+    "verdict": "bullish",
+    "confidence": 0.9017
+  },
+  "duration_forecast": null,
+  "regime_transitions": [
+    {
+      "date": "2026-05-28",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 2508
+    },
+    {
+      "date": "2026-05-21",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 2504
+    },
+    {
+      "date": "2026-04-10",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 2475
+    },
+    {
+      "date": "2026-03-30",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 2467
+    },
+    {
+      "date": "2026-03-19",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 2460
+    },
+    {
+      "date": "2026-03-05",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 2450
+    },
+    {
+      "date": "2026-03-04",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 2449
+    },
+    {
+      "date": "2026-02-27",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 2446
+    },
+    {
+      "date": "2026-02-26",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 2445
+    },
+    {
+      "date": "2026-02-18",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 2439
+    },
+    {
+      "date": "2026-02-17",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 2438
+    },
+    {
+      "date": "2026-02-05",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 2431
+    },
+    {
+      "date": "2026-02-03",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 2429
+    },
+    {
+      "date": "2026-01-16",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 2418
+    },
+    {
+      "date": "2026-01-14",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 2416
+    },
+    {
+      "date": "2026-01-13",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 2415
+    },
+    {
+      "date": "2026-01-12",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 2414
+    },
+    {
+      "date": "2026-01-02",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 2408
+    },
+    {
+      "date": "2025-12-31",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 2407
+    },
+    {
+      "date": "2025-12-29",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 2405
+    },
+    {
+      "date": "2025-12-23",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 2402
+    },
+    {
+      "date": "2025-12-18",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 2399
+    },
+    {
+      "date": "2025-12-16",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 2397
+    },
+    {
+      "date": "2025-12-15",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 2396
+    },
+    {
+      "date": "2025-12-10",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 2393
+    },
+    {
+      "date": "2025-12-09",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 2392
+    },
+    {
+      "date": "2025-12-08",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 2391
+    },
+    {
+      "date": "2025-12-04",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 2389
+    },
+    {
+      "date": "2025-11-24",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 2382
+    },
+    {
+      "date": "2025-11-12",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 2374
+    },
+    {
+      "date": "2025-11-07",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 2371
+    },
+    {
+      "date": "2025-11-04",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 2368
+    },
+    {
+      "date": "2025-10-24",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 2361
+    },
+    {
+      "date": "2025-10-15",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 2354
+    },
+    {
+      "date": "2025-10-14",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 2353
+    },
+    {
+      "date": "2025-10-13",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 2352
+    },
+    {
+      "date": "2025-10-10",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 2351
+    },
+    {
+      "date": "2025-10-09",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 2350
+    },
+    {
+      "date": "2025-09-29",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 2342
+    },
+    {
+      "date": "2025-09-09",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 2328
+    },
+    {
+      "date": "2025-09-04",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 2325
+    },
+    {
+      "date": "2025-09-02",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 2323
+    },
+    {
+      "date": "2025-08-29",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 2322
+    },
+    {
+      "date": "2025-08-19",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 2314
+    },
+    {
+      "date": "2025-08-15",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 2312
+    },
+    {
+      "date": "2025-08-14",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 2311
+    },
+    {
+      "date": "2025-05-08",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 2244
+    },
+    {
+      "date": "2025-05-07",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 2243
+    },
+    {
+      "date": "2025-05-01",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 2239
+    },
+    {
+      "date": "2025-04-23",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 2233
+    },
+    {
+      "date": "2025-04-15",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 2228
+    },
+    {
+      "date": "2025-04-11",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 2226
+    },
+    {
+      "date": "2025-04-10",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 2225
+    },
+    {
+      "date": "2025-04-08",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 2223
+    },
+    {
+      "date": "2025-04-02",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 2219
+    },
+    {
+      "date": "2025-03-28",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 2216
+    },
+    {
+      "date": "2025-03-25",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 2213
+    },
+    {
+      "date": "2025-03-24",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 2212
+    },
+    {
+      "date": "2025-03-05",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 2199
+    },
+    {
+      "date": "2025-02-25",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 2193
+    },
+    {
+      "date": "2025-02-24",
+      "from_regime": "bear",
+      "to_regime": "bull",
+      "bar_index": 2192
+    },
+    {
+      "date": "2025-02-20",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 2190
+    },
+    {
+      "date": "2025-02-14",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 2187
+    },
+    {
+      "date": "2025-02-13",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 2186
+    },
+    {
+      "date": "2025-02-06",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 2181
+    },
+    {
+      "date": "2025-01-24",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 2172
+    },
+    {
+      "date": "2025-01-23",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 2171
+    },
+    {
+      "date": "2025-01-16",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 2167
+    },
+    {
+      "date": "2024-12-20",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 2151
+    },
+    {
+      "date": "2024-12-06",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 2141
+    },
+    {
+      "date": "2024-11-14",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 2126
+    },
+    {
+      "date": "2024-09-30",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 2093
+    },
+    {
+      "date": "2024-09-23",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 2088
+    },
+    {
+      "date": "2024-09-20",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 2087
+    },
+    {
+      "date": "2024-09-19",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 2086
+    },
+    {
+      "date": "2024-09-16",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 2083
+    },
+    {
+      "date": "2024-09-05",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 2076
+    },
+    {
+      "date": "2024-09-04",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 2075
+    },
+    {
+      "date": "2024-09-03",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 2074
+    },
+    {
+      "date": "2024-08-15",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 2062
+    },
+    {
+      "date": "2024-08-13",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 2060
+    },
+    {
+      "date": "2024-07-31",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 2051
+    },
+    {
+      "date": "2024-07-30",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 2050
+    },
+    {
+      "date": "2024-07-23",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 2045
+    },
+    {
+      "date": "2024-07-19",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 2043
+    },
+    {
+      "date": "2024-07-16",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 2040
+    },
+    {
+      "date": "2024-07-11",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 2037
+    },
+    {
+      "date": "2024-07-05",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 2033
+    },
+    {
+      "date": "2024-07-03",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 2032
+    },
+    {
+      "date": "2024-05-10",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1996
+    },
+    {
+      "date": "2024-05-08",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1994
+    },
+    {
+      "date": "2024-05-03",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1991
+    },
+    {
+      "date": "2024-05-01",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 1989
+    },
+    {
+      "date": "2024-04-30",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 1988
+    },
+    {
+      "date": "2024-04-25",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 1985
+    },
+    {
+      "date": "2024-04-16",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 1978
+    },
+    {
+      "date": "2024-04-10",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 1974
+    },
+    {
+      "date": "2024-04-09",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 1973
+    },
+    {
+      "date": "2024-04-02",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1968
+    },
+    {
+      "date": "2024-01-04",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1908
+    },
+    {
+      "date": "2023-12-29",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1905
+    },
+    {
+      "date": "2023-12-28",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1904
+    },
+    {
+      "date": "2023-12-01",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1886
+    },
+    {
+      "date": "2023-11-09",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1871
+    },
+    {
+      "date": "2023-10-31",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 1864
+    },
+    {
+      "date": "2023-10-25",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 1860
+    },
+    {
+      "date": "2023-10-16",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1853
+    },
+    {
+      "date": "2023-10-13",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1852
+    },
+    {
+      "date": "2023-10-04",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 1845
+    },
+    {
+      "date": "2023-09-18",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 1833
+    },
+    {
+      "date": "2023-09-14",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1831
+    },
+    {
+      "date": "2023-09-13",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1830
+    },
+    {
+      "date": "2023-09-11",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1828
+    },
+    {
+      "date": "2023-08-28",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1819
+    },
+    {
+      "date": "2023-08-21",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1814
+    },
+    {
+      "date": "2023-08-18",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1813
+    },
+    {
+      "date": "2023-08-16",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 1811
+    },
+    {
+      "date": "2023-08-09",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 1806
+    },
+    {
+      "date": "2023-08-08",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1805
+    },
+    {
+      "date": "2023-07-21",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1793
+    },
+    {
+      "date": "2023-07-20",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1792
+    },
+    {
+      "date": "2023-06-28",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1777
+    },
+    {
+      "date": "2023-06-27",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1776
+    },
+    {
+      "date": "2023-05-04",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1740
+    },
+    {
+      "date": "2023-04-19",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1729
+    },
+    {
+      "date": "2023-04-14",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1726
+    },
+    {
+      "date": "2023-04-13",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1725
+    },
+    {
+      "date": "2023-03-10",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1702
+    },
+    {
+      "date": "2023-03-09",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1701
+    },
+    {
+      "date": "2023-01-19",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1667
+    },
+    {
+      "date": "2023-01-18",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1666
+    },
+    {
+      "date": "2023-01-13",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1664
+    },
+    {
+      "date": "2023-01-12",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 1663
+    },
+    {
+      "date": "2022-12-21",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 1649
+    },
+    {
+      "date": "2022-12-20",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1648
+    },
+    {
+      "date": "2022-11-03",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1616
+    },
+    {
+      "date": "2022-10-31",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1613
+    },
+    {
+      "date": "2022-10-26",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1610
+    },
+    {
+      "date": "2022-10-25",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1609
+    },
+    {
+      "date": "2022-10-24",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1608
+    },
+    {
+      "date": "2022-10-19",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 1605
+    },
+    {
+      "date": "2022-10-05",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 1595
+    },
+    {
+      "date": "2022-10-03",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 1593
+    },
+    {
+      "date": "2022-08-25",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 1567
+    },
+    {
+      "date": "2022-08-23",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1565
+    },
+    {
+      "date": "2022-08-22",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1564
+    },
+    {
+      "date": "2022-08-18",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1562
+    },
+    {
+      "date": "2022-08-17",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1561
+    },
+    {
+      "date": "2022-08-16",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1560
+    },
+    {
+      "date": "2022-07-26",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1545
+    },
+    {
+      "date": "2022-07-22",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1543
+    },
+    {
+      "date": "2022-07-18",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1539
+    },
+    {
+      "date": "2022-07-12",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 1535
+    },
+    {
+      "date": "2022-06-27",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 1525
+    },
+    {
+      "date": "2022-06-17",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 1520
+    },
+    {
+      "date": "2022-06-10",
+      "from_regime": "bull",
+      "to_regime": "bear",
+      "bar_index": 1515
+    },
+    {
+      "date": "2022-06-06",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1511
+    },
+    {
+      "date": "2022-05-26",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 1505
+    },
+    {
+      "date": "2022-04-12",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 1474
+    },
+    {
+      "date": "2022-04-08",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1472
+    },
+    {
+      "date": "2022-03-17",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1456
+    },
+    {
+      "date": "2022-03-16",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 1455
+    },
+    {
+      "date": "2022-03-15",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 1454
+    },
+    {
+      "date": "2022-03-14",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 1453
+    },
+    {
+      "date": "2022-03-04",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 1447
+    },
+    {
+      "date": "2022-02-28",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1443
+    },
+    {
+      "date": "2022-02-23",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1440
+    },
+    {
+      "date": "2022-02-16",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1436
+    },
+    {
+      "date": "2022-02-15",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1435
+    },
+    {
+      "date": "2022-02-14",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 1434
+    },
+    {
+      "date": "2022-02-09",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 1431
+    },
+    {
+      "date": "2022-02-08",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 1430
+    },
+    {
+      "date": "2022-01-14",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 1414
+    },
+    {
+      "date": "2022-01-13",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 1413
+    },
+    {
+      "date": "2022-01-12",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 1412
+    },
+    {
+      "date": "2022-01-10",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 1410
+    },
+    {
+      "date": "2022-01-04",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 1406
+    },
+    {
+      "date": "2021-12-31",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 1404
+    },
+    {
+      "date": "2021-12-30",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 1403
+    },
+    {
+      "date": "2021-12-29",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 1402
+    },
+    {
+      "date": "2021-12-27",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 1400
+    },
+    {
+      "date": "2021-12-23",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 1399
+    },
+    {
+      "date": "2021-12-16",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 1394
+    },
+    {
+      "date": "2021-12-13",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 1391
+    },
+    {
+      "date": "2021-12-10",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 1390
+    },
+    {
+      "date": "2021-12-08",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1388
+    },
+    {
+      "date": "2021-12-06",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1386
+    },
+    {
+      "date": "2021-12-02",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1384
+    },
+    {
+      "date": "2021-10-22",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1356
+    },
+    {
+      "date": "2021-10-19",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1353
+    },
+    {
+      "date": "2021-10-15",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1351
+    },
+    {
+      "date": "2021-10-13",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 1349
+    },
+    {
+      "date": "2021-10-07",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 1345
+    },
+    {
+      "date": "2021-10-06",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 1344
+    },
+    {
+      "date": "2021-09-27",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 1337
+    },
+    {
+      "date": "2021-09-17",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1331
+    },
+    {
+      "date": "2021-08-19",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1311
+    },
+    {
+      "date": "2021-08-16",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1308
+    },
+    {
+      "date": "2021-08-11",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1305
+    },
+    {
+      "date": "2021-07-15",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1286
+    },
+    {
+      "date": "2021-05-27",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1253
+    },
+    {
+      "date": "2021-05-19",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 1247
+    },
+    {
+      "date": "2021-05-07",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 1239
+    },
+    {
+      "date": "2021-05-03",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1235
+    },
+    {
+      "date": "2021-03-30",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1212
+    },
+    {
+      "date": "2021-03-29",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 1211
+    },
+    {
+      "date": "2021-03-25",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 1209
+    },
+    {
+      "date": "2021-03-24",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 1208
+    },
+    {
+      "date": "2021-03-03",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 1193
+    },
+    {
+      "date": "2021-03-01",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1191
+    },
+    {
+      "date": "2021-02-25",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1189
+    },
+    {
+      "date": "2021-02-24",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1188
+    },
+    {
+      "date": "2021-02-23",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1187
+    },
+    {
+      "date": "2021-02-22",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1186
+    },
+    {
+      "date": "2021-02-05",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1176
+    },
+    {
+      "date": "2021-02-04",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1175
+    },
+    {
+      "date": "2021-02-03",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1174
+    },
+    {
+      "date": "2021-01-25",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1167
+    },
+    {
+      "date": "2021-01-22",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1166
+    },
+    {
+      "date": "2021-01-11",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1158
+    },
+    {
+      "date": "2021-01-08",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1157
+    },
+    {
+      "date": "2021-01-06",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 1155
+    },
+    {
+      "date": "2021-01-05",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 1154
+    },
+    {
+      "date": "2020-12-07",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 1135
+    },
+    {
+      "date": "2020-12-04",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 1134
+    },
+    {
+      "date": "2020-12-01",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1131
+    },
+    {
+      "date": "2020-11-27",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1129
+    },
+    {
+      "date": "2020-11-25",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1128
+    },
+    {
+      "date": "2020-11-24",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1127
+    },
+    {
+      "date": "2020-11-10",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 1117
+    },
+    {
+      "date": "2020-11-09",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 1116
+    },
+    {
+      "date": "2020-11-06",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1115
+    },
+    {
+      "date": "2020-11-05",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1114
+    },
+    {
+      "date": "2020-11-02",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 1111
+    },
+    {
+      "date": "2020-10-30",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 1110
+    },
+    {
+      "date": "2020-10-28",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 1108
+    },
+    {
+      "date": "2020-10-27",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 1107
+    },
+    {
+      "date": "2020-10-23",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1105
+    },
+    {
+      "date": "2020-10-02",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1090
+    },
+    {
+      "date": "2020-09-15",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1077
+    },
+    {
+      "date": "2020-08-11",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1053
+    },
+    {
+      "date": "2020-08-10",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1052
+    },
+    {
+      "date": "2020-06-29",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1023
+    },
+    {
+      "date": "2020-06-25",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1021
+    },
+    {
+      "date": "2020-06-18",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1016
+    },
+    {
+      "date": "2020-06-17",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1015
+    },
+    {
+      "date": "2020-06-16",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1014
+    },
+    {
+      "date": "2020-06-15",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1013
+    },
+    {
+      "date": "2020-04-03",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 964
+    },
+    {
+      "date": "2020-04-01",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 962
+    },
+    {
+      "date": "2020-03-31",
+      "from_regime": "bull",
+      "to_regime": "bear",
+      "bar_index": 961
+    },
+    {
+      "date": "2020-03-30",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 960
+    },
+    {
+      "date": "2020-03-26",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 958
+    },
+    {
+      "date": "2020-03-25",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 957
+    },
+    {
+      "date": "2020-03-23",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 955
+    },
+    {
+      "date": "2020-03-10",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 946
+    },
+    {
+      "date": "2020-03-06",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 944
+    },
+    {
+      "date": "2020-02-27",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 938
+    },
+    {
+      "date": "2020-02-26",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 937
+    },
+    {
+      "date": "2020-02-07",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 925
+    },
+    {
+      "date": "2020-02-06",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 924
+    },
+    {
+      "date": "2020-02-05",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 923
+    },
+    {
+      "date": "2020-01-29",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 918
+    },
+    {
+      "date": "2020-01-28",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 917
+    },
+    {
+      "date": "2020-01-24",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 915
+    },
+    {
+      "date": "2020-01-22",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 913
+    },
+    {
+      "date": "2020-01-21",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 912
+    },
+    {
+      "date": "2019-12-11",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 886
+    },
+    {
+      "date": "2019-11-29",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 878
+    },
+    {
+      "date": "2019-11-22",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 874
+    },
+    {
+      "date": "2019-11-21",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 873
+    },
+    {
+      "date": "2019-10-14",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 845
+    },
+    {
+      "date": "2019-10-01",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 836
+    },
+    {
+      "date": "2019-09-30",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 835
+    },
+    {
+      "date": "2019-09-26",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 833
+    },
+    {
+      "date": "2019-09-24",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 831
+    },
+    {
+      "date": "2019-09-23",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 830
+    },
+    {
+      "date": "2019-09-20",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 829
+    },
+    {
+      "date": "2019-09-18",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 827
+    },
+    {
+      "date": "2019-08-29",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 814
+    },
+    {
+      "date": "2019-08-27",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 812
+    },
+    {
+      "date": "2019-08-26",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 811
+    },
+    {
+      "date": "2019-08-23",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 810
+    },
+    {
+      "date": "2019-08-22",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 809
+    },
+    {
+      "date": "2019-08-15",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 804
+    },
+    {
+      "date": "2019-08-08",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 799
+    },
+    {
+      "date": "2019-07-30",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 792
+    },
+    {
+      "date": "2019-06-21",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 766
+    },
+    {
+      "date": "2019-06-17",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 762
+    },
+    {
+      "date": "2019-06-11",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 758
+    },
+    {
+      "date": "2019-06-10",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 757
+    },
+    {
+      "date": "2019-05-03",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 732
+    },
+    {
+      "date": "2019-04-25",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 726
+    },
+    {
+      "date": "2019-04-18",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 722
+    },
+    {
+      "date": "2019-04-17",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 721
+    },
+    {
+      "date": "2019-03-08",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 693
+    },
+    {
+      "date": "2019-03-05",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 690
+    },
+    {
+      "date": "2019-02-25",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 684
+    },
+    {
+      "date": "2019-02-21",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 682
+    },
+    {
+      "date": "2019-02-19",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 680
+    },
+    {
+      "date": "2019-02-15",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 679
+    },
+    {
+      "date": "2019-02-13",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 677
+    },
+    {
+      "date": "2019-02-07",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 673
+    },
+    {
+      "date": "2019-01-29",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 666
+    },
+    {
+      "date": "2019-01-28",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 665
+    },
+    {
+      "date": "2019-01-17",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 659
+    },
+    {
+      "date": "2019-01-09",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 653
+    },
+    {
+      "date": "2019-01-08",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 652
+    },
+    {
+      "date": "2019-01-07",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 651
+    },
+    {
+      "date": "2018-12-19",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 640
+    },
+    {
+      "date": "2018-12-18",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 639
+    },
+    {
+      "date": "2018-10-09",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 591
+    },
+    {
+      "date": "2018-09-19",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 577
+    },
+    {
+      "date": "2018-09-12",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 572
+    },
+    {
+      "date": "2018-09-11",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 571
+    },
+    {
+      "date": "2018-08-23",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 559
+    },
+    {
+      "date": "2018-07-26",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 539
+    },
+    {
+      "date": "2018-07-25",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 538
+    },
+    {
+      "date": "2018-07-16",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 531
+    },
+    {
+      "date": "2018-07-12",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 529
+    },
+    {
+      "date": "2018-07-11",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 528
+    },
+    {
+      "date": "2018-07-10",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 527
+    },
+    {
+      "date": "2018-07-06",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 525
+    },
+    {
+      "date": "2018-06-28",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 520
+    },
+    {
+      "date": "2018-06-27",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 519
+    },
+    {
+      "date": "2018-06-26",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 518
+    },
+    {
+      "date": "2018-06-20",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 514
+    },
+    {
+      "date": "2018-06-12",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 508
+    },
+    {
+      "date": "2018-06-06",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 504
+    },
+    {
+      "date": "2018-05-16",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 490
+    },
+    {
+      "date": "2018-05-14",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 488
+    },
+    {
+      "date": "2018-05-02",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 480
+    },
+    {
+      "date": "2018-04-24",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 474
+    },
+    {
+      "date": "2018-04-23",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 473
+    },
+    {
+      "date": "2018-04-19",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 471
+    },
+    {
+      "date": "2018-04-18",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 470
+    },
+    {
+      "date": "2018-04-16",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 468
+    },
+    {
+      "date": "2018-04-12",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 466
+    },
+    {
+      "date": "2018-04-11",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 465
+    },
+    {
+      "date": "2018-04-03",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 459
+    },
+    {
+      "date": "2018-04-02",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 458
+    },
+    {
+      "date": "2018-03-29",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 457
+    },
+    {
+      "date": "2018-03-28",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 456
+    },
+    {
+      "date": "2018-03-26",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 454
+    },
+    {
+      "date": "2018-03-14",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 446
+    },
+    {
+      "date": "2018-03-05",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 439
+    },
+    {
+      "date": "2018-02-23",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 433
+    },
+    {
+      "date": "2018-02-22",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 432
+    },
+    {
+      "date": "2018-02-20",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 430
+    },
+    {
+      "date": "2018-02-12",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 425
+    },
+    {
+      "date": "2018-02-02",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 419
+    },
+    {
+      "date": "2018-01-02",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 397
+    },
+    {
+      "date": "2017-12-27",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 394
+    },
+    {
+      "date": "2017-12-01",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 377
+    },
+    {
+      "date": "2017-11-27",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 373
+    },
+    {
+      "date": "2017-09-26",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 330
+    },
+    {
+      "date": "2017-09-22",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 328
+    },
+    {
+      "date": "2017-09-14",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 322
+    },
+    {
+      "date": "2017-09-11",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 319
+    },
+    {
+      "date": "2017-09-08",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 318
+    },
+    {
+      "date": "2017-08-11",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 299
+    },
+    {
+      "date": "2017-08-10",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 298
+    },
+    {
+      "date": "2017-08-09",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 297
+    },
+    {
+      "date": "2017-07-11",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 276
+    },
+    {
+      "date": "2017-07-07",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 274
+    },
+    {
+      "date": "2017-07-06",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 273
+    },
+    {
+      "date": "2017-07-03",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 271
+    },
+    {
+      "date": "2017-06-30",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 270
+    },
+    {
+      "date": "2017-06-28",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 268
+    },
+    {
+      "date": "2017-06-27",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 267
+    },
+    {
+      "date": "2017-06-26",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 266
+    },
+    {
+      "date": "2017-05-08",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 232
+    },
+    {
+      "date": "2017-04-20",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 220
+    },
+    {
+      "date": "2017-04-12",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 215
+    },
+    {
+      "date": "2017-04-03",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 208
+    },
+    {
+      "date": "2017-03-29",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 205
+    },
+    {
+      "date": "2017-03-28",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 204
+    },
+    {
+      "date": "2017-03-27",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 203
+    },
+    {
+      "date": "2017-03-24",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 202
+    },
+    {
+      "date": "2017-03-22",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 200
+    },
+    {
+      "date": "2017-03-15",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 195
+    },
+    {
+      "date": "2017-03-01",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 185
+    },
+    {
+      "date": "2017-02-28",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 184
+    },
+    {
+      "date": "2017-02-22",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 180
+    },
+    {
+      "date": "2017-02-21",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 179
+    },
+    {
+      "date": "2017-02-17",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 178
+    },
+    {
+      "date": "2017-02-15",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 176
+    },
+    {
+      "date": "2017-01-31",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 165
+    },
+    {
+      "date": "2017-01-26",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 162
+    },
+    {
+      "date": "2017-01-25",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 161
+    },
+    {
+      "date": "2017-01-13",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 154
+    },
+    {
+      "date": "2016-12-12",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 132
+    },
+    {
+      "date": "2016-12-09",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 131
+    },
+    {
+      "date": "2016-11-10",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 111
+    },
+    {
+      "date": "2016-11-09",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 110
+    },
+    {
+      "date": "2016-11-04",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 107
+    },
+    {
+      "date": "2016-10-26",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 100
+    },
+    {
+      "date": "2016-10-21",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 97
+    },
+    {
+      "date": "2016-10-18",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 94
+    },
+    {
+      "date": "2016-10-17",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 93
+    },
+    {
+      "date": "2016-10-14",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 92
+    },
+    {
+      "date": "2016-10-13",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 91
+    },
+    {
+      "date": "2016-10-12",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 90
+    },
+    {
+      "date": "2016-09-26",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 78
+    },
+    {
+      "date": "2016-09-23",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 77
+    },
+    {
+      "date": "2016-09-21",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 75
+    },
+    {
+      "date": "2016-09-08",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 66
+    },
+    {
+      "date": "2016-07-06",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 21
+    }
+  ],
+  "timing": {
+    "total_wall_seconds": 1.086379,
+    "phases": {
+      "walk_forward_backtest": 0.104291
+    }
+  }
+}

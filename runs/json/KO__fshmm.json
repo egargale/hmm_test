@@ -1,0 +1,237 @@
+{
+  "source": "test_data/KO.csv",
+  "engine": "fshmm",
+  "dates": {
+    "start": "2016-06-03",
+    "end": "2026-05-29"
+  },
+  "current_regime": {
+    "name": "bear",
+    "index": 0
+  },
+  "signal": -0.9949999997015,
+  "next_state_probabilities": {
+    "bear": 0.9949999998015,
+    "sideways": 0.0050000000985,
+    "bull": 9.999999997e-11
+  },
+  "transition_matrix": [
+    [
+      0.9949999998015,
+      0.0050000000985,
+      9.999999997e-11
+    ],
+    [
+      0.0019880716699801192,
+      0.9966865471833664,
+      0.0013253811466534128
+    ],
+    [
+      0.010000000097,
+      9.999999997e-11,
+      0.989999999803
+    ]
+  ],
+  "stationary_distribution": {
+    "bear": 0.369139909617164,
+    "sideways": 0.5570321033586275,
+    "bull": 0.07382798702420866
+  },
+  "persistence_diagonal": {
+    "bear": 0.9949999998015,
+    "sideways": 0.9966865471833664,
+    "bull": 0.989999999803
+  },
+  "regime_counts": {
+    "bear": 801,
+    "sideways": 1509,
+    "bull": 200
+  },
+  "walk_forward": {
+    "sharpe": -0.7297350098321557,
+    "max_drawdown": -0.7064747749929686,
+    "n_trades": 1,
+    "win_rate": 0.0,
+    "profit_factor": 0.0,
+    "total_return": -0.6912980718485477
+  },
+  "forecast": {
+    "1_step": {
+      "bear": 0.9900349399645307,
+      "sideways": 0.009958432931105456,
+      "bull": 6.6271043638170085e-06
+    },
+    "5_step": {
+      "bear": 0.9705202883085084,
+      "sideways": 0.029382710453947237,
+      "bull": 9.700123754436667e-05
+    },
+    "20_step": {
+      "bear": 0.9020857204635835,
+      "sideways": 0.0966746707643064,
+      "bull": 0.0012396087721098896
+    }
+  },
+  "engine_info": {
+    "method": "fshmm",
+    "features": "generic",
+    "n_states": 3,
+    "walk_forward_degenerate_recovery": true,
+    "degeneration_bar": 352,
+    "caveat": "HMM states sorted by mean return; labels may swap on re-fit",
+    "warmup_bars": 252,
+    "feature_saliency": [
+      0.3055652295854543,
+      0.31136002185439793,
+      0.7143007772606325,
+      0.718110713785336,
+      0.4782022946635607,
+      0.48568862286629155,
+      0.720733388698136,
+      0.7143007772606325,
+      0.7069147676920693,
+      0.17364572554993174,
+      0.37732720010490084,
+      0.39658290381998995,
+      0.4667674318043282,
+      0.31852243728326357,
+      0.31452708305619126,
+      0.434263386645398,
+      0.3003524267978719,
+      0.7699389491319835,
+      0.7255999982128287,
+      0.5287249409041124,
+      0.3692255819962611,
+      0.3996352787887645,
+      0.3371720189388725,
+      0.32037924874362034,
+      0.30803009957139693,
+      0.13901765936361699,
+      0.12417264703526598,
+      0.08123612292342841,
+      0.3185224395535897,
+      0.3770980244967177,
+      0.4587400858486035,
+      0.4400436464113682,
+      0.4979195113721744,
+      0.5153170239163956,
+      0.49882573775244055,
+      0.4983589630971892,
+      0.9766346754420283,
+      0.968912303720117,
+      0.21098379698241843,
+      0.49757145143576054,
+      0.4979739019174758,
+      0.49883119388141495,
+      0.4979635699423852,
+      0.028184151062760066,
+      0.028184151062760066,
+      0.028184151062760066,
+      0.028184151062760066,
+      0.028184151062760066,
+      0.028184151062760066
+    ],
+    "selected_features": [
+      "sma_20",
+      "ema_20",
+      "bb_upper_20",
+      "bb_middle_20",
+      "bb_lower_20",
+      "obv",
+      "vwap",
+      "adx_14",
+      "day_of_month",
+      "is_month_end",
+      "is_month_start"
+    ]
+  },
+  "framework": "hmm_test v0.2.0",
+  "disclaimer": "Regime detection is probabilistic. Past transitions do not guarantee future regimes. Not financial advice.",
+  "verdict": {
+    "verdict": "bearish",
+    "confidence": 0.995
+  },
+  "duration_forecast": null,
+  "regime_transitions": [
+    {
+      "date": "2026-05-28",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 2509
+    },
+    {
+      "date": "2024-12-20",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 2152
+    },
+    {
+      "date": "2023-10-12",
+      "from_regime": "bull",
+      "to_regime": "bear",
+      "bar_index": 1852
+    },
+    {
+      "date": "2023-05-19",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1752
+    },
+    {
+      "date": "2022-12-23",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 1652
+    },
+    {
+      "date": "2022-03-10",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 1452
+    },
+    {
+      "date": "2020-08-07",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 1052
+    },
+    {
+      "date": "2020-03-17",
+      "from_regime": "bull",
+      "to_regime": "bear",
+      "bar_index": 952
+    },
+    {
+      "date": "2019-10-22",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 852
+    },
+    {
+      "date": "2019-01-07",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 652
+    },
+    {
+      "date": "2018-03-21",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 452
+    }
+  ],
+  "timing": {
+    "total_wall_seconds": 157.568245,
+    "phases": {
+      "precompute": 0.246792,
+      "walk_forward_classify": 147.84335,
+      "walk_forward_backtest": 0.104821
+    },
+    "walk_forward_classify_stats": {
+      "min": 1.426502,
+      "median": 5.953672,
+      "p99": 10.7564,
+      "n_calls": 24
+    }
+  }
+}

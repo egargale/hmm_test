@@ -1,0 +1,121 @@
+{
+  "source": "test_data/SPY.csv",
+  "engine": "hmm",
+  "dates": {
+    "start": "2016-06-03",
+    "end": "2026-06-02"
+  },
+  "current_regime": {
+    "name": "sideways",
+    "index": 1
+  },
+  "signal": -0.00047370914244433915,
+  "next_state_probabilities": {
+    "bear": 0.00047370924244433913,
+    "sideways": 0.9995262906575556,
+    "bull": 9.999999997e-11
+  },
+  "transition_matrix": [
+    [
+      0.99749999980075,
+      0.00250000009925,
+      9.999999997e-11
+    ],
+    [
+      0.00047370924244433913,
+      0.9995262906575556,
+      9.999999997e-11
+    ],
+    [
+      0.33333333333333337,
+      0.33333333333333337,
+      0.33333333333333337
+    ]
+  ],
+  "stationary_distribution": {
+    "bear": 0.15929911837768695,
+    "sideways": 0.840700881472313,
+    "bull": 1.4999999993249415e-10
+  },
+  "persistence_diagonal": {
+    "bear": 0.99749999980075,
+    "sideways": 0.9995262906575556,
+    "bull": 0.33333333333333337
+  },
+  "regime_counts": {
+    "bear": 400,
+    "sideways": 2112,
+    "bull": 0
+  },
+  "walk_forward": {
+    "sharpe": -0.5208846648716505,
+    "max_drawdown": -0.20897857307367376,
+    "n_trades": 1,
+    "win_rate": 0.0,
+    "profit_factor": 0.0,
+    "total_return": -0.11407600244563698
+  },
+  "forecast": {
+    "1_step": {
+      "bear": 0.0009460098445277659,
+      "sideways": 0.9990539900221388,
+      "bull": 1.3333333328333332e-10
+    },
+    "5_step": {
+      "bear": 0.002821209166617019,
+      "sideways": 0.9971787906835884,
+      "bull": 1.497942386160905e-10
+    },
+    "20_step": {
+      "bear": 0.009657571118006867,
+      "sideways": 0.9903424287319921,
+      "bull": 1.4999999991816002e-10
+    }
+  },
+  "engine_info": {
+    "method": "hmm",
+    "features": "generic",
+    "n_states": 3,
+    "walk_forward_degenerate_recovery": true,
+    "degeneration_bar": 302,
+    "caveat": "HMM states sorted by mean return; labels may swap on re-fit",
+    "warmup_bars": 252,
+    "degenerate_fit": true,
+    "degenerate_caveat": "bull state has 0.0% of bars (0/2512); model is effectively 2-regime. Consider --n-states auto"
+  },
+  "framework": "hmm_test v0.2.0",
+  "disclaimer": "Regime detection is probabilistic. Past transitions do not guarantee future regimes. Not financial advice.",
+  "verdict": {
+    "verdict": "neutral",
+    "confidence": 0.0005
+  },
+  "duration_forecast": null,
+  "regime_transitions": [
+    {
+      "date": "2019-01-07",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 652
+    },
+    {
+      "date": "2017-06-05",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 252
+    }
+  ],
+  "timing": {
+    "total_wall_seconds": 143.395073,
+    "phases": {
+      "precompute": 0.131719,
+      "walk_forward_classify": 135.258433,
+      "walk_forward_backtest": 0.101798
+    },
+    "walk_forward_classify_stats": {
+      "min": 0.341306,
+      "median": 3.139989,
+      "p99": 6.244649,
+      "n_calls": 47
+    }
+  }
+}
