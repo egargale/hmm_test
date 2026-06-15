@@ -1,0 +1,234 @@
+{
+  "source": "test_data/BTC.csv",
+  "engine": "fshmm",
+  "dates": {
+    "start": "2021-06-02",
+    "end": "2026-06-01"
+  },
+  "current_regime": {
+    "name": "sideways",
+    "index": 1
+  },
+  "signal": 0.0,
+  "next_state_probabilities": {
+    "bear": 0.0019531250994140625,
+    "sideways": 0.9960937498011718,
+    "bull": 0.0019531250994140625
+  },
+  "transition_matrix": [
+    [
+      0.989999999803,
+      0.006666666764666667,
+      0.0033333334323333336
+    ],
+    [
+      0.0019531250994140625,
+      0.9960937498011718,
+      0.0019531250994140625
+    ],
+    [
+      0.0020000000994,
+      0.0040000000987999995,
+      0.9939999998018
+    ]
+  ],
+  "stationary_distribution": {
+    "bear": 0.1644736884602076,
+    "sideways": 0.5614035015512638,
+    "bull": 0.2741228099885286
+  },
+  "persistence_diagonal": {
+    "bear": 0.989999999803,
+    "sideways": 0.9960937498011718,
+    "bull": 0.9939999998018
+  },
+  "regime_counts": {
+    "bear": 300,
+    "sideways": 1025,
+    "bull": 500
+  },
+  "walk_forward": {
+    "sharpe": -0.60096014900751,
+    "max_drawdown": -0.9331331144633285,
+    "n_trades": 1,
+    "win_rate": 0.0,
+    "profit_factor": 0.0,
+    "total_return": -0.8458789004218102
+  },
+  "forecast": {
+    "1_step": {
+      "bear": 0.0038829958025342645,
+      "sideways": 0.9922235917277377,
+      "bull": 0.003893412469728015
+    },
+    "5_step": {
+      "bear": 0.011375432427241042,
+      "sideways": 0.9770969854577325,
+      "bull": 0.011527582115026247
+    },
+    "20_step": {
+      "bear": 0.036482051710944256,
+      "sideways": 0.9251062404691023,
+      "bull": 0.03841170781995251
+    }
+  },
+  "engine_info": {
+    "method": "fshmm",
+    "features": "generic",
+    "n_states": 3,
+    "walk_forward_degenerate_recovery": true,
+    "degeneration_bar": 352,
+    "caveat": "HMM states sorted by mean return; labels may swap on re-fit",
+    "warmup_bars": 252,
+    "feature_saliency": [
+      0.4043395711452149,
+      0.4016202957675432,
+      0.540945376778609,
+      0.5459659712755638,
+      0.4915262751467253,
+      0.5251847979772037,
+      0.5445163769459214,
+      0.540945376778609,
+      0.5335354013394635,
+      0.3581038141699082,
+      0.6268895878764624,
+      0.49291849084056594,
+      0.4644321320841982,
+      0.3976297066689085,
+      0.3977209008645559,
+      0.6024510634443914,
+      0.3920940866177034,
+      0.5024245074290548,
+      0.4777625014904743,
+      0.4400384511516222,
+      0.4565665058852346,
+      0.46327089884152883,
+      0.4004108894255296,
+      0.3956912357253941,
+      0.3957590221683631,
+      0.34460899803855227,
+      0.33772844930308565,
+      0.3850864661081914,
+      0.3976297097569841,
+      0.4419518149813939,
+      0.5281750863293837,
+      0.5942641063718384,
+      0.4984397239803684,
+      0.5170297550678242,
+      0.4953252580048684,
+      0.49486910955374697,
+      0.9778299885495016,
+      0.03259727215447583,
+      0.21559765724668978,
+      0.4980748761641962,
+      0.4974320930916747,
+      0.4918254366181145,
+      0.4973595877736443,
+      0.023932476151458104,
+      0.023932476151458104,
+      0.023932476151458104,
+      0.023932476151458104,
+      0.023932476151458104,
+      0.5000243399646251
+    ],
+    "selected_features": [
+      "sma_20",
+      "ema_20",
+      "atr_14",
+      "bb_upper_20",
+      "bb_middle_20",
+      "bb_lower_20",
+      "bb_position_20",
+      "volume_sma_20",
+      "obv",
+      "adl",
+      "vpt",
+      "day_of_month",
+      "is_month_end",
+      "is_weekend"
+    ]
+  },
+  "framework": "hmm_test v0.2.0",
+  "disclaimer": "Regime detection is probabilistic. Past transitions do not guarantee future regimes. Not financial advice.",
+  "verdict": {
+    "verdict": "neutral",
+    "confidence": 0.0
+  },
+  "duration_forecast": null,
+  "regime_transitions": [
+    {
+      "date": "2025-09-01",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1552
+    },
+    {
+      "date": "2025-05-24",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1452
+    },
+    {
+      "date": "2025-02-13",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 1352
+    },
+    {
+      "date": "2024-11-05",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 1252
+    },
+    {
+      "date": "2024-04-19",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 1052
+    },
+    {
+      "date": "2023-06-24",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 752
+    },
+    {
+      "date": "2023-03-16",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 652
+    },
+    {
+      "date": "2022-12-06",
+      "from_regime": "bull",
+      "to_regime": "bear",
+      "bar_index": 552
+    },
+    {
+      "date": "2022-08-28",
+      "from_regime": "bear",
+      "to_regime": "bull",
+      "bar_index": 452
+    },
+    {
+      "date": "2022-05-20",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 352
+    }
+  ],
+  "timing": {
+    "total_wall_seconds": 54.419169,
+    "phases": {
+      "precompute": 0.118238,
+      "walk_forward_classify": 49.009532,
+      "walk_forward_backtest": 0.134915
+    },
+    "walk_forward_classify_stats": {
+      "min": 0.935073,
+      "median": 2.568174,
+      "p99": 6.789573,
+      "n_calls": 17
+    }
+  }
+}

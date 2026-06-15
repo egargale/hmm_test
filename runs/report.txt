@@ -1,0 +1,188 @@
+Loaded 25 outputs (5 tickers x 5 engines)
+==============================================================================
+
+## A. Output Contract Validation
+  total runs: 25
+  contract violations: 0
+
+## B. Transition-Matrix Sanity
+  ticker engine      persist_bear persist_side persist_bull stat_bear stat_bull
+  BTC    threshold         0.841       0.784       0.870     0.262     0.345
+  BTC    messina           0.987       0.992       0.987     0.247     0.302
+  BTC    hmm               0.980       0.995       0.999     0.031     0.845
+  BTC    robust_hmm        0.333       0.996       1.000     0.000     1.000
+  BTC    fshmm             0.990       0.996       0.994     0.164     0.274
+  KO     threshold         0.818       0.943       0.786     0.079     0.143
+  KO     messina           0.990       0.991       0.989     0.359     0.259
+  KO     hmm               0.985       0.997       0.992     0.080     0.199
+  KO     robust_hmm        0.333       0.996       1.000     0.000     1.000
+  KO     fshmm             0.995       0.997       0.990     0.369     0.074
+  NVDA   threshold         0.826       0.736       0.903     0.186     0.508
+  NVDA   messina           0.992       0.992       0.983     0.418     0.119
+  NVDA   hmm               0.333       0.998       0.998     0.000     0.563
+  NVDA   robust_hmm        0.333       0.996       1.000     0.000     1.000
+  NVDA   fshmm             0.991       0.995       0.992     0.292     0.238
+  SPY    threshold         0.791       0.936       0.734     0.072     0.135
+  SPY    messina           0.991       0.988       0.982     0.502     0.196
+  SPY    hmm               0.997       1.000       0.333     0.159     0.000
+  SPY    robust_hmm        0.999       0.994       0.997     0.796     0.128
+  SPY    fshmm             0.999       0.993       0.990     0.812     0.070
+  XLE    threshold         0.818       0.887       0.865     0.157     0.270
+  XLE    messina           0.994       0.994       0.988     0.331     0.192
+  XLE    hmm               0.980       0.994       0.994     0.100     0.438
+  XLE    robust_hmm        0.333       0.996       1.000     0.000     1.000
+  XLE    fshmm             0.996       0.997       0.990     0.340     0.036
+
+  Mean persistence diagonal by engine (averaged over all 3 regimes, 5 tickers):
+    threshold   mean persist = 0.836  (min 0.820, max 0.856)
+    messina     mean persist = 0.989  (min 0.987, max 0.992)
+    hmm         mean persist = 0.905  (min 0.776, max 0.991)
+    robust_hmm  mean persist = 0.820  (min 0.776, max 0.997)
+    fshmm       mean persist = 0.994  (min 0.993, max 0.994)
+
+## C. Empirical Persistence (avg regime spell length in bars)
+  BTC    threshold   bars= 1825  transitions= 312  avg_spell=  5.8 bars
+  BTC    messina     bars= 1825  transitions=  20  avg_spell= 86.9 bars
+  BTC    hmm         bars= 1825  transitions=   5  avg_spell=304.2 bars
+  BTC    robust_hmm  bars= 1825  transitions=   1  avg_spell=912.5 bars
+  BTC    fshmm       bars= 1825  transitions=  10  avg_spell=165.9 bars
+  KO     threshold   bars= 2510  transitions= 225  avg_spell= 11.1 bars
+  KO     messina     bars= 2510  transitions=  25  avg_spell= 96.5 bars
+  KO     hmm         bars= 2510  transitions=  12  avg_spell=193.1 bars
+  KO     robust_hmm  bars= 2510  transitions=   1  avg_spell=1255.0 bars
+  KO     fshmm       bars= 2510  transitions=  11  avg_spell=209.2 bars
+  NVDA   threshold   bars= 2513  transitions= 408  avg_spell=  6.1 bars
+  NVDA   messina     bars= 2513  transitions=  22  avg_spell=109.3 bars
+  NVDA   hmm         bars= 2513  transitions=   5  avg_spell=418.8 bars
+  NVDA   robust_hmm  bars= 2513  transitions=   1  avg_spell=1256.5 bars
+  NVDA   fshmm       bars= 2513  transitions=  16  avg_spell=147.8 bars
+  SPY    threshold   bars= 2512  transitions= 255  avg_spell=  9.8 bars
+  SPY    messina     bars= 2512  transitions=  30  avg_spell= 81.0 bars
+  SPY    hmm         bars= 2512  transitions=   2  avg_spell=837.3 bars
+  SPY    robust_hmm  bars= 2512  transitions=   5  avg_spell=418.7 bars
+  SPY    fshmm       bars= 2512  transitions=   7  avg_spell=314.0 bars
+  XLE    threshold   bars= 2513  transitions= 327  avg_spell=  7.7 bars
+  XLE    messina     bars= 2513  transitions=  18  avg_spell=132.3 bars
+  XLE    hmm         bars= 2513  transitions=  19  avg_spell=125.7 bars
+  XLE    robust_hmm  bars= 2513  transitions=   1  avg_spell=1256.5 bars
+  XLE    fshmm       bars= 2513  transitions=   9  avg_spell=251.3 bars
+
+  Random-walk reference: ~3 bars/spell if regimes were iid with equal weight.
+  Higher = stickier regimes;  HMM engines typically > threshold.
+
+## D. Forecast Consistency
+  1-step forecast should ≈ current next_state_probabilities; 20-step ≈ stationary.
+  1-step vs current max delta > 0.05: 4/25
+  20-step vs stationary max delta > 0.10: 16/25
+
+## E. Cross-Engine Agreement (current regime)
+  SPY    -> {'bull': 1, 'bear': 3, 'sideways': 1}   (top=3 in bear/5)
+  NVDA   -> {'bull': 4, 'sideways': 1}   (top=4 in bull/5)
+  BTC    -> {'bear': 1, 'sideways': 2, 'bull': 2}   (top=2 in sideways/5)
+  KO     -> {'sideways': 3, 'bull': 1, 'bear': 1}   (top=3 in sideways/5)
+  XLE    -> {'sideways': 2, 'bear': 2, 'bull': 1}   (top=2 in sideways/5)
+
+  Pairwise current-regime agreement (5 tickers):
+                  threshold     messina         hmm  robust_hmm       fshmm
+                  threshold        1.00        0.20        0.60        0.20        0.20
+                    messina        0.20        1.00        0.20        0.20        0.60
+                        hmm        0.60        0.20        1.00        0.40        0.20
+                 robust_hmm        0.20        0.20        0.40        1.00        0.40
+                      fshmm        0.20        0.60        0.20        0.40        1.00
+
+## F. Walk-Forward vs Buy-and-Hold
+  Computing B&H baseline for each ticker (same window as the engine's data)…
+  ticker B&H Sharpe  B&H ret  B&H maxDD
+  SPY         0.899  325.17%    -33.72%
+  NVDA        1.308 19189.34%    -66.34%
+  BTC         0.428   93.51%    -76.63%
+  KO          0.575  139.99%    -36.99%
+  XLE         0.472  159.18%    -66.81%
+
+  Per-engine skill (Sharpe - median B&H for that ticker):
+    threshold   median Sharpe=-0.220  median delta vs B&H=-0.942  wins=0/5
+    messina     median Sharpe=-0.417  median delta vs B&H=-0.906  wins=0/5
+    hmm         median Sharpe=-0.218  median delta vs B&H=-0.881  wins=1/5
+    robust_hmm  median Sharpe= 0.443  median delta vs B&H=-0.098  wins=0/5
+    fshmm       median Sharpe=-0.601  median delta vs B&H=-1.305  wins=0/5
+
+  Full per-ticker/per-engine Sharpe grid:
+                     SPY     NVDA      BTC       KO      XLE   median
+  threshold       -0.348    0.314   -0.220   -0.367   -0.005   -0.220
+  messina         -0.621   -0.417   -0.070    0.031   -0.434   -0.417
+  hmm             -0.521    0.258    0.549   -0.306   -0.218   -0.218
+  robust_hmm      -0.614    1.123    0.358    0.477    0.443    0.443
+  fshmm           -0.966   -0.098   -0.601   -0.730   -0.525   -0.601
+
+  Buy-and-hold row (for reference):
+  B&H              0.899    1.308    0.428    0.575    0.472    0.575
+
+  Win-rate grid (per engine / ticker):
+                     SPY     NVDA      BTC       KO      XLE   median
+  threshold       42.22%   39.06%   33.33%   39.58%   33.85%   39.06%
+  messina         30.00%   22.22%   42.86%   55.56%   62.50%   42.86%
+  hmm              0.00%   66.67%   50.00%   40.00%   14.29%   40.00%
+  robust_hmm       0.00%  100.00%  100.00%  100.00%  100.00%   100.00%
+  fshmm            0.00%    0.00%    0.00%    0.00%    0.00%    0.00%
+
+  Max-drawdown grid (per engine / ticker; negative):
+                     SPY     NVDA      BTC       KO      XLE   median
+  threshold      -40.10%  -62.44%  -63.00%  -46.44%  -65.84%   -62.44%
+  messina        -59.76%  -93.56%  -75.10%  -47.41%  -67.24%   -67.24%
+  hmm            -20.90%  -71.68%  -49.74%  -38.55%  -77.62%   -49.74%
+  robust_hmm     -66.48%  -66.34%  -66.74%  -36.99%  -66.81%   -66.48%
+  fshmm          -79.81%  -56.04%  -93.31%  -70.65%  -91.93%   -79.81%
+
+  Number-of-trades grid (per engine / ticker):
+                     SPY     NVDA      BTC       KO      XLE   total
+  threshold           45       64       51       48       65      273
+  messina             10        9        7        9        8       43
+  hmm                  1        3        2        5        7       18
+  robust_hmm           2        1        1        1        1        6
+  fshmm                1        1        1        1        1        5
+
+  Profit factor grid (per engine / ticker; >1 = profitable):
+                     SPY     NVDA      BTC       KO      XLE   median
+  threshold         0.61     1.49     0.84     0.60     1.07     0.84
+  messina           0.10     0.12     0.92     1.49     0.53     0.53
+  hmm               0.00     8.94     8.96     0.05     1.09     1.09
+  robust_hmm        0.00     0.00     0.00     0.00     0.00     0.00
+  fshmm             0.00     0.00     0.00     0.00     0.00     0.00
+
+## G. Engine Info Rollup
+  (n_states; degenerate-recovery events; FSHMM feature count)
+  BTC    threshold   n_states=3  n_features_saliency=—  n_selected=—
+  BTC    messina     n_states=3  n_features_saliency=—  n_selected=—
+  BTC    hmm         n_states=3  n_features_saliency=—  n_selected=—
+  BTC    robust_hmm  n_states=3  n_features_saliency=—  n_selected=—
+  BTC    fshmm       n_states=3  n_features_saliency=49  n_selected=14
+  KO     threshold   n_states=3  n_features_saliency=—  n_selected=—
+  KO     messina     n_states=3  n_features_saliency=—  n_selected=—
+  KO     hmm         n_states=3  n_features_saliency=—  n_selected=—
+  KO     robust_hmm  n_states=3  n_features_saliency=—  n_selected=—
+  KO     fshmm       n_states=3  n_features_saliency=49  n_selected=11
+  NVDA   threshold   n_states=3  n_features_saliency=—  n_selected=—
+  NVDA   messina     n_states=3  n_features_saliency=—  n_selected=—
+  NVDA   hmm         n_states=3  n_features_saliency=—  n_selected=—
+  NVDA   robust_hmm  n_states=3  n_features_saliency=—  n_selected=—
+  NVDA   fshmm       n_states=3  n_features_saliency=49  n_selected=16
+  SPY    threshold   n_states=3  n_features_saliency=—  n_selected=—
+  SPY    messina     n_states=3  n_features_saliency=—  n_selected=—
+  SPY    hmm         n_states=3  n_features_saliency=—  n_selected=—
+  SPY    robust_hmm  n_states=3  n_features_saliency=—  n_selected=—
+  SPY    fshmm       n_states=3  n_features_saliency=49  n_selected=31
+  XLE    threshold   n_states=3  n_features_saliency=—  n_selected=—
+  XLE    messina     n_states=3  n_features_saliency=—  n_selected=—
+  XLE    hmm         n_states=3  n_features_saliency=—  n_selected=—
+  XLE    robust_hmm  n_states=3  n_features_saliency=—  n_selected=—
+  XLE    fshmm       n_states=3  n_features_saliency=49  n_selected=14
+
+==============================================================================
+## H. Verdict (statistical-expert view)
+  A. Output contract validity:    PASS
+     0 violations across 25 runs
+  C. Persistence > random (≥3):    25/25 runs
+  D. Forecast consistency:         WARN  (1-step mismatches: 4, 20-step: 16)
+  F. Engines beating B&H on ≥3/5: 0/5 engines
+  E. Cross-engine agreement (current regime majority): SPY:3(bear/5), NVDA:4(bull/5), BTC:2(sideways/5), KO:3(sideways/5), XLE:2(sideways/5)
+  (Bears: NVDA & SPY engines mostly agree on bear; BTC widely split. XLE leans bear.)

@@ -1,0 +1,272 @@
+{
+  "source": "test_data/NVDA.csv",
+  "engine": "fshmm",
+  "dates": {
+    "start": "2016-06-06",
+    "end": "2026-06-04"
+  },
+  "current_regime": {
+    "name": "bull",
+    "index": 2
+  },
+  "signal": 0.9859999997041999,
+  "next_state_probabilities": {
+    "bear": 0.0060000000981999995,
+    "sideways": 0.0020000000994,
+    "bull": 0.9919999998024
+  },
+  "transition_matrix": [
+    [
+      0.9914285712311428,
+      0.005714285812571428,
+      0.0028571429562857143
+    ],
+    [
+      0.002286585465167683,
+      0.9954268290696646,
+      0.002286585465167683
+    ],
+    [
+      0.0060000000981999995,
+      0.0020000000994,
+      0.9919999998024
+    ]
+  ],
+  "stationary_distribution": {
+    "bear": 0.2921535914395317,
+    "sideways": 0.4693536797048545,
+    "bull": 0.23849272885561387
+  },
+  "persistence_diagonal": {
+    "bear": 0.9914285712311428,
+    "sideways": 0.9954268290696646,
+    "bull": 0.9919999998024
+  },
+  "regime_counts": {
+    "bear": 700,
+    "sideways": 1312,
+    "bull": 501
+  },
+  "walk_forward": {
+    "sharpe": -0.09804677871592758,
+    "max_drawdown": -0.5603844002635896,
+    "n_trades": 1,
+    "win_rate": 0.0,
+    "profit_factor": 0.0,
+    "total_return": -0.15889998017083573
+  },
+  "forecast": {
+    "1_step": {
+      "bear": 0.011905144792131563,
+      "sideways": 0.004009139570730927,
+      "bull": 0.9840857156371374
+    },
+    "5_step": {
+      "bear": 0.034603864027928616,
+      "sideways": 0.01212895835173003,
+      "bull": 0.9532671776203412
+    },
+    "20_step": {
+      "bear": 0.10776974228503322,
+      "sideways": 0.04341466587108283,
+      "bull": 0.8488155918438831
+    }
+  },
+  "engine_info": {
+    "method": "fshmm",
+    "features": "generic",
+    "n_states": 3,
+    "walk_forward_degenerate_recovery": true,
+    "degeneration_bar": 352,
+    "caveat": "HMM states sorted by mean return; labels may swap on re-fit",
+    "warmup_bars": 252,
+    "feature_saliency": [
+      0.5736943084323229,
+      0.5837536137494226,
+      0.24957756222852368,
+      0.250475371633911,
+      0.49872647103779855,
+      0.2280075007722644,
+      0.23269713700074135,
+      0.24957756222852368,
+      0.2804895803722047,
+      0.4368011387932711,
+      0.333266034343751,
+      0.5417955306338627,
+      0.5604993478116285,
+      0.512867921568386,
+      0.49972653837494363,
+      0.17831868925850358,
+      0.5218388734779182,
+      0.21319595435647898,
+      0.2530761138236812,
+      0.47450038316992504,
+      0.5194030273253247,
+      0.5096252360003746,
+      0.46586062269443573,
+      0.4928730323279069,
+      0.5079107251065125,
+      0.6420582964435653,
+      0.6089685816671135,
+      0.585714898715878,
+      0.5128679234571791,
+      0.5221486350340001,
+      0.20218703494197143,
+      0.21899970544723146,
+      0.4973657803818696,
+      0.5718967658644942,
+      0.49473389175000193,
+      0.4942573666148746,
+      0.9766602077299922,
+      0.2113137629226003,
+      0.353697512578492,
+      0.49737557675211974,
+      0.4972964889686864,
+      0.49185573203635613,
+      0.49737543970036313,
+      0.028818690238949785,
+      0.028818690238949785,
+      0.028818690238949785,
+      0.028818690238949785,
+      0.028818690238949785,
+      0.028818690238949785
+    ],
+    "selected_features": [
+      "log_ret",
+      "simple_ret",
+      "rsi_14",
+      "roc_10",
+      "stoch_k_14",
+      "volume_ratio_20",
+      "adx_plus_14",
+      "adx_minus_14",
+      "price_position_20",
+      "hl_ratio_5",
+      "hl_ratio_10",
+      "hl_ratio_20",
+      "williams_r_14",
+      "cci_20",
+      "day_of_month",
+      "is_month_end"
+    ]
+  },
+  "framework": "hmm_test v0.2.0",
+  "disclaimer": "Regime detection is probabilistic. Past transitions do not guarantee future regimes. Not financial advice.",
+  "verdict": {
+    "verdict": "bullish",
+    "confidence": 0.986
+  },
+  "duration_forecast": null,
+  "regime_transitions": [
+    {
+      "date": "2026-06-03",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 2512
+    },
+    {
+      "date": "2026-03-09",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 2452
+    },
+    {
+      "date": "2025-10-13",
+      "from_regime": "bull",
+      "to_regime": "bear",
+      "bar_index": 2352
+    },
+    {
+      "date": "2025-05-20",
+      "from_regime": "bear",
+      "to_regime": "bull",
+      "bar_index": 2252
+    },
+    {
+      "date": "2024-12-23",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 2152
+    },
+    {
+      "date": "2024-08-01",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 2052
+    },
+    {
+      "date": "2024-03-08",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 1952
+    },
+    {
+      "date": "2023-05-22",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 1752
+    },
+    {
+      "date": "2022-12-27",
+      "from_regime": "bull",
+      "to_regime": "bear",
+      "bar_index": 1652
+    },
+    {
+      "date": "2022-08-04",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 1552
+    },
+    {
+      "date": "2022-03-11",
+      "from_regime": "bear",
+      "to_regime": "sideways",
+      "bar_index": 1452
+    },
+    {
+      "date": "2021-05-26",
+      "from_regime": "sideways",
+      "to_regime": "bear",
+      "bar_index": 1252
+    },
+    {
+      "date": "2019-10-23",
+      "from_regime": "bull",
+      "to_regime": "sideways",
+      "bar_index": 852
+    },
+    {
+      "date": "2019-01-08",
+      "from_regime": "bear",
+      "to_regime": "bull",
+      "bar_index": 652
+    },
+    {
+      "date": "2018-08-14",
+      "from_regime": "bull",
+      "to_regime": "bear",
+      "bar_index": 552
+    },
+    {
+      "date": "2018-03-22",
+      "from_regime": "sideways",
+      "to_regime": "bull",
+      "bar_index": 452
+    }
+  ],
+  "timing": {
+    "total_wall_seconds": 86.42878,
+    "phases": {
+      "precompute": 0.149967,
+      "walk_forward_classify": 81.635345,
+      "walk_forward_backtest": 0.08707
+    },
+    "walk_forward_classify_stats": {
+      "min": 0.702491,
+      "median": 3.568341,
+      "p99": 6.812868,
+      "n_calls": 24
+    }
+  }
+}
