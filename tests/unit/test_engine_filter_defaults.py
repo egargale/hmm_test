@@ -194,8 +194,8 @@ class TestResolveAutoFilters:
             source="test",
             engine_config=FSHMMConfig(n_states=3),
             ohlcv=ohlcv,
-            dwell_bars=2,
-            hysteresis_delta=0.05,
+            dwell_bars=0,
+            hysteresis_delta=0.0,
             profile=False,
         )
         assert (
@@ -248,8 +248,7 @@ class TestExplicitValuesPassThrough:
             profile=False,
         )
         assert (
-            result.walk_forward["n_trades"]
-            == result_default.walk_forward["n_trades"]
+            result.walk_forward["n_trades"] == result_default.walk_forward["n_trades"]
         )
 
 
@@ -283,8 +282,13 @@ class TestCLIAutoFlags:
         import json
 
         result = run_regime(
-            "--csv", btc_csv, "--json",
-            "--dwell-bars", "auto", "--hysteresis", "auto",
+            "--csv",
+            btc_csv,
+            "--json",
+            "--dwell-bars",
+            "auto",
+            "--hysteresis",
+            "auto",
         )
         assert result.returncode == 0, f"stderr: {result.stderr}"
         data = json.loads(result.stdout)
@@ -296,12 +300,22 @@ class TestCLIAutoFlags:
         import json
 
         result_auto = run_regime(
-            "--csv", btc_csv, "--json", "--engine", "threshold",
-            "--dwell-bars", "auto",
+            "--csv",
+            btc_csv,
+            "--json",
+            "--engine",
+            "threshold",
+            "--dwell-bars",
+            "auto",
         )
         result_explicit = run_regime(
-            "--csv", btc_csv, "--json", "--engine", "threshold",
-            "--dwell-bars", "3",
+            "--csv",
+            btc_csv,
+            "--json",
+            "--engine",
+            "threshold",
+            "--dwell-bars",
+            "3",
         )
         assert result_auto.returncode == 0
         assert result_explicit.returncode == 0
@@ -327,7 +341,7 @@ class TestEngineFilterDefaults:
         assert HMMGenericConfig().default_dwell_bars == 0
 
     def test_hmm_hysteresis_delta(self):
-        assert HMMGenericConfig().default_hysteresis_delta == 0.1
+        assert HMMGenericConfig().default_hysteresis_delta == 0.0
 
     # --- messina: low frequency, hysteresis only ---
 
@@ -335,7 +349,7 @@ class TestEngineFilterDefaults:
         assert HMMMMessinaConfig().default_dwell_bars == 0
 
     def test_messina_hysteresis_delta(self):
-        assert HMMMMessinaConfig().default_hysteresis_delta == 0.1
+        assert HMMMMessinaConfig().default_hysteresis_delta == 0.0
 
     # --- robust_hmm: very low frequency, hysteresis only ---
 
@@ -343,21 +357,27 @@ class TestEngineFilterDefaults:
         assert RobustHMMConfig().default_dwell_bars == 0
 
     def test_robust_hmm_hysteresis_delta(self):
-        assert RobustHMMConfig().default_hysteresis_delta == 0.1
+        assert RobustHMMConfig().default_hysteresis_delta == 0.0
 
     # --- fshmm: low-medium frequency, light dwell + light hysteresis ---
 
     def test_fshmm_dwell_bars(self):
-        assert FSHMMConfig().default_dwell_bars == 2
+        assert FSHMMConfig().default_dwell_bars == 0
 
     def test_fshmm_hysteresis_delta(self):
-        assert FSHMMConfig().default_hysteresis_delta == 0.05
+        assert FSHMMConfig().default_hysteresis_delta == 0.0
 
     # --- backward compatibility: defaults don't affect construction ---
 
     @pytest.mark.parametrize(
         "config_cls",
-        [ThresholdConfig, HMMGenericConfig, HMMMMessinaConfig, RobustHMMConfig, FSHMMConfig],
+        [
+            ThresholdConfig,
+            HMMGenericConfig,
+            HMMMMessinaConfig,
+            RobustHMMConfig,
+            FSHMMConfig,
+        ],
     )
     def test_defaults_are_opt_in_no_behavior_change(self, config_cls):
         """Configs construct with same positional args as before — new fields have defaults."""

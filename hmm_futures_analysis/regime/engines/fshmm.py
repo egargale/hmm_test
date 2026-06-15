@@ -58,7 +58,7 @@ class FSHMMEngine(HMMEngineBase):
     def classify(
         self, data: pd.DataFrame, prev_means: np.ndarray | None = None
     ) -> ClassifyResult:
-        n_states = getattr(self, '_n_states_resolved', self.n_states)
+        n_states = getattr(self, "_n_states_resolved", self.n_states)
         features_clean = data.bfill().dropna()
         if len(features_clean) < n_states + 1:
             raise ValueError(
@@ -94,7 +94,9 @@ class FSHMMEngine(HMMEngineBase):
         # PCA-aware return component
         return_component: int | None = None
         if pca_transform_obj is not None:
-            return_component = int(np.argmax(np.abs(pca_transform_obj.components_[:, 0])))
+            return_component = int(
+                np.argmax(np.abs(pca_transform_obj.components_[:, 0]))
+            )
             if self._pca_return_component is None:
                 self._pca_return_component = return_component
 
@@ -131,7 +133,7 @@ class FSHMMEngine(HMMEngineBase):
         Returns (trained_hmm_model, rho_array).
         """
         T, D = X.shape
-        K = getattr(self, '_n_states_resolved', self.n_states)
+        K = getattr(self, "_n_states_resolved", self.n_states)
 
         # --- Initialise base HMM for starting mu, sigma2, pi, A ---
         with warnings.catch_warnings():
@@ -152,6 +154,13 @@ class FSHMMEngine(HMMEngineBase):
         sigma2 = base_model._covars_.copy()  # (K, D) diagonal
         pi = base_model.startprob_.copy()  # (K,)
         A = base_model.transmat_.copy()  # (K, K)
+
+        # Regularise transition matrix toward uniform to penalise
+        # extreme persistence (0.99+) that produces < 5 regime changes
+        # across a full walk-forward — making trade metrics meaningless.
+        transmat_prior_strength = 5.0  # Dirichlet concentration
+        A = (A * T + transmat_prior_strength) / (T + transmat_prior_strength)
+        A /= A.sum(axis=1, keepdims=True)
 
         # Saliency parameters
         rho = np.full(D, 0.5)
@@ -328,4 +337,3 @@ def _logsumexp_row(a: np.ndarray) -> np.ndarray:
     """Numerically stable logsumexp along last axis."""
     a_max = np.max(a, axis=-1, keepdims=True)
     return np.log(np.sum(np.exp(a - a_max), axis=-1)) + a_max.squeeze(-1)
-

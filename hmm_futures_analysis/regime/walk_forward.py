@@ -126,7 +126,9 @@ def _walk_forward_positions(
     current_posteriors: np.ndarray | None = None
 
     for t, regime in _replay_regimes(regimes, min_train=min_train, n_bars=n):
-        new_posteriors_arr: np.ndarray | None = posteriors[t] if posteriors is not None else None
+        new_posteriors_arr: np.ndarray | None = (
+            posteriors[t] if posteriors is not None else None
+        )
 
         should_switch, consecutive_count = _apply_filters(
             regime,
@@ -226,6 +228,13 @@ def walk_forward_backtest(
         "win_rate": win_rate,
         "profit_factor": profit_factor,
         "total_return": total_return,
+        "metrics_reliable": n_trades >= 10,
+        "metrics_caveat": (
+            f"n_trades={n_trades}; Sharpe, win-rate, and profit-factor "
+            f"are statistically meaningless with < 10 independent trades"
+            if n_trades < 10
+            else None
+        ),
     }
 
 

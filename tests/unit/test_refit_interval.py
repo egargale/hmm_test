@@ -80,7 +80,7 @@ def test_config_dataclasses_have_default_refit_every():
     assert HMMGenericConfig().default_refit_every == 50
     assert HMMMMessinaConfig().default_refit_every == 50
     assert RobustHMMConfig().default_refit_every == 100
-    assert FSHMMConfig().default_refit_every == 100
+    assert FSHMMConfig().default_refit_every == 20
 
 
 def test_default_refit_every_survives_resolve_engine():

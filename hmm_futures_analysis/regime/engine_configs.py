@@ -81,9 +81,9 @@ class FSHMMConfig:
     pca_variance: float | None = None
     reverse_classify: bool = False
     saliency_threshold: float = 0.5
-    default_refit_every: int = 100
-    default_dwell_bars: int = 2
-    default_hysteresis_delta: float = 0.05
+    default_refit_every: int = 20
+    default_dwell_bars: int = 0
+    default_hysteresis_delta: float = 0.0
 
     @property
     def is_hmm(self) -> bool:

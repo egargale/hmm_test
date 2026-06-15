@@ -150,7 +150,7 @@ def _hmm_classify_pipeline(
     _phases = _phases if _phases is not None else {}
     _classify_times = _classify_times if _classify_times is not None else []
 
-    reverse = getattr(engine, 'reverse_classify', False)
+    reverse = getattr(engine, "reverse_classify", False)
 
     # 1. Precompute features
     precomputed = None
@@ -339,7 +339,9 @@ def _walk_forward_classify(
         last_t = n - 1
 
     for t in bar_range:
-        refit_now = (t == first_t) or (abs(t - first_t) % refit_every == 0) or (t == last_t)
+        refit_now = (
+            (t == first_t) or (abs(t - first_t) % refit_every == 0) or (t == last_t)
+        )
         if refit_now:
             n_refits += 1
             features_slice = precomputed.iloc[t:] if reverse else precomputed.iloc[:t]
@@ -374,6 +376,7 @@ def _walk_forward_classify(
                     )
                     _wf_recovery["mid_stream_recovery"] = True
                     _wf_recovery["degeneration_bar"] = t
+                    prev_means = None  # reset: 3-state means don't map to 2-state world
 
             # Progress: log every 20 refits and on the final refit
             total_refits = 1 + (n - 1 - min_train) // refit_every
