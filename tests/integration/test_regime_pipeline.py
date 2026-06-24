@@ -225,12 +225,12 @@ class TestPipelineRunInputValidation:
             "total_return",
         }
         assert isinstance(wf.n_trades, int)
-        # Forecast
-        for step in ("1_step", "5_step", "20_step"):
-            assert step in result.forecast
-            f = result.forecast[step]
-            assert set(f.keys()) == {"bear", "sideways", "bull"}
-            assert abs(sum(f.values()) - 1.0) < 0.01
+        # Forecast (1-step only, ADR-0025)
+        assert "1_step" in result.forecast
+        assert len(result.forecast) == 1
+        f = result.forecast["1_step"]
+        assert set(f.keys()) == {"bear", "sideways", "bull"}
+        assert abs(sum(f.values()) - 1.0) < 0.01
         # Engine info
         ei = result.engine_info
         assert ei["method"] == "threshold"
@@ -671,7 +671,9 @@ class TestPipelineEngineInfo:
             index=dates,
         )
 
-    @pytest.mark.skip(reason="HMM engine fails to converge — runtime bug pending investigation")
+    @pytest.mark.skip(
+        reason="HMM engine fails to converge — runtime bug pending investigation"
+    )
     def test_hmm_engine_info_has_caveat(self, ohlcv_pipeline):
         """HMM engine_info gets caveat from ClassifyOutput.engine_info."""
         prices = ohlcv_pipeline["close"]
@@ -685,7 +687,9 @@ class TestPipelineEngineInfo:
         assert "caveat" in result.engine_info
         assert "HMM states sorted by mean return" in result.engine_info["caveat"]
 
-    @pytest.mark.skip(reason="HMM engine fails to converge — runtime bug pending investigation")
+    @pytest.mark.skip(
+        reason="HMM engine fails to converge — runtime bug pending investigation"
+    )
     def test_robust_hmm_engine_info_has_method(self, ohlcv_pipeline):
         """RobustHMM engine_info gets robust_method from ClassifyOutput.engine_info."""
         prices = ohlcv_pipeline["close"]

@@ -32,12 +32,14 @@ class TestCliCacheFlags:
             "regime_counts": {"bear": 0, "sideways": 0, "bull": 5},
             "next_state_probabilities": {"bear": 0.1, "sideways": 0.2, "bull": 0.7},
             "persistence_diagonal": {"bear": 0.9, "sideways": 0.8, "bull": 0.95},
-            "transition_matrix": [[0.9, 0.05, 0.05], [0.1, 0.8, 0.1], [0.05, 0.05, 0.9]],
+            "transition_matrix": [
+                [0.9, 0.05, 0.05],
+                [0.1, 0.8, 0.1],
+                [0.05, 0.05, 0.9],
+            ],
             "stationary_distribution": {"bear": 0.2, "sideways": 0.3, "bull": 0.5},
             "forecast": {
                 "1_step": {"bear": 0.2, "sideways": 0.3, "bull": 0.5},
-                "5_step": {"bear": 0.2, "sideways": 0.3, "bull": 0.5},
-                "20_step": {"bear": 0.2, "sideways": 0.3, "bull": 0.5},
             },
             "walk_forward": {
                 "sharpe": 1.0,
@@ -52,7 +54,11 @@ class TestCliCacheFlags:
             "duration_forecast": None,
         }
 
-        with patch.object(sys, "argv", ["hmm-regime", "--ticker", "SPY", "--cache-dir", "/tmp/cache", "--json"]):
+        with patch.object(
+            sys,
+            "argv",
+            ["hmm-regime", "--ticker", "SPY", "--cache-dir", "/tmp/cache", "--json"],
+        ):
             main()
 
         mock_load.assert_called_once()
@@ -84,12 +90,14 @@ class TestCliCacheFlags:
             "regime_counts": {"bear": 0, "sideways": 0, "bull": 5},
             "next_state_probabilities": {"bear": 0.1, "sideways": 0.2, "bull": 0.7},
             "persistence_diagonal": {"bear": 0.9, "sideways": 0.8, "bull": 0.95},
-            "transition_matrix": [[0.9, 0.05, 0.05], [0.1, 0.8, 0.1], [0.05, 0.05, 0.9]],
+            "transition_matrix": [
+                [0.9, 0.05, 0.05],
+                [0.1, 0.8, 0.1],
+                [0.05, 0.05, 0.9],
+            ],
             "stationary_distribution": {"bear": 0.2, "sideways": 0.3, "bull": 0.5},
             "forecast": {
                 "1_step": {"bear": 0.2, "sideways": 0.3, "bull": 0.5},
-                "5_step": {"bear": 0.2, "sideways": 0.3, "bull": 0.5},
-                "20_step": {"bear": 0.2, "sideways": 0.3, "bull": 0.5},
             },
             "walk_forward": {
                 "sharpe": 1.0,
@@ -104,7 +112,11 @@ class TestCliCacheFlags:
             "duration_forecast": None,
         }
 
-        with patch.object(sys, "argv", ["hmm-regime", "--ticker", "SPY", "--refresh", "--no-cache", "--json"]):
+        with patch.object(
+            sys,
+            "argv",
+            ["hmm-regime", "--ticker", "SPY", "--refresh", "--no-cache", "--json"],
+        ):
             main()
 
         call_kwargs = mock_load.call_args.kwargs

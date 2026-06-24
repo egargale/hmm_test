@@ -111,12 +111,10 @@ def format_pipeline(
         prob = sr.stationary_distribution[name]
         lines.append(f"  {name.capitalize():<12s}: {prob:.3f}")
 
-    header("FORECAST (n-step)")
-    for step_key in ("1_step", "5_step", "20_step"):
-        f = sr.forecast[step_key]
-        lines.append(f"  {step_key.replace('_', ' ').capitalize()}:")
-        for name in _STATE_NAMES:
-            lines.append(f"    {name.capitalize():<10s}: {f[name]:.3f}")
+    header("FORECAST (1-step)")
+    f = sr.forecast["1_step"]
+    for name in _STATE_NAMES:
+        lines.append(f"  {name.capitalize():<12s}: {f[name]:.3f}")
 
     header("WALK-FORWARD BACKTEST")
     wf = sr.walk_forward
@@ -138,9 +136,7 @@ def format_pipeline(
         lines.append(
             "  ⚠  LOOKAHEAD BIAS: walk-forward backtest contains lookahead bias."
         )
-        lines.append(
-            "     Regime at bar t is partially informed by data from t+1…n."
-        )
+        lines.append("     Regime at bar t is partially informed by data from t+1…n.")
         lines.append(
             "     Use reverse-classify for display only, not backtest decisions."
         )
@@ -151,7 +147,9 @@ def format_pipeline(
         lines.append(f"  Current regime     : {df['current_regime'].upper()}")
         lines.append(f"  Days in regime     : {df['days_in_regime']}")
         if df["expected_remaining_days"] is not None:
-            lines.append(f"  Expected remaining  : {df['expected_remaining_days']:.1f} days")
+            lines.append(
+                f"  Expected remaining  : {df['expected_remaining_days']:.1f} days"
+            )
             lines.append(f"  Hazard rate         : {df['hazard_rate']:.4f}")
             lines.append(f"  Median survival     : {df['survival_50pct']:.1f} days")
             lines.append(f"  Weibull shape       : {df['weibull_shape']:.4f}")
@@ -294,8 +292,17 @@ def _format_eval_table(results: list[dict[str, Any]]) -> str:
         return "No results."
 
     headers = [
-        "ticker", "engine", "regime", "signal", "sharpe", "max_dd",
-        "trades", "win_rate", "pf", "total_ret", "wall_s",
+        "ticker",
+        "engine",
+        "regime",
+        "signal",
+        "sharpe",
+        "max_dd",
+        "trades",
+        "win_rate",
+        "pf",
+        "total_ret",
+        "wall_s",
     ]
 
     def fmt(val: Any) -> str:
@@ -309,19 +316,21 @@ def _format_eval_table(results: list[dict[str, Any]]) -> str:
 
     rows: list[list[str]] = []
     for r in results:
-        rows.append([
-            r["ticker"],
-            r["engine"],
-            r["regime"],
-            fmt(r["signal"]),
-            fmt(r["sharpe"]),
-            fmt(r["max_drawdown"]),
-            str(r["n_trades"]),
-            fmt(r["win_rate"]),
-            fmt(r["profit_factor"]),
-            fmt(r["total_return"]),
-            fmt(r["wall_seconds"]),
-        ])
+        rows.append(
+            [
+                r["ticker"],
+                r["engine"],
+                r["regime"],
+                fmt(r["signal"]),
+                fmt(r["sharpe"]),
+                fmt(r["max_drawdown"]),
+                str(r["n_trades"]),
+                fmt(r["win_rate"]),
+                fmt(r["profit_factor"]),
+                fmt(r["total_return"]),
+                fmt(r["wall_seconds"]),
+            ]
+        )
 
     # Column widths
     widths = [len(h) for h in headers]

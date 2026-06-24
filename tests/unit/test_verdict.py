@@ -115,10 +115,15 @@ class TestDynamicThresholdAgingRamp:
         # shape=2.0, scale=10.0 → expected = 10 * Γ(1+1/2) = 10 * Γ(1.5) ≈ 8.862
         # days_in=8.862 → aging_ratio ≈ 1.0 → threshold = 0.1
         from scipy.special import gamma as _gamma
+
         scale = 10.0
         shape = 2.0
         expected = scale * _gamma(1.0 + 1.0 / shape)
-        df = {"days_in_regime": expected, "weibull_scale": scale, "weibull_shape": shape}
+        df = {
+            "days_in_regime": expected,
+            "weibull_scale": scale,
+            "weibull_shape": shape,
+        }
         result = _compute_dynamic_threshold(df)
         assert result == 0.1  # exactly at boundary
 
@@ -131,6 +136,7 @@ class TestDynamicThresholdAgingRamp:
     def test_aging_ratio_mid_ramp(self):
         """aging_ratio=1.35 → threshold_mult=0.65 → threshold=0.065"""
         from scipy.special import gamma as _gamma
+
         scale = 10.0
         shape = 2.0
         expected = scale * _gamma(1.0 + 1.0 / shape)
@@ -142,6 +148,7 @@ class TestDynamicThresholdAgingRamp:
     def test_aging_ratio_at_floor(self):
         """aging_ratio=1.7 → threshold_mult=0.3 → threshold=0.03"""
         from scipy.special import gamma as _gamma
+
         scale = 10.0
         shape = 2.0
         expected = scale * _gamma(1.0 + 1.0 / shape)
@@ -153,6 +160,7 @@ class TestDynamicThresholdAgingRamp:
     def test_aging_ratio_beyond_floor_stays_at_floor(self):
         """aging_ratio=50 → threshold_mult still 0.3 (floor, no underflow)."""
         from scipy.special import gamma as _gamma
+
         scale = 10.0
         shape = 2.0
         expected = scale * _gamma(1.0 + 1.0 / shape)
@@ -164,6 +172,7 @@ class TestDynamicThresholdAgingRamp:
     def test_custom_base_threshold_respected(self):
         """Base threshold propagates through ramp."""
         from scipy.special import gamma as _gamma
+
         scale = 10.0
         shape = 2.0
         expected = scale * _gamma(1.0 + 1.0 / shape)
@@ -175,6 +184,7 @@ class TestDynamicThresholdAgingRamp:
     def test_aging_ratio_near_ramp_end(self):
         """aging_ratio just below 1.7 → threshold_mult just above 0.3"""
         from scipy.special import gamma as _gamma
+
         scale = 10.0
         shape = 2.0
         expected = scale * _gamma(1.0 + 1.0 / shape)
@@ -190,7 +200,7 @@ class TestDynamicThresholdAgingRamp:
 
 
 def _fc(bear=0.0, sideways=0.0, bull=0.0):
-    """Shorthand to build a forecast_20 dict."""
+    """Shorthand to build a 1-step forecast dict."""
     return {"bear": bear, "sideways": sideways, "bull": bull}
 
 

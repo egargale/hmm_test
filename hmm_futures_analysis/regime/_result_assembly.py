@@ -110,17 +110,17 @@ def _compute_dynamic_threshold(
 def _compute_verdict(
     current_regime: int,
     signal: float,
-    forecast_20: dict[str, float],
+    forecast_1: dict[str, float],
     sideways_threshold: float = 0.1,
 ) -> dict[str, object]:
-    """Synthesize regime + forecasts into a single actionable verdict."""
+    """Synthesize regime + 1-step forecast into a single actionable verdict."""
     if current_regime == 2:  # Bull
-        if forecast_20["bull"] > forecast_20.get("bear", 0):
+        if forecast_1["bull"] > forecast_1.get("bear", 0):
             verdict = "bullish"
         else:
             verdict = "transition_bear"
     elif current_regime == 0:  # Bear
-        if forecast_20["bear"] > forecast_20.get("bull", 0):
+        if forecast_1["bear"] > forecast_1.get("bull", 0):
             verdict = "bearish"
         else:
             verdict = "transition_bull"
@@ -157,15 +157,9 @@ def _assemble_result(
     All arguments are keyword-only so the call site in ``pipeline.run()``
     is self-documenting.
     """
-    # Forecast probabilities
+    # Forecast probabilities (1-step only, ADR-0025)
     forecast_1 = _probs_to_dict(
         forecast_n_steps(markov.transmat, markov.current_probs, 1)
-    )
-    forecast_5 = _probs_to_dict(
-        forecast_n_steps(markov.transmat, markov.current_probs, 5)
-    )
-    forecast_20 = _probs_to_dict(
-        forecast_n_steps(markov.transmat, markov.current_probs, 20)
     )
 
     # Verdict
@@ -173,7 +167,7 @@ def _assemble_result(
     verdict_out = _compute_verdict(
         markov.current_regime,
         markov.signal,
-        forecast_20,
+        forecast_1,
         sideways_threshold=sideways_threshold,
     )
 
@@ -197,8 +191,6 @@ def _assemble_result(
         walk_forward=walk_forward,
         forecast={
             "1_step": forecast_1,
-            "5_step": forecast_5,
-            "20_step": forecast_20,
         },
         engine_info=engine_info,
         framework=_FRAMEWORK_VERSION,

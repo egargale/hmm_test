@@ -220,6 +220,7 @@ def _hmm_classify_pipeline(
     wf_recovery: dict[str, object] = {}
 
     t_wf = _time.monotonic()
+    last_transmat = None
     for t, result in _walk_forward_classify(
         returns,
         eng=engine,
@@ -235,6 +236,8 @@ def _hmm_classify_pipeline(
         regimes[t] = result.regime
         if result.posteriors is not None:
             posteriors_all[t] = result.posteriors
+        if result.transmat is not None:
+            last_transmat = result.transmat
     if profile:
         _phases["walk_forward_classify"] = float(round(_time.monotonic() - t_wf, 6))
 
@@ -255,6 +258,7 @@ def _hmm_classify_pipeline(
         n_features=precomputed.shape[1],
         engine_info=engine_info if engine_info else None,
         reverse_classify=reverse,
+        transmat=last_transmat,
     )
 
 

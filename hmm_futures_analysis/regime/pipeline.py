@@ -225,15 +225,25 @@ def _build_engine_info(
 
 
 def _build_markov_stats(
-    regimes: np.ndarray, price_index: pd.DatetimeIndex
+    regimes: np.ndarray,
+    price_index: pd.DatetimeIndex,
+    *,
+    hmm_transmat: np.ndarray | None = None,
 ) -> MarkovStats:
     """Compute Markov chain statistics from a regimes array.
 
     Pure function: given regimes and a price index, produces
     transition matrix, stationary distribution, persistence,
     signal, regime counts, current regime/probs, and dates.
+
+    When *hmm_transmat* is provided (3×3 regime-space from an HMM
+    engine's internal ``model.transmat_``), it replaces the
+    empirical count-based matrix.  Threshold engines pass None.
     """
-    transmat = build_transition_matrix(regimes)
+    if hmm_transmat is not None:
+        transmat = hmm_transmat
+    else:
+        transmat = build_transition_matrix(regimes)
     stationary = compute_stationary_distribution(transmat)
     persistence = compute_persistence_diagonal(transmat)
 
@@ -327,7 +337,11 @@ def run(
     if classify_out.n_states is not None:
         resolved_n_states = classify_out.n_states
 
-    markov = _build_markov_stats(classify_out.regimes, prices.index)
+    markov = _build_markov_stats(
+        classify_out.regimes,
+        prices.index,
+        hmm_transmat=classify_out.transmat,
+    )
 
     # Walk-forward backtest (reuse pre-computed regime labels, ADR-0017)
     t_wfb = time.monotonic()

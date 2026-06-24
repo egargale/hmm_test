@@ -25,7 +25,7 @@ _Avoid_: state, cluster
 _Avoid_: score, conviction
 
 **Transition matrix**:
-A 3×3 row-normalized matrix where `T[i][j]` = probability of transitioning from regime `i` to regime `j`. Row sums to 1.0. Persistence diagonal entries (i → i) measure regime stickiness.
+A 3×3 row-normalized matrix where `T[i][j]` = probability of transitioning from regime `i` to regime `j`. Row sums to 1.0. Persistence diagonal entries (i → i) measure regime stickiness. For HMM-family engines (messina, hmm, robust_hmm, fshmm), the matrix is derived from the HMM's internal `model.transmat_` remapped to regime space (ADR-0025). For the threshold engine, it is the empirical count matrix from classified regimes.
 _Avoid_: confusion matrix, Markov chain
 
 **OHLCV**:
@@ -99,7 +99,7 @@ Post-processing, now on by default, that estimates how long the current regime w
 _Avoid_: regime length prediction, time-to-transition
 
 **Verdict**:
-A synthesized signal computed by `_compute_verdict()` in `pipeline.py`, always present in pipeline output. One of ``"bullish"``, ``"bearish"``, ``"neutral"``, ``"transition_bull"``, ``"transition_bear"``. For Bull/Bear regimes, compares the 20-step forecast probability to the current distribution - continuation if the forecast reinforces, transition if it reverses. For Sideways, uses ``|signal|`` against a dynamic threshold (see below). Includes a ``confidence`` field = ``abs(signal)``.
+A synthesized signal computed by `_compute_verdict()` in `pipeline.py`, always present in pipeline output. One of ``"bullish"``, ``"bearish"``, ``"neutral"``, ``"transition_bull"``, ``"transition_bear"``. For Bull/Bear regimes, compares the 1-step forecast probability to the current distribution - continuation if the forecast reinforces, transition if it reverses. For Sideways, uses ``|signal|`` against a dynamic threshold (see below). Includes a ``confidence`` field = ``abs(signal)``.
 _Avoid_: prediction, outlook, recommendation
 
 **Dynamic threshold**:

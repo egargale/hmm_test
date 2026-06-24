@@ -503,9 +503,7 @@ spells to fit, and the output will contain `null` values.
     "total_return": 2.07
   },
   "forecast": {
-    "1_step":  { "bear": 0.02, "sideways": 0.16, "bull": 0.82 },
-    "5_step":  { "bear": 0.07, "sideways": 0.28, "bull": 0.65 },
-    "20_step": { "bear": 0.15, "sideways": 0.42, "bull": 0.43 }
+    "1_step":  { "bear": 0.02, "sideways": 0.16, "bull": 0.82 }
   },
   "engine_info": {
     "method": "fshmm",
@@ -696,6 +694,7 @@ recovers and produces valid output. These are informational, not errors.
 ### All regimes are "sideways" or all "bear"
 
 This typically happens with:
+
 - **Too few bars** — the model doesn't have enough data to distinguish states.
 - **Too many features** — overfitting collapses the model to 1–2 effective states.
 

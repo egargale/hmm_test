@@ -22,6 +22,7 @@ class ClassifyResult:
     regime: int  # 0=bear, 1=sideways, 2=bull
     means: np.ndarray | None = None
     posteriors: np.ndarray | None = None
+    transmat: np.ndarray | None = None  # 3x3 regime-space (HMM .transmat_ remapped)
     feature_saliency: np.ndarray | None = None
     selected_features: list[str] | None = None
 
@@ -38,6 +39,7 @@ class ClassifyOutput:
     n_features: int | None = None  # feature count the engine used (low-data warning)
     engine_info: dict | None = None
     reverse_classify: bool = False
+    transmat: np.ndarray | None = None  # 3x3 regime-space from HMM internal transmat_
 
 
 @runtime_checkable

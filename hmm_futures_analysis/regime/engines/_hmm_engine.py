@@ -389,4 +389,24 @@ def _classify_hmm_slice(
             return_component=return_component,
         )
 
-    return ClassifyResult(regime=int(regime), means=means, posteriors=posteriors)
+    # Aggregate HMM internal transmat to 3×3 regime-space (ADR-0025)
+    regime_transmat = np.zeros((3, 3))
+    for i in range(n_actual):
+        from_regime = label_map.get(i, 1)
+        for j in range(n_actual):
+            to_regime = label_map.get(j, 1)
+            regime_transmat[from_regime, to_regime] += model.transmat_[i, j]
+    # Ensure row-stochastic; zero rows get uniform fill
+    for r in range(3):
+        row_sum = regime_transmat[r].sum()
+        if row_sum > 0:
+            regime_transmat[r] /= row_sum
+        else:
+            regime_transmat[r] = [1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0]
+
+    return ClassifyResult(
+        regime=int(regime),
+        means=means,
+        posteriors=posteriors,
+        transmat=regime_transmat,
+    )

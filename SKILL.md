@@ -119,9 +119,7 @@ The threshold engine uses rolling return to classify: above `+threshold` = Bull,
     "total_return": 2.07
   },
   "forecast": {
-    "1_step":  {"bear": 0.02, "sideways": 0.16, "bull": 0.82},
-    "5_step":  {"bear": 0.07, "sideways": 0.28, "bull": 0.65},
-    "20_step": {"bear": 0.15, "sideways": 0.42, "bull": 0.43}
+    "1_step":  {"bear": 0.02, "sideways": 0.16, "bull": 0.82}
   },
   "engine_info": {
     "method": "fshmm",
