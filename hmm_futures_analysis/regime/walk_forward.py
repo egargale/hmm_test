@@ -2,7 +2,9 @@
 
 At each bar *t* from ``min_train`` to end:
 1. Replay pre-computed regime labels via ``_replay_regimes``.
-2. Map regime to discrete position via ``{0: -1, 1: 0, 2: 1}``.
+2. Map regime to position: binary mode via ``{0: -1, 1: 0, 2: 1}``, or
+   signal-scaled mode via ``clip(signal, -1, 1)`` where ``signal`` is the
+   per-bar P(bull)−P(bear) (Issue #85).
 3. Apply position at bar *t*, trade in/out on regime changes.
 
 Produces trade-level analytics: Sharpe, max drawdown, trade count,
@@ -25,6 +27,53 @@ from ..backtesting.performance_metrics import calculate_sharpe_ratio
 _STATE_MAP = {0: -1, 1: 0, 2: 1}  # bear=short, sideways=flat, bull=long
 
 
+def _bar_signal(
+    t: int,
+    posteriors: np.ndarray | None,
+    returns: pd.Series,
+    threshold_window: int | None,
+    threshold_value: float | None,
+) -> float:
+    """Per-bar directional signal in ``[-1, 1]`` (Issue #85).
+
+    HMM engines (posteriors present): ``signal = P(bull) − P(bear)``, i.e.
+    ``posteriors[t][2] − posteriors[t][0]``. Reuses the
+    ``markov_chain.compute_signal`` formula so there is one definition in
+    the codebase.
+
+    Threshold engine (posteriors is None): synthesize a pseudo-signal from
+    the rolling return that the threshold engine itself uses for
+    classification: ``pseudo_signal = clip(rolling_ret[t] / threshold, -1, 1)``
+    where ``rolling_ret = returns.rolling(window).sum()``. A return exactly
+    at ``+threshold`` → ``+1``; at ``−threshold`` → ``−1``; beyond saturates.
+    This is no-lookahead: the rolling window is backward-looking, and the
+    position is applied at bar ``t`` trading on ``returns[t+1]`` via the
+    existing walk-forward lag.
+
+    Defensive fallback: if sizing mode is on but the engine provides neither
+    posteriors nor threshold params, raise ``ValueError``. Unreachable with
+    the current engine set, but guards future engines that lack a signal
+    source.
+    """
+    if posteriors is not None:
+        row = posteriors[t]
+        return float(row[2] - row[0])
+
+    if threshold_window is not None and threshold_value is not None:
+        if threshold_value == 0:
+            raise ValueError("signal-sizing threshold_value must be non-zero")
+        rolling_ret = returns.rolling(window=threshold_window).sum()
+        val = rolling_ret.iloc[t]
+        if val != val:  # NaN check (rolling window not yet filled)
+            return 0.0
+        return float(np.clip(val / threshold_value, -1.0, 1.0))
+
+    raise ValueError(
+        "signal-sizing requires posteriors or threshold window/threshold "
+        "params; engine provides neither"
+    )
+
+
 def _empty_result() -> dict:
     return {
         "sharpe": float("nan"),
@@ -33,6 +82,7 @@ def _empty_result() -> dict:
         "win_rate": float("nan"),
         "profit_factor": float("nan"),
         "total_return": float("nan"),
+        "sizing_mode": "binary",
     }
 
 
@@ -112,15 +162,28 @@ def _walk_forward_positions(
     min_train: int = 252,
     dwell_bars: int = 0,
     hysteresis_delta: float = 0.0,
+    signal_sizing: bool = False,
+    signal_floor: float = 0.0,
+    threshold_window: int | None = None,
+    threshold_value: float | None = None,
 ) -> np.ndarray:
     """Build position array from pre-computed regime labels.
 
     Replays regimes via the local _replay_regimes generator,
     applies dwell/hysteresis filters, and maps regimes to discrete
-    positions via _STATE_MAP.
+    positions via _STATE_MAP (binary mode) or to signal-scaled float
+    positions (signal-sizing mode, Issue #85).
+
+    In signal-sizing mode the filters still gate *direction* (which regime
+    label is active via ``current_regime``); the position *magnitude* is
+    ``clip(signal[t], -1, 1)`` where ``signal[t]`` is the per-bar
+    P(bull)−P(bear) (HMM engines) or the threshold pseudo-signal. When
+    ``signal_floor > 0`` and ``abs(signal) < signal_floor`` the position is
+    forced to 0.0 (flat). Position dtype is ``int`` in binary mode
+    (bit-identical to pre-feature output) and ``float`` in sizing mode.
     """
     n = len(returns)
-    positions = np.zeros(n, dtype=int)
+    positions = np.zeros(n, dtype=float if signal_sizing else int)
     current_regime: int = 1
     consecutive_count = 0
     current_posteriors: np.ndarray | None = None
@@ -143,7 +206,17 @@ def _walk_forward_positions(
             current_regime = regime
             current_posteriors = new_posteriors_arr
 
-        positions[t] = _STATE_MAP.get(current_regime, 0)
+        if signal_sizing:
+            signal_t = _bar_signal(
+                t, posteriors, returns, threshold_window, threshold_value
+            )
+            mag = float(np.clip(signal_t, -1.0, 1.0))
+            if signal_floor > 0.0 and abs(mag) < signal_floor:
+                positions[t] = 0.0
+            else:
+                positions[t] = mag
+        else:
+            positions[t] = _STATE_MAP.get(current_regime, 0)
 
     return positions
 
@@ -156,8 +229,12 @@ def walk_forward_backtest(
     min_train: int = 252,
     dwell_bars: int = 0,
     hysteresis_delta: float = 0.0,
+    signal_sizing: bool = False,
+    signal_floor: float = 0.0,
+    threshold_window: int | None = None,
+    threshold_value: float | None = None,
 ) -> dict:
-    """No-lookahead walk-forward backtest with discrete position sizing.
+    """No-lookahead walk-forward backtest with discrete or signal-scaled sizing.
 
     Parameters
     ----------
@@ -167,7 +244,8 @@ def walk_forward_backtest(
         Pre-computed regime label per bar (0=Bear, 1=Sideways, 2=Bull).
     posteriors : np.ndarray | None
         Pre-computed (n_bars, 3) posterior probabilities, used by the
-        hysteresis filter. Hysteresis is a no-op when posteriors is None.
+        hysteresis filter and (in sizing mode) as the per-bar signal source.
+        Hysteresis is a no-op when posteriors is None.
     min_train : int
         Minimum number of bars before trading starts.
     dwell_bars : int
@@ -176,20 +254,40 @@ def walk_forward_backtest(
     hysteresis_delta : float
         Minimum posterior probability margin required to switch regimes.
         0.0 disables the filter (default). No-op when posteriors are None.
+    signal_sizing : bool
+        When True, use signal-scaled positions ``clip(signal, -1, 1)``
+        instead of binary ±1/0 (Issue #85). Default False (binary).
+    signal_floor : float
+        In sizing mode, go flat when ``abs(signal) < signal_floor``.
+        Default 0.0 (disabled).
+    threshold_window : int | None
+        Threshold-engine rolling window, used to synthesize a pseudo-signal
+        when ``signal_sizing=True`` and ``posteriors is None``. Read off the
+        engine config in ``pipeline.run()``.
+    threshold_value : float | None
+        Threshold-engine return threshold, used with ``threshold_window``.
 
     Returns
     -------
     dict
-        ``{sharpe, max_drawdown, n_trades, win_rate, profit_factor, total_return}``
+        ``{sharpe, max_drawdown, n_trades, win_rate, profit_factor,
+        total_return, sizing_mode}`` where ``sizing_mode`` is ``"binary"``
+        (default) or ``"signal"``.
     """
 
+    sizing_mode = "signal" if signal_sizing else "binary"
+
     if len(prices) < min_train + 1:
-        return _empty_result()
+        result = _empty_result()
+        result["sizing_mode"] = sizing_mode
+        return result
 
     returns = prices.pct_change(fill_method=None).dropna()
     n = len(returns)
     if n < min_train:
-        return _empty_result()
+        result = _empty_result()
+        result["sizing_mode"] = sizing_mode
+        return result
 
     positions = _walk_forward_positions(
         returns,
@@ -198,9 +296,15 @@ def walk_forward_backtest(
         min_train=min_train,
         dwell_bars=dwell_bars,
         hysteresis_delta=hysteresis_delta,
+        signal_sizing=signal_sizing,
+        signal_floor=signal_floor,
+        threshold_window=threshold_window,
+        threshold_value=threshold_value,
     )
 
-    # --- Daily P&L from lagged discrete positions ---
+    # --- Daily P&L from lagged positions ---
+    # positions are int in binary mode, float in sizing mode; the .astype(float)
+    # cast is a no-op for sizing mode and keeps the binary path bit-identical.
     pnl = np.zeros(n, dtype=float)
     pnl[1:] = positions[:-1].astype(float) * returns.iloc[1:].values
     equity = np.cumprod(1.0 + pnl)
@@ -210,7 +314,9 @@ def walk_forward_backtest(
     valid_equity = equity[~np.isnan(equity)]
 
     if len(valid_equity) < 2:
-        return _empty_result()
+        result = _empty_result()
+        result["sizing_mode"] = sizing_mode
+        return result
 
     equity_series = pd.Series(equity, index=returns.index).dropna()
 
@@ -235,6 +341,7 @@ def walk_forward_backtest(
             if n_trades < 10
             else None
         ),
+        "sizing_mode": sizing_mode,
     }
 
 

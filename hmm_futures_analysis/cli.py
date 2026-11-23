@@ -168,6 +168,18 @@ def main() -> None:
         help="Hysteresis filter: require posterior probability margin > D to switch regime. Accepts 'auto' for engine defaults (default: auto).",
     )
     parser.add_argument(
+        "--signal-sizing",
+        action="store_true",
+        default=False,
+        help="Scale position size by signal strength (clip(P(bull)-P(bear), -1, 1)) instead of binary +/-1/0. Default: off (binary). The threshold engine synthesizes a pseudo-signal from rolling return; HMM engines use posteriors directly.",
+    )
+    parser.add_argument(
+        "--signal-floor",
+        type=float,
+        default=0.0,
+        help="In signal-sizing mode, go flat when abs(signal) < F. Default 0.0 (disabled).",
+    )
+    parser.add_argument(
         "--robust-method",
         type=str,
         default="huber",
@@ -371,6 +383,8 @@ def main() -> None:
             ohlcv=ohlcv,
             dwell_bars=args.dwell_bars,
             hysteresis_delta=args.hysteresis,
+            signal_sizing=args.signal_sizing,
+            signal_floor=args.signal_floor,
             duration_forecast=args.duration_forecast,
             duration_model=args.duration_model,
         )

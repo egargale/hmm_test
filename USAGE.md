@@ -348,6 +348,8 @@ These parameters apply to all engines.
 | `--min-train` | 252 | Minimum bars before walk-forward trading starts. Lower values trade earlier but with less stable models. |
 | `--dwell-bars` | 0 | **Dwell-time filter.** Require N consecutive same-regime bars before switching position. 0 = disabled, `auto` = use engine default. |
 | `--hysteresis` | 0.0 | **Hysteresis filter.** Require posterior probability margin > D to switch regime. 0.0 = disabled, `auto` = use engine default. HMM engines only. |
+| `--signal-sizing` | off | **Signal-scaled sizing.** Scale position size by signal strength `clip(P(bull)−P(bear), −1, 1)` instead of binary ±1/0. See [Signal-Scaled Position Sizing](#signal-scaled-position-sizing). |
+| `--signal-floor` | 0.0 | In `--signal-sizing` mode, go flat when `abs(signal) < F`. 0.0 = disabled. |
 | `--n-states` | 3 | Number of HMM states. Integer ≥ 2, or `auto` for BIC-based selection (2–6). HMM engines only. |
 | `--duration-forecast` | off | Enable regime duration forecasting via survival analysis. See [Duration Forecasting](#duration-forecasting). |
 | `--duration-model` | `weibull` | Survival model: `weibull` or `cox` (requires `lifelines`). |
@@ -427,6 +429,99 @@ in the new regime before acting.
 
 ---
 
+## Signal-Scaled Position Sizing
+
+By default the walk-forward backtest uses **binary** positions: long (+1) in
+bull, short (−1) in bear, flat (0) in sideways. A weak bull signal
+(P(bull)−P(bear) = 0.2) and a strong one (0.9) both produce a full +1 long.
+
+The `--signal-sizing` flag switches to **signal-scaled** positions, where each
+bar's position is proportional to the signal strength:
+
+```
+position = clip(signal, -1, 1)    where signal = P(bull) − P(bear)
+```
+
+This scales exposure **down** in uncertain regimes (near-zero signal → near
+flat) and **up** in confident ones (strong signal → near full ±1). It is most
+useful on engines/tickers where the binary model forces a full position on a
+correctly uncertain (near-zero signal) engine — the CRM case in the 2026-06-02
+evaluation, where HMM engines produce near-zero signal yet the binary model
+contributes −35% to −48% returns.
+
+### When to use
+
+- An engine produces near-zero signal on a ticker (genuine uncertainty) and
+  the binary model forces a full position that loses money.
+- You want exposure to scale with confidence rather than be all-or-nothing.
+- **Not** when the signal is already near ±1 (e.g. fshmm/0700.HK +0.98) —
+  sizing changes nothing there because `clip(0.98) = +1` already.
+
+### Flags
+
+| Flag | Default | Description |
+|---|---|---|
+| `--signal-sizing` | off | Enable signal-scaled sizing. `position = clip(signal, −1, 1)`. |
+| `--signal-floor F` | 0.0 | Go flat when `abs(signal) < F`. Default 0.0 disables the floor (pure `clip(signal)`). |
+
+### Interaction with dwell-time / hysteresis filters
+
+The filters still **gate direction** (which regime label is active); sizing
+scales **magnitude** within the allowed direction. The position magnitude
+follows the raw signed `signal[t]` (not `abs(signal) × sign(regime)`), so when
+a signal decays toward 0 while a filter holds an old regime label, the
+position naturally goes flat even though the regime hasn't switched yet. This
+is the intended "reduce exposure when uncertain" behaviour and is bounded by
+`[-1, 1]`.
+
+```bash
+# Signal sizing + dwell filter together
+python -m hmm_futures_analysis.cli --ticker CRM --engine hmm \
+  --signal-sizing --dwell-bars 3 --json
+```
+
+### Threshold engine caveat
+
+The threshold engine has no posterior probabilities, so it synthesizes a
+**pseudo-signal** from its own rolling return:
+
+```
+pseudo_signal = clip(rolling_ret / threshold, -1, 1)
+```
+
+where `rolling_ret = returns.rolling(window).sum()` reusing the engine's
+`window` and `threshold` params. A return at exactly `+threshold` → `+1`; at
+`−threshold` → `−1`; beyond saturates. This is consistent with the threshold
+engine's own regime classification.
+
+### `sizing_mode` output field
+
+The `walk_forward` block reports which mode produced the result:
+
+- `"binary"` — default (flag off).
+- `"signal"` — `--signal-sizing` enabled.
+
+### `n_trades` under sizing
+
+A "trade" is still a flat-to-flat cycle (entry 0→non-0, exit non-0→0). A
+position that scales 0.9 → 0.2 → 0.9 **without crossing 0** is one continuous
+trade — partial reductions are not trade events. A sizing run may therefore
+show fewer trades than a researcher expects for a given equity curve.
+
+### Examples
+
+```bash
+# CRM with HMM signal sizing and a 0.15 floor
+python -m hmm_futures_analysis.cli --csv test_data/hmm-eval-2026-06-02/CRM.csv \
+  --engine hmm --signal-sizing --signal-floor 0.15 --json
+
+# Threshold engine with signal sizing (pseudo-signal path)
+python -m hmm_futures_analysis.cli --csv test_data/hmm-eval-2026-06-02/CRM.csv \
+  --engine threshold --signal-sizing --json
+```
+
+---
+
 ## Duration Forecasting
 
 The `--duration-forecast` flag adds a survival analysis post-processor that
@@ -500,7 +595,8 @@ spells to fit, and the output will contain `null` values.
     "n_trades": 20,
     "win_rate": 0.55,
     "profit_factor": 4.88,
-    "total_return": 2.07
+    "total_return": 2.07,
+    "sizing_mode": "binary"
   },
   "forecast": {
     "1_step":  { "bear": 0.02, "sideways": 0.16, "bull": 0.82 }
@@ -736,6 +832,10 @@ python -m hmm_futures_analysis.cli --ticker MS --engine fshmm \
 # Duration forecast with Cox PH model
 python -m hmm_futures_analysis.cli --ticker KO --engine messina \
   --duration-forecast --duration-model cox --json
+
+# Signal-scaled sizing on an uncertain engine (reduce exposure when signal is weak)
+python -m hmm_futures_analysis.cli --ticker CRM --engine hmm \
+  --signal-sizing --signal-floor 0.15 --json
 
 # Terminal (non-JSON) output for human reading
 python -m hmm_futures_analysis.cli --ticker MS --engine fshmm

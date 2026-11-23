@@ -287,6 +287,8 @@ def run(
     ohlcv: pd.DataFrame | None = None,
     dwell_bars: int | str = 0,
     hysteresis_delta: float | str = 0.0,
+    signal_sizing: bool = False,
+    signal_floor: float = 0.0,
     duration_forecast: bool = False,
     duration_model: str = "weibull",
     profile: bool = True,
@@ -344,6 +346,11 @@ def run(
     )
 
     # Walk-forward backtest (reuse pre-computed regime labels, ADR-0017)
+    # Issue #85: signal-scaled sizing. Read threshold engine params off the
+    # config via getattr (only ThresholdConfig carries window/threshold), so
+    # dispatch is by parameter presence, not engine name string matching.
+    threshold_window = getattr(config, "window", None)
+    threshold_value = getattr(config, "threshold", None)
     t_wfb = time.monotonic()
     wf_kwargs: dict = {
         "regimes": classify_out.regimes,
@@ -351,6 +358,10 @@ def run(
         "min_train": min_train,
         "dwell_bars": dwell_bars,
         "hysteresis_delta": hysteresis_delta,
+        "signal_sizing": signal_sizing,
+        "signal_floor": signal_floor,
+        "threshold_window": threshold_window,
+        "threshold_value": threshold_value,
     }
     wf = walk_forward_backtest(prices, **wf_kwargs)
     walk_forward = {
@@ -360,6 +371,7 @@ def run(
         "win_rate": _nan_to_none(wf["win_rate"]),
         "profit_factor": _nan_to_none(wf["profit_factor"]),
         "total_return": _nan_to_none(wf["total_return"]),
+        "sizing_mode": wf.get("sizing_mode", "binary"),
     }
     if profile:
         _phases["walk_forward_backtest"] = float(round(time.monotonic() - t_wfb, 6))
