@@ -89,7 +89,7 @@ class TestThresholdPipeline:
         returns = prices.pct_change(fill_method=None).dropna()
         regimes = classify_regimes(returns, window=20, threshold=0.05)
         result = walk_forward_backtest(prices, regimes=regimes)
-        assert result.max_drawdown <= 0 or np.isnan(result.max_drawdown)
+        assert result["max_drawdown"] <= 0 or np.isnan(result["max_drawdown"])
 
     def test_forecast_n_steps(self, btc_csv):
         prices = load_from_csv(btc_csv)
@@ -188,8 +188,9 @@ class TestPipelineRunInputValidation:
             "framework",
             "disclaimer",
         }
+        result_dict = result._asdict()
         for key in expected_keys:
-            assert key in result, f"Missing required key: {key}"
+            assert key in result_dict, f"Missing required key: {key}"
         # Engine
         assert result.engine == "threshold"
         # Dates
@@ -214,7 +215,7 @@ class TestPipelineRunInputValidation:
         sd = result.stationary_distribution
         total = sd["bear"] + sd["sideways"] + sd["bull"]
         assert abs(total - 1.0) < 0.01
-        # Walk-forward has 6 keys
+        # Walk-forward has 7 keys (six metrics + sizing_mode)
         wf = result.walk_forward
         assert set(wf.keys()) == {
             "sharpe",
@@ -223,8 +224,9 @@ class TestPipelineRunInputValidation:
             "win_rate",
             "profit_factor",
             "total_return",
+            "sizing_mode",
         }
-        assert isinstance(wf.n_trades, int)
+        assert isinstance(wf["n_trades"], int)
         # Forecast (1-step only, ADR-0025)
         assert "1_step" in result.forecast
         assert len(result.forecast) == 1
@@ -280,7 +282,7 @@ class TestWalkForwardBacktest:
     """Tests for walk_forward_backtest with pre-computed regimes (ADR-0017)."""
 
     def test_regimes_arg_returns_rich_keys(self, btc_csv):
-        """walk_forward_backtest returns 6 keys with regimes array."""
+        """walk_forward_backtest returns 7 keys (six metrics + sizing_mode)."""
         prices = load_from_csv(btc_csv)
         returns = prices.pct_change(fill_method=None).dropna()
         regimes = classify_regimes(returns, window=20, threshold=0.05)
@@ -302,7 +304,7 @@ class TestWalkForwardBacktest:
         returns = prices.pct_change(fill_method=None).dropna()
         regimes = classify_regimes(returns, window=20, threshold=0.05)
         result = walk_forward_backtest(prices, regimes=regimes)
-        wr = result.win_rate
+        wr = result["win_rate"]
         assert 0.0 <= wr <= 1.0 or np.isnan(wr)
 
     def test_missing_regimes_raises_type_error(self, btc_csv):
@@ -319,9 +321,9 @@ class TestWalkForwardBacktest:
             returns = pd.Series([0.0], index=prices.index[:1])
         regimes = np.ones(len(returns), dtype=int)
         result = walk_forward_backtest(prices, regimes=regimes, min_train=252)
-        assert np.isnan(result.sharpe)
-        assert np.isnan(result.max_drawdown)
-        assert result.n_trades == 0
+        assert np.isnan(result["sharpe"])
+        assert np.isnan(result["max_drawdown"])
+        assert result["n_trades"] == 0
 
 
 @pytest.mark.slow
@@ -439,7 +441,7 @@ class TestPipelineRunEngine:
         result = pipeline_run(prices, source="test", engine_config=ThresholdConfig())
         assert result.engine == "threshold"
         assert result.engine_info["method"] == "threshold"
-        # Walk-forward has 6 keys
+        # Walk-forward has 7 keys (six metrics + sizing_mode)
         wf = result.walk_forward
         assert set(wf.keys()) == {
             "sharpe",
@@ -448,6 +450,7 @@ class TestPipelineRunEngine:
             "win_rate",
             "profit_factor",
             "total_return",
+            "sizing_mode",
         }
 
     def test_run_rejects_invalid_engine(self, btc_csv):
@@ -483,12 +486,12 @@ class TestPipelineRunEngine:
         prices = load_from_csv(btc_csv)
         result = pipeline_run(prices, source="test", engine_config=ThresholdConfig())
         wf = result.walk_forward
-        assert isinstance(wf.sharpe, float)
-        assert not np.isnan(wf.sharpe)
-        assert isinstance(wf.max_drawdown, float)
-        assert wf.max_drawdown <= 0 or np.isnan(wf.max_drawdown)
-        assert isinstance(wf.n_trades, int)
-        assert wf.n_trades > 0
+        assert isinstance(wf["sharpe"], float)
+        assert not np.isnan(wf["sharpe"])
+        assert isinstance(wf["max_drawdown"], float)
+        assert wf["max_drawdown"] <= 0 or np.isnan(wf["max_drawdown"])
+        assert isinstance(wf["n_trades"], int)
+        assert wf["n_trades"] > 0
 
 
 @pytest.mark.slow
@@ -645,8 +648,8 @@ class TestPipelineRunEngineConfig:
         assert result.engine_info["features"] == "returns"
         assert result.walk_forward is not None
         wf = result.walk_forward
-        assert isinstance(wf.sharpe, float)
-        assert wf.n_trades > 0
+        assert isinstance(wf["sharpe"], float)
+        assert wf["n_trades"] > 0
 
 
 class TestPipelineEngineInfo:

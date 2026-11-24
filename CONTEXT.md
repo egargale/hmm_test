@@ -9,11 +9,11 @@ A self-contained regime classifier that produces regime labels and posterior pro
 _Avoid_: model, mode, method, strategy
 
 **Walk-forward backtest**:
-A bias-free backtest where at each bar `t`, only data up to `t-1` is used for regime classification. The position at bar `t` is determined by the regime at `t-1`. Produces discrete trade-level results: Sharpe, max drawdown, trade count, win rate, profit factor, total return.
+A bias-free backtest where at each bar `t`, only data up to `t-1` is used for regime classification. The position at bar `t` is determined by the regime at `t-1`. The default **binary** mode maps the filtered regime to `{-1, 0, +1}`. The opt-in **signal** mode (`--signal-sizing`) keeps the filter-gated direction but scales the position by `clip(P(bull) - P(bear), -1, 1)`; `--signal-floor` flattens small positions. Produces trade-level results: Sharpe, max drawdown, trade count, win rate, profit factor, total return, and `sizing_mode`.
 _Avoid_: rolling backtest, historical simulation
 
 **Regime**:
-The market condition at a point in time, one of {Bear (0), Sideways (1), Bull (2)}. Bears are declining markets, Bulls are rising markets, Sideways are range-bound. State 0 always maps to Short, 1 to Flat, 2 to Long in the trading model.
+The market condition at a point in time, one of {Bear (0), Sideways (1), Bull (2)}. Bears are declining markets, Bulls are rising markets, Sideways are range-bound. In the default binary trading model, state 0 maps to Short, 1 to Flat, 2 to Long. In signal-sizing mode the state gates the allowed direction and the signal scales the fractional position within it.
 _Avoid_: state (ambiguous - could mean HMM latent state or mapped regime)
 
 **HMM latent state**:
@@ -21,7 +21,7 @@ The raw state index (0, 1, 2) output by a GaussianHMM `predict()` call. These in
 _Avoid_: state, cluster
 
 **Signal**:
-`P(next_regime = Bull) - P(next_regime = Bear)`, range [-1, 1]. Positive = bullish, negative = bearish. Derived from the transition matrix row for the current regime.
+`P(next_regime = Bull) - P(next_regime = Bear)`, range [-1, 1]. Positive = bullish, negative = bearish. The top-level JSON `signal` is a single end-of-sample number derived from the transition matrix row for the current regime; it is **not** the per-bar sizing input. Signal sizing uses `P(bull)[t] - P(bear)[t]` from the per-bar posterior row.
 _Avoid_: score, conviction
 
 **Transition matrix**:
@@ -39,7 +39,7 @@ _Avoid_: indicator calculation, TA computation
 **FeatureSet**:
 The single source of truth for an engine's **feature engineering** mode — it owns the label (the `config.features` value), the builder (generic `add_features` or messina `add_messina_features`), and the resulting column count. Each HMM-family engine holds one as a value (`self.featureset`) rather than carrying a `use_messina` boolean. Two concrete adapters: `GenericFeatureSet` (label `"generic"`, ~50 features) and `MessinaFeatureSet` (label `"messina"`, 19 features, count derived from `MESSINA_FEATURE_COLUMNS`). The threshold engine opts out (close-only, `precompute` returns `None`, low-data warning special-cases it to count=1). Replaces the prior three-way encoding of one fact — engine `use_messina` bool, config `features` string, and the pipeline's `_count_features` lookup table — with one. The count is read off the built frame, never a magic number.
 _Avoid_: feature config, feature mode object, indicator set
-A trade with an entry time, entry price, exit time, exit price, and P&L. Positions are {-1, 0, 1}. A trade is opened when the regime changes and closed when it changes again. Transaction costs (commission, slippage) are modeled but default to zero for engine comparability.
+A trade with an entry time, entry price, exit time, exit price, and P&L. Binary positions are {-1, 0, 1}; signal-sizing mode permits fractional positions in [-1, 1]. A trade is a flat-to-flat position cycle: it opens when a position becomes non-zero from zero and closes when it returns to zero. Scaling within a position is not a new trade. Transaction costs (commission, slippage) are modeled but default to zero for engine comparability.
 _Avoid_: continuous position, fractional trade, signal-weighted trade
 
 **Degenerate auto-recovery**:
@@ -47,7 +47,7 @@ When an HMM engine's pre-check detects that a 3-state fit will collapse (one sta
 _Avoid_: auto-retry, fallback, degenerate retry
 
 **Regime spooling**:
-The threshold engine's method for mapping classified regimes to trading positions. At each bar, the regime (0/1/2) from `classify_regimes()` is mapped directly to a position via `{0: -1, 1: 0, 2: 1}`. No signal threshold or intermediate computation.
+The threshold engine's default method for mapping classified regimes to trading positions. At each bar, the regime (0/1/2) from `classify_regimes()` is mapped directly to a binary position via `{0: -1, 1: 0, 2: 1}`. Signal sizing is unsupported for threshold because it has no posteriors.
 _Avoid_: signal-gating, conviction filtering
 
 **BIC state selection** (`--n-states auto`):
@@ -67,7 +67,7 @@ Walk-forward filter that only switches regimes when the posterior probability of
 _Avoid_: probability threshold, confidence filter
 
 **Posteriors**:
-Posterior probability array over regimes, returned by HMM engines via `ClassifyResult.posteriors`. Computed from `model.predict_proba()`. When `n_states > 3`, aggregated by regime bucket (Bear/Sideways/Bull). Used by the hysteresis filter. `None` for the threshold engine.
+Posterior probability array over regimes, returned by HMM engines via `ClassifyResult.posteriors`. Computed from `model.predict_proba()`. When `n_states > 3`, aggregated by regime bucket (Bear/Sideways/Bull). Used by the hysteresis filter and by opt-in signal sizing (`P(bull)[t] - P(bear)[t]`). `None` for the threshold engine.
 _Avoid_: probabilities, confidence scores
 
 **Robust HMM engine** (`robust_hmm`):

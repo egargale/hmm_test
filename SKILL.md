@@ -79,6 +79,8 @@ The Messina, HMM, robust_hmm, and fshmm engines require OHLCV data and automatic
 | `--n-states` | int/`auto` | 3 | Number of HMM states. Pass `auto` for BIC-based selection (ignored by threshold engine). |
 | `--dwell-bars` | int | 0 | Dwell-time filter: require N consecutive same-regime bars before switching position. 0 = disabled. |
 | `--hysteresis` | float | 0.0 | Hysteresis filter: require posterior probability margin > D to switch regime. 0.0 = disabled. No-op for threshold engine. |
+| `--signal-sizing` | flag | off | Opt-in signal-sized positions: `clip(P(bull) − P(bear), −1, 1)` within the filtered direction. Requires an HMM engine; binary −1/0/+1 is the default. |
+| `--signal-floor` | float | 0.0 | Signal-sizing floor in `[0, 1]`: flatten positions with `abs(position) < F`. Requires `--signal-sizing`. |
 | `--duration-forecast` | flag | off | Enable regime duration forecasting via survival analysis (Weibull). |
 | `--duration-model` | str | `weibull` | Duration model: `weibull` (default) or `cox` (requires `lifelines`). |
 | `--robust-method` | str | `huber` | Robust estimator: `huber` (IRLS) or `mcd` (MinCovDet). Used by robust_hmm engine. |
@@ -88,13 +90,13 @@ The Messina, HMM, robust_hmm, and fshmm engines require OHLCV data and automatic
 
 ## State Interpretation
 
-| Regime | Index | Position |
-|--------|-------|----------|
-| **Bear** | 0 | Short (−1) |
-| **Sideways** | 1 | Flat (0) |
-| **Bull** | 2 | Long (+1) |
+| Regime | Index | Binary position | Signal-sized position |
+|--------|-------|-----------------|-----------------------|
+| **Bear** | 0 | Short (−1) | `clip(P(bull) − P(bear))` when negative |
+| **Sideways** | 1 | Flat (0) | Always flat (0) |
+| **Bull** | 2 | Long (+1) | `clip(P(bull) − P(bear))` when positive |
 
-The threshold engine uses rolling return to classify: above `+threshold` = Bull, below `-threshold` = Bear, otherwise Sideways. HMM engines sort states by ascending mean return to determine the mapping.
+The threshold engine uses rolling return to classify: above `+threshold` = Bull, below `-threshold` = Bear, otherwise Sideways. HMM engines sort states by ascending mean return to determine the mapping. Binary mode is the default; `--signal-sizing` permits fractional positions.
 
 ## JSON Output Contract
 
@@ -116,7 +118,8 @@ The threshold engine uses rolling return to classify: above `+threshold` = Bull,
     "n_trades": 20,
     "win_rate": 0.55,
     "profit_factor": 4.88,
-    "total_return": 2.07
+    "total_return": 2.07,
+    "sizing_mode": "binary"
   },
   "forecast": {
     "1_step":  {"bear": 0.02, "sideways": 0.16, "bull": 0.82}
@@ -198,7 +201,7 @@ All values are floats (may be `null` for insufficient data):
    - **fshmm**: Learns per-feature saliency weights during EM; features below `--saliency-threshold` are masked as irrelevant.
 4. **Build transition matrix** — Counts → row-normalised 3×3 probability matrix.
 5. **Compute statistics** — Stationary distribution, persistence diagonal, directional signal.
-6. **Walk-forward backtest** — No-lookahead: at each bar `t`, regime classification uses only data `[0:t)`. Discrete positions (−1, 0, +1) via `{bear: short, sideways: flat, bull: long}`. Optional **dwell-time** (`--dwell-bars`) and **hysteresis** (`--hysteresis`) filters gate position changes (AND logic — both must agree to switch). Trades fire on regime changes. Daily P&L from lagged positions × returns.
+6. **Walk-forward backtest** — No-lookahead: at each bar `t`, regime classification uses only data `[0:t)`. Binary positions (−1, 0, +1) via `{bear: short, sideways: flat, bull: long}` are the default. Optional **dwell-time** (`--dwell-bars`) and **hysteresis** (`--hysteresis`) filters gate direction changes (AND logic — both must agree to switch). Opt-in `--signal-sizing` keeps the filter-gated direction but scales magnitude by `clip(P(bull) − P(bear), −1, 1)`; `--signal-floor` flattens small positions. Daily P&L from lagged positions × returns.
 7. **Forecast** — Matrix exponentiation to project regime probabilities 1, 5, and 20 steps ahead.
 
 ## Signal Interpretation
@@ -298,9 +301,10 @@ fields are `null` when insufficient data exists.
 7. **signal = 0**: Can happen when bull and bear probabilities are equal. Common in sideways markets.
 8. **Threshold sensitivity**: Small `--threshold` values produce frequent regime switches. Large values make the regime "sticky".
 9. **Hysteresis + threshold engine**: `--hysteresis` has no effect with `--engine threshold` because the threshold engine does not produce posterior probabilities.
-10. **BIC auto + PCA**: When both `--n-states auto` and PCA whitening are active, BIC evaluation uses PCA-reduced features automatically.
-11. **FSHMM convergence**: The feature saliency EM algorithm may converge to local optima. If results look unstable, try adjusting `--saliency-threshold` or increasing data length. Plateau detection stops training after 3 flat iterations.
-12. **Robust HMM over-robustness**: Huber/MCD estimation can over-smooth, potentially missing real regime changes that produce moderate outliers. Compare with standard `--engine hmm` when in doubt.
+10. **Signal sizing + threshold engine**: `--signal-sizing` requires per-bar posteriors, so it errors with `--engine threshold` (exit 1; `{"error": "..."}` in `--json` mode). There is no binary fallback.
+11. **BIC auto + PCA**: When both `--n-states auto` and PCA whitening are active, BIC evaluation uses PCA-reduced features automatically.
+12. **FSHMM convergence**: The feature saliency EM algorithm may converge to local optima. If results look unstable, try adjusting `--saliency-threshold` or increasing data length. Plateau detection stops training after 3 flat iterations.
+13. **Robust HMM over-robustness**: Huber/MCD estimation can over-smooth, potentially missing real regime changes that produce moderate outliers. Compare with standard `--engine hmm` when in doubt.
 
 ## Reference Index
 
