@@ -13,6 +13,7 @@ from __future__ import annotations
 import time
 
 import dataclasses
+from typing import Literal
 
 import numpy as np
 import pandas as pd
@@ -38,7 +39,7 @@ from .markov_chain import (
     compute_stationary_distribution,
 )
 from .regime_transitions import extract_transitions
-from .walk_forward import walk_forward_backtest
+from .walk_forward import _validate_sizing_args, walk_forward_backtest
 
 __all__ = [
     "PipelineResult",
@@ -287,13 +288,17 @@ def run(
     ohlcv: pd.DataFrame | None = None,
     dwell_bars: int | str = 0,
     hysteresis_delta: float | str = 0.0,
+    sizing_mode: Literal["binary", "signal"] = "binary",
+    signal_floor: float = 0.0,
     duration_forecast: bool = False,
     duration_model: str = "weibull",
     profile: bool = True,
 ) -> dict:
     """Run the full regime-detection pipeline and return a JSON-compatible dict.
 
-    Profiling is enabled by default (low overhead).
+    ``sizing_mode="signal"`` sizes walk-forward positions from per-bar HMM
+    posteriors and is unsupported for the threshold engine (which has no
+    posteriors). Profiling is enabled by default (low overhead).
     """
     t_start = time.monotonic() if profile else 0.0
     _phases: dict[str, float] = {}
@@ -306,6 +311,13 @@ def run(
     if engine_name not in ENGINE_REGISTRY:
         raise ValueError(
             f"engine must be one of {sorted(ENGINE_REGISTRY.keys())}, got {engine_name!r}"
+        )
+
+    signal_floor = _validate_sizing_args(sizing_mode, signal_floor)
+    if sizing_mode == "signal" and engine_name == "threshold":
+        raise ValueError(
+            "signal sizing requires an engine with posterior probabilities "
+            "(hmm, messina, robust_hmm, fshmm); the threshold engine is unsupported"
         )
 
     returns = _validate_prices(prices)
@@ -337,6 +349,12 @@ def run(
     if classify_out.n_states is not None:
         resolved_n_states = classify_out.n_states
 
+    if sizing_mode == "signal" and classify_out.posteriors is None:
+        raise ValueError(
+            "signal sizing requires posterior probabilities "
+            f"(hmm, messina, robust_hmm, fshmm); engine {engine_name!r} returned none"
+        )
+
     markov = _build_markov_stats(
         classify_out.regimes,
         prices.index,
@@ -351,6 +369,8 @@ def run(
         "min_train": min_train,
         "dwell_bars": dwell_bars,
         "hysteresis_delta": hysteresis_delta,
+        "sizing_mode": sizing_mode,
+        "signal_floor": signal_floor,
     }
     wf = walk_forward_backtest(prices, **wf_kwargs)
     walk_forward = {
@@ -360,6 +380,7 @@ def run(
         "win_rate": _nan_to_none(wf["win_rate"]),
         "profit_factor": _nan_to_none(wf["profit_factor"]),
         "total_return": _nan_to_none(wf["total_return"]),
+        "sizing_mode": wf["sizing_mode"],
     }
     if profile:
         _phases["walk_forward_backtest"] = float(round(time.monotonic() - t_wfb, 6))

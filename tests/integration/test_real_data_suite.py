@@ -54,7 +54,7 @@ REQUIRED_KEYS = [
 ]
 
 WF_REQUIRED_KEYS = {"sharpe", "max_drawdown", "n_trades", "win_rate",
-                    "profit_factor", "total_return"}
+                    "profit_factor", "total_return", "sizing_mode"}
 
 VOLATILITY_TIERS = {
     "low": ["XLU", "LQD"],

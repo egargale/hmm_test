@@ -57,6 +57,9 @@ Given a ticker or CSV with price data, it outputs a structured JSON with:
 # Duration forecasting (survival analysis on regime spell lengths)
 ./scripts/run.sh --ticker SPY --json --engine messina --duration-forecast
 
+# Opt-in signal-scaled sizing (fractional positions; HMM engines only)
+./scripts/run.sh --ticker SPY --json --engine hmm --signal-sizing --signal-floor 0.1
+
 # Custom parameters
 ./scripts/run.sh --csv data.csv --json --window 10 --threshold 0.03
 ```
@@ -81,7 +84,8 @@ Given a ticker or CSV with price data, it outputs a structured JSON with:
     "n_trades": 20,
     "win_rate": 0.55,
     "profit_factor": 4.88,
-    "total_return": 2.07
+    "total_return": 2.07,
+    "sizing_mode": "binary"
   },
   "forecast": {
     "1_step":  {"bear": 0.02, "sideways": 0.16, "bull": 0.82}

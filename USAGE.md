@@ -348,6 +348,8 @@ These parameters apply to all engines.
 | `--min-train` | 252 | Minimum bars before walk-forward trading starts. Lower values trade earlier but with less stable models. |
 | `--dwell-bars` | 0 | **Dwell-time filter.** Require N consecutive same-regime bars before switching position. 0 = disabled, `auto` = use engine default. |
 | `--hysteresis` | 0.0 | **Hysteresis filter.** Require posterior probability margin > D to switch regime. 0.0 = disabled, `auto` = use engine default. HMM engines only. |
+| `--signal-sizing` | off | **Opt-in signal-sized positions.** Size each position by `clip(P(bull) − P(bear), −1, 1)` within the direction allowed by the filters. Requires an HMM engine (not threshold). Binary −1/0/+1 remains the default. |
+| `--signal-floor` | 0.0 | **Signal-sizing floor.** In signal mode, flatten positions with `abs(position) < F`. `F` must be in `[0, 1]` and requires `--signal-sizing`. Strict `<`: a position exactly at `F` is kept. |
 | `--n-states` | 3 | Number of HMM states. Integer ≥ 2, or `auto` for BIC-based selection (2–6). HMM engines only. |
 | `--duration-forecast` | off | Enable regime duration forecasting via survival analysis. See [Duration Forecasting](#duration-forecasting). |
 | `--duration-model` | `weibull` | Survival model: `weibull` or `cox` (requires `lifelines`). |
@@ -427,6 +429,87 @@ in the new regime before acting.
 
 ---
 
+## Signal-Scaled Position Sizing
+
+By default the walk-forward maps the filtered regime to a binary position:
+bear `−1`, sideways `0`, bull `+1`. A weak bull signal therefore receives the
+same full long position as a strong one.
+
+`--signal-sizing` opts into a proportional alternative. For each bar `t`:
+
+```
+allowed[t]  = {bear: −1, sideways: 0, bull: +1}   # after dwell/hysteresis
+signal[t]   = clip(P(bull)[t] − P(bear)[t], −1, 1)
+position[t] = allowed[t] × max(0, allowed[t] × signal[t])
+```
+
+In words: the filters still decide **which direction is allowed**; the signal
+only scales the magnitude within that direction.
+
+| Filtered regime | Signal | Position | Why |
+|---|---:|---:|---|
+| bull | +0.9 | +0.9 | Strong bull, partial-to-full long |
+| bull | +0.2 | +0.2 | Weak bull, small long |
+| bear | −0.9 | −0.9 | Strong bear, partial-to-full short |
+| bull | −0.4 | 0.0 | Signal opposes the held direction |
+| bear | +0.4 | 0.0 | Signal opposes the held direction |
+| sideways | any | 0.0 | Sideways is always flat |
+
+Consequences:
+
+- Positions are fractional floats in `[−1, 1]`; binary mode remains integer.
+- A dwell-time or hysteresis block still holds the old direction. The size
+  within that direction follows the current bar's signal; if the signal points
+  the other way, the position is flat until the filter allows a switch.
+- A non-finite posterior/signal becomes flat (`0.0`) rather than leaking into
+  P&L.
+
+### Signal Floor
+
+`--signal-floor F` flattens positions whose absolute size is below `F`
+(strict `<`). It is useful for avoiding tiny positions and for defining clear
+flat-to-flat trade boundaries.
+
+```bash
+# Size positions by signal, but stay flat below 0.15
+python -m hmm_futures_analysis.cli --ticker SPY --engine hmm \
+  --signal-sizing --signal-floor 0.15 --json
+```
+
+- Default `0.0` disables the floor.
+- Valid range is `[0.0, 1.0]`; non-finite or out-of-range values are rejected.
+- `--signal-floor` without `--signal-sizing` is rejected. A non-zero floor with
+  the binary mode also raises a `ValueError` from the Python API.
+
+### Engine Support
+
+Signal sizing needs per-bar posterior probabilities. It works with the four
+HMM-family engines: `hmm`, `messina`, `robust_hmm`, and `fshmm`.
+
+The `threshold` engine has no posteriors. In signal mode it fails fast with a
+clear error instead of silently falling back to binary:
+
+```bash
+# Exit status 1; with --json, stdout is {"error": "..."}
+python -m hmm_futures_analysis.cli --ticker SPY --engine threshold \
+  --signal-sizing --json
+```
+
+### Output and Trade Statistics
+
+`walk_forward.sizing_mode` is always present and is either `"binary"` or
+`"signal"`, including short-data runs that return null metrics.
+
+The trade definition is unchanged: a trade is a flat-to-flat position cycle
+(entry when a position becomes non-zero from zero, exit when it returns to
+zero). Scaling `0.9 → 0.2 → 0.9` without crossing zero is still one trade.
+Therefore `n_trades`, win rate, and profit factor are **not directly
+comparable** between binary and signal modes, and a sizing run can report very
+few trades. This option does not guarantee better Sharpe, return, or drawdown;
+it only changes how exposure is sized.
+
+---
+
 ## Duration Forecasting
 
 The `--duration-forecast` flag adds a survival analysis post-processor that
@@ -500,7 +583,8 @@ spells to fit, and the output will contain `null` values.
     "n_trades": 20,
     "win_rate": 0.55,
     "profit_factor": 4.88,
-    "total_return": 2.07
+    "total_return": 2.07,
+    "sizing_mode": "binary"
   },
   "forecast": {
     "1_step":  { "bear": 0.02, "sideways": 0.16, "bull": 0.82 }
@@ -550,6 +634,7 @@ spells to fit, and the output will contain `null` values.
 | `walk_forward.sharpe` | real | Annualised Sharpe ratio of walk-forward strategy. |
 | `walk_forward.total_return` | real | Cumulative return (1.0 = +100%, −0.5 = −50%). |
 | `walk_forward.profit_factor` | ≥ 0 | Gross profits / gross losses. > 1 = profitable. 0 = no winning trades. |
+| `walk_forward.sizing_mode` | `"binary"` / `"signal"` | Which position model produced these metrics. Present in every run, including empty results. |
 | `verdict.verdict` | string | One of `"bullish"`, `"bearish"`, `"neutral"`, `"transition_bull"`, `"transition_bear"`. Always present. |
 | `verdict.confidence` | 0 to 1 | `abs(signal)`. Higher = stronger conviction. |
 | `timing.total_s` | float | Total wall-clock time in seconds. Always present. |

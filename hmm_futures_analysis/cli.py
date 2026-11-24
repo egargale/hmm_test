@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 
 from .data_processing.csv_auto_detect import load_prices
@@ -102,6 +103,21 @@ def _parse_hysteresis(value: str) -> str | float:
     return fv
 
 
+def _parse_signal_floor(value: str) -> float:
+    """Parse --signal-floor: a finite float in [0, 1]."""
+    try:
+        fv = float(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            f"--signal-floor must be a number in [0, 1], got {value!r}"
+        )
+    if not math.isfinite(fv) or fv < 0.0 or fv > 1.0:
+        raise argparse.ArgumentTypeError(
+            f"--signal-floor must be a finite number in [0, 1], got {value!r}"
+        )
+    return fv
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Detect market regimes (Bull/Bear/Sideways) using Markov analysis.",
@@ -166,6 +182,18 @@ def main() -> None:
         type=_parse_hysteresis,
         default="auto",
         help="Hysteresis filter: require posterior probability margin > D to switch regime. Accepts 'auto' for engine defaults (default: auto).",
+    )
+    parser.add_argument(
+        "--signal-sizing",
+        action="store_true",
+        default=False,
+        help="Size walk-forward positions proportionally to the per-bar signal P(bull)-P(bear), within the filtered direction. Requires an HMM engine (not threshold). Default: off (binary -1/0/+1).",
+    )
+    parser.add_argument(
+        "--signal-floor",
+        type=_parse_signal_floor,
+        default=None,
+        help="Signal-sizing floor in [0, 1]: flatten positions with abs(position) < F. Requires --signal-sizing (default: 0.0).",
     )
     parser.add_argument(
         "--robust-method",
@@ -289,6 +317,14 @@ def main() -> None:
     if not eval_mode and not single_mode:
         parser.error("provide one of: --ticker, --csv, --eval-tickers, or --eval-csv")
 
+    # --- Signal-sizing validation (single-run mode only) ---
+    if eval_mode and (args.signal_sizing or args.signal_floor is not None):
+        parser.error("signal sizing flags are not supported in eval mode")
+    if args.signal_floor is not None and not args.signal_sizing:
+        parser.error("--signal-floor requires --signal-sizing")
+    sizing_mode = "signal" if args.signal_sizing else "binary"
+    signal_floor = args.signal_floor if args.signal_floor is not None else 0.0
+
     # --- Eval mode ---
     if eval_mode:
         if args.eval_tickers is not None and args.eval_csv is not None:
@@ -371,6 +407,8 @@ def main() -> None:
             ohlcv=ohlcv,
             dwell_bars=args.dwell_bars,
             hysteresis_delta=args.hysteresis,
+            sizing_mode=sizing_mode,
+            signal_floor=signal_floor,
             duration_forecast=args.duration_forecast,
             duration_model=args.duration_model,
         )
