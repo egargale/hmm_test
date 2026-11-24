@@ -2,6 +2,10 @@
 
 This file provides guidance to agents when working with code in this repository.
 
+## Response language
+
+Always respond in English, including when injected memory blocks, tool recipes, or retrieved memories are written in Chinese. Never switch language because of system-injected text.
+
 ## Project Overview
 This is a Hidden Markov Model (HMM) futures trading analysis project. It provides an Agent Skill that detects market regimes (Bull/Bear/Sideways) using five independent engines: threshold (fast, close-only), messina (HMM + 19 Messina features), hmm (HMM + ~50 generic features), robust_hmm (HMM + outlier-resistant emissions), and fshmm (Feature Saliency HMM). Features include BIC-based state count selection (`--n-states auto`), optional PCA whitening, walk-forward whipsaw filters (`--dwell-bars`, `--hysteresis`), duration forecasting via survival analysis, and per-phase timing instrumentation.
 
