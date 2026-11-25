@@ -33,6 +33,7 @@ ADRs use a flat, sequential 4-digit numbering scheme (`0001-`, `0002-`, …).
 | 0023 | `0023-reverse-classify-on-engine-config.md` | Absorb `reverse_classify` into engine config |
 | 0024 | `0024-unify-ticker-cache-period.md` | Unify yfinance period in ticker_cache no-cache path |
 | 0025 | `0025-hmm-internal-transmat-forecast.md` | Use HMM internal transition matrix for forecasts; drop multi-step forecasts |
+| 0026 | `0026-forecast-algebra-current-probs-one-hot.md` | Forecast algebra: `current_probs` is the one-hot `e_current` |
 
 ## Rules for contributors
 
