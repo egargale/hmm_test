@@ -96,6 +96,12 @@ _result_assembly._assemble_result()
   → _compute_verdict(forecast_1)  # uses 1-step, not 20-step
 ```
 
+> **Amended by [[ADR-0026]] (2026-11-24)**: `current_probs` in the chain
+> above is the one-hot `e_current`. As originally implemented it was the
+> transition row `T[i, :]`, so `forecast_n_steps(..., 1)` computed
+> `T²[i, :]` under the `1_step` key — a two-step distribution masquerading
+> as the 1-step forecast this ADR specifies.
+
 ### Backward compatibility
 
 - `ClassifyResult` gains `transmat: np.ndarray | None = None` — default None

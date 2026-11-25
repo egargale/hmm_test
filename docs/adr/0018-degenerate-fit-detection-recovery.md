@@ -128,6 +128,8 @@ When a degenerate 3-state fit is detected during `_hmm_classify_pipeline()`, the
 
 The confidence penalty (`_apply_confidence_penalty`) is **removed**. Rationale: a successfully recovered 2-state model produces correct regime labels; penalizing its confidence sends a false uncertainty signal.
 
+The regime space itself does not change: the recovered 2-state fit maps its two latent states onto the Bear(0)/Bull(2) buckets of the fixed 3-bucket regime space (Bear(0)/Sideways(1)/Bull(2), [[ADR-0025]], [[ADR-0019]]) and never assigns Sideways. "2-state" refers to the latent fit only — there is no two-valued output mapping and no 2×2 matrix; the output contract keeps its three bear/sideways/bull keys and the 3×3 regime-space transition matrix.
+
 `detect_degenerate_fit()` is retained as audit-only — it records whether a fit was degenerate (including whether auto-recovery already occurred) for downstream diagnostics and logging.
 
 #### Evidence for reversal
