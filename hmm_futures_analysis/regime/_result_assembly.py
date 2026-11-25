@@ -157,10 +157,12 @@ def _assemble_result(
     All arguments are keyword-only so the call site in ``pipeline.run()``
     is self-documenting.
     """
-    # Forecast probabilities (1-step only, ADR-0025)
-    forecast_1 = _probs_to_dict(
-        forecast_n_steps(markov.transmat, markov.current_probs, 1)
-    )
+    # Forecast probabilities (1-step only, ADR-0025).  With current_probs as
+    # the one-hot e_current (issue #112) this is T[current_regime, :] — the
+    # same distribution as next_state_probabilities (SKILL.md JSON contract:
+    # both fields carry the current-regime row of the transition matrix).
+    next_probs = forecast_n_steps(markov.transmat, markov.current_probs, 1)
+    forecast_1 = _probs_to_dict(next_probs)
 
     # Verdict
     sideways_threshold = _compute_dynamic_threshold(duration_forecast_result)
@@ -183,7 +185,7 @@ def _assemble_result(
             "index": markov.current_regime,
         },
         signal=markov.signal,
-        next_state_probabilities=_probs_to_dict(markov.current_probs),
+        next_state_probabilities=_probs_to_dict(next_probs),
         transition_matrix=markov.transmat.tolist(),
         stationary_distribution=_probs_to_dict(markov.stationary),
         persistence_diagonal=markov.persistence,

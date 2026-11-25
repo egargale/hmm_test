@@ -249,8 +249,17 @@ def _build_markov_stats(
     persistence = compute_persistence_diagonal(transmat)
 
     last_regime = int(regimes[-1])
-    current_probs = transmat[last_regime]
-    signal = compute_signal(current_probs)
+    # Issue #112: current_probs is the one-hot distribution over the current
+    # regime (e_current), not a row of the transition matrix.  forecast_n_steps
+    # multiplies it by T, so a row input here would emit T^2 as the "1-step"
+    # forecast.  np.eye is keyed on transmat.shape[0] so both the 3×3
+    # regime-space matrix and a 2×2 post-degenerate-recovery matrix
+    # ([[ADR-0018]]) yield a correct unit vector.
+    current_probs = np.eye(transmat.shape[0], dtype=np.float64)[last_regime]
+    # Signal keeps its wire contract (CONTEXT.md: signal = P(bull) - P(bear)):
+    # derived from the current regime's transition row, independent of
+    # current_probs, so the one-hot change does not alter signal.
+    signal = compute_signal(transmat[last_regime])
 
     # Regime counts
     unique, counts = np.unique(regimes, return_counts=True)
