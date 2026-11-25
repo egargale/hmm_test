@@ -29,11 +29,15 @@ regime**, `e_current = np.eye(transmat.shape[0])[last_regime]`:
 2. `signal` is computed from the transition row
    `T[current_regime, :]` (`P(bull) − P(bear)`), independent of
    `current_probs`, so the wire `signal`/`verdict` semantics are unchanged.
-3. `np.eye` is keyed on `transmat.shape[0]`, so construction works for the
-   standard 3×3 regime-space matrix and for a 2×2 post-degenerate-recovery
-   matrix ([[ADR-0018]]); `compute_persistence_diagonal()` and
-   `compute_signal()` accept any matrix size (positional first/last
-   entries) while remaining value-identical for 3×3 inputs.
+3. The matrix is always 3×3 regime-space: HMM engines aggregate
+   `model.transmat_` into a fixed 3×3 whatever the fitted state count
+   ([[ADR-0025]]), and the threshold path builds it with the default
+   `n_states=3`. `np.eye` is sized from `transmat.shape[0]` instead of
+   hardcoded, but `compute_persistence_diagonal()`, `compute_signal()` and
+   `_probs_to_dict()` keep their explicit bear/sideways/bull indexing — even
+   degenerate auto-recovery ([[ADR-0018]]) maps 2 latent states onto the
+   Bear(0)/Bull(2) buckets of the same 3×3 matrix, so no 2×2 ever reaches
+   this code.
 4. The n-step algebra generalizes: forecast at horizon n is
    `e_current @ Tⁿ` (row-convention; for n=1 exactly `T[current_regime, :]`),
    as pinned by `test_forecast_horizons_match_matrix_powers`.
@@ -57,7 +61,7 @@ regime**, `e_current = np.eye(transmat.shape[0])[last_regime]`:
 
 - [[ADR-0011]] — engine dispatch consolidation (the seam where
   `current_probs` and `signal` are produced).
-- [[ADR-0018]] — degenerate-fit detection and recovery (source of 2×2
-  matrices the construction must survive).
+- [[ADR-0018]] — degenerate-fit detection and recovery; its 2-state mapping
+  still emits the 3×3 regime-space matrix, so nothing here is shape-generic.
 - [[ADR-0025]] — HMM internal transmat for forecasts; 1-step forecast
   surface (defines the JSON `forecast` block this invariant governs).

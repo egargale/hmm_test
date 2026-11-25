@@ -54,29 +54,18 @@ def compute_stationary_distribution(transmat: np.ndarray) -> np.ndarray:
 
 
 def compute_persistence_diagonal(transmat: np.ndarray) -> dict:
-    """Extract persistence (stickiness) for each state.
-
-    Keys are positional and capped at the matrix size: the standard 3×3
-    regime-space matrix returns bear/sideways/bull exactly as before, while a
-    smaller matrix (e.g. a 2×2 post-degenerate-recovery shape, issue #112)
-    returns one key per available diagonal element instead of raising
-    IndexError.
-    """
+    """Extract persistence (stickiness) for each state."""
     diag = np.diag(transmat)
-    keys = ("bear", "sideways", "bull")
     return {
-        name: float(diag[i]) for i, name in enumerate(keys) if i < len(diag)
+        "bear": float(diag[0]),
+        "sideways": float(diag[1]),
+        "bull": float(diag[2]),
     }
 
 
 def compute_signal(next_state_probs: np.ndarray) -> float:
-    """Compute directional signal: P(last) - P(first) in [-1, 1].
-
-    For the standard 3-state vector this is P(bull) - P(bear); reading the
-    last/first entries keeps the 3×3 value identical and stays defined for a
-    2-state vector (issue #112).
-    """
-    return float(next_state_probs[-1] - next_state_probs[0])
+    """Compute directional signal: P(bull) - P(bear) in [-1, 1]."""
+    return float(next_state_probs[2] - next_state_probs[0])
 
 
 def forecast_n_steps(

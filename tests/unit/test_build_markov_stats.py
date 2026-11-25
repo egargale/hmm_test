@@ -85,25 +85,6 @@ class TestBuildMarkovStats:
         assert result.current_probs.sum() == 1.0
         assert set(np.unique(result.current_probs)) <= {0.0, 1.0}
 
-    def test_current_probs_one_hot_with_2x2_transmat(self):
-        """Construction is shape-robust: 2×2 matrix → 2-element one-hot."""
-        idx_4 = self._make_index(5)
-        transmat2 = np.array([[0.7, 0.3], [0.4, 0.6]])
-
-        result0 = _build_markov_stats(
-            np.array([0, 1, 1, 0]), idx_4, hmm_transmat=transmat2
-        )
-        np.testing.assert_array_equal(
-            result0.current_probs, np.array([1.0, 0.0])
-        )
-
-        result1 = _build_markov_stats(
-            np.array([0, 1, 0, 1]), idx_4, hmm_transmat=transmat2
-        )
-        np.testing.assert_array_equal(
-            result1.current_probs, np.array([0.0, 1.0])
-        )
-
     def test_signal_is_transition_row_based(self):
         """signal stays P(bull) - P(bear) from T[current_regime] (wire
         contract) and must not be recomputed from the one-hot vector."""

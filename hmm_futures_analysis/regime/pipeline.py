@@ -252,9 +252,8 @@ def _build_markov_stats(
     # Issue #112: current_probs is the one-hot distribution over the current
     # regime (e_current), not a row of the transition matrix.  forecast_n_steps
     # multiplies it by T, so a row input here would emit T^2 as the "1-step"
-    # forecast.  np.eye is keyed on transmat.shape[0] so both the 3×3
-    # regime-space matrix and a 2×2 post-degenerate-recovery matrix
-    # ([[ADR-0018]]) yield a correct unit vector.
+    # forecast.  The matrix is always the 3×3 regime-space one (ADR-0025);
+    # np.eye is sized from it rather than hardcoded.
     current_probs = np.eye(transmat.shape[0], dtype=np.float64)[last_regime]
     # Signal keeps its wire contract (CONTEXT.md: signal = P(bull) - P(bear)):
     # derived from the current regime's transition row, independent of
