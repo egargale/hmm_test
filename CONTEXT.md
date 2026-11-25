@@ -43,7 +43,7 @@ A trade with an entry time, entry price, exit time, exit price, and P&L. Binary 
 _Avoid_: continuous position, fractional trade, signal-weighted trade
 
 **Degenerate auto-recovery**:
-When an HMM engine's pre-check detects that a 3-state fit will collapse (one state receiving < 5% of bars), the engine automatically downgrades to `n_states=2` before entering the walk-forward loop. The output uses the 2-state regime mapping (Bear/Bull, no Sideways). The original requested `n_states` and the auto-recovery event are recorded in `engine_info`. Per ADR-0018 (amended). Mid-stream degeneration (detected during the walk-forward classify loop) also triggers a downgrade to `n_states=2` for remaining refits.
+When an HMM engine's pre-check detects that a 3-state fit will collapse (one state receiving < 5% of bars), the engine automatically downgrades to `n_states=2` before entering the walk-forward loop. The regime space is unchanged — the fixed three buckets Bear(0)/Sideways(1)/Bull(2); the recovered 2-state fit maps its two latent states onto Bear(0) and Bull(2), never assigns Sideways, and the output keeps its three bear/sideways/bull keys. The original requested `n_states` and the auto-recovery event are recorded in `engine_info`. Per ADR-0018 (amended). Mid-stream degeneration (detected during the walk-forward classify loop) also triggers a downgrade to `n_states=2` for remaining refits.
 _Avoid_: auto-retry, fallback, degenerate retry
 
 **Regime spooling**:
@@ -120,7 +120,7 @@ _Avoid_: renderer, output module, formatter
 | `robust_hmm` | Data with outlier bars, broad indices (SPY) | PCA=0.90 required for positive Sharpe on most tickers; 0700_HK and CRM uniformly negative |
 | `fshmm` | Feature selection diagnostics, individual equities | Saliency weights (ρ) identify dead features but don't fix high-vol degeneration; negative Sharpe on SPY, KO, BTC at defaults |
 
-**Rule of thumb**: If daily std > 2%, prefer `threshold` with dwell-bars ≥ 5. If daily std < 1.5% and OHLCV is available, `hmm` with n_states=3 often outperforms threshold. `n_states=auto` (BIC) is worth trying - it recovered BTC from +0.31 to +0.78 Sharpe on the generic engine and from +0.31 to +0.74 on robust_hmm. The `n_states=2` edge case is now handled correctly (bear/bull with no sideways). Per ADR-0019.
+**Rule of thumb**: If daily std > 2%, prefer `threshold` with dwell-bars ≥ 5. If daily std < 1.5% and OHLCV is available, `hmm` with n_states=3 often outperforms threshold. `n_states=auto` (BIC) is worth trying - it recovered BTC from +0.31 to +0.78 Sharpe on the generic engine and from +0.31 to +0.74 on robust_hmm. The `n_states=2` edge case is now handled correctly (latent states map onto the Bear(0)/Bull(2) buckets; Sideways is never assigned and the output keys are unchanged). Per ADR-0019.
 
 - **"state"**: Use **regime** for the labeled market condition (Bear/Sideways/Bull) and **HMM latent state** for the raw model output index. Never use "state" alone.
 - **"method"**: Use **engine** for the selected analysis pipeline. The old term "method" appears in the JSON `params.method` field; this is legacy from when threshold was the only engine and should migrate to `engine_info.method`.

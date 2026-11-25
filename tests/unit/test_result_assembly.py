@@ -217,3 +217,68 @@ class TestAssembleResultBasic:
         for row in result.transition_matrix:
             assert isinstance(row, list)
             assert len(row) == 3
+
+
+class TestForecastAlgebraIssue112:
+    """forecast.1_step must equal T[current_regime] (issue #112).
+
+    current_probs is the one-hot e_current, so forecast_n_steps applies
+    exactly one matrix multiplication: forecast.1_step and
+    next_state_probabilities both carry the current-regime row of T.
+    The high-persistence matrix (the case where the old row-as-input bug
+    was masked, T^2 ~= T) is covered explicitly.
+    """
+
+    WALK_FORWARD = {
+        "sharpe": 1.5,
+        "max_drawdown": -0.12,
+        "n_trades": 10,
+        "win_rate": 0.6,
+        "profit_factor": 1.8,
+        "total_return": 0.25,
+    }
+
+    @pytest.mark.parametrize(
+        "transmat",
+        [
+            np.array([[0.7, 0.2, 0.1], [0.1, 0.8, 0.1], [0.1, 0.2, 0.7]]),
+            np.array(
+                [
+                    [0.999, 0.0005, 0.0005],
+                    [0.001, 0.998, 0.001],
+                    [0.0005, 0.0005, 0.999],
+                ]
+            ),
+        ],
+        ids=["standard", "high_persistence"],
+    )
+    def test_forecast_1_step_equals_transmat_row(self, transmat):
+        i = 1
+        markov = _make_markov_stats(
+            transmat=transmat,
+            current_regime=i,
+            current_probs=np.eye(3)[i],
+            signal=0.35,
+        )
+        result = _assemble_result(
+            source="SPY",
+            engine_name="threshold",
+            markov=markov,
+            walk_forward=dict(self.WALK_FORWARD),
+            engine_info={"method": "threshold", "features": "returns", "n_states": 3},
+            timing=None,
+            duration_forecast_result=None,
+            regime_transitions=[],
+        )
+        keys = ("bear", "sideways", "bull")
+        forecast_vec = np.array([result.forecast["1_step"][k] for k in keys])
+        nsp_vec = np.array([result.next_state_probabilities[k] for k in keys])
+        np.testing.assert_allclose(forecast_vec, transmat[i], rtol=0, atol=1e-12)
+        np.testing.assert_allclose(nsp_vec, transmat[i], rtol=0, atol=1e-12)
+        # SKILL.md contract: the two JSON fields carry the same distribution
+        np.testing.assert_array_equal(forecast_vec, nsp_vec)
+        # wire signal untouched by the one-hot change
+        assert result.signal == 0.35
+        # pre-fix witness: the row-as-input value produced T^2 here
+        buggy = transmat[i] @ transmat
+        assert not np.allclose(forecast_vec, buggy, rtol=0, atol=1e-9)
