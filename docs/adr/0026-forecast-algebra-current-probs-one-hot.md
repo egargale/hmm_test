@@ -28,7 +28,14 @@ regime**, `e_current = np.eye(transmat.shape[0])[last_regime]`:
    assembly layer now sources from the same computed vector.
 2. `signal` is computed from the transition row
    `T[current_regime, :]` (`P(bull) − P(bear)`), independent of
-   `current_probs`, so the wire `signal`/`verdict` semantics are unchanged.
+   `current_probs`. Signal is unchanged — it was already the transition
+   row's `[2]-[0]` difference when `current_probs` was row-valued. The
+   verdict rule (`_compute_verdict`: bull − bear of the 1-step forecast,
+   dynamic neutral band) is also unchanged, but its input is now the true
+   one-step distribution: before this fix it consumed the `T²[i, :]` row,
+   so verdict values can change and the verdict is now genuinely 1-step
+   (issue #112 lists `verdict`/`duration_forecast` among the fields
+   expected to regenerate differently).
 3. The matrix is always 3×3 regime-space: HMM engines aggregate
    `model.transmat_` into a fixed 3×3 whatever the fitted state count
    ([[ADR-0025]]), and the threshold path builds it with the default
@@ -47,8 +54,11 @@ regime**, `e_current = np.eye(transmat.shape[0])[last_regime]`:
 - `forecast.1_step` values change in JSON output (the fix); the threshold
   panel shows changes up to Δ=0.183 (SPY). `next_state_probabilities`,
   `transition_matrix`, `signal`, `stationary_distribution`,
-  `persistence_diagonal`, `regime_counts`, `walk_forward` and all observed
-  verdicts are unchanged (11-run before/after diff, see `fix.md`).
+  `persistence_diagonal`, `regime_counts` and `walk_forward` are unchanged.
+  `verdict` and `duration_forecast` values that consume the forecast follow
+  the fix — the verdict is now genuinely 1-step (issue #112 acceptance
+  criteria expect these fields to regenerate differently; the PR notes the
+  defect "can change an action").
 - Field names, dict keys, and the rest of `MarkovStats`' public surface are
   untouched; `_result_assembly` and `pipeline._build_markov_stats` remain
   the only touchpoints.
