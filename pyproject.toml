@@ -48,6 +48,8 @@ addopts = ["-ra", "--strict-markers", "-m", "not slow"]
 [tool.ruff]
 target-version = "py39"
 line-length = 88
+# Vendored third-party helper (nexus-query); keep it byte-identical to upstream.
+extend-exclude = ["scripts/query_graph.py"]
 
 [dependency-groups]
 dev = ["pytest>=8.4.2"]

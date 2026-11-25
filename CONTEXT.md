@@ -152,10 +152,11 @@ The `.nexus-map/` knowledge base at repo root provides instant code structure qu
 - `--summary` — 5s global module distribution
 
 ```bash
-SKILL_DIR="/home/enrico/.pi/agent/skills/nexus-query"
 AST_JSON=".nexus-map/raw/ast_nodes.json"
 GIT_JSON=".nexus-map/raw/git_stats.json"
-.venv/bin/python "$SKILL_DIR/scripts/query_graph.py" "$AST_JSON" --who-imports $MODULE
+.venv/bin/python scripts/query_graph.py "$AST_JSON" --who-imports $MODULE
 ```
 
-Before any interface change, run `--impact` first to know how many modules depend on the file.
+The script is vendored at `scripts/query_graph.py` (stdlib only, no install step), so this
+works from a bare checkout and inside any sandbox. Before any interface change, run
+`--impact` first to know how many modules depend on the file.
