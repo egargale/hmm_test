@@ -140,23 +140,3 @@ _Avoid_: renderer, output module, formatter
 > **Domain expert**: It errors. Messina and HMM engines require OHLCV. The threshold engine is the only one that works with close-only data.
 
 ---
-
-## Code structure queries (nexus-query)
-
-The `.nexus-map/` knowledge base at repo root provides instant code structure queries via `nexus-query`:
-
-- `--file <path>` — file skeleton: classes, methods, line numbers, imports
-- `--who-imports <module>` — reverse dependency list before refactoring
-- `--impact <path>` [--git-stats] — impact radius with git risk data
-- `--hub-analysis` — top fan-in/fan-out, find the real high-coupling core
-- `--summary` — 5s global module distribution
-
-```bash
-AST_JSON=".nexus-map/raw/ast_nodes.json"
-GIT_JSON=".nexus-map/raw/git_stats.json"
-.venv/bin/python scripts/query_graph.py "$AST_JSON" --who-imports $MODULE
-```
-
-The script is vendored at `scripts/query_graph.py` (stdlib only, no install step), so this
-works from a bare checkout and inside any sandbox. Before any interface change, run
-`--impact` first to know how many modules depend on the file.
