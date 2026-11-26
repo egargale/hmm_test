@@ -42,7 +42,10 @@ include = ["/hmm_futures_analysis"]
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
-markers = ["slow: integration tests that run full pipelines against real data"]
+markers = [
+  "slow: integration tests that run full pipelines against real data",
+  "statistical: 5x5 statistical evaluation panel (always co-marked with slow)",
+]
 addopts = ["-ra", "--strict-markers", "-m", "not slow"]
 
 [tool.ruff]
