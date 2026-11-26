@@ -1,5 +1,6 @@
 """Shared fixtures for hmm_test integration tests."""
 
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -10,8 +11,10 @@ import pytest
 # Project root
 ROOT = Path(__file__).resolve().parent.parent
 
-# Default timeout (seconds) for CLI integration tests.
-CLI_TIMEOUT = 60
+# Default timeout (seconds) for CLI integration tests. 60s fits a fast dev box but
+# not shared CI or a cloud sandbox: fshmm alone takes ~92s on 0700_HK. Override
+# with HMM_CLI_TIMEOUT instead of editing this constant per machine.
+CLI_TIMEOUT = int(os.environ.get("HMM_CLI_TIMEOUT", "60"))
 
 
 def run_regime(*args, timeout=CLI_TIMEOUT):
