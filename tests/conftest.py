@@ -17,13 +17,16 @@ ROOT = Path(__file__).resolve().parent.parent
 CLI_TIMEOUT = int(os.environ.get("HMM_CLI_TIMEOUT", "60"))
 
 
-def run_regime(*args, timeout=CLI_TIMEOUT):
+def run_regime(*args, timeout=CLI_TIMEOUT, env=None):
     """Run hmm_futures_analysis/cli.py with args, return CompletedProcess.
 
     Raises AssertionError with a descriptive message if the subprocess
-    exceeds *timeout* seconds.
+    exceeds *timeout* seconds.  *env* is an optional mapping of extra
+    environment variables merged over the current process environment for
+    the subprocess (e.g. ``{"OMP_NUM_THREADS": "1"}``).
     """
     cmd = [sys.executable, "-m", "hmm_futures_analysis.cli"] + list(args)
+    run_env = {**os.environ, **env} if env else None
     try:
         result = subprocess.run(
             cmd,
@@ -31,6 +34,7 @@ def run_regime(*args, timeout=CLI_TIMEOUT):
             text=True,
             cwd=str(ROOT),
             timeout=timeout,
+            env=run_env,
         )
     except subprocess.TimeoutExpired as exc:
         raise AssertionError(
@@ -45,6 +49,42 @@ def btc_csv():
     p = ROOT / "test_data" / "BTC.csv"
     if not p.exists():
         pytest.skip("BTC.csv not available")
+    return str(p)
+
+
+@pytest.fixture(scope="session")
+def spy_csv():
+    """Path to SPY.csv test data."""
+    p = ROOT / "test_data" / "SPY.csv"
+    if not p.exists():
+        pytest.skip("SPY.csv not available")
+    return str(p)
+
+
+@pytest.fixture(scope="session")
+def nvda_csv():
+    """Path to NVDA.csv test data."""
+    p = ROOT / "test_data" / "NVDA.csv"
+    if not p.exists():
+        pytest.skip("NVDA.csv not available")
+    return str(p)
+
+
+@pytest.fixture(scope="session")
+def ko_csv():
+    """Path to KO.csv test data."""
+    p = ROOT / "test_data" / "KO.csv"
+    if not p.exists():
+        pytest.skip("KO.csv not available")
+    return str(p)
+
+
+@pytest.fixture(scope="session")
+def xle_csv():
+    """Path to XLE.csv test data."""
+    p = ROOT / "test_data" / "XLE.csv"
+    if not p.exists():
+        pytest.skip("XLE.csv not available")
     return str(p)
 
 
