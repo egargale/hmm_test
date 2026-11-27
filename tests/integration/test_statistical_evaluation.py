@@ -54,10 +54,11 @@ import json
 import statistics
 import time
 
-import numpy as np
 import pytest
 
 from hmm_futures_analysis.data_processing.csv_auto_detect import load_from_csv
+from hmm_futures_analysis.eval import buy_and_hold_stats as _buy_and_hold_stats
+from hmm_futures_analysis.eval import fleiss_components as _fleiss_components
 from tests.conftest import ROOT, run_regime
 
 pytestmark = [pytest.mark.slow, pytest.mark.statistical]
@@ -90,28 +91,10 @@ REQUIRED_SECTIONS = (
 
 
 # --------------------------------------------------------------------------
-# Fleiss' kappa helper (test-side only; no product consumer)
+# Fleiss' kappa — implementation shared with hmm_futures_analysis.eval
+# (issue #114) so the --eval-statistical CLI surface cannot drift from this
+# harness; the metric definition remains pinned here ([[ADR-0027]]).
 # --------------------------------------------------------------------------
-
-
-def _fleiss_components(counts):
-    """Return ``(p_bar, p_e, kappa)`` for a subjects x categories matrix."""
-    mat = np.asarray(counts, dtype=float)
-    n_raters = mat.sum(axis=1)
-    if not np.all(n_raters == n_raters[0]):
-        raise ValueError("each subject must be rated by the same rater count")
-    n_subjects, _ = mat.shape
-    n = n_raters[0]
-    if n < 2:
-        raise ValueError("kappa needs at least two raters per subject")
-    p_i = (np.sum(mat * mat, axis=1) - n) / (n * (n - 1))
-    p_bar = float(np.mean(p_i))
-    p_cat = mat.sum(axis=0) / (n_subjects * n)
-    p_e = float(np.sum(p_cat * p_cat))
-    if p_e == 1.0:
-        raise ValueError("kappa undefined: chance agreement is exactly 1")
-    kappa = (p_bar - p_e) / (1.0 - p_e)
-    return p_bar, p_e, kappa
 
 
 def fleiss_kappa(counts_matrix):
@@ -202,21 +185,14 @@ def buy_and_hold(ticker_csvs):
 
     Window/returns/Sharpe convention: see the module docstring
     (``prices[252:]`` after ``min_train``, ``numpy.diff``, rf=0, ddof=1).
+    Implementation shared with hmm_futures_analysis.eval (issue #114).
     """
-    stats = {}
-    for ticker, path in ticker_csvs.items():
-        prices = load_from_csv(path).to_numpy()
-        px = prices[MIN_TRAIN:]
-        rets = np.diff(px) / px[:-1]
-        peak = np.maximum.accumulate(px)
-        stats[ticker] = {
-            "sharpe": float(
-                np.mean(rets) / np.std(rets, ddof=1) * np.sqrt(252.0)
-            ),
-            "total_return": float(px[-1] / px[0] - 1.0),
-            "max_drawdown": float(np.min(px / peak - 1.0)),
-        }
-    return stats
+    return {
+        ticker: _buy_and_hold_stats(
+            load_from_csv(path).to_numpy(), min_train=MIN_TRAIN
+        )
+        for ticker, path in ticker_csvs.items()
+    }
 
 
 @pytest.fixture(scope="session")

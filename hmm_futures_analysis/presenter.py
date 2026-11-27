@@ -7,7 +7,8 @@ Four public functions:
 
 - ``format_pipeline()``  → terminal-formatted string for a single run
 - ``serialize_pipeline()`` → JSON-compatible dict for a single run
-- ``format_eval()``      → markdown table or JSON string for eval results
+- ``format_eval()``      → markdown table, statistical table, or JSON
+  string for eval results
 - ``limit_transitions()`` → pure filter/reverse for regime transitions
 """
 
@@ -216,7 +217,7 @@ def serialize_pipeline(
 def format_eval(
     results: list[dict[str, Any]],
     *,
-    fmt: Literal["table", "json"] = "table",
+    fmt: Literal["table", "json", "statistical_table"] = "table",
 ) -> str:
     """Format eval-mode results as a string.
 
@@ -225,9 +226,11 @@ def format_eval(
     results : list[dict]
         List of summary dicts from ``run_eval_csv()`` or
         ``run_eval_tickers()``.
-    fmt : "table" or "json", default "table"
+    fmt : "table", "json" or "statistical_table", default "table"
         - ``"table"`` → markdown-style table.
         - ``"json"`` → indented JSON array.
+        - ``"statistical_table"`` → cross-engine agreement summary and
+          buy-and-hold delta grid (issue #114, ADR-0028).
 
     Returns
     -------
@@ -247,6 +250,8 @@ def format_eval(
         return json.dumps(results, indent=2, allow_nan=False) + "\n"
     if fmt == "table":
         return _format_eval_table(results)
+    if fmt == "statistical_table":
+        return _format_statistical_table(results)
     raise ValueError(f"Unknown format: {fmt!r}")
 
 
@@ -350,5 +355,102 @@ def _format_eval_table(results: list[dict[str, Any]]) -> str:
     ]
     for row in rows:
         lines.append(fmt_row(row))
+
+    return "\n".join(lines)
+
+
+
+def _format_statistical_table(results: list[dict[str, Any]]) -> str:
+    """Format results as the statistical report (issue #114, Slice 3).
+
+    Two grids: the cross-engine agreement summary (one row per ticker,
+    engine vote columns, plus a report-only majority column) and the
+    buy-and-hold delta grid (engine Sharpe minus B&H Sharpe, one row per
+    engine).  Pure: no IO.  (ADR-0028.)
+    """
+    if not results:
+        return "No results."
+
+    ticker_order: list[str] = []
+    engine_order: list[str] = []
+    votes: dict[tuple[str, str], str] = {}
+    deltas: dict[tuple[str, str], Any] = {}
+    kappa_present = "fleiss_kappa" in results[0]
+    kappa = results[0].get("fleiss_kappa")
+    for r in results:
+        ticker, engine = r["ticker"], r["engine"]
+        if ticker not in ticker_order:
+            ticker_order.append(ticker)
+        if engine not in engine_order:
+            engine_order.append(engine)
+        votes[(ticker, engine)] = r["regime"]
+        deltas[(ticker, engine)] = r.get("bnh_delta")
+
+    def majority(ticker: str) -> str:
+        """Modal vote across engines; 'tie' when the top count is shared.
+
+        Descriptive agreement only — never an ensemble position signal
+        (.out-of-scope/ensemble-engine.md).
+        """
+        tally: dict[str, int] = {}
+        for engine in engine_order:
+            vote = votes.get((ticker, engine))
+            if vote is not None:
+                tally[vote] = tally.get(vote, 0) + 1
+        if not tally:
+            return "N/A"
+        top = max(tally.values())
+        leaders = sorted(v for v, n in tally.items() if n == top)
+        return leaders[0] if len(leaders) == 1 else "tie"
+
+    def render(headers: list[str], rows: list[list[str]]) -> list[str]:
+        widths = [len(h) for h in headers]
+        for row in rows:
+            for i, cell in enumerate(row):
+                widths[i] = max(widths[i], len(cell))
+        lines = [
+            "  ".join(c.ljust(widths[i]) for i, c in enumerate(headers)),
+            "  ".join("-" * w for w in widths),
+        ]
+        for row in rows:
+            lines.append("  ".join(c.ljust(widths[i]) for i, c in enumerate(row)))
+        return lines
+
+    lines = ["Cross-engine agreement (current_regime):"]
+    rows = [
+        [
+            ticker,
+            *[
+                str(votes[(ticker, engine)])
+                if (ticker, engine) in votes
+                else "N/A"
+                for engine in engine_order
+            ],
+            majority(ticker),
+        ]
+        for ticker in ticker_order
+    ]
+    lines.extend(render(["ticker", *engine_order, "majority"], rows))
+
+    if kappa_present:
+        kappa_str = "n/a" if kappa is None else f"{kappa:.6f}"
+        lines.append("")
+        lines.append(f"Fleiss' kappa = {kappa_str}")
+
+    lines.append("")
+    lines.append("Buy-and-hold delta Sharpe (engine Sharpe - B&H Sharpe):")
+    rows = [
+        [
+            engine,
+            *[
+                "N/A"
+                if deltas.get((ticker, engine)) is None
+                else f"{deltas[(ticker, engine)]:.3f}"
+                for ticker in ticker_order
+            ],
+        ]
+        for engine in engine_order
+    ]
+    lines.extend(render(["engine", *ticker_order], rows))
 
     return "\n".join(lines)
