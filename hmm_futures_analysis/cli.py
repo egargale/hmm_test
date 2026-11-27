@@ -26,6 +26,7 @@ from .data_processing.csv_auto_detect import load_prices
 from .eval import (
     ALL_ENGINES as EVAL_ALL_ENGINES,
     run_eval_csv,
+    run_eval_statistical,
     run_eval_tickers,
 )
 from .presenter import (
@@ -240,6 +241,15 @@ def main() -> None:
         help="Directory of CSV files for batch eval (filename stem = ticker).",
     )
     eval_group.add_argument(
+        "--eval-statistical",
+        type=str,
+        default=None,
+        help=(
+            "Comma-separated ticker list for the statistical eval report "
+            "(e.g. SPY,NVDA,BTC,KO,XLE)."
+        ),
+    )
+    eval_group.add_argument(
         "--eval-engines",
         type=str,
         default=None,
@@ -305,17 +315,24 @@ def main() -> None:
     args = parser.parse_args()
 
     # --- Determine mode: eval vs single-run ---
-    eval_mode = args.eval_tickers is not None or args.eval_csv is not None
+    eval_mode = (
+        args.eval_tickers is not None
+        or args.eval_csv is not None
+        or args.eval_statistical is not None
+    )
     single_mode = args.csv is not None or args.ticker is not None
 
     if eval_mode and single_mode:
         parser.error(
-            "eval flags (--eval-tickers, --eval-csv) are mutually exclusive "
-            "with single-run flags (--ticker, --csv)"
+            "eval flags (--eval-tickers, --eval-csv, --eval-statistical) are "
+            "mutually exclusive with single-run flags (--ticker, --csv)"
         )
 
     if not eval_mode and not single_mode:
-        parser.error("provide one of: --ticker, --csv, --eval-tickers, or --eval-csv")
+        parser.error(
+            "provide one of: --ticker, --csv, --eval-tickers, --eval-csv, "
+            "or --eval-statistical"
+        )
 
     # --- Signal-sizing validation (single-run mode only) ---
     if eval_mode and (args.signal_sizing or args.signal_floor is not None):
@@ -327,8 +344,19 @@ def main() -> None:
 
     # --- Eval mode ---
     if eval_mode:
-        if args.eval_tickers is not None and args.eval_csv is not None:
-            parser.error("--eval-tickers and --eval-csv are mutually exclusive")
+        eval_inputs = [
+            flag
+            for flag, val in (
+                ("--eval-tickers", args.eval_tickers),
+                ("--eval-csv", args.eval_csv),
+                ("--eval-statistical", args.eval_statistical),
+            )
+            if val is not None
+        ]
+        if len(eval_inputs) > 1:
+            parser.error(
+                f"{', '.join(eval_inputs)} are mutually exclusive — pick one"
+            )
 
         # Parse engine filter
         engines = EVAL_ALL_ENGINES
@@ -355,6 +383,16 @@ def main() -> None:
                     engines=engines,
                     min_train=args.min_train,
                 )
+            elif args.eval_statistical is not None:
+                tickers = tuple(t.strip() for t in args.eval_statistical.split(","))
+                results = run_eval_statistical(
+                    tickers=tickers,
+                    engines=engines,
+                    min_train=args.min_train,
+                    cache_dir=cache_dir,
+                    refresh=args.refresh,
+                    no_cache=args.no_cache,
+                )
             else:
                 tickers = tuple(t.strip() for t in args.eval_tickers.split(","))
                 results = run_eval_tickers(
@@ -368,6 +406,8 @@ def main() -> None:
 
             if args.json:
                 print(format_eval(results, fmt="json"))
+            elif args.eval_statistical is not None:
+                print(format_eval(results, fmt="statistical_table"), file=sys.stderr)
             else:
                 print(format_eval(results, fmt="table"), file=sys.stderr)
 

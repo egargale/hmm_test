@@ -709,6 +709,23 @@ python -m hmm_futures_analysis.cli --eval-tickers CRM,SPY \
   --eval-cache-dir ./csv-cache/ --json
 ```
 
+### `--eval-statistical` — Statistical evaluation report
+
+```bash
+python -m hmm_futures_analysis.cli --eval-statistical SPY,NVDA,BTC,KO,XLE
+```
+
+Runs the Slice 2 statistical harness metric set over the ticker list and
+prints the statistical report to **stderr**: the cross-engine agreement
+summary (one row per ticker, engine vote columns, plus a report-only
+`majority` column) and the buy-and-hold delta grid (engine walk-forward
+Sharpe − B&H Sharpe on the engine window). Rows also carry `fleiss_kappa`
+(panel-wide; `null` when undefined) and `bnh_delta`. Each ticker resolves
+against committed `test_data/<TICKER>.csv` fixtures first (the harness
+data), falling back to the yfinance ticker path; use `--eval-cache-dir` to
+save downloaded data as CSVs. With `--json`, the row array is printed to
+stdout instead. See ADR-0027/ADR-0028 for the metric and report contract.
+
 ### `--eval-engines` — Filter engines
 
 ```bash
@@ -747,11 +764,12 @@ Default: all five engines (`threshold`, `messina`, `hmm`, `robust_hmm`, `fshmm`)
 |---|---|
 | `--eval-tickers LIST` | Comma-separated ticker symbols |
 | `--eval-csv DIR` | Directory of CSV files |
+| `--eval-statistical LIST` | Comma-separated tickers for the statistical report |
 | `--eval-engines LIST` | Comma-separated engine names (default: all) |
-| `--eval-cache-dir DIR` | Save yfinance data to CSV (used with `--eval-tickers`) |
+| `--eval-cache-dir DIR` | Save yfinance data to CSV (used with `--eval-tickers`/`--eval-statistical`) |
 
-> `--eval-tickers` and `--eval-csv` are mutually exclusive with each other and with
-> `--ticker`/`--csv`.
+> `--eval-tickers`, `--eval-csv` and `--eval-statistical` are mutually
+> exclusive with each other and with `--ticker`/`--csv`.
 
 ---
 

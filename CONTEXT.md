@@ -107,8 +107,12 @@ A regime-aging-adjusted threshold for the Sideways → transition verdict bounda
 _Avoid_: adaptive threshold, variable cutoff
 
 **Presenter**:
-The output formatting seam between pipeline computation and user-facing output. Lives in ``presenter.py`` and exposes four pure functions: ``format_pipeline()`` (terminal string), ``serialize_pipeline()`` (JSON-compatible dict), ``format_eval()`` (eval table or JSON string), and ``limit_transitions()`` (transition filter/reverse). The presenter never touches streams (stdout/stderr) — it returns strings or dicts, and the caller owns IO. Callable from the CLI, library code, or test harness without importing argparse, sys, or engine internals. Extracted from cli.py per ADR-0021.
+The output formatting seam between pipeline computation and user-facing output. Lives in ``presenter.py`` and exposes four pure functions: ``format_pipeline()`` (terminal string), ``serialize_pipeline()`` (JSON-compatible dict), ``format_eval()`` (eval table, JSON string, or statistical table), and ``limit_transitions()`` (transition filter/reverse). The presenter never touches streams (stdout/stderr) — it returns strings or dicts, and the caller owns IO. Callable from the CLI, library code, or test harness without importing argparse, sys, or engine internals. Extracted from cli.py per ADR-0021.
 _Avoid_: renderer, output module, formatter
+
+**Statistical evaluation** (`--eval-statistical`):
+The eval mode that runs the engine panel over a ticker list and reports cross-engine agreement and buy-and-hold delta, per ADR-0028. Each ticker resolves against committed ``test_data/<TICKER>.csv`` fixtures first (the Slice 2 harness data), falling back to the yfinance ticker path. Per-row fields on top of the standard eval rows: ``fleiss_kappa`` (panel-wide scalar; ``null``/``None`` when undefined — fewer than two engines, or chance agreement exactly 1) and ``bnh_delta`` (engine walk-forward Sharpe minus the buy-and-hold Sharpe on the engine window ``prices[min_train:]``, per ADR-0027). The ``majority`` column in the report is descriptive agreement only (modal vote; ``tie`` when the top count is shared) — never an ensemble position signal (``.out-of-scope/ensemble-engine.md``). Metric definitions remain the ADR-0027 contract.
+_Avoid_: statistical panel run, voting engine, ensemble report
 
 ## Engine suitability
 
